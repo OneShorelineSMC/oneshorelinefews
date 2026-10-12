@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tides Above MHHW – Alameda</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f0f4f8;
+    color: #1a3a5c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px 0;
+    box-sizing: border-box;
+  }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    width: 94%;
+    max-width: 1200px;
+    box-sizing: border-box;
+  }
+  .summary {
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 1.35;
+    margin: 0 0 6px 0;
+  }
+  .summary.clear { color: #2e7d32; }
+  .explain {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.45;
+    margin-bottom: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 17px;
+  }
+  th {
+    text-align: left;
+    font-size: 14px;
+    font-weight: normal;
+    color: #888;
+    border-bottom: 1px solid #e3e8ee;
+    padding: 0 16px 8px 0;
+  }
+  td {
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid #eef1f5;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+  td.day { font-weight: bold; width: 1%; }      /* shrink to fit the date */
+  td.win { width: 1%; }
+  .note { color: #888; font-size: 14px; }
+  .above { color: #c0392b; font-size: 14px; }
+  .now {
+    display: inline-block;
+    background: #c0392b;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-left: 8px;
+    vertical-align: 2px;
+  }
+  .err { color: #c0392b; font-size: 16px; }
+  .layout { display: flex; gap: 28px; align-items: stretch; }
+  .main { flex: 0 0 calc(75% - 14px); min-width: 0; }
+  .peakbox {
+    flex: 0 0 calc(25% - 14px);
+    border-left: 1px solid #e3e8ee;
+    padding-left: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .peakbox .lbl { font-size: 15px; color: #555; margin-bottom: 6px; }
+  .meas { border-bottom: 1px solid #e3e8ee; padding-bottom: 14px; margin-bottom: 14px; }
+  .mnum { font-size: 40px; font-weight: bold; line-height: 1.05; color: #1e88e5; }
+  .munit { font-size: 15px; font-weight: normal; color: #888; }
+  .mtime { font-size: 13px; color: #888; margin-top: 4px; }
+  .mdiff { font-size: 15px; margin-top: 6px; color: #555; }
+  .mdiff.hi { color: #c0392b; font-weight: bold; }
+  .peakbox .num { font-size: 72px; font-weight: bold; line-height: 1; color: #1a3a5c; }
+  .peakbox .unit { font-size: 15px; color: #888; margin-top: 8px; }
+  .peakbox .when { font-size: 16px; color: #1a3a5c; margin-top: 10px; }
+  .peakbox .vs { font-size: 14px; margin-top: 6px; color: #888; }
+  .peakbox .vs.hi { color: #c0392b; }
+  td.peak { white-space: normal; }
+  @media (max-width: 900px) {
+    .layout { flex-direction: column-reverse; gap: 18px; }
+    .main, .peakbox { flex: 1 1 auto; }
+    .peakbox { border-left: 0; padding-left: 0; border-bottom: 1px solid #e3e8ee; padding-bottom: 16px; }
+    .peakbox .num { font-size: 56px; }
+  }
+  #station {
+    font-size: 13px;
+    color: #aaa;
+    margin-top: 14px;
+  }
+  @media (max-width: 560px) {
+    .card { width: auto; margin: 0 12px; padding: 18px; }
+    .summary { font-size: 18px; }
+    table, tbody, tr, td { display: block; width: 100% !important; }
+    thead { display: none; }
+    tr { border-bottom: 1px solid #eef1f5; padding: 8px 0; }
+    td { border: 0; padding: 2px 0; white-space: normal; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+ <div class="layout">
+ <div class="main">
+  <div class="summary" id="summary">Loading tide predictions…</div>
+  <div class="explain">
+    MHHW (Mean Higher High Water) is the average height of the highest tide each day.
+    Tides above it reach farther up shorelines, marshes, and low-lying areas than usual.
+  </div>
+  <div id="list"></div>
+ </div>
+ <div class="peakbox" id="peakbox">
+  <div class="meas" id="meas">
+   <div class="lbl">Measured water level now</div>
+   <div class="mnum"><span id="mVal">–</span><span class="munit"> ft</span></div>
+   <div class="mtime" id="mTime"></div>
+   <div class="mdiff" id="mDiff"></div>
+  </div>
+  <div class="lbl">Highest predicted tide, next 7 days</div>
+  <div class="num" id="peakNum">…</div>
+  <div class="unit">ft NAVD88</div>
+  <div class="when" id="peakWhen"></div>
+  <div class="vs" id="peakVs"></div>
+ </div>
+ </div>
+ <div id="station"></div>
+</div>
+
+<script>
+var STATION = "9414750";       // Alameda
+var STATION_NAME = "Alameda";
+var THRESHOLD = 6.37;          // MHHW, ft NAVD88
+var DAYS = 7;
+var REFRESH_MINUTES = 60;
+var MEASURED_REFRESH_MINUTES = 6;   // NOAA posts water levels every 6 minutes
+var SURGE_ALERT_FT = 0.5;           // highlight in red when measured is this far above predicted
+
+/* NOAA returns times as local station time strings ("2026-10-11 12:18").
+   We treat them as plain clock times (stored as UTC internally) so there are
+   no time-zone conversions to get wrong. */
+function parseLocal(s) {
+  var a = s.split(/[- :]/).map(Number);
+  return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4]);
+}
+function nowLocal() {
+  var p = {};
+  new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+  }).formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+}
+function ymd(ms) {
+  var d = new Date(ms);
+  return d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCDate()).padStart(2, "0");
+}
+function fmtDay(ms) {
+  return new Date(ms).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
+}
+function fmtWeekday(ms) {
+  return new Date(ms).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" });
+}
+function fmtTime(ms) {
+  return new Date(ms).toLocaleTimeString("en-US", { timeZone: "UTC", hour: "numeric", minute: "2-digit" });
+}
+function sameDay(a, b) { return ymd(a) === ymd(b); }
+function minuteOfDay(ms) { var d = new Date(ms); return d.getUTCHours() * 60 + d.getUTCMinutes(); }
+
+// Linear interpolation of when the tide crosses the threshold between two samples.
+function crossing(t1, v1, t2, v2) {
+  if (v2 === v1) return t1;
+  var t = t1 + (THRESHOLD - v1) / (v2 - v1) * (t2 - t1);
+  return Math.round(t / 60000) * 60000;   // nearest minute
+}
+
+// Time windows above MHHW from NOAA's 6-minute predictions.
+function findWindows(preds) {
+  var pts = preds.map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; })
+                 .filter(function (p) { return !isNaN(p.v); });
+  var wins = [], cur = null;
+  for (var i = 0; i < pts.length; i++) {
+    var p = pts[i], prev = pts[i - 1];
+    if (p.v > THRESHOLD) {
+      if (!cur) {
+        cur = { start: prev ? crossing(prev.t, prev.v, p.t, p.v) : p.t,
+                startsBeforeData: !prev, peak: p.v, peakT: p.t };
+      }
+      if (p.v > cur.peak) { cur.peak = p.v; cur.peakT = p.t; }
+    } else if (cur) {
+      cur.end = crossing(prev.t, prev.v, p.t, p.v);
+      wins.push(cur); cur = null;
+    }
+  }
+  if (cur) { cur.end = pts[pts.length - 1].t; cur.endsAfterData = true; wins.push(cur); }
+  return wins;
+}
+
+// Use NOAA's official high-tide time and height (same source as the Peak Tide widget).
+function applyOfficialPeaks(wins, hilo) {
+  var highs = hilo.filter(function (p) { return p.type === "H"; })
+                  .map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; });
+  wins.forEach(function (w) {
+    var best = null;
+    highs.forEach(function (h) {
+      if (h.t >= w.start - 15 * 60000 && h.t <= w.end + 15 * 60000 && (!best || h.v > best.v)) best = h;
+    });
+    if (best) { w.peak = best.v; w.peakT = best.t; }
+  });
+}
+
+function durationText(mins) {
+  if (mins < 60) return mins + " min";
+  return Math.floor(mins / 60) + " hr" + (mins % 60 ? " " + (mins % 60) + " min" : "");
+}
+
+// "Sun–Tue" for consecutive days, otherwise "Sun, Tue and Fri"
+function dayListText(dayMs) {
+  var consecutive = dayMs.every(function (d, i) { return i === 0 || d - dayMs[i - 1] === 86400000; });
+  var names = dayMs.map(fmtWeekday);
+  if (names.length === 1) return names[0];
+  if (consecutive && names.length > 2) return names[0] + "–" + names[names.length - 1];
+  return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+}
+
+function roundHalfHour(mins) { return Math.max(0.5, Math.round(mins / 30) / 2); }
+
+function summaryText(wins) {
+  var days = {};
+  wins.forEach(function (w) {
+    var d = new Date(w.start);
+    days[Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())] = 1;
+  });
+  var dayMs = Object.keys(days).map(Number).sort(function (a, b) { return a - b; });
+  var n = dayMs.length;
+
+  var maxMins = Math.max.apply(null, wins.map(function (w) { return (w.end - w.start) / 60000; }));
+  var dur = maxMins < 60 ? "less than an hour each time"
+          : "up to " + roundHalfHour(maxMins) + " hour" + (roundHalfHour(maxMins) === 1 ? "" : "s") + " each time";
+
+  // Only give a time range when the tides fall in a similar part of the day.
+  var starts = wins.map(function (w) { return minuteOfDay(w.start); });
+  var ends = wins.map(function (w) { return sameDay(w.start, w.end) ? minuteOfDay(w.end) : 1440; });
+  var earliest = Math.min.apply(null, starts), latest = Math.max.apply(null, ends);
+  var when = "";
+  if (latest - earliest <= 6 * 60) {
+    var e = wins[starts.indexOf(earliest)].start;
+    var l = wins[ends.indexOf(latest)].end;
+    when = ", between about " + fmtTime(Math.round(e / 900000) * 900000) +
+           " and " + fmtTime(Math.round(l / 900000) * 900000);
+  }
+
+  return "Tides are predicted to rise above MHHW on " + n + " of the next " + DAYS + " days (" +
+         dayListText(dayMs) + "), for " + dur + when + ".";
+}
+
+function renderPeak(hilo) {
+  var best = null;
+  hilo.forEach(function (p) {
+    if (p.type !== "H") return;
+    var v = parseFloat(p.v);
+    if (!best || v > best.v) best = { v: v, t: parseLocal(p.t) };
+  });
+  if (!best) return;
+  document.getElementById("peakNum").textContent = best.v.toFixed(2);
+  document.getElementById("peakWhen").textContent = fmtDay(best.t) + " at " + fmtTime(best.t);
+  var diff = best.v - THRESHOLD, vs = document.getElementById("peakVs");
+  vs.textContent = Math.abs(diff).toFixed(2) + " ft " + (diff > 0 ? "above" : "below") + " MHHW";
+  vs.className = "vs" + (diff > 0 ? " hi" : "");
+}
+
+function render(wins, now) {
+  var summary = document.getElementById("summary");
+  var list = document.getElementById("list");
+
+  wins = wins.filter(function (w) { return w.end > now; });   // drop tides already past
+
+  if (!wins.length) {
+    summary.className = "summary clear";
+    summary.textContent = "No tides are predicted to rise above MHHW in the next " + DAYS + " days.";
+    list.innerHTML = "";
+    return;
+  }
+
+  summary.className = "summary";
+  summary.textContent = summaryText(wins);
+
+  var rows = wins.map(function (w) {
+    var active = w.start <= now && w.end > now;
+    var startTxt = w.startsBeforeData ? "before " + fmtTime(w.start) : fmtTime(w.start);
+    var endTxt = (sameDay(w.start, w.end) ? "" : fmtDay(w.end) + " ") + fmtTime(w.end) + (w.endsAfterData ? "+" : "");
+    var mins = Math.round((w.end - w.start) / 60000);
+    return '<tr>' +
+      '<td class="day">' + fmtDay(w.start) + (active ? '<span class="now">NOW</span>' : '') + '</td>' +
+      '<td class="win">' + startTxt + ' – ' + endTxt + ' <span class="note">(' + durationText(mins) + ')</span></td>' +
+      '<td class="peak">' + w.peak.toFixed(2) + ' ft at ' + fmtTime(w.peakT) +
+        ' <span class="above">' + (w.peak - THRESHOLD).toFixed(2) + ' ft above MHHW</span></td>' +
+      '</tr>';
+  }).join("");
+
+  list.innerHTML = '<table><thead><tr><th>Day</th><th>Predicted above MHHW</th><th>Predicted high tide</th></tr></thead>' +
+                   '<tbody>' + rows + '</tbody></table>';
+}
+
+function noaaUrl(begin, end, extra) {
+  return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
+    + "?product=predictions"
+    + "&station=" + STATION
+    + "&begin_date=" + begin
+    + "&end_date=" + end
+    + "&datum=NAVD"
+    + "&time_zone=lst_ldt"
+    + "&units=english"
+    + "&format=json"
+    + "&application=OneShorelineFEWS"
+    + extra;
+}
+function getJSON(url) {
+  return fetch(url, { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { if (j.error) throw new Error(j.error.message); return j; });
+}
+
+function load() {
+  var now = nowLocal();
+  var d = new Date(now);
+  var startMs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  var endMs = startMs + DAYS * 86400000;   // midnight after the 7th day
+  var b = ymd(startMs), e = ymd(endMs - 1);
+
+  Promise.all([
+    getJSON(noaaUrl(b, e, "")),                  // 6-minute predictions: time windows
+    getJSON(noaaUrl(b, e, "&interval=hilo"))     // official high/low tides: peak time & height
+  ]).then(function (res) {
+    predCache = (res[0].predictions || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; });
+    loadMeasured();
+    var wins = findWindows(res[0].predictions || []);
+    applyOfficialPeaks(wins, res[1].predictions || []);
+    render(wins, now);
+    renderPeak(res[1].predictions || []);
+    document.getElementById("station").textContent =
+      "NOAA Station " + STATION + " (" + STATION_NAME + ") · Predicted tides · MHHW = " +
+      THRESHOLD.toFixed(2) + " ft NAVD88 · " + fmtDay(startMs) + " – " + fmtDay(endMs - 1) +
+      " · Updated " + fmtTime(nowLocal());
+  }).catch(function (err) {
+    if (!document.querySelector("#list table")) {
+      document.getElementById("summary").textContent = "";
+      document.getElementById("list").innerHTML =
+        '<div class="err">Couldn\'t load NOAA tide predictions (' + err.message + '). Retrying automatically.</div>';
+    }
+  });
+}
+
+/* ---------- Measured water level vs predicted ---------- */
+var predCache = null;
+function predictedAt(t) {
+  if (!predCache || !predCache.length) return null;
+  var i = Math.round((t - predCache[0].t) / 360000);     // 6-minute steps
+  return (i >= 0 && i < predCache.length) ? predCache[i].v : null;
+}
+function loadMeasured() {
+  var now = nowLocal();
+  var url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_level&station=" + STATION +
+    "&begin_date=" + ymd(now - 3 * 3600000) + "&end_date=" + ymd(now) +
+    "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
+  getJSON(url).then(function (j) {
+    var obs = (j.data || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; })
+                            .filter(function (p) { return !isNaN(p.v); });
+    var last = obs.length ? obs[obs.length - 1] : null;
+    var val = document.getElementById("mVal"), tm = document.getElementById("mTime"), df = document.getElementById("mDiff");
+    if (!last || now - last.t > 60 * 60000) {
+      val.textContent = "–"; tm.textContent = "No recent reading from this gauge"; df.textContent = ""; return;
+    }
+    // Rising / falling compared with 30 minutes earlier
+    var ago = null;
+    for (var k = obs.length - 1; k >= 0; k--) { if (last.t - obs[k].t >= 30 * 60000) { ago = obs[k]; break; } }
+    var arrow = ago ? (last.v - ago.v > 0.05 ? " ↑" : last.v - ago.v < -0.05 ? " ↓" : " →") : "";
+    val.textContent = last.v.toFixed(2) + arrow;
+    tm.textContent = "at " + fmtTime(last.t) + (arrow ? (arrow === " ↑" ? " · rising" : arrow === " ↓" ? " · falling" : " · steady") : "");
+    var pv = predictedAt(last.t);
+    if (pv == null) { df.textContent = ""; return; }
+    var diff = last.v - pv;
+    df.innerHTML = Math.abs(diff) < 0.05 ? "As predicted"
+      : "<b>" + Math.abs(diff).toFixed(2) + " ft</b> " + (diff > 0 ? "above" : "below") + " predicted tide";
+    df.className = "mdiff" + (diff >= SURGE_ALERT_FT ? " hi" : "");
+  }).catch(function () {
+    document.getElementById("mTime").textContent = "Measured water level unavailable";
+  });
+}
+
+load();
+setInterval(load, REFRESH_MINUTES * 60000);
+setInterval(function () { if (predCache) loadMeasured(); }, MEASURED_REFRESH_MINUTES * 60000);
+</script>
+</body>
+</html>
