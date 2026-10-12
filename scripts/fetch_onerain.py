@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Download recent San Bruno Creek readings from OneRain and save them as JSON for the kiosk.
+Download recent creek stage and rain readings from OneRain and save them as JSON for the kiosk's Creeks
+tab, the phone page (Creeks.html) and the home page. The creeks and gauges are listed in creek_config.py.
 
 OneRain's data export needs a login, but each sensor's public page (the one you see as "Guest")
 lists its readings. This script reads those public pages. It runs in a GitHub Action every few
 minutes and the result is published for the kiosk (see .github/workflows/onerain.yml).
 
-Usage:  python fetch_onerain.py OUTPUT.json
+Usage:  python fetch_onerain.py OUTPUT.json      (the workflow uses creeks.json)
 If a sensor can't be read, its previous data in OUTPUT.json (if any) is kept and the error is
 recorded, so one bad download never blanks the screen.
 """
@@ -28,29 +29,18 @@ HEADERS = {
     "Accept": "text/html,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }
-HOURS = 72          # how much history to keep in the file
+HOURS = 48          # how much history to keep in the file (the graphs show 36 hours)
 MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lists them in batches)
 
-SENSORS = {
-    "stage": {
-        "name": "San Bruno Creek at First Avenue (41102) – Stage",
-        "kind": "stage", "unit": "ft",
-        "site_id": 11, "site": "fe06588c-e5e6-4016-8a8f-2ba1f040636e",
-        "device_id": 3, "device": "e481d107-65bb-4107-89ab-48484eb0e188",
-    },
-    "rain_first_ave": {
-        "name": "San Bruno Creek at First Avenue (41102) – Rain",
-        "kind": "rain_increment", "unit": "in",
-        "site_id": 11, "site": "fe06588c-e5e6-4016-8a8f-2ba1f040636e",
-        "device_id": 5, "device": "410fdb23-37d0-43aa-8a67-616e08323774",
-    },
-    "rain_mountain": {
-        "name": "San Bruno Mountain (41200) – Rain",
-        "kind": "rain_increment", "unit": "in",
-        "site_id": 3, "site": "e5d4db4f-0a98-4825-aa98-fa327ed9cfa8",
-        "device_id": 2, "device": "2a34c20c-eb4e-4337-801c-5341296fcb30",
-    },
-}
+from creek_config import CREEKS
+
+# Every gauge listed in creek_config.py, by key
+SENSORS = {}
+for _c in CREEKS:
+    for _g in _c["stages"]:
+        SENSORS[_g["key"]] = dict(_g, name=f"{_g['site_name']} ({_g['number']}) – Stage", kind="stage", unit="ft")
+    for _g in _c["rain"]:
+        SENSORS[_g["key"]] = dict(_g, name=f"{_g['label']} ({_g['number']}) – Rain", kind="rain_increment", unit="in")
 
 STAMP = r"(\d{4}-\d\d-\d\d \d\d:\d\d(?::\d\d)?)"
 NUMBER = r"(-?\d+(?:\.\d+)?)"
@@ -150,8 +140,18 @@ def fetch_sensor(session, s, start, end):
     return points, latest, pages
 
 
+def public_config():
+    """The creek list for the pages, with a link to each gauge's OneRain page."""
+    def gauge(g):
+        out = {k: v for k, v in g.items() if k not in ("site_id", "site", "device_id", "device")}
+        out["url"] = (f"{SITE}/sensor/?site_id={g['site_id']}&site={g['site']}"
+                      f"&device_id={g['device_id']}&device={g['device']}")
+        return out
+    return [dict(c, stages=[gauge(g) for g in c["stages"]], rain=[gauge(g) for g in c["rain"]]) for c in CREEKS]
+
+
 def main():
-    out_path = sys.argv[1] if len(sys.argv) > 1 else "sanbruno.json"
+    out_path = sys.argv[1] if len(sys.argv) > 1 else "creeks.json"
     try:
         with open(out_path) as f:
             previous = json.load(f).get("sensors", {})
@@ -161,7 +161,7 @@ def main():
     now = dt.datetime.now(TZ).replace(tzinfo=None, microsecond=0)
     start = now - dt.timedelta(hours=HOURS)
     result = {"generated": now.strftime("%Y-%m-%d %H:%M:%S"), "timezone": "America/Los_Angeles",
-              "hours": HOURS, "sensors": {}}
+              "hours": HOURS, "creeks": public_config(), "sensors": {}}
     failures = 0
     session = Session()
     for key, s in SENSORS.items():
