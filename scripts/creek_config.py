@@ -6,7 +6,10 @@ read everything from the published data file, so changes here show up everywhere
 
 Each creek has:
   id      short code used in links, e.g. Creeks.html#atherton
-  name    shown on buttons and headings
+  name    shown on headings and the alert strip
+  short   shown on the creek buttons (keep it to one or two short words)
+  rain_windows   the rain totals shown, in minutes (60 = 1 hr, 1440 = 24 hr); match the creek's OneRain dashboard
+  rain_running   optional: a graph of the running rain total over "minutes", with a line at "line" inches
   intro   one sentence under the creek's name
   tide    NOAA station shown under the creek: "9414750" Alameda or "9414523" Redwood City
   note    optional text shown with the graphs (e.g. what the threshold colors mean)
@@ -35,6 +38,8 @@ CREEKS = [
     {
         "id": "sanbruno",
         "name": "San Bruno Creek",
+        "short": "San Bruno",
+        "rain_windows": [60, 1440],
         "intro": "Creek level at First Avenue in South San Francisco / San Bruno, rain in the upper and lower "
                  "watershed, and the Bay tide at Alameda. The creek at First Avenue rises and falls with the tide.",
         "tide": "9414750",
@@ -59,6 +64,8 @@ CREEKS = [
     {
         "id": "atherton",
         "name": "Atherton Channel",
+        "short": "Atherton",
+        "rain_windows": [30, 60, 1440],
         "intro": "Channel levels at Alameda de las Pulgas and just upstream of the Caltrain crossing, rain at "
                  "Caltrain, and the Bay tide at Redwood City. Thresholds are for the community downstream of "
                  "the Caltrain crossing.",
@@ -92,6 +99,9 @@ CREEKS = [
 CREEKS.append({
     "id": "belmont",
     "name": "Belmont Creek",
+    "short": "Belmont",
+    "rain_windows": [30, 60, 240, 1440],
+    "rain_running": {"gauge": "bel_rain", "minutes": 240, "line": 0.42, "label": "4-hour rain (in)"},
     "intro": "Creek level at Old County Road, rain at Old County Road, and the Bay tide at Redwood City. Thresholds "
              "are for the Harbor Industrial Area community downstream of the Caltrain crossing. Flooding is likely "
              "if 30-minute rain exceeds 0.20 inches, or if 4-hour rain exceeds 0.42 inches and the tide is high.",
@@ -123,6 +133,8 @@ CREEKS.append({
 CREEKS.append({
     "id": "colma",
     "name": "Colma Creek",
+    "short": "Colma",
+    "rain_windows": [60, 360, 1440],
     "intro": "Creek level and rain at Orange Memorial Park in South San Francisco, and the Bay tide at Alameda. "
              "Thresholds are for the community downstream of Orange Memorial Park.",
     "tide": "9414750",
