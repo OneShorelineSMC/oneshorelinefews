@@ -4,10 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shoreline Kiosk – San Mateo County</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+  integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+  integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   /* Designed at exactly 800x480 and scaled to fit whatever screen it's on. */
   :root {
@@ -1281,7 +1287,7 @@ function renderMap() {
 }
 function siteDetail(site, st, now, sub) {
   var h = '<div class="mh">' + esc(site.name) + '</div><div class="msub">Site ' + esc(site.number) + "</div>" +
-    '<span class="mbadge" style="background:' + st.color + '">' + st.label + "</span>";
+    '<span class="mbadge" style="background:' + st.color + '">' + esc(st.label) + "</span>";
   site.sensors.slice(0, 3).forEach(function (s, i) {
     var t = s.time ? parseLocal(s.time) : null, old = t && now - t > 3 * 36e5;
     var val = isRain(s) && s.rain24 != null ? s.rain24.toFixed(2) + "<small> in / 24 h</small>" : mNum(s.value, s.unit) + "<small> " + esc(s.unit) + "</small>";
