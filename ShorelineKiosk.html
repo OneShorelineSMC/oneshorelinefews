@@ -788,12 +788,23 @@ function creekState(c, now) {
   st.tideHigh = tideHighNow(c, now);
   st.triggers = (c.rain_triggers || []).map(function (tr) {
     var amt = rainSum(pts(tr.gauge), now - tr.minutes * 60000, now);
-    var met = amt >= tr.value && (!tr.high_tide || st.tideHigh);
-    var x = { tr: tr, amt: amt, met: met };
+    var tide = triggerTide(tr, st, now);
+    var met = amt >= tr.value && (!tr.high_tide || tide.high);
+    var x = { tr: tr, amt: amt, met: met, tide: tide };
     if (met && !late && (!st.top || tr.level > st.top.level)) { st.top = tr; st.topGauge = null; st.topTrigger = x; }
     return x;
   });
   return st;
+}
+
+// High tide for a rain trigger: the creek's NOAA tide (measured, or predicted if no recent measurement) at or
+// above the trigger's level in ft NAVD88; if the trigger gives no level, at or above MHHW.
+function triggerTide(tr, st, now) {
+  var T = tideFor(st.c), tl = T && T.obs && T.obs.length ? T.obs[T.obs.length - 1] : null;
+  var v = tl && now - tl.t < 3600000 ? tl.v : predAt(T, now);
+  var lvl = tr.tide_min != null ? tr.tide_min : T && T.st.mhhw;
+  if (v == null || lvl == null) return { high: false, txt: "tide unavailable" };
+  return { high: v >= lvl, v: v, txt: v.toFixed(2) + " of " + lvl.toFixed(2) + " ft NAVD88" };
 }
 
 function tideHighNow(c, now) {
@@ -859,7 +870,7 @@ function renderCreek() {
   h += st.triggers.map(function (x) {
       return '<div class="trig' + (x.met ? " met" : "") + '">Trigger: ' + winLabel(x.tr.minutes) + " ≥ " + x.tr.value.toFixed(2) + " in" +
         (x.tr.high_tide ? " + high tide" : "") + " · <b>" + (x.met ? "MET ⚠" : "not met") + "</b>" +
-        (x.tr.high_tide && !x.met ? " (tide " + (st.tideHigh ? "high" : "not high") + ")" : "") + "</div>";
+        (x.tr.high_tide && !x.met ? " (tide " + x.tide.txt + ")" : "") + "</div>";
     }).join("") + "</div>";
   var tS = tideFor(c), tl = tS.obs && tS.obs.length ? tS.obs[tS.obs.length - 1] : null, tsub = "No recent reading", tval = "–";
   if (tl && now - tl.t < 3600000) {
@@ -935,7 +946,7 @@ function showCreekInfo() {
   (c.rain_triggers || []).forEach(function (tr, i) {
     if (!i) html += "<p style='margin-top:10px'><b>Flooding is likely</b> if any of these is met:</p><ul style='margin:0 0 6px;padding-left:22px'>";
     html += "<li>" + esc(tr.label) + " at " + esc((c.rain.filter(function (g) { return g.key === tr.gauge; })[0] || {}).label || "") + " of " + tr.value.toFixed(2) + " in or more" +
-      (tr.high_tide ? ", while the tide is at or above MHHW" : "") + "</li>";
+      (tr.high_tide ? (tr.tide_min != null ? ", while the " + esc(tideFor(c).st.name) + " tide is at or above " + tr.tide_min.toFixed(2) + " ft NAVD88" : ", while the tide is at or above MHHW") : "") + "</li>";
     if (i === c.rain_triggers.length - 1) html += "</ul>";
   });
   if (c.note) html += "<p style='margin-top:10px'>" + esc(c.note) + "</p>";

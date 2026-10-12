@@ -384,8 +384,9 @@ function creekState(c, now) {
   var T = D.tides[c.tide], tn = tideNow(T, now), tv = tn ? tn.v : predAt(T, now);
   st.tideHigh = tv != null && T && T.st.mhhw != null && tv >= T.st.mhhw;
   (c.rain_triggers || []).forEach(function (tr) {
-    var amt = rainSum(pts(tr.gauge), now - tr.minutes * 60000, now), met = amt >= tr.value && (!tr.high_tide || st.tideHigh);
-    st.triggers.push({ tr: tr, amt: amt, met: met });
+    var amt = rainSum(pts(tr.gauge), now - tr.minutes * 60000, now), tide = triggerTide(tr, st, now);
+    var met = amt >= tr.value && (!tr.high_tide || tide.high);
+    st.triggers.push({ tr: tr, amt: amt, met: met, tide: tide });
     if (met && !late && (!st.top || tr.level > st.top.level)) st.top = tr;
   });
   return st;
@@ -399,6 +400,16 @@ function statusWord(st) {
   if (st.late) return { w: "Delayed", col: "var(--muted)", bar: "#8a96a3" };
   if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: "Offline", col: "var(--muted)", bar: "#8a96a3" };
   return { w: "Normal", col: "var(--green)", bar: "#2e7d32" };
+}
+
+// High tide for a rain trigger: the creek's NOAA tide (measured, or predicted if no recent measurement) at or
+// above the trigger's level in ft NAVD88; if the trigger gives no level, at or above MHHW.
+function triggerTide(tr, st, now) {
+  var T = D.tides[st.c.tide], tl = T && T.obs && T.obs.length ? T.obs[T.obs.length - 1] : null;
+  var v = tl && now - tl.t < 3600000 ? tl.v : predAt(T, now);
+  var lvl = tr.tide_min != null ? tr.tide_min : T && T.st.mhhw;
+  if (v == null || lvl == null) return { high: false, txt: "tide unavailable" };
+  return { high: v >= lvl, v: v, txt: v.toFixed(2) + " of " + lvl.toFixed(2) + " ft NAVD88" };
 }
 
 function render() {
@@ -460,7 +471,7 @@ function render() {
     st.triggers.map(function (x) {
       return '<div class="trig' + (x.met ? " met" : "") + '">Flooding-likely trigger: ' + winLabel(x.tr.minutes) + " rain ≥ " + x.tr.value.toFixed(2) + " in" +
         (x.tr.high_tide ? " + high tide" : "") + " · <b>" + (x.met ? "MET" : "not met") + "</b>" +
-        (x.tr.high_tide && !x.met ? " (tide " + (st.tideHigh ? "high" : "not high") + ")" : "") + "</div>"; }).join("");
+        (x.tr.high_tide && !x.met ? " (tide " + x.tide.txt + ")" : "") + "</div>"; }).join("");
 
   // tide now
   var T = D.tides[c.tide], tl = tideNow(T, now);
@@ -640,7 +651,7 @@ function drawCharts(st, now) {
     (T ? "<span><i style='border-top:2px dashed #e05c2a'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "");
   var notes = [];
   if (c.note) notes.push(esc(c.note));
-  (c.rain_triggers || []).forEach(function (tr) { notes.push("<b>Flooding likely:</b> " + esc(tr.label.toLowerCase()) + " of " + tr.value.toFixed(2) + " in or more" + (tr.high_tide ? " while the tide is at or above MHHW" : "")); });
+  (c.rain_triggers || []).forEach(function (tr) { notes.push("<b>Flooding likely:</b> " + esc(tr.label.toLowerCase()) + " of " + tr.value.toFixed(2) + " in or more" + (tr.high_tide ? (tr.tide_min != null ? " while the " + esc(T ? T.st.name : "Bay") + " tide is at or above " + tr.tide_min.toFixed(2) + " ft NAVD88" : " while the tide is at or above MHHW") : "")); });
   $("cnote").innerHTML = notes.join("<br>");
 }
 
