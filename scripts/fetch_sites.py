@@ -21,6 +21,7 @@ import sys
 import time
 import urllib.parse
 
+from creek_config import map_thresholds
 from fetch_onerain import SITE, TZ, Session, parse_readings, sensor_page, to_time
 
 HISTORY_HOURS = 24   # history kept per sensor for the small graphs and the 24-hour rain total
@@ -31,15 +32,8 @@ PAUSE_SEC = 0.25     # pause between requests, to be gentle on OneRain
 SKIP_SENSORS = re.compile(r"batter|volt|signal|rssi|solar|charg|enclosure|door|logger|modem|status"
                           r"|\d+\s*-?\s*h(ou)?r\b", re.I)   # also OneRain's "4 Hr Accumulation"-style roll-ups
 
-# Alert levels drawn on the map. Key: the site's number in parentheses on OneRain, then a word in the
-# sensor's name. Levels are in the sensor's own units, lowest first. Add more as they are set.
-THRESHOLDS = {
-    "41102": {"stage": [
-        {"value": 2.40, "name": "Flood Monitoring", "level": 1},
-        {"value": 3.60, "name": "Flood Watch", "level": 2},
-        {"value": 4.80, "name": "Flood Warning", "level": 3},
-    ]},
-}
+# Alert levels drawn on the map come from the creek gauges and thresholds in creek_config.py.
+THRESHOLDS = map_thresholds()
 
 
 def clean(fragment):
