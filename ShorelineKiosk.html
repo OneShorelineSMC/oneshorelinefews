@@ -23,21 +23,26 @@
   body.cursor { cursor: default; }
   #stage { position: absolute; left: 0; top: 0; width: 800px; height: 480px; transform-origin: 0 0; }
 
+  /* Title bar (every tab) */
+  #brand { position: absolute; left: 0; top: 0; width: 800px; height: 20px; box-sizing: border-box; padding: 0 16px;
+    display: flex; align-items: center; gap: 8px; background: #005085; color: #fff; font-size: 12.5px; letter-spacing: .02em; white-space: nowrap; }
+  #brand b { font-weight: bold; letter-spacing: .04em; }
+  #brand .sep { opacity: .55; }
   /* Alert bar */
-  #alertbar { position: absolute; left: 0; top: 0; width: 800px; height: 56px; box-sizing: border-box;
+  #alertbar { position: absolute; left: 0; top: 20px; width: 800px; height: 48px; box-sizing: border-box;
     padding: 0 16px; display: flex; align-items: center; gap: 12px; color: #fff; background: var(--green); }
   #alertbar.warning { background: #b71c1c; }
   #alertbar.watch, #alertbar.advisory { background: #c77700; }
   #alertbar.statement { background: #455a75; }
   #alertbar.unknown { background: #6b7a8c; }
-  #alertIcon { font-size: 26px; line-height: 1; }
+  #alertIcon { font-size: 24px; line-height: 1; }
   #alertText { flex: 1; min-width: 0; }
-  #alertMain { font-size: 22px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #alertSub { font-size: 14px; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #alertMain { font-size: 20px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #alertSub { font-size: 13px; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #alertMore { font-size: 13px; background: rgba(255,255,255,.22); border-radius: 12px; padding: 4px 10px; white-space: nowrap; }
 
   /* Station panels */
-  .panel { position: absolute; top: 64px; width: 388px; height: 364px; box-sizing: border-box;
+  .panel { position: absolute; top: 76px; width: 388px; height: 352px; box-sizing: border-box;
     background: var(--panel); border-radius: 10px; padding: 10px 14px; overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,.08); }
   #p0 { left: 8px; } #p1 { left: 404px; }
@@ -62,7 +67,7 @@
   .next.clear .nextval { color: var(--green); }
   .nextsub { font-size: 14px; margin-top: 1px; }
 
-  .mini { position: relative; height: 158px; margin-top: 6px; }
+  .mini { position: relative; height: 148px; margin-top: 6px; }
   .pfoot { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 2px; }
   .tapnote { font-size: 12px; color: var(--muted); }
   .mkey { font-size: 11.5px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
@@ -72,7 +77,7 @@
 
   /* Footer */
   /* San Bruno Creek strip (under the NWS bar, only when the creek is at Monitoring or above) */
-  #creekStrip { position: absolute; left: 0; top: 56px; width: 800px; height: 30px; box-sizing: border-box;
+  #creekStrip { position: absolute; left: 0; top: 68px; width: 800px; height: 30px; box-sizing: border-box;
     display: none; align-items: center; gap: 8px; padding: 0 16px; font-size: 15px; color: #1a1a1a;
     border-top: 2px solid rgba(255,255,255,.6); cursor: pointer; }
   #stage.creekalert #creekStrip { display: flex; }
@@ -81,8 +86,8 @@
   #creekStrip .stap { font-size: 12px; opacity: .85; white-space: nowrap; }
   #creekStrip.lvl-warning { color: #fff; }
   /* Make room for the strip: content moves down 28px and gets 28px shorter */
-  #stage.creekalert .panel, #stage.creekalert #creek, #stage.creekalert #about { top: 92px; height: 336px; }
-  #stage.creekalert .mini { height: 130px; }
+  #stage.creekalert .panel, #stage.creekalert #creek, #stage.creekalert #about { top: 104px; height: 324px; }
+  #stage.creekalert .mini { height: 120px; }
   /* Creek tab button takes the creek's alert color */
   .tab.creek-monitoring { background: #f2d024; border-color: #f2d024; color: #1a1a1a; }
   .tab.creek-watch { background: #e07b00; border-color: #e07b00; color: #fff; }
@@ -99,7 +104,7 @@
   #footright { text-align: right; line-height: 1.25; }
 
   /* Creeks tab */
-  #creek { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+  #creek { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
     border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
     padding: 8px 10px 6px; }
   #creek.show { display: flex; flex-direction: column; gap: 6px; }
@@ -125,21 +130,24 @@
   .ccg .ccr { margin-top: -1px; }
 
   /* About tab */
-  #about { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+  #about { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
     border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
     padding: 14px 18px; gap: 18px; }
   #about.show { display: flex; }
 
   /* Disclaimer tab */
-  #disclaimer { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+  #disclaimer { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
     border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
     padding: 26px 40px; flex-direction: column; justify-content: center; }
   #disclaimer.show { display: flex; }
   #disclaimer h3 { margin: 0 0 12px; font-size: 22px; }
   #disclaimer p { margin: 0 0 14px; font-size: 18px; line-height: 1.5; }
   #disclaimer .emerg { color: var(--red); font-weight: bold; }
-  #stage.creekalert #disclaimer { top: 92px; height: 336px; }
-  #aboutText { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; }
+  #stage.creekalert #disclaimer { top: 104px; height: 324px; }
+  #aboutText { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.38; overflow: hidden; }
+  #about { overflow: hidden; }
+  #stage.creekalert #aboutText { font-size: 12.5px; line-height: 1.32; }
+  #stage.creekalert #aboutText p { margin-bottom: 5px; }
   #aboutText h3 { margin: 0 0 6px; font-size: 18px; }
   #aboutText p { margin: 0 0 7px; }
   #aboutText .src { font-size: 12.5px; color: var(--muted); }
@@ -167,6 +175,17 @@
   table.rain.one td, table.rain.one td:first-child { font-size: 17px; font-weight: bold; text-align: center; }
   .trig b { color: var(--ink); } .trig.met { color: var(--red); font-weight: bold; } .trig.met b { color: var(--red); }
   #stage.creekalert .tbox.slim .csub { display: none; }
+  /* tighter left column when space is short (two gauges and/or the alert strip) */
+  #cleft { gap: 5px; }
+  .sbox.two .cbig { font-size: 22px; line-height: 1.05; }
+  #stage.creekalert table.rain.one td { font-size: 15px; }
+  #stage.creekalert .tbox.slim { padding: 3px 10px; }
+  #stage.creekalert .tbox.slim .cbig { font-size: 18px; }
+  #stage.creekalert #call { gap: 6px; }
+  #stage.creekalert .ccard { padding: 4px 10px; gap: 1px; }
+  #stage.creekalert .ccr { font-size: 13px; line-height: 1.25; }
+  #stage.creekalert .ccv { font-size: 15px; }
+  #stage.creekalert .ccn { font-size: 16px; }
   .cbox { border-radius: 8px; padding: 6px 10px; background: rgba(26,58,92,.05); }
   .clbl { font-size: 12px; color: var(--muted); }
   .cbig { font-size: 30px; font-weight: bold; line-height: 1.1; }
@@ -210,10 +229,10 @@
   #dnote { font-size: 13px; color: var(--muted); margin-top: 8px; }
 
   /* Map tab */
-  #maptab { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+  #maptab { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
     border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); overflow: hidden; }
   #maptab.show { display: flex; }
-  #stage.creekalert #maptab { top: 92px; height: 336px; }
+  #stage.creekalert #maptab { top: 104px; height: 324px; }
   #kmap { width: 500px; height: 100%; flex: none; background: #dfe7ee; }
   #kmap .leaflet-control-attribution { font-size: 9px; }
   #kmap .leaflet-control-zoom a { width: 38px; height: 38px; line-height: 38px; font-size: 22px; }
@@ -249,6 +268,7 @@
 </head>
 <body>
 <div id="stage">
+  <div id="brand"><b>FLOOD EARLY WARNING SYSTEM</b><span class="sep">|</span><span>OneShoreline</span><span class="sep">|</span><span>San Mateo County</span></div>
   <div id="alertbar" class="unknown">
     <div id="alertIcon">…</div>
     <div id="alertText">
@@ -978,7 +998,7 @@ function drawCreekCharts(st, now) {
   if (C.chartsFor !== c.id) {
     destroyCreekCharts();
     var parts = [{ id: "chRain", w: 0.65, title: "Rain per hour (in)", key: "cRainKey" }];
-    if (c.rain_running) parts.push({ id: "chRun", w: 0.7, title: esc(c.rain_running.label), key: "" });
+    if (c.rain_running && c.rain_running.line) parts.push({ id: "chRun", w: 0.7, title: esc(c.rain_running.label), key: "" });
     c.stages.forEach(function (g, i) { parts.push({ id: "chStage" + i, w: c.stages.length > 1 ? 1 : 1.5, title: esc(g.label) + " · stage (ft)", key: i ? "" : "cStageAge" }); });
     parts.push({ id: "chTide", w: 1.05, title: esc(tideFor(c).st.name) + " tide (ft NAVD88)", key: "" });
     var html = parts.map(function (p) {
@@ -1052,7 +1072,7 @@ function drawCreekCharts(st, now) {
   }).join(" &nbsp;");
 
   // Running rain total (e.g. Belmont's 4-hour rain) with its trigger line
-  if (c.rain_running) {
+  if (c.rain_running && c.rain_running.line) {
     var rr = c.rain_running, rp = pts(rr.gauge), run = [];
     for (var tt = Math.ceil(x0 / 600000) * 600000; tt <= now; tt += 600000) run.push({ x: H(tt), y: rainSum(rp, tt - rr.minutes * 60000, tt) });
     var runMax = Math.max(rr.line * 1.25, Math.max.apply(null, run.map(function (p) { return p.y; }).concat([0])) * 1.1);

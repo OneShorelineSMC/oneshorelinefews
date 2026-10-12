@@ -65,7 +65,8 @@ Each one is added to the OneRain dashboard as an iFrame/web-page widget pointing
 
 | File | Purpose |
 |------|---------|
-| `scripts/creek_config.py` | **The one place to edit creeks, gauges and flood thresholds**, plus each creek's button name, which rain totals it shows (to match its OneRain dashboard), and Belmont's rain triggers and 4-hour rain graph. The kiosk, phone page, home page and map all read them from the published data. |
+| `thresholds.csv` | **All flood thresholds**, one row per threshold: creek, gauge key, type (`stage` or `rain`), minutes (rain only), level (1 Monitoring · 2 Watch · 3 Warning · 4 beyond Warning), name, value (ft or in), `high_tide` (rain only: `yes` if the tide must also be high), source and notes. Edit it on GitHub like a table (pencil icon). Changes reach every page on the next data run (within ~5 minutes). If a row has a mistake, the job keeps the last good thresholds and shows a red ✗ with the row number in the Actions tab. Rain rows count toward the creek's status, like Belmont's flooding-likely triggers. |
+| `scripts/creek_config.py` | Creeks and gauges (OneRain sensor IDs), plus each creek's button name, which rain totals it shows (to match its OneRain dashboard), and Belmont's 4-hour rain graph. (Thresholds are in `thresholds.csv`.) The kiosk, phone page, home page and map all read them from the published data. |
 | `scripts/fetch_onerain.py` | Reads the last 48 hours of every creek gauge in `creek_config.py` from OneRain's **public** sensor pages (OneRain's data export requires a login; the public pages don't). |
 | `scripts/fetch_sites.py` | Reads every **public** site from OneRain's Sites list: its location, each sensor's latest reading, and the last 24 hours for the small graphs and rain totals. Battery/voltage/signal sensors are left out, and sites with no other sensors (e.g. radio repeaters) don't appear. Alert levels for the map are set in `THRESHOLDS` at the top. |
 | `.github/workflows/onerain.yml` | GitHub Action that runs both scripts and publishes the results to the **`data`** branch as `creeks.json` (every run, about every 5 minutes; also copied to `sanbruno.json`, its old name) and `sites.json` (about every 15 minutes), replacing them each time (so it doesn't add commits to `main`). |
@@ -76,6 +77,8 @@ the map and the kiosk's Map tab read `.../data/sites.json`.
 ---
 
 ## Stations, sensors and thresholds
+
+(Current values; `thresholds.csv` is the source.)
 
 | What | Source | ID | Notes |
 |------|--------|----|-------|

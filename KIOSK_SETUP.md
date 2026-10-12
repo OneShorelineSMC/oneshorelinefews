@@ -103,6 +103,11 @@ own map:
   (see below), so the map can lag OneRain by up to about 20 minutes.
 - **Alert levels** on the map come from the creek gauges and thresholds in `scripts/creek_config.py`.
 
+## Title bar
+
+A slim OneShoreline-blue bar across the top of every tab reads **FLOOD EARLY WARNING SYSTEM | OneShoreline |
+San Mateo County**, above the NWS alert bar.
+
 ## About tab
 
 The **About** button shows what each tab means, an "in an emergency, call 911" reminder, OneShoreline's
@@ -152,9 +157,10 @@ If a gauge hasn't reported for a while (12 hours for gauges that report when the
 gauges that report on a schedule), it shows **"Gauge may be offline"** with the last report time instead of
 presenting an old reading as current.
 
-**Adding or changing a creek, gauge or threshold:** edit `scripts/creek_config.py` in the repo. It's the one
-place for creeks, gauges and thresholds; the kiosk, the phone page, the home page and the map all pick up the
-change on the next data run (about 5 minutes after you commit).
+**Changing a threshold:** edit `thresholds.csv` at the top of the repo (one row per threshold). **Adding a creek
+or gauge:** edit `scripts/creek_config.py`. The kiosk, the phone page, the home page and the map all pick up the
+change on the next data run (about 5 minutes after you commit). A mistake in `thresholds.csv` never changes the
+screens: the job keeps the last good thresholds and shows the problem row in the Actions tab.
 
 ### How the creek data gets to the kiosk (one-time setup)
 

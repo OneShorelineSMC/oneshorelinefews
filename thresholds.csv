@@ -1,0 +1,19 @@
+creek,gauge,gauge_name,type,minutes,level,name,value,high_tide,source,notes
+colma,col_stage,Colma Creek at Orange Memorial Park (41101),stage,,1,Flood Monitoring,3.40,,OneRain sensor thresholds (Oct 2026),
+colma,col_stage,Colma Creek at Orange Memorial Park (41101),stage,,2,Flood Watch,5.00,,OneRain sensor thresholds (Oct 2026),
+colma,col_stage,Colma Creek at Orange Memorial Park (41101),stage,,3,Flood Warning,6.75,,OneRain sensor thresholds (Oct 2026),
+sanbruno,stage,San Bruno Creek at First Avenue (41102),stage,,1,Flood Monitoring,2.40,,OneRain sensor thresholds (Oct 2026),
+sanbruno,stage,San Bruno Creek at First Avenue (41102),stage,,2,Flood Watch,3.60,,OneRain sensor thresholds (Oct 2026),
+sanbruno,stage,San Bruno Creek at First Avenue (41102),stage,,3,Flood Warning,4.80,,OneRain sensor thresholds (Oct 2026),
+belmont,bel_stage,Belmont Creek at Old County Rd (41104),stage,,1,Flood Monitoring,2.25,,OneRain sensor thresholds (Oct 2026),
+belmont,bel_stage,Belmont Creek at Old County Rd (41104),stage,,2,Flood Watch,3.25,,OneRain sensor thresholds (Oct 2026),
+belmont,bel_stage,Belmont Creek at Old County Rd (41104),stage,,3,Flood Warning,4.00,,OneRain sensor thresholds (Oct 2026),
+belmont,bel_rain,Belmont Creek at Old County Rd (41104) rain,rain,30,3,Flooding likely (rain),0.20,no,Belmont Creek OneRain dashboard (Oct 2026),Flooding likely if 30-minute rain exceeds 0.20 in
+belmont,bel_rain,Belmont Creek at Old County Rd (41104) rain,rain,240,3,Flooding likely (rain + tide),0.42,yes,Belmont Creek OneRain dashboard (Oct 2026),Flooding likely if 4-hour rain exceeds 0.42 in and the tide is high
+atherton,ath_alameda,Atherton Channel at Alameda de las Pulgas (41107),stage,,1,Flood Monitoring,3.18,,OneRain sensor thresholds (Oct 2026),
+atherton,ath_alameda,Atherton Channel at Alameda de las Pulgas (41107),stage,,2,Flood Watch,4.60,,OneRain sensor thresholds (Oct 2026),
+atherton,ath_alameda,Atherton Channel at Alameda de las Pulgas (41107),stage,,3,Flood Warning,5.65,,OneRain sensor thresholds (Oct 2026),
+atherton,ath_alameda,Atherton Channel at Alameda de las Pulgas (41107),stage,,4,Roadway Flooded,10.40,,OneRain sensor thresholds (Oct 2026),Water detected on road
+atherton,ath_caltrain,Atherton Channel upstream of CalTrain (41106),stage,,1,Flood Monitoring,2.80,,OneRain sensor thresholds (Oct 2026),
+atherton,ath_caltrain,Atherton Channel upstream of CalTrain (41106),stage,,2,Flood Watch,4.10,,OneRain sensor thresholds (Oct 2026),
+atherton,ath_caltrain,Atherton Channel upstream of CalTrain (41106),stage,,3,Flood Warning,5.50,,OneRain sensor thresholds (Oct 2026),

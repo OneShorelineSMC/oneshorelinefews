@@ -543,7 +543,7 @@ function drawCharts(st, now) {
       h += '<div class="gtitle"><span><b style="color:' + col + '">' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + "</span><span>in/hr</span></div>" +
         '<div class="gbox" style="height:64px"><canvas id="chRain' + i + '"></canvas></div>';
     });
-    if (c.rain_running) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span style="color:#e07b00">- - trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
+    if (c.rain_running && c.rain_running.line) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span style="color:#e07b00">- - trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
       '<div class="gbox" style="height:80px"><canvas id="chRun"></canvas></div>';
     st.stages.forEach(function (s, i) {
       h += '<div class="gtitle"><span>' + esc(s.g.label) + " · stage (ft)</span><span></span></div>" +
@@ -597,7 +597,7 @@ function drawCharts(st, now) {
       backgroundColor: st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5", barThickness: Math.max(2, Math.floor(pxPerHr * 0.8)) }] }, options: o });
   });
   // running rain total (e.g. Belmont's 4-hour rain) with its trigger line
-  if (c.rain_running) {
+  if (c.rain_running && c.rain_running.line) {
     var rr = c.rain_running, rp = pts(rr.gauge), run = [];
     for (var tt = Math.ceil(x0 / 600000) * 600000; tt <= now; tt += 600000) run.push({ x: H(tt), y: rainSum(rp, tt - rr.minutes * 60000, tt) });
     var top = Math.ceil(Math.max(rr.line * 1.25, Math.max.apply(null, run.map(function (p) { return p.y; }).concat([0])) * 1.1) * 10) / 10;
