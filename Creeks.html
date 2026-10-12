@@ -58,13 +58,17 @@
   .ssub { font-size: 14.5px; margin-top: 4px; }
   .snote { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
   /* Creek switcher */
-  .pick { display: flex; gap: 6px; overflow-x: auto; padding: 10px 12px 2px; max-width: 720px; margin: 0 auto;
-    -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .pick::-webkit-scrollbar { display: none; }
-  .pick button { flex: none; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: inherit;
-    font-size: 14.5px; font-weight: 600; padding: 7px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; }
-  .pick button.on { background: var(--ink); border-color: var(--ink); color: var(--card); }
-  .pick button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  /* All four creeks always visible: one tile each, with its current status */
+  .pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px 12px 2px; max-width: 720px; margin: 0 auto; }
+  @media (max-width: 340px) { .pick { grid-template-columns: repeat(2, 1fr); } }
+  .pick button { min-width: 0; border: 2px solid var(--line); border-top-width: 5px; background: var(--card); color: var(--ink);
+    font: inherit; padding: 6px 3px 7px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 1px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
+  .pick button .nm { font-size: 14.5px; font-weight: 700; white-space: nowrap; }
+  .pick button .stt { font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .pick button.on { border-color: var(--ink); background: var(--soft); box-shadow: inset 0 0 0 1px var(--ink); }
+  .two.stack { grid-template-columns: 1fr; }
+  table.rain.one th, table.rain.one td { text-align: center !important; }
   table.rain th { white-space: nowrap; padding-left: 8px !important; }
   table.rain td + td { padding-left: 8px; }
   .intro { font-size: 13.5px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.4; }
@@ -138,8 +142,8 @@
   <div id="creekView">
     <div class="intro" id="intro"></div>
     <div id="stages"></div>
-    <div class="two">
-      <div class="card"><div class="lbl">Rainfall (inches)</div><div id="rainTable"></div></div>
+    <div class="two" id="rainBox">
+      <div class="card"><div class="lbl" id="rainLbl">Rainfall (inches)</div><div id="rainTable"></div></div>
       <div class="card">
         <div class="lbl" id="tideLbl">Tide (measured)</div>
         <div class="mid"><span id="tide">–</span><small> ft</small></div>
@@ -350,7 +354,7 @@ function creekState(c, now) {
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null });
     if (lvl && !late && (!st.top || lvl.level > st.top.level)) st.top = lvl;
   });
-  c.rain.forEach(function (g) { var p = pts(g.key); st.rains.push({ g: g, p: p, r1: rainSum(p, now - 3600000, now), r24: rainSum(p, now - 86400000, now) }); });
+  c.rain.forEach(function (g) { var p = pts(g.key); st.rains.push({ g: g, p: p, w: rainWindows(c).map(function (m) { return rainSum(p, now - m * 60000, now); }) }); });
   var T = D.tides[c.tide], tn = tideNow(T, now), tv = tn ? tn.v : predAt(T, now);
   st.tideHigh = tv != null && T && T.st.mhhw != null && tv >= T.st.mhhw;
   (c.rain_triggers || []).forEach(function (tr) {
@@ -359,6 +363,16 @@ function creekState(c, now) {
     if (met && !late && (!st.top || tr.level > st.top.level)) st.top = tr;
   });
   return st;
+}
+
+function rainWindows(c) { return (c.rain_windows || [60, 1440]).slice().sort(function (a, b) { return a - b; }); }
+function winLabel(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
+// One or two words for a creek's tile: its level, or Offline / Delayed / Normal
+function statusWord(st) {
+  if (st.top) return { w: st.top.minutes ? "Rain trigger" : st.top.name.replace("Flood ", ""), col: st.top.level === 1 ? "#8a6d00" : st.top.color, bar: st.top.color };
+  if (st.late) return { w: "Delayed", col: "var(--muted)", bar: "#8a96a3" };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: "Offline", col: "var(--muted)", bar: "#8a96a3" };
+  return { w: "Normal", col: "var(--green)", bar: "#2e7d32" };
 }
 
 function render() {
@@ -371,17 +385,16 @@ function render() {
   var states = creeks().map(function (x) { return creekState(x, now); });
   var st = states.filter(function (x) { return x.c === c; })[0];
 
-  // creek buttons, each with a dot in its alert color
+  // creek tiles: short name plus current status, with a bar in the status color
   $("pick").innerHTML = states.map(function (x) {
-    return '<button data-creek="' + esc(x.c.id) + '" class="' + (x.c === c ? "on" : "") + '">' +
-      (x.top ? '<i style="background:' + x.top.color + '"></i>' : "") + esc(x.c.name) + "</button>";
+    var s = statusWord(x);
+    return '<button data-creek="' + esc(x.c.id) + '" class="' + (x.c === c ? "on" : "") + '" style="border-top-color:' + s.bar + '"' +
+      ' aria-label="' + esc(x.c.name) + ": " + s.w + '"><span class="nm">' + esc(x.c.short || x.c.name) + '</span><span class="stt" style="color:' + s.col + '">' + s.w + "</span></button>";
   }).join("");
   var worst = states.filter(function (x) { return x.top; }).sort(function (a, b) { return b.top.level - a.top.level; })[0];
   $("navDot").style.display = worst ? "inline-block" : "none";
   if (worst) $("navDot").style.background = worst.top.color;
   document.title = c.name + " – OneShoreline";
-  var onBtn = $("pick").querySelector("button.on");
-  if (onBtn && onBtn.scrollIntoView && D.scrolledTo !== c.id) { D.scrolledTo = c.id; onBtn.scrollIntoView({ block: "nearest", inline: "center" }); }
   $("intro").textContent = c.intro;
 
   // each gauge's level
@@ -400,12 +413,19 @@ function render() {
 
   // rain + triggers
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
-  $("rainTable").innerHTML = '<table class="rain"><tr><th></th><th>1 hr</th><th>24 hr</th></tr>' + st.rains.map(function (r) {
-    return "<tr><td>" + esc(r.g.label) + (st.rains.length > 1 ? ' <span class="lbl">' + esc(r.g.where.replace(" watershed", "")) + "</span>" : "") +
-      "</td><td><b>" + inch(r.r1) + "</b></td><td><b>" + inch(r.r24) + "</b></td></tr>"; }).join("") + "</table>" +
+  var wins = rainWindows(c);
+  $("rainBox").classList.toggle("stack", wins.length > 2);
+  $("rainLbl").textContent = st.rains.length === 1 ? "Rain at " + st.rains[0].g.label + " (inches)" : "Rainfall (inches)";
+  $("rainTable").innerHTML = (st.rains.length === 1
+    ? '<table class="rain one"><tr>' + wins.map(function (m) { return "<th>" + winLabel(m) + "</th>"; }).join("") + "</tr><tr>" +
+      st.rains[0].w.map(function (v) { return "<td><b>" + inch(v) + "</b></td>"; }).join("") + "</tr></table>"
+    : '<table class="rain"><tr><th></th>' + wins.map(function (m) { return "<th>" + winLabel(m) + "</th>"; }).join("") + "</tr>" + st.rains.map(function (r) {
+      return "<tr><td>" + esc(r.g.label) + ' <span class="lbl">' + esc(r.g.where.replace(" watershed", "")) + "</span></td>" +
+        r.w.map(function (v) { return "<td><b>" + inch(v) + "</b></td>"; }).join("") + "</tr>"; }).join("") + "</table>") +
     st.triggers.map(function (x) {
-      return '<div class="trig' + (x.met ? " met" : "") + '">' + esc(x.tr.label) + ": <b>" + x.amt.toFixed(2) + "</b> of " + x.tr.value.toFixed(2) + " in" +
-        (x.tr.high_tide ? " · tide " + (st.tideHigh ? "<b>high</b>" : "not high") : "") + (x.met ? " — " + esc(x.tr.name) : "") + "</div>"; }).join("");
+      return '<div class="trig' + (x.met ? " met" : "") + '">Flooding-likely trigger: ' + winLabel(x.tr.minutes) + " rain ≥ " + x.tr.value.toFixed(2) + " in" +
+        (x.tr.high_tide ? " + high tide" : "") + " · <b>" + (x.met ? "MET" : "not met") + "</b>" +
+        (x.tr.high_tide && !x.met ? " (tide " + (st.tideHigh ? "high" : "not high") + ")" : "") + "</div>"; }).join("");
 
   // tide now
   var T = D.tides[c.tide], tl = tideNow(T, now);
@@ -449,6 +469,8 @@ function drawCharts(st, now) {
       h += '<div class="gtitle"><span><b style="color:' + col + '">' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + "</span><span>in/hr</span></div>" +
         '<div class="gbox" style="height:64px"><canvas id="chRain' + i + '"></canvas></div>';
     });
+    if (c.rain_running) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span style="color:#e07b00">- - trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
+      '<div class="gbox" style="height:80px"><canvas id="chRun"></canvas></div>';
     st.stages.forEach(function (s, i) {
       h += '<div class="gtitle"><span>' + esc(s.g.label) + " · stage (ft)</span><span></span></div>" +
         '<div class="gbox" style="height:' + (st.stages.length > 1 ? 150 : 170) + 'px"><canvas id="chStage' + i + '"></canvas></div>';
@@ -500,6 +522,16 @@ function drawCharts(st, now) {
     put("chRain" + i, { type: "bar", data: { datasets: [{ label: st.rains[i].g.label + " (in)", data: sr,
       backgroundColor: st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5", barThickness: Math.max(2, Math.floor(pxPerHr * 0.8)) }] }, options: o });
   });
+  // running rain total (e.g. Belmont's 4-hour rain) with its trigger line
+  if (c.rain_running) {
+    var rr = c.rain_running, rp = pts(rr.gauge), run = [];
+    for (var tt = Math.ceil(x0 / 600000) * 600000; tt <= now; tt += 600000) run.push({ x: H(tt), y: rainSum(rp, tt - rr.minutes * 60000, tt) });
+    var top = Math.ceil(Math.max(rr.line * 1.25, Math.max.apply(null, run.map(function (p) { return p.y; }).concat([0])) * 1.1) * 10) / 10;
+    var qo = base(false); qo.scales.y = yScale(0, top, top / 2);
+    put("chRun", { data: { datasets: [
+      { label: "Trigger", data: [{ x: H(x0), y: rr.line }, { x: H(x1), y: rr.line }], borderColor: "#e07b00", borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, pointHoverRadius: 0 },
+      { label: rr.label, data: run, borderColor: "#1e88e5", backgroundColor: "rgba(30,136,229,0.15)", borderWidth: 2, pointRadius: 0, fill: "origin" }] }, options: qo });
+  }
   // stage for each gauge, with its thresholds
   st.stages.forEach(function (s, i) {
     var g = s.g, ths = g.thresholds || [];

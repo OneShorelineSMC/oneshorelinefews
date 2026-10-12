@@ -118,15 +118,19 @@ on its own after 2 minutes and isn't part of the automatic tab rotation.
 
 ## Creeks tab
 
-The **Creeks** tab shows one creek at a time. Buttons across the top switch between **Colma Creek**,
-**San Bruno Creek**, **Belmont Creek** and **Atherton Channel**; each button turns yellow, orange or red when
-that creek is at a flood level. The NWS alert bar stays at the top on every tab.
+The **Creeks** tab opens on **All creeks**: one card per creek (Colma, San Bruno, Belmont, Atherton) with its
+status, each gauge's current level, rain totals, Belmont's rain triggers and the tide. Tap a card, or a creek
+button across the top, for that creek's graphs. Each button turns yellow, orange or red when that creek is at a
+flood level. A single creek goes back to All creeks after 5 minutes (`CREEK_RETURN_MIN`). The NWS alert bar
+stays at the top on every tab.
 
 For the chosen creek, all on one time axis (last 36 hours plus the next 12 hours of predicted tide):
 
 - **Each stage gauge** (Atherton Channel has two) with its current level, colored by the highest threshold
   passed, and a graph with its Flood Monitoring / Watch / Warning lines
-- **Rain per hour** at the creek's rain gauge(s), with 1-hour and 24-hour totals
+- **Rain per hour** at the creek's rain gauge(s), with the same rain totals as the creek's OneRain dashboard
+  (Atherton 30 min; Belmont 30 min and 4 hr; Colma 6 hr; plus 1 hr and 24 hr). Belmont also has a 4-hour
+  running-total graph with its 0.42 in trigger line.
 - **The Bay tide** at the nearest NOAA station (Alameda or Redwood City), measured and predicted. Creeks near
   the Bay rise and fall with the tide, so this shows whether a rise is coming from rain, the tide, or both.
 - **Belmont Creek's rain triggers**: flooding is likely if 30-minute rain exceeds 0.20 in, or 4-hour rain
@@ -210,6 +214,7 @@ Near the top of the `<script>` section in `ShorelineKiosk.html`:
 | `CREEK_AUTO_SWITCH_AT_WARNING` | true | Switch to the creek tab when the creek reaches Flood Warning |
 | `SITES_URL`           | data branch file | Where the Map tab reads its data        |
 | `SITE_QUIET_HOURS`    | 24      | Silence after which a map site shows gray ("not reporting") |
+| `CREEK_RETURN_MIN`    | 5       | A single creek returns to the All creeks summary after this long (0 = stay) |
 | `ROTATE_SECONDS`      | 0       | Switch tabs automatically (0 = off)             |
 | `TAB_RETURN_MIN`      | 0       | Return to Bay Tides after this long on the creek tab (0 = off) |
 | `CONTACT_URL`         | OneShoreline contact page | Where the "Contact OneShoreline" QR code points |
