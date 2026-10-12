@@ -1,0 +1,151 @@
+# OneShoreline Early Warning – web widgets and kiosk
+
+Code for OneShoreline's San Francisco Bay and San Bruno Creek monitoring displays:
+
+- **Widgets for the OneRain (Contrail) dashboard**: NWS alerts, tide forecasts, and tides above MHHW
+- **A Raspberry Pi kiosk** for the office and EOC: one screen with Bay tides, San Bruno Creek, and NWS alerts
+- **A San Bruno Creek page for phones**: creek stage, rainfall, tide and NWS alerts, with contact info
+- **A sensor map** of every public OneRain site (phone and desktop page, plus a Map tab on the kiosk)
+- **A scheduled data job** that collects OneRain readings for the kiosk, phone page and map
+
+Everything is plain HTML/JavaScript served by GitHub Pages from this repo
+(`github.com/OneShorelineSMC/oneshorelinefews`) at OneShoreline's own web address:
+
+```
+https://fews.oneshoreline.org/<file name>
+```
+
+The `CNAME` file tells GitHub Pages to use that address; don't delete it. The home page
+(`https://fews.oneshoreline.org/`) is `index.html`, which links to the public pages.
+
+The pages get live data straight from public sources (NOAA, National Weather Service, and OneRain's public
+sensor pages). There are no servers to run and no accounts or API keys involved, except the one GitHub token
+described under *Creek data job*.
+
+---
+
+## Files
+
+### Home page
+
+| File | Purpose |
+|------|---------|
+| `index.html` | Landing page at `https://fews.oneshoreline.org/`: links to the San Bruno Creek page, the sensor map and OneRain, plus SMC Alert sign-up, contact info and the disclaimer. |
+| `CNAME` | Tells GitHub Pages the site's address (`fews.oneshoreline.org`). |
+
+### Dashboard widgets (used in OneRain)
+
+Each one is added to the OneRain dashboard as an iFrame/web-page widget pointing at its GitHub Pages URL.
+
+| File | What it shows |
+|------|---------------|
+| `NWSAlertsSanMateo.html` | Active NWS watches, warnings and advisories for San Mateo County, with a color-coded status banner (red = warning, amber = watch/advisory, green = none), the full alert text formatted into What / Where / When / Impacts, links to the official NWS page, and an SMC Alert sign-up link. |
+| `RWC_MHHWWindows.html` | Redwood City: a plain-language summary and table of the days and times high tides are **predicted** above MHHW over the next 7 days, plus the **measured** water level now (rising/falling, and how far above or below the prediction) and the highest predicted tide of the week. |
+| `Alameda_MHHWWindows.html` | Same as above for Alameda. |
+| `RWC_graph.html` | Redwood City graph: the past 48 hours of measured water level over the predicted tide, then the next 7 days of predictions. Tides above MHHW are shaded red, with a "Now" line. Works on phones. |
+| `Alameda_graph.html` | Same as above for Alameda. |
+| `RWC_PeakOutlook.html`, `Alameda_PeakOutlook.html` | *Optional / older.* Large single number: highest predicted tide in the next 7 days. The MHHW widgets now include this, so these are only needed if still on the dashboard. |
+
+### Raspberry Pi kiosk
+
+| File | Purpose |
+|------|---------|
+| `ShorelineKiosk.html` | The kiosk page, designed for a 7" 800×480 touchscreen (scales to any screen). Tabs: **Bay Tides** (both stations: measured vs predicted, next time above MHHW, 9-day graph), **San Bruno Creek** (creek stage with flood thresholds, rainfall at two gauges, Alameda tide, all on one timeline), **Map** (every public OneRain site, colored by status; tap one for its readings), **About** (contact info and QR codes), and **Disclaimer**. An NWS alert bar stays on top of every tab, and a creek alert strip appears when the creek reaches Flood Monitoring / Watch / Warning level. |
+| `KIOSK_SETUP.md` | Step-by-step Raspberry Pi setup, kiosk options, and all settings. |
+
+### Phone page
+
+| File | Purpose |
+|------|---------|
+| `SanBrunoCreekMobile.html` | San Bruno Creek page designed for phones, at `https://fews.oneshoreline.org/SanBrunoCreekMobile.html`. **Creek** tab: NWS alert banner (tap for full text), creek stage with its level and thresholds (or "Gauge may be offline" with the last report), rainfall at both gauges, the Alameda tide measured vs predicted, and the rain / creek stage / tide graphs on one timeline. **About** tab: what the page shows, "In an emergency, call 911", SMC Alert sign-up, tap-to-call / email / website buttons for OneShoreline, and the data disclaimer (also linked under the graphs). Follows the phone's dark mode, refreshes automatically, and can be saved to the home screen (iPhone: Share → Add to Home Screen). `#about` at the end of the URL opens the About tab. A **Map** button opens the sensor map. |
+| `SiteMap.html` | Map of every public OneRain site, for phones and computers, at `https://fews.oneshoreline.org/SiteMap.html`. Markers are colored by status (reporting, Flood Monitoring / Watch / Warning level, not reporting); square markers are rain-only gauges. Tap a site for its latest readings, how long ago they came in, a 24-hour graph, and a link to the full data on OneRain. **List** shows all sites grouped by status; **Rain 24 h** labels each site with its 24-hour rain total. `#site=41102` at the end of the URL opens that site (use the site number OneRain shows in parentheses). |
+
+### Creek data job
+
+| File | Purpose |
+|------|---------|
+| `scripts/fetch_onerain.py` | Reads the last 72 hours of San Bruno Creek stage and both rain gauges from OneRain's **public** sensor pages (OneRain's data export requires a login; the public pages don't). |
+| `scripts/fetch_sites.py` | Reads every **public** site from OneRain's Sites list: its location, each sensor's latest reading, and the last 24 hours for the small graphs and rain totals. Battery/voltage/signal sensors are left out, and sites with no other sensors (e.g. radio repeaters) don't appear. Alert levels for the map are set in `THRESHOLDS` at the top. |
+| `.github/workflows/onerain.yml` | GitHub Action that runs both scripts and publishes the results to the **`data`** branch as `sanbruno.json` (every run, about every 5 minutes) and `sites.json` (about every 15 minutes), replacing them each time (so it doesn't add commits to `main`). |
+
+The kiosk and the phone page read `https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/sanbruno.json`;
+the map and the kiosk's Map tab read `.../data/sites.json`.
+
+---
+
+## Stations, sensors and thresholds
+
+| What | Source | ID | Notes |
+|------|--------|----|-------|
+| Redwood City tide gauge | NOAA | 9414523 | MHHW = 7.02 ft NAVD88 |
+| Alameda tide gauge | NOAA | 9414750 | MHHW = 6.37 ft NAVD88 |
+| San Bruno Creek at First Avenue – stage | OneRain | site 41102 (site_id 11, device_id 3) | Flood Monitoring 2.40 ft · Flood Watch 3.60 ft · Flood Warning 4.80 ft |
+| San Bruno Creek at First Avenue – rain | OneRain | site 41102 (site_id 11, device_id 5) | Rain increment (inches per report) |
+| San Bruno Mountain – rain | OneRain | site 41200 (site_id 3, device_id 2) | Rain increment (inches per report) |
+| NWS alerts | api.weather.gov | San Mateo County (FIPS 006081) | |
+| All other OneRain sites (map) | OneRain | every site on the public Sites list | Alert colors only where thresholds are set in `scripts/fetch_sites.py` |
+
+All water levels are in feet, NAVD88. Tide predictions come from NOAA and do **not** include storm surge,
+wind or runoff; the measured water level shows those effects.
+
+---
+
+## Keeping it running
+
+### Creek data job (every 5 minutes)
+
+GitHub's built-in scheduler doesn't reliably start this job, so it is triggered every 5 minutes by
+**cron-job.org** (job name: *OneShoreline – Fetch OneRain data*), which calls GitHub's "run workflow" API:
+
+```
+POST https://api.github.com/repos/OneShorelineSMC/oneshorelinefews/actions/workflows/onerain.yml/dispatches
+Body: {"ref":"main"}
+Headers: Authorization: Bearer <token> · Accept: application/vnd.github+json · Content-Type: application/json
+```
+
+- The cron-job.org job uses a **GitHub fine-grained personal access token** with **Resource owner:
+  OneShorelineSMC**, access to **only this repository**, and **Actions: Read and write** only. **The token
+  expires on the date chosen when it was created.** When it expires, the kiosk's creek tab and the phone page
+  show *"Creek data delayed"* and the map shows *"data delayed"*. To fix it: create a new token
+  (https://github.com/settings/personal-access-tokens/new, same settings) and paste it into the cron-job.org
+  job's `Authorization` header as `Bearer <token>`. If OneShorelineSMC requires approval for tokens, an
+  organization owner approves it under the organization's **Settings → Personal access tokens → Pending
+  requests**.
+- The map data (`sites.json`) is refreshed by the same job, every third run (about every 15 minutes).
+- Runs appear in the **Actions** tab. A red ✗ means OneRain couldn't be read; the log shows how many readings
+  were found for each sensor. If OneRain redesigns its sensor pages, `scripts/fetch_onerain.py` may need updating.
+- GitHub Actions is free for this public repository. If the repo were made private, every-5-minute runs would
+  exceed the free monthly allowance.
+- You can always run it by hand: **Actions → Fetch OneRain data → Run workflow**.
+
+### Updating a widget
+
+1. Edit the file on GitHub (pencil icon) and commit.
+2. GitHub Pages updates within a minute or two.
+3. In OneRain, add or bump a version number at the end of the widget URL (`?v=2`, `?v=3`, …) so browsers
+   don't show a cached copy.
+
+The Pi kiosk picks up changes at its daily 3 AM reload, or immediately if the Pi is rebooted. The phone page
+picks up changes the next time someone opens it (a pull-down refresh may be needed if it was already open).
+
+---
+
+## Data sources
+
+- **NOAA CO-OPS Tides & Currents API**: tide predictions and measured water levels
+  (`api.tidesandcurrents.noaa.gov`)
+- **National Weather Service API**: active alerts (`api.weather.gov`); official alert pages on
+  `forecast.weather.gov`
+- **OneShoreline Early Warning System (OneRain Contrail)**: creek stage, rainfall and all map sites
+  (`oneshorelineearlywarning.onerain.com`)
+- **OpenStreetMap**: map background (`tile.openstreetmap.org`, © OpenStreetMap contributors)
+
+## Contact
+
+OneShoreline (San Mateo County Flood and Sea Level Rise Resiliency District) ·
+1700 S. El Camino Real, Suite 502, San Mateo, CA 94402 · (650) 844-8310 · info@oneshoreline.org ·
+[oneshoreline.org](https://www.oneshoreline.org)
+
+## License
+
+GPL-3.0 – see `LICENSE`.

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#005085">
+<meta name="description" content="Real-time creek, rain and tide information from OneShoreline's flood early warning system in San Mateo County.">
+<title>OneShoreline Flood Early Warning</title>
+<style>
+  :root {
+    --bg: #f0f4f8; --card: #ffffff; --ink: #1a3a5c; --muted: #66768a; --line: #e3e8ee; --brand: #005085;
+    --ok: #2e7d32; --amber: #c77700; --red: #b71c1c; --gray: #6b7a8c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.45; }
+  header { background: var(--brand); color: #fff; padding: calc(22px + env(safe-area-inset-top)) 16px 22px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header .org { font-size: 14px; opacity: .85; letter-spacing: .02em; }
+  h1 { font-size: 28px; margin: 2px 0 6px; line-height: 1.2; }
+  header p { margin: 0; opacity: .92; font-size: 16px; max-width: 640px; }
+  main { padding: 16px 16px 32px; }
+
+  .status { display: grid; gap: 8px; margin-top: -2px; margin-bottom: 18px; }
+  .st { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 10px; padding: 10px 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07); border-left: 6px solid var(--gray); text-decoration: none; color: inherit; font-size: 15px; }
+  .st b { font-weight: 700; }
+  .st .sm { color: var(--muted); font-size: 13px; }
+  .st.ok { border-left-color: var(--ok); } .st.amber { border-left-color: var(--amber); } .st.red { border-left-color: var(--red); }
+  .st .go { margin-left: auto; color: var(--muted); font-size: 18px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  a.card { display: flex; flex-direction: column; background: var(--card); border-radius: 12px; padding: 16px;
+    text-decoration: none; color: inherit; box-shadow: 0 1px 4px rgba(0,0,0,.07); border: 1px solid transparent; }
+  a.card:hover, a.card:focus-visible { border-color: var(--brand); }
+  .card .ic { font-size: 26px; line-height: 1; }
+  .card h2 { font-size: 18px; margin: 8px 0 4px; }
+  .card p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .card .lnk { margin-top: auto; padding-top: 10px; font-size: 14px; font-weight: 600; color: var(--brand); }
+  @media (prefers-color-scheme: dark) { .card .lnk { color: #6ea8fe; } }
+
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 26px 0 8px; }
+  .alerts { background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .alerts p { margin: 0; flex: 1; min-width: 220px; font-size: 15px; }
+  .btn { display: inline-block; background: var(--brand); color: #fff; text-decoration: none; font-weight: 600;
+    padding: 10px 16px; border-radius: 9px; font-size: 15px; white-space: nowrap; }
+  .emerg { color: var(--red); font-weight: 700; margin: 14px 0 0; font-size: 15px; }
+  @media (prefers-color-scheme: dark) { .emerg { color: #ef5350; } }
+  .contact { font-size: 14.5px; }
+  .contact a { color: inherit; }
+  .fine { font-size: 13px; color: var(--muted); }
+  footer { border-top: 1px solid var(--line); margin-top: 26px; padding-top: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div>
+    <h1>Flood Early Warning</h1>
+    <p>Real-time creek levels, rainfall and San Francisco Bay tides from OneShoreline's monitoring network.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="status" aria-live="polite">
+    <a class="st" id="stNws" href="https://forecast.weather.gov/MapClick.php?lat=37.55&lon=-122.31" target="_blank" rel="noopener">
+      <span><b>National Weather Service:</b> <span id="nwsText">checking…</span><br><span class="sm">San Mateo County</span></span><span class="go">›</span></a>
+    <a class="st" id="stCreek" href="SanBrunoCreekMobile.html">
+      <span><b>San Bruno Creek:</b> <span id="creekText">checking…</span><br><span class="sm">at First Avenue</span></span><span class="go">›</span></a>
+    <a class="st" id="stSites" href="SiteMap.html">
+      <span><b>Monitoring network:</b> <span id="sitesText">checking…</span><br><span class="sm">all OneShoreline sites</span></span><span class="go">›</span></a>
+  </div>
+
+  <div class="grid">
+    <a class="card" href="SanBrunoCreekMobile.html">
+      <span class="ic">🌊</span><h2>San Bruno Creek</h2>
+      <p>Creek level at First Avenue with flood thresholds, rainfall in the upper and lower watershed, and the Bay tide.</p>
+      <span class="lnk">Open ›</span></a>
+    <a class="card" href="SiteMap.html">
+      <span class="ic">🗺️</span><h2>Sensor map</h2>
+      <p>Every public rain, creek and tide gauge in the network. Tap a site for its latest readings.</p>
+      <span class="lnk">Open map ›</span></a>
+    <a class="card" href="https://oneshorelineearlywarning.onerain.com/" target="_blank" rel="noopener">
+      <span class="ic">📈</span><h2>Detailed data</h2>
+      <p>Full history, graphs and tide outlooks on the OneShoreline Early Warning System (OneRain).</p>
+      <span class="lnk">Open OneRain ↗</span></a>
+  </div>
+
+  <h3>Get alerts</h3>
+  <div class="alerts">
+    <p>Sign up for <b>SMC Alert</b> to get emergency alerts for San Mateo County by text, email or phone.</p>
+    <a class="btn" href="https://www.smcgov.org/dem/smc-alert" target="_blank" rel="noopener">Sign up for SMC Alert</a>
+  </div>
+  <p class="emerg">In an emergency, call 911.</p>
+
+  <h3>Contact</h3>
+  <div class="contact">
+    <b>OneShoreline</b> · 1700 S. El Camino Real, Suite 502, San Mateo, CA 94402<br>
+    <a href="tel:+16508448310">(650) 844-8310</a> · <a href="mailto:info@oneshoreline.org">info@oneshoreline.org</a> ·
+    <a href="https://www.oneshoreline.org" target="_blank" rel="noopener">oneshoreline.org</a>
+  </div>
+
+  <footer>
+    <p class="fine"><b>Disclaimer:</b> Data provided for informational purposes only; OneShoreline is not liable for data errors or mis-interpretation of data by users of this site. Thresholds shown are approximate and will be updated as more information about the hydrologic response of the watershed is gleaned from the monitoring data. Actual flood conditions may vary based on channel blockages, sensor errors, or other complications.</p>
+    <p class="fine">Data: OneShoreline Early Warning System (OneRain), National Weather Service, NOAA Tides &amp; Currents.
+      <a href="ShorelineKiosk.html" style="color:inherit">Office display</a></p>
+  </footer>
+</main>
+
+<script>
+var DATA = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
+var COUNTY_SAME = "006081";
+function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4]); }
+function nowLocal() {
+  var p = {}; new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hourCycle: "h23", year: "numeric",
+    month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" }).formatToParts(new Date())
+    .forEach(function (x) { p[x.type] = +x.value; });
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
+}
+function set(id, cls, text) {
+  var el = document.getElementById(id); el.classList.remove("ok", "amber", "red"); if (cls) el.classList.add(cls);
+  el.querySelector("span span").textContent = text;
+}
+function getJSON(url, accept) {
+  return fetch(url, { cache: "no-store", headers: accept ? { Accept: accept } : {} })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+}
+
+function nws() {
+  getJSON("https://api.weather.gov/alerts/active?area=CA", "application/geo+json").then(function (d) {
+    var list = (d.features || []).map(function (f) { return f.properties; }).filter(function (p) {
+      return (p.geocode && p.geocode.SAME || []).some(function (s) { return String(s).slice(-6) === COUNTY_SAME; });
+    });
+    var names = []; list.forEach(function (p) { if (names.indexOf(p.event) < 0) names.push(p.event); });
+    var warn = names.some(function (n) { return /warning|emergency/i.test(n); });
+    set("stNws", !names.length ? "ok" : warn ? "red" : "amber", names.length ? names.join(", ") : "No watches, warnings or advisories");
+  }).catch(function () { set("stNws", "", "unavailable right now"); });
+}
+
+var LEVELS = [{ v: 2.40, n: "Flood Monitoring level", c: "amber" }, { v: 3.60, n: "Flood Watch level", c: "amber" }, { v: 4.80, n: "Flood Warning level", c: "red" }];
+function creek() {
+  getJSON(DATA + "sanbruno.json?t=" + Date.now()).then(function (d) {
+    var s = d.sensors && d.sensors.stage, last = s && (s.points && s.points.length ? s.points[s.points.length - 1] : s.latest);
+    if (!last) throw new Error("none");
+    var ageH = (nowLocal() - parseLocal(last[0])) / 36e5;
+    if (ageH > 12) { set("stCreek", "", "gauge may be offline"); return; }
+    var lvl = null; LEVELS.forEach(function (l) { if (last[1] >= l.v) lvl = l; });
+    set("stCreek", lvl ? lvl.c : "ok", last[1].toFixed(2) + " ft · " + (lvl ? lvl.n : "below flood levels"));
+  }).catch(function () { set("stCreek", "", "unavailable right now"); });
+}
+
+function sites() {
+  getJSON(DATA + "sites.json?t=" + Date.now()).then(function (d) {
+    var now = nowLocal(), n = 0, alert = 0, top = 0, off = 0;
+    (d.sites || []).forEach(function (site) {
+      if (!site.sensors || !site.sensors.length) return;
+      n++;
+      var newest = 0, lvl = 0;
+      site.sensors.forEach(function (s) {
+        if (s.time) newest = Math.max(newest, parseLocal(s.time));
+        if (s.thresholds && s.value != null) s.thresholds.forEach(function (t) { if (s.value >= t.value) lvl = Math.max(lvl, t.level); });
+      });
+      if (!newest || now - newest > 24 * 36e5) off++;
+      else if (lvl) { alert++; top = Math.max(top, lvl); }
+    });
+    set("stSites", alert ? (top >= 3 ? "red" : "amber") : "ok",
+      alert ? alert + (alert === 1 ? " site" : " sites") + " at an alert level" : (n - off) + " of " + n + " sites reporting, none at an alert level");
+  }).catch(function () { set("stSites", "", "unavailable right now"); });
+}
+function all() { nws(); creek(); sites(); }
+all();
+setInterval(all, 5 * 60000);
+document.addEventListener("visibilitychange", function () { if (!document.hidden) all(); });
+</script>
+</body>
+</html>
