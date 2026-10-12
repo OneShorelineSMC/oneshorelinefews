@@ -28,7 +28,8 @@ MAX_POINTS = 96      # graph points kept per sensor (keeps the file small)
 PAUSE_SEC = 0.25     # pause between requests, to be gentle on OneRain
 
 # Housekeeping sensors that aren't useful to the public (matched against the sensor name).
-SKIP_SENSORS = re.compile(r"batter|volt|signal|rssi|solar|charg|enclosure|door|logger|modem|status", re.I)
+SKIP_SENSORS = re.compile(r"batter|volt|signal|rssi|solar|charg|enclosure|door|logger|modem|status"
+                          r"|\d+\s*-?\s*h(ou)?r\b", re.I)   # also OneRain's "4 Hr Accumulation"-style roll-ups
 
 # Alert levels drawn on the map. Key: the site's number in parentheses on OneRain, then a word in the
 # sensor's name. Levels are in the sensor's own units, lowest first. Add more as they are set.
@@ -148,6 +149,20 @@ def summarize(sensor, hist, start, now):
     sensor["points"] = [[t.strftime("%Y-%m-%d %H:%M"), round(v, 3)] for t, v in keep]
 
 
+def tidy(sensors):
+    """Drop repeats (same name, value and time) and, where a gauge has both, the running rain total
+    (season accumulation), keeping the rain increment, which gives the 1- and 24-hour totals."""
+    seen, out = set(), []
+    for s in sensors:
+        key = (s["name"].lower(), s["value"], s["time"])
+        if key not in seen:
+            seen.add(key)
+            out.append(s)
+    if any(rain_kind(s) == "increment" for s in out):
+        out = [s for s in out if rain_kind(s) != "accumulation"]
+    return out
+
+
 def add_thresholds(number, sensor):
     for word, levels in THRESHOLDS.get(number, {}).items():
         if word.lower() in sensor["name"].lower():
@@ -187,6 +202,7 @@ def main():
             (lat, lon), sensors = parse_site(session.get(entry["url"]))
             time.sleep(PAUSE_SEC)
             sensors = [s for s in sensors if s["name"] and not SKIP_SENSORS.search(s["name"])]
+            sensors = tidy(sensors)
             if lat is None or not sensors:
                 print(f"  {name}: skipped ({'no location' if lat is None else 'no public sensors'})")
                 continue
