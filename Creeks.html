@@ -64,7 +64,8 @@
   .pick button { min-width: 0; border: 2px solid var(--line); border-top-width: 5px; background: var(--card); color: var(--ink);
     font: inherit; padding: 6px 3px 7px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 1px;
     box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
-  .pick button .nm { font-size: 14.5px; font-weight: 700; white-space: nowrap; }
+  .pick button .nm { font-size: clamp(12.5px, 3.7vw, 15px); font-weight: 700; line-height: 1.15; text-align: center;
+    overflow-wrap: anywhere; }
   .pick button .stt { font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .pick button.on { border-color: var(--ink); background: var(--soft); box-shadow: inset 0 0 0 1px var(--ink); }
   .two.stack { grid-template-columns: 1fr; }
@@ -389,7 +390,7 @@ function render() {
   $("pick").innerHTML = states.map(function (x) {
     var s = statusWord(x);
     return '<button data-creek="' + esc(x.c.id) + '" class="' + (x.c === c ? "on" : "") + '" style="border-top-color:' + s.bar + '"' +
-      ' aria-label="' + esc(x.c.name) + ": " + s.w + '"><span class="nm">' + esc(x.c.short || x.c.name) + '</span><span class="stt" style="color:' + s.col + '">' + s.w + "</span></button>";
+      ' aria-label="' + esc(x.c.name) + ": " + s.w + '"><span class="nm">' + esc(x.c.short || x.c.name.replace(/ (Creek|Channel)$/, "")) + '</span><span class="stt" style="color:' + s.col + '">' + s.w + "</span></button>";
   }).join("");
   var worst = states.filter(function (x) { return x.top; }).sort(function (a, b) { return b.top.level - a.top.level; })[0];
   $("navDot").style.display = worst ? "inline-block" : "none";
