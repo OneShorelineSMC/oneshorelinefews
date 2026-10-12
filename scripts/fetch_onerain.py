@@ -32,7 +32,7 @@ HEADERS = {
 HOURS = 48          # how much history to keep in the file (the graphs show 36 hours)
 MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lists them in batches)
 
-from creek_config import CREEKS
+from creek_config import CREEKS, THRESHOLD_ERRORS
 
 # Every gauge listed in creek_config.py, by key
 SENSORS = {}
@@ -154,14 +154,31 @@ def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "creeks.json"
     try:
         with open(out_path) as f:
-            previous = json.load(f).get("sensors", {})
+            previous_file = json.load(f)
     except (OSError, ValueError):
-        previous = {}
+        previous_file = {}
+    previous = previous_file.get("sensors", {})
+
+    creeks_out = public_config()
+    if THRESHOLD_ERRORS:   # a mistake in thresholds.csv: keep the last good thresholds and flag it
+        for e in THRESHOLD_ERRORS:
+            print(f"::error title=thresholds.csv::{e}", file=sys.stderr)
+        old = {c["id"]: c for c in previous_file.get("creeks", [])}
+        for c in creeks_out:
+            o = old.get(c["id"])
+            if o:
+                byk = {g["key"]: g for g in o.get("stages", [])}
+                for g in c["stages"]:
+                    g["thresholds"] = byk.get(g["key"], {}).get("thresholds", [])
+                c["rain_triggers"] = o.get("rain_triggers", [])
+                if o.get("rain_running") and c.get("rain_running"):
+                    c["rain_running"] = o["rain_running"]
+        print("thresholds.csv has problems (above); kept the previous thresholds.", file=sys.stderr)
 
     now = dt.datetime.now(TZ).replace(tzinfo=None, microsecond=0)
     start = now - dt.timedelta(hours=HOURS)
     result = {"generated": now.strftime("%Y-%m-%d %H:%M:%S"), "timezone": "America/Los_Angeles",
-              "hours": HOURS, "creeks": public_config(), "sensors": {}}
+              "hours": HOURS, "creeks": creeks_out, "sensors": {}}
     failures = 0
     session = Session()
     for key, s in SENSORS.items():
@@ -185,7 +202,7 @@ def main():
     with open(out_path, "w") as f:
         json.dump(result, f, separators=(",", ":"))
     # Fail the job only if nothing at all could be read, so problems show up in the Actions tab.
-    sys.exit(1 if failures == len(SENSORS) else 0)
+    sys.exit(1 if failures == len(SENSORS) or THRESHOLD_ERRORS else 0)
 
 
 if __name__ == "__main__":

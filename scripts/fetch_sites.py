@@ -21,7 +21,9 @@ import sys
 import time
 import urllib.parse
 
-from creek_config import map_thresholds
+import os
+
+from creek_config import THRESHOLD_ERRORS, map_thresholds
 from fetch_onerain import SITE, TZ, Session, parse_readings, sensor_page, to_time
 
 HISTORY_HOURS = 24   # history kept per sensor for the small graphs and the 24-hour rain total
@@ -33,7 +35,7 @@ SKIP_SENSORS = re.compile(r"batter|volt|signal|rssi|solar|charg|enclosure|door|l
                           r"|\d+\s*-?\s*h(ou)?r\b", re.I)   # also OneRain's "4 Hr Accumulation"-style roll-ups
 
 # Alert levels drawn on the map come from the creek gauges and thresholds in creek_config.py.
-THRESHOLDS = map_thresholds()
+THRESHOLDS = map_thresholds()   # if thresholds.csv has a problem, main() uses the ones in creeks.json instead
 
 
 def clean(fragment):
@@ -179,6 +181,15 @@ def main():
             print(f"sites.json is {age:.0f} min old (refreshes every {min_age:.0f}); skipping this run.")
             return
     old_sites = {s["site"]: s for s in previous.get("sites", [])}
+    if THRESHOLD_ERRORS:   # use the last good thresholds, which fetch_onerain.py kept in creeks.json
+        try:
+            with open(os.path.join(os.path.dirname(out_path) or ".", "creeks.json")) as f:
+                for c in json.load(f).get("creeks", []):
+                    for g in c.get("stages", []):
+                        if g.get("thresholds"):
+                            THRESHOLDS.setdefault(g["number"], {})["stage"] = g["thresholds"]
+        except (OSError, ValueError):
+            pass
     start = now - dt.timedelta(hours=HISTORY_HOURS)
 
     session = Session()

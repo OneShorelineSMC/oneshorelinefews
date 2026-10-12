@@ -1,6 +1,6 @@
 """
 The creeks shown on the kiosk's Creeks tab, the phone page (Creeks.html) and the home page, and the alert
-levels drawn on the site map. THIS IS THE ONE PLACE TO EDIT creeks, gauges and flood thresholds: the pages
+levels drawn on the site map. FLOOD THRESHOLDS ARE IN thresholds.csv (top of the repo), not here. The pages
 read everything from the published data file, so changes here show up everywhere on the next data run
 (about 5 minutes after you commit).
 
@@ -15,23 +15,18 @@ Each creek has:
   note    optional text shown with the graphs (e.g. what the threshold colors mean)
   stages  creek water-level gauges, upstream first
   rain    rain gauges, upper watershed first
-  rain_triggers  optional rain amounts that mean flooding is likely (e.g. Belmont Creek): the rain at one of
-          the creek's gauges over "minutes"; with "high_tide": True the trigger also needs the tide at or above
-          MHHW (Mean Higher High Water) at the creek's tide station
+  (flood thresholds and rain triggers for every gauge are in thresholds.csv)
 
 Each gauge needs its OneRain sensor link details: open the sensor's page on OneRain (Sites > site > sensor)
 and copy site_id, site, device_id and device from the address bar.
 
-Thresholds are in feet on that gauge, lowest first. "level" sets the color and how serious it is:
-1 = Flood Monitoring (yellow), 2 = Flood Watch (orange), 3 = Flood Warning (red), 4 = beyond warning (purple).
 """
 
+import csv
+import os
+
 LEVEL_COLORS = {1: "#e6c200", 2: "#e07b00", 3: "#c62828", 4: "#9c27b0"}
-
-
-def levels(*rows):
-    """levels((3.18, "Flood Monitoring", 1), ...) -> threshold list with colors."""
-    return [{"value": v, "name": n, "level": l, "color": LEVEL_COLORS[l]} for v, n, l in rows]
+THRESHOLDS_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "thresholds.csv")
 
 
 CREEKS = [
@@ -40,8 +35,8 @@ CREEKS = [
         "name": "San Bruno Creek",
         "short": "San Bruno",
         "rain_windows": [60, 1440],
-        "intro": "Creek level at First Avenue in San Bruno (near Lions Park and the Caltrain tracks), rain in the upper and lower "
-                 "watershed, and the Bay tide at Alameda. The creek rises and falls with the tide.",
+        "intro": "Creek level at First Avenue in South San Francisco / San Bruno, rain in the upper and lower "
+                 "watershed, and the Bay tide at Alameda. The creek at First Avenue rises and falls with the tide.",
         "tide": "9414750",
         "note": "",
         "stages": [
@@ -49,7 +44,6 @@ CREEKS = [
              "site_id": 11, "site": "fe06588c-e5e6-4016-8a8f-2ba1f040636e",
              "device_id": 3, "device": "e481d107-65bb-4107-89ab-48484eb0e188",
              "reports": "on change",   # reports only when the level changes, so silence isn't always an outage
-             "thresholds": levels((2.40, "Flood Monitoring", 1), (3.60, "Flood Watch", 2), (4.80, "Flood Warning", 3)),
              "note": ""},
         ],
         "rain": [
@@ -77,14 +71,11 @@ CREEKS = [
              "number": "41107", "site_id": 48, "site": "222db05c-ef0a-4720-b2c1-aaba882205f8",
              "device_id": 5, "device": "24188afc-3ba7-498b-b865-c186ddd1f7f5",
              "reports": "interval",
-             "thresholds": levels((3.18, "Flood Monitoring", 1), (4.60, "Flood Watch", 2), (5.65, "Flood Warning", 3),
-                                  (10.40, "Roadway Flooded", 4)),
              "note": ""},
             {"key": "ath_caltrain", "label": "Upstream of Caltrain", "site_name": "Atherton Channel upstream of CalTrain",
              "number": "41106", "site_id": 14, "site": "a63a9e54-703b-43b1-8286-6cabbaae7fa1",
              "device_id": 4, "device": "b1b9cc5f-9ad6-498b-96cb-fc299b4eab79",
              "reports": "on change",
-             "thresholds": levels((2.80, "Flood Monitoring", 1), (4.10, "Flood Watch", 2), (5.50, "Flood Warning", 3)),
              "note": "The probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow."},
         ],
         "rain": [
@@ -101,7 +92,7 @@ CREEKS.append({
     "name": "Belmont Creek",
     "short": "Belmont",
     "rain_windows": [30, 60, 240, 1440],
-    "rain_running": {"gauge": "bel_rain", "minutes": 240, "line": 0.42, "label": "4-hour rain (in)"},
+    "rain_running": {"gauge": "bel_rain", "minutes": 240, "label": "4-hour rain (in)"},   # trigger line comes from thresholds.csv
     "intro": "Creek level at Old County Road, rain at Old County Road, and the Bay tide at Redwood City. Thresholds "
              "are for the Harbor Industrial Area community downstream of the Caltrain crossing. Flooding is likely "
              "if 30-minute rain exceeds 0.20 inches, or if 4-hour rain exceeds 0.42 inches and the tide is high.",
@@ -113,19 +104,12 @@ CREEKS.append({
          "site_id": 2, "site": "25fd9d56-e3ea-4ff9-a067-b3e99cc5c1fe",
          "device_id": 1, "device": "5c101ccb-75e1-4c68-a983-4b8c78913c03",
          "reports": "on change",
-         "thresholds": levels((2.25, "Flood Monitoring", 1), (3.25, "Flood Watch", 2), (4.00, "Flood Warning", 3)),
          "note": ""},
     ],
     "rain": [
         {"key": "bel_rain", "label": "Old County Road", "where": "lower watershed", "number": "41104",
          "site_id": 2, "site": "25fd9d56-e3ea-4ff9-a067-b3e99cc5c1fe",
          "device_id": 4, "device": "4002d654-cd0a-4e0f-a178-83ea5ea84566"},
-    ],
-    "rain_triggers": [
-        {"gauge": "bel_rain", "minutes": 30, "value": 0.20, "high_tide": False,
-         "label": "30-minute rain", "name": "Flooding likely (rain)", "level": 3, "color": LEVEL_COLORS[3]},
-        {"gauge": "bel_rain", "minutes": 240, "value": 0.42, "high_tide": True,
-         "label": "4-hour rain + high tide", "name": "Flooding likely (rain + tide)", "level": 3, "color": LEVEL_COLORS[3]},
     ],
 })
 
@@ -145,7 +129,6 @@ CREEKS.append({
          "number": "41101", "site_id": 12, "site": "32e8ebb1-4c9c-460a-a4cd-58903b96f347",
          "device_id": 5, "device": "dbbbcf6d-6a38-44a5-a90b-7077db13c5c2",
          "reports": "interval",
-         "thresholds": levels((3.40, "Flood Monitoring", 1), (5.00, "Flood Watch", 2), (6.75, "Flood Warning", 3)),
          "note": ""},
     ],
     "rain": [
@@ -160,10 +143,82 @@ _ORDER = ["colma", "sanbruno", "belmont", "atherton"]
 CREEKS.sort(key=lambda c: _ORDER.index(c["id"]) if c["id"] in _ORDER else len(_ORDER))
 
 
+def _window(minutes):
+    return f"{minutes}-minute" if minutes < 60 else f"{minutes // 60}-hour"
+
+
+def load_thresholds(path=THRESHOLDS_CSV):
+    """Read thresholds.csv into CREEKS. Returns a list of problems; if there are any, nothing is applied
+    (the data job then keeps the last good thresholds, so a typo can't blank or mis-color the screens)."""
+    gauges = {}
+    for c in CREEKS:
+        for g in c["stages"]:
+            gauges[g["key"]] = (c, "stage", g)
+        for g in c["rain"]:
+            gauges[g["key"]] = (c, "rain", g)
+    stage, triggers, errors = {}, {}, []
+    try:
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            rows = list(csv.DictReader(f))
+    except OSError as e:
+        return [f"can't read thresholds.csv: {e}"]
+    for n, r in enumerate(rows, start=2):   # row 1 is the header
+        r = {k.strip().lower(): (v or "").strip() for k, v in r.items() if k}
+        if not any(r.values()):
+            continue
+        where = f"thresholds.csv row {n}"
+        c_id, key, typ = r.get("creek", ""), r.get("gauge", ""), r.get("type", "").lower()
+        if key not in gauges:
+            errors.append(f"{where}: unknown gauge '{key}' (see the gauge keys in scripts/creek_config.py)"); continue
+        creek, kind, _ = gauges[key]
+        if c_id != creek["id"]:
+            errors.append(f"{where}: gauge '{key}' belongs to creek '{creek['id']}', not '{c_id}'"); continue
+        if typ not in ("stage", "rain") or (typ == "stage") != (kind == "stage"):
+            errors.append(f"{where}: type should be '{kind}' for gauge '{key}'"); continue
+        try:
+            level = int(r.get("level", ""))
+            value = float(r.get("value", ""))
+            assert level in LEVEL_COLORS and value > 0
+        except (ValueError, AssertionError):
+            errors.append(f"{where}: level must be 1-4 and value a positive number"); continue
+        name = r.get("name") or {1: "Flood Monitoring", 2: "Flood Watch", 3: "Flood Warning", 4: "Above Flood Warning"}[level]
+        item = {"value": value, "name": name, "level": level, "color": LEVEL_COLORS[level]}
+        if r.get("notes"):
+            item["note"] = r["notes"]
+        if typ == "stage":
+            stage.setdefault(key, []).append(item)
+            continue
+        try:
+            minutes = int(r.get("minutes", ""))
+            assert minutes > 0
+        except (ValueError, AssertionError):
+            errors.append(f"{where}: rain thresholds need 'minutes' (e.g. 30 or 240)"); continue
+        high_tide = r.get("high_tide", "").lower() in ("yes", "y", "true", "1")
+        item.update({"gauge": key, "minutes": minutes, "high_tide": high_tide,
+                     "label": _window(minutes) + " rain" + (" + high tide" if high_tide else "")})
+        triggers.setdefault(creek["id"], []).append(item)
+    if errors:
+        return errors
+    for c in CREEKS:
+        for g in c["stages"]:
+            g["thresholds"] = sorted(stage.get(g["key"], []), key=lambda x: x["value"])
+        c["rain_triggers"] = sorted(triggers.get(c["id"], []), key=lambda x: (x["minutes"], x["value"]))
+        run = c.get("rain_running")
+        if run and "line" not in run:   # the running-total graph's line: that gauge's threshold for the same window
+            match = [x for x in c["rain_triggers"] if x["gauge"] == run["gauge"] and x["minutes"] == run["minutes"]]
+            if match:
+                run["line"] = min(x["value"] for x in match)
+    return []
+
+
+THRESHOLD_ERRORS = load_thresholds()
+
+
 def map_thresholds():
     """Thresholds for the site map, by site number: {"41102": {"stage": [...]}}."""
     out = {}
     for c in CREEKS:
         for g in c["stages"]:
-            out.setdefault(g["number"], {})["stage"] = g["thresholds"]
+            if g.get("thresholds"):
+                out.setdefault(g["number"], {})["stage"] = g["thresholds"]
     return out
