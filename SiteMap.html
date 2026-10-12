@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#005085">
+<title>OneShoreline Sensor Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg: #f0f4f8; --card: #ffffff; --ink: #1a3a5c; --muted: #66768a; --line: #e3e8ee; --brand: #005085;
+    --ok: #2e7d32; --l1: #e6c200; --l2: #e07b00; --l3: #c62828; --off: #8a96a3; --rain: #1e6fd9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542; --rain: #6ea8fe; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  body { display: flex; flex-direction: column; height: 100dvh; }
+
+  header { background: var(--brand); color: #fff; padding: calc(8px + env(safe-area-inset-top)) 14px 8px; flex: none; }
+  .hrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  h1 { font-size: 18px; margin: 0; }
+  #back { color: #fff; opacity: .85; font-size: 12.5px; text-decoration: none; display: block; margin-bottom: 1px; }
+  #sub { font-size: 12.5px; opacity: .85; margin-top: 2px; }
+  .seg { display: flex; background: rgba(255,255,255,.18); border-radius: 9px; padding: 2px; flex: none; }
+  .seg button { border: 0; background: none; color: #fff; font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+  .seg button.on { background: #fff; color: var(--brand); font-weight: 600; }
+
+  #legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 14px; font-size: 12px; color: var(--muted);
+    background: var(--card); border-bottom: 1px solid var(--line); flex: none; }
+  #legend span { white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .ld { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); display: inline-block; }
+  .ld.sq { border-radius: 2px; }
+
+  #main { position: relative; flex: 1; min-height: 0; }
+  #map { position: absolute; inset: 0; background: #dfe7ee; }
+  #list { position: absolute; inset: 0; z-index: 1200; background: var(--bg); overflow-y: auto; display: none; padding: 10px 12px 24px; }
+  #list.show { display: block; }
+
+  /* markers */
+  .mk { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+  .mk.sq { border-radius: 4px; }
+  .mk.big { width: 24px; height: 24px; }
+  .mk.sel { outline: 3px solid var(--brand); outline-offset: 2px; }
+  .rl { font-size: 11px; font-weight: 700; color: #0d47a1; background: rgba(255,255,255,.92); border-radius: 4px;
+    padding: 0 3px; white-space: nowrap; position: absolute; top: 19px; left: 50%; transform: translateX(-50%);
+    box-shadow: 0 0 2px rgba(0,0,0,.3); }
+  .leaflet-container .leaflet-control-attribution { font-size: 10px; }
+  .mapbtn { position: absolute; z-index: 1000; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .mapbtn button { border: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 13px; padding: 7px 10px;
+    border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
+  .mapbtn button.on { background: var(--rain); color: #fff; }
+
+  /* site card */
+  #sheet { position: absolute; z-index: 1100; left: 0; right: 0; bottom: 0; max-height: 62%; overflow-y: auto;
+    background: var(--card); border-radius: 16px 16px 0 0; box-shadow: 0 -4px 18px rgba(0,0,0,.25);
+    padding: 6px 16px calc(14px + env(safe-area-inset-bottom)); transform: translateY(105%); visibility: hidden;
+    transition: transform .22s, visibility .22s; }
+  #sheet.show { transform: none; visibility: visible; }
+  @media (min-width: 760px) {
+    #sheet { left: 12px; right: auto; top: 12px; bottom: auto; width: 380px; max-height: calc(100% - 24px);
+      border-radius: 14px; transform: translateX(-110%); }
+  }
+  .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 8px; }
+  .shead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .sname { font-size: 18px; font-weight: 700; line-height: 1.25; }
+  .snum { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .x { border: 0; background: var(--bg); color: var(--ink); font-size: 18px; width: 34px; height: 34px; border-radius: 50%; flex: none; cursor: pointer; }
+  .badge { display: inline-block; font-size: 12.5px; font-weight: 700; color: #fff; border-radius: 6px; padding: 3px 8px; margin-top: 8px; }
+  .sens { border-top: 1px solid var(--line); padding: 10px 0 6px; }
+  .sens:first-of-type { border-top: 0; }
+  .srow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .slbl { font-size: 14px; font-weight: 600; }
+  .sval { font-size: 22px; font-weight: 700; white-space: nowrap; }
+  .sval small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .sage { font-size: 12.5px; color: var(--muted); }
+  .sage.old { color: var(--l2); }
+  .lvl { font-size: 12.5px; font-weight: 700; }
+  canvas.spark { width: 100%; height: 54px; display: block; margin-top: 6px; }
+  .glbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .olink { display: block; text-align: center; margin: 12px 0 4px; padding: 11px; border-radius: 10px; background: var(--brand);
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .fine { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+  .fine a { color: inherit; }
+
+  /* list */
+  .grp { font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 12px 4px 6px; }
+  .row { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 10px; padding: 10px 12px;
+    margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
+  .row .ld { flex: none; width: 13px; height: 13px; }
+  .rmain { flex: 1; min-width: 0; }
+  .rname { font-size: 15px; font-weight: 600; }
+  .rvals { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .rage { font-size: 12px; color: var(--muted); text-align: right; flex: none; }
+  #msg { position: absolute; z-index: 1300; left: 50%; top: 40%; transform: translate(-50%, -50%); background: var(--card);
+    padding: 12px 16px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.2); font-size: 14px; text-align: center; max-width: 85%; }
+  #listfoot { font-size: 12px; color: var(--muted); margin: 18px 4px 0; line-height: 1.45; }
+  #listfoot a { color: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div>
+      <a id="back" href="Creeks.html">‹ Creeks</a>
+      <h1>OneShoreline Sensor Map</h1>
+      <div id="sub">Loading…</div>
+    </div>
+    <div class="seg"><button data-view="map" class="on">Map</button><button data-view="list">List</button></div>
+  </div>
+</header>
+<div id="legend">
+  <span><i class="ld" style="background:var(--ok)"></i>Reporting</span>
+  <span><i class="ld" style="background:var(--l1)"></i>Monitoring</span>
+  <span><i class="ld" style="background:var(--l2)"></i>Watch</span>
+  <span><i class="ld" style="background:var(--l3)"></i>Warning</span>
+  <span><i class="ld" style="background:var(--off)"></i>Not reporting</span>
+  <span><i class="ld sq" style="background:#888"></i>Rain gauge only</span>
+</div>
+<div id="main">
+  <div id="map"></div>
+  <div class="mapbtn" id="mapbtns">
+    <button id="rainBtn" title="Show 24-hour rain totals">Rain 24 h</button>
+    <button id="allBtn" title="Zoom to all sites">All sites</button>
+  </div>
+  <div id="list"></div>
+  <div id="sheet"></div>
+  <div id="msg">Loading sites…</div>
+</div>
+
+<script>
+/* ===================== CONFIG ===================== */
+// Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)
+var SITES_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/sites.json";
+var REFRESH_MIN = 5;              // how often the page checks for new data
+var NOT_REPORTING_HOURS = 24;     // a site is "not reporting" when no sensor has reported for this long
+var OLD_READING_HOURS = 3;        // readings older than this are shown in orange
+var DATA_LATE_MIN = 45;           // warn when the published file itself is older than this
+var CREEK_PAGE = "Creeks.html";
+var DISCLAIMER_URL = "Creeks.html#about";
+/* ================================================== */
+
+var params = new URLSearchParams(location.search);
+if (params.get("data")) SITES_URL = params.get("data");
+var LEVEL_COLORS = ["var(--ok)", "var(--l1)", "var(--l2)", "var(--l3)"];
+var LEVEL_HEX = ["#2e7d32", "#e6c200", "#e07b00", "#c62828", "#9c27b0"];
+var LEVEL_NAMES = ["Normal", "Flood Monitoring", "Flood Watch", "Flood Warning", "Above Flood Warning"];
+// The name a gauge gives a level (e.g. "Roadway Flooded"), falling back to the standard names
+function levelName(sensors, level) {
+  var n = null;
+  sensors.forEach(function (s) { (s.thresholds || []).forEach(function (t) { if (t.level === level) n = n || t.name; }); });
+  return n || LEVEL_NAMES[level];
+}
+
+/* ---------- time helpers: OneRain times are Pacific wall-clock "YYYY-MM-DD HH:MM" ---------- */
+function parseLocal(s) { var m = s.match(/(\d+)-(\d+)-(\d+)[ T](\d+):(\d+)/); return Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]); }
+function nowLocal() {
+  var p = {}; new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hourCycle: "h23",
+    year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })
+    .formatToParts(new Date()).forEach(function (x) { p[x.type] = +x.value; });
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second);
+}
+function ago(ms) {
+  var m = Math.max(0, Math.round(ms / 60000));
+  if (m < 2) return "just now";
+  if (m < 60) return m + " min ago";
+  var h = m / 60;
+  if (h < 36) return Math.round(h) + (Math.round(h) === 1 ? " hr ago" : " hrs ago");
+  return Math.round(h / 24) + " days ago";
+}
+function fClock(ms) {
+  var d = new Date(ms), h = d.getUTCHours(), mi = d.getUTCMinutes();
+  return (h % 12 || 12) + ":" + String(mi).padStart(2, "0") + (h < 12 ? " AM" : " PM");
+}
+function fWhen(ms) {
+  var today = Math.floor(nowLocal() / 864e5), day = Math.floor(ms / 864e5);
+  if (day === today) return fClock(ms);
+  return new Date(ms).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" }) + ", " + fClock(ms);
+}
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function num(v, unit) {
+  if (v == null) return "–";
+  var d = Math.abs(v) >= 100 ? 0 : (unit === "in" ? 2 : (Math.abs(v) >= 10 ? 1 : 2));
+  return v.toFixed(d);
+}
+
+/* ---------- status ---------- */
+function sensorLevel(s, now) {
+  if (!s.thresholds || s.value == null || !s.time) return 0;
+  if (now - parseLocal(s.time) > NOT_REPORTING_HOURS * 36e5) return 0;
+  var lvl = 0;
+  s.thresholds.forEach(function (t) { if (s.value >= t.value) lvl = Math.max(lvl, t.level); });
+  return lvl;
+}
+function siteStatus(site, now) {
+  var newest = 0, level = 0, rain = null, rainOnly = true;
+  site.sensors.forEach(function (s) {
+    if (s.time) newest = Math.max(newest, parseLocal(s.time));
+    level = Math.max(level, sensorLevel(s, now));
+    if (s.kind === "increment" || s.kind === "accumulation") { if (s.rain24 != null) rain = Math.max(rain || 0, s.rain24); }
+    else rainOnly = false;
+  });
+  var off = !newest || now - newest > NOT_REPORTING_HOURS * 36e5;
+  return { level: level, off: off, newest: newest, rain: rain, rainOnly: rainOnly,
+    color: off ? "#8a96a3" : LEVEL_HEX[level], label: off ? "Not reporting" : levelName(site.sensors, level) };
+}
+
+/* ---------- map ---------- */
+var map = L.map("map", { zoomControl: false, attributionControl: true }).setView([37.5, -122.3], 10);
+L.control.zoom({ position: "bottomright" }).addTo(map);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+map.attributionControl.setPrefix(false);
+
+var DATA = null, markers = {}, selected = null, showRain = false, firstFit = true;
+
+function markerIcon(site, st) {
+  var big = st.level > 0 && !st.off;
+  var label = (showRain && st.rain != null) ? '<span class="rl">' + st.rain.toFixed(2) + '″</span>' : "";
+  return L.divIcon({ className: "", iconSize: big ? [24, 24] : [18, 18], iconAnchor: big ? [12, 12] : [9, 9],
+    html: '<div class="mk' + (st.rainOnly ? " sq" : "") + (big ? " big" : "") + (selected === site.site ? " sel" : "") +
+      '" style="background:' + st.color + '"></div>' + label });
+}
+
+function draw() {
+  if (!DATA) return;
+  var now = nowLocal(), bounds = [];
+  Object.keys(markers).forEach(function (k) { map.removeLayer(markers[k]); });
+  markers = {};
+  // Draw calm sites first so alerts sit on top
+  var sites = DATA.sites.slice().sort(function (a, b) { return rank(a, now) - rank(b, now); });
+  sites.forEach(function (site) {
+    var st = siteStatus(site, now);
+    var m = L.marker([site.lat, site.lon], { icon: markerIcon(site, st), title: site.name, riseOnHover: true,
+      zIndexOffset: st.off ? -500 : st.level * 500 + (selected === site.site ? 2000 : 0) });
+    m.on("click", function () { openSite(site.site, false); });
+    m.bindTooltip(site.name, { direction: "top", offset: [0, -10] });
+    m.addTo(map); markers[site.site] = m; bounds.push([site.lat, site.lon]);
+  });
+  if (firstFit && bounds.length) { map.fitBounds(bounds, { padding: [24, 24] }); firstFit = false; }
+  drawList(now);
+  if (selected) renderSheet(selected);
+}
+function rank(site, now) { var st = siteStatus(site, now); return st.off ? -1 : st.level; }
+
+/* ---------- site card ---------- */
+function openSite(id, fly) {
+  selected = id;
+  var site = DATA.sites.find(function (s) { return s.site === id; });
+  if (!site) return;
+  setView("map");
+  draw();
+  document.getElementById("sheet").classList.add("show");
+  if (fly) map.setView([site.lat, site.lon], Math.max(map.getZoom(), 12));
+  else map.panTo([site.lat, site.lon]);
+  history.replaceState(null, "", "#site=" + encodeURIComponent(site.number || site.site_id));
+}
+function closeSite() {
+  selected = null;
+  document.getElementById("sheet").classList.remove("show");
+  history.replaceState(null, "", location.pathname + location.search);
+  draw();
+}
+function renderSheet(id) {
+  var site = DATA.sites.find(function (s) { return s.site === id; });
+  if (!site) return;
+  var now = nowLocal(), st = siteStatus(site, now);
+  var h = '<div class="grab"></div><div class="shead"><div><div class="sname">' + esc(site.name) + '</div>' +
+    '<div class="snum">Site ' + esc(site.number) + '</div></div><button class="x" aria-label="Close" onclick="closeSite()">✕</button></div>' +
+    '<span class="badge" style="background:' + st.color + '">' + st.label + '</span>';
+  site.sensors.forEach(function (s, i) {
+    var t = s.time ? parseLocal(s.time) : null, old = t && now - t > OLD_READING_HOURS * 36e5;
+    var lvl = sensorLevel(s, now), rainish = s.kind === "increment" || s.kind === "accumulation";
+    h += '<div class="sens"><div class="srow"><div class="slbl">' + esc(s.name) + '</div>';
+    if (rainish && s.rain24 != null) {
+      h += '<div class="sval">' + s.rain24.toFixed(2) + '<small>in / 24 h</small></div></div>';
+      h += '<div class="sage' + (old ? " old" : "") + '">' + (s.rain1 != null ? "Past hour: " + s.rain1.toFixed(2) + " in · " : "") +
+        (t ? "last report " + ago(now - t) : "no recent report") + '</div>';
+    } else {
+      h += '<div class="sval">' + num(s.value, s.unit) + '<small>' + esc(s.unit) + '</small></div></div>';
+      h += '<div class="sage' + (old ? " old" : "") + '">' + (t ? fWhen(t) + " · " + ago(now - t) : "no recent report") + '</div>';
+    }
+    if (s.thresholds) {
+      h += '<div class="lvl" style="color:' + (lvl ? LEVEL_HEX[lvl] : "var(--muted)") + '">' + (lvl ? levelName([s], lvl) + " level · " : "") +
+        s.thresholds.map(function (x) { return x.name.replace("Flood ", "") + " " + x.value; }).join(" · ") + " " + esc(s.unit) + '</div>';
+    }
+    if ((s.points && s.points.length > 1) || (s.hourly && s.hourly.length)) {
+      h += '<canvas class="spark" id="sp' + i + '"></canvas><div class="glbl"><span>24 hours ago</span><span>' +
+        (s.hourly ? "rain per hour" : "") + '</span><span>now</span></div>';
+    }
+    h += '</div>';
+  });
+  h += '<a class="olink" href="' + esc(site.url) + '" target="_blank" rel="noopener">Full data on OneRain ↗</a>' +
+    '<div class="fine">For informational purposes only; data are provisional and thresholds are approximate. ' +
+    '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · In an emergency, call 911.</div>';
+  var sh = document.getElementById("sheet");
+  sh.innerHTML = h;
+  site.sensors.forEach(function (s, i) { var c = document.getElementById("sp" + i); if (c) spark(c, s, now); });
+}
+
+/* small graph: last 24 h, line for levels, hourly bars for rain */
+function spark(c, s, now) {
+  var dpr = window.devicePixelRatio || 1, w = c.clientWidth, hgt = c.clientHeight;
+  c.width = w * dpr; c.height = hgt * dpr;
+  var g = c.getContext("2d"); g.scale(dpr, dpr);
+  var t0 = now - 24 * 36e5, x = function (t) { return (t - t0) / (24 * 36e5) * (w - 2) + 1; };
+  var css = getComputedStyle(document.documentElement);
+  g.strokeStyle = css.getPropertyValue("--line"); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(0, hgt - .5); g.lineTo(w, hgt - .5); g.stroke();
+  if (s.hourly) {
+    var max = Math.max(0.1, Math.max.apply(null, s.hourly.map(function (p) { return p[1]; })));
+    g.fillStyle = css.getPropertyValue("--rain").trim() || "#1e6fd9";
+    s.hourly.forEach(function (p) {
+      var t = parseLocal(p[0]); if (t < t0) return;
+      var bh = p[1] / max * (hgt - 4), bw = Math.max(2, (w / 24) - 2);
+      g.fillRect(x(t) + 1, hgt - bh, bw, bh);
+    });
+    g.fillStyle = css.getPropertyValue("--muted"); g.font = "10px sans-serif"; g.textAlign = "left";
+    g.fillText("max " + max.toFixed(2) + " in/hr", 2, 10);
+    return;
+  }
+  var pts = s.points.map(function (p) { return [parseLocal(p[0]), p[1]]; }).filter(function (p) { return p[0] >= t0; });
+  if (pts.length < 2) return;
+  var vals = pts.map(function (p) { return p[1]; }), lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  (s.thresholds || []).forEach(function (t) { if (t.value <= hi * 1.25 + 0.2) hi = Math.max(hi, t.value); });
+  if (hi - lo < 0.2) { hi += 0.1; lo -= 0.1; }
+  var pad = (hi - lo) * 0.1; lo -= pad; hi += pad;
+  var y = function (v) { return hgt - 2 - (v - lo) / (hi - lo) * (hgt - 4); };
+  (s.thresholds || []).forEach(function (t) {
+    if (t.value > hi || t.value < lo) return;
+    g.strokeStyle = LEVEL_HEX[t.level]; g.setLineDash([4, 3]); g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(0, y(t.value)); g.lineTo(w, y(t.value)); g.stroke();
+  });
+  g.setLineDash([]); g.strokeStyle = "#1e88e5"; g.lineWidth = 2; g.lineJoin = "round";
+  g.beginPath();
+  pts.forEach(function (p, i) { if (i) g.lineTo(x(p[0]), y(p[1])); else g.moveTo(x(p[0]), y(p[1])); });
+  g.stroke();
+  g.font = "10px sans-serif"; g.lineWidth = 3; g.strokeStyle = css.getPropertyValue("--card");
+  g.fillStyle = css.getPropertyValue("--muted");
+  [[num(Math.max.apply(null, vals), s.unit), 10], [num(Math.min.apply(null, vals), s.unit), hgt - 4]].forEach(function (l) {
+    g.strokeText(l[0], 2, l[1]); g.fillText(l[0], 2, l[1]);
+  });
+}
+
+/* ---------- list ---------- */
+function drawList(now) {
+  var groups = [[], [], []];   // alerts, reporting, not reporting
+  DATA.sites.forEach(function (site) {
+    var st = siteStatus(site, now);
+    groups[st.off ? 2 : (st.level ? 0 : 1)].push({ site: site, st: st });
+  });
+  groups[0].sort(function (a, b) { return b.st.level - a.st.level; });
+  var titles = ["At an alert level", "Reporting", "Not reporting in the past " + NOT_REPORTING_HOURS + " hours"];
+  var h = "";
+  groups.forEach(function (g, gi) {
+    if (!g.length) return;
+    h += '<div class="grp">' + titles[gi] + " (" + g.length + ")</div>";
+    g.forEach(function (o) {
+      var site = o.site, vals = site.sensors.slice(0, 3).map(function (s) {
+        if ((s.kind === "increment" || s.kind === "accumulation") && s.rain24 != null) return "Rain " + s.rain24.toFixed(2) + " in/24 h";
+        return esc(s.name) + " " + num(s.value, s.unit) + " " + esc(s.unit);
+      }).join(" · ");
+      h += '<div class="row" data-id="' + site.site + '"><i class="ld' + (o.st.rainOnly ? " sq" : "") + '" style="background:' + o.st.color + '"></i>' +
+        '<div class="rmain"><div class="rname">' + esc(site.name) + '</div><div class="rvals">' + vals + '</div></div>' +
+        '<div class="rage">' + (o.st.newest ? ago(now - o.st.newest) : "–") + '</div></div>';
+    });
+  });
+  h += '<div id="listfoot">Data from the OneShoreline Early Warning System (OneRain), refreshed about every 15 minutes. ' +
+    'For informational purposes only; data are provisional and thresholds are approximate. ' +
+    '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · <a href="' + CREEK_PAGE + '">Creek conditions</a> · In an emergency, call 911.</div>';
+  var el = document.getElementById("list");
+  el.innerHTML = h;
+  Array.prototype.forEach.call(el.querySelectorAll(".row"), function (r) {
+    r.addEventListener("click", function () { openSite(r.dataset.id, true); });
+  });
+}
+
+/* ---------- views ---------- */
+function setView(v) {
+  document.getElementById("list").classList.toggle("show", v === "list");
+  document.getElementById("mapbtns").style.display = v === "list" ? "none" : "";
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) { b.classList.toggle("on", b.dataset.view === v); });
+  if (v === "list") document.getElementById("sheet").classList.remove("show");
+  else setTimeout(function () { map.invalidateSize(); }, 0);
+}
+Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+  b.addEventListener("click", function () { setView(b.dataset.view); });
+});
+document.getElementById("rainBtn").addEventListener("click", function () {
+  showRain = !showRain; this.classList.toggle("on", showRain); draw();
+});
+document.getElementById("allBtn").addEventListener("click", function () {
+  if (!DATA) return;
+  map.fitBounds(DATA.sites.map(function (s) { return [s.lat, s.lon]; }), { padding: [24, 24] });
+});
+map.on("click", function () { if (selected) closeSite(); });
+
+/* ---------- data ---------- */
+function load() {
+  return fetch(SITES_URL + (SITES_URL.indexOf("?") < 0 ? "?" : "&") + "t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (d) {
+      DATA = d;
+      DATA.sites = (d.sites || []).filter(function (s) { return s.lat != null && s.sensors && s.sensors.length; });
+      document.getElementById("msg").style.display = "none";
+      var gen = parseLocal(d.generated), late = nowLocal() - gen > DATA_LATE_MIN * 6e4;
+      document.getElementById("sub").textContent = DATA.sites.length + " sites · updated " + fWhen(gen) + (late ? " ⚠ data delayed" : "");
+      draw();
+      var m = location.hash.match(/site=([^&]+)/);
+      if (m && !selected) {
+        var key = decodeURIComponent(m[1]);
+        var s = DATA.sites.find(function (x) { return x.number === key || String(x.site_id) === key; });
+        if (s) openSite(s.site, true);
+      }
+    })
+    .catch(function (e) {
+      if (!DATA) {
+        var msg = document.getElementById("msg");
+        msg.style.display = ""; msg.textContent = "Couldn't load the site data. Check your connection and try again.";
+      }
+      document.getElementById("sub").textContent = "⚠ Couldn't refresh data";
+    });
+}
+load();
+setInterval(load, REFRESH_MIN * 60000);
+document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+setInterval(function () { if (DATA) draw(); }, 60000);   // keep "x min ago" current
+</script>
+</body>
+</html>

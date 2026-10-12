@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shoreline Kiosk – San Mateo County</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  /* Designed at exactly 800x480 and scaled to fit whatever screen it's on. */
+  :root {
+    --bg: #f0f4f8; --panel: #ffffff; --ink: #1a3a5c; --muted: #6b7a8c; --line: #e3e8ee;
+    --red: #c0392b; --amber: #d98200; --green: #2e7d32; --blue: #1e6fd9;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1319; --panel: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542;
+    --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --blue: #6ea8fe;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg);
+    font-family: Arial, Helvetica, sans-serif; color: var(--ink); cursor: none; }
+  body.cursor { cursor: default; }
+  #stage { position: absolute; left: 0; top: 0; width: 800px; height: 480px; transform-origin: 0 0; }
+
+  /* Alert bar */
+  #alertbar { position: absolute; left: 0; top: 0; width: 800px; height: 56px; box-sizing: border-box;
+    padding: 0 16px; display: flex; align-items: center; gap: 12px; color: #fff; background: var(--green); }
+  #alertbar.warning { background: #b71c1c; }
+  #alertbar.watch, #alertbar.advisory { background: #c77700; }
+  #alertbar.statement { background: #455a75; }
+  #alertbar.unknown { background: #6b7a8c; }
+  #alertIcon { font-size: 26px; line-height: 1; }
+  #alertText { flex: 1; min-width: 0; }
+  #alertMain { font-size: 22px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #alertSub { font-size: 14px; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #alertMore { font-size: 13px; background: rgba(255,255,255,.22); border-radius: 12px; padding: 4px 10px; white-space: nowrap; }
+
+  /* Station panels */
+  .panel { position: absolute; top: 64px; width: 388px; height: 364px; box-sizing: border-box;
+    background: var(--panel); border-radius: 10px; padding: 10px 14px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  #p0 { left: 8px; } #p1 { left: 404px; }
+  .ph { display: flex; justify-content: space-between; align-items: baseline; }
+  .pname { font-size: 20px; font-weight: bold; }
+  .pid { font-size: 12px; color: var(--muted); }
+
+  .now { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px; }
+  .nowlbl { font-size: 13px; color: var(--muted); }
+  .nowline { white-space: nowrap; }
+  .nowval { font-size: 30px; font-weight: bold; }
+  .nowunit { font-size: 14px; color: var(--muted); margin-left: 4px; }
+  .nowdiff { font-size: 15px; text-align: right; padding-bottom: 4px; }
+  .nowdiff.hi { color: var(--red); font-weight: bold; }
+  .nowdiff.lo { color: var(--muted); }
+
+  .next { margin-top: 6px; padding: 6px 10px; border-radius: 6px; background: rgba(192,57,43,.09);
+    border-left: 4px solid var(--red); }
+  .next.clear { background: rgba(46,125,50,.09); border-left-color: var(--green); }
+  .nextlbl { font-size: 13px; color: var(--muted); }
+  .nextval { font-size: 19px; font-weight: bold; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .next.clear .nextval { color: var(--green); }
+  .nextsub { font-size: 14px; margin-top: 1px; }
+
+  .mini { position: relative; height: 158px; margin-top: 6px; }
+  .pfoot { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .tapnote { font-size: 12px; color: var(--muted); }
+  .mkey { font-size: 11.5px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .mkey i { display: inline-block; width: 14px; height: 0; margin-left: 6px; }
+  .mkey i:first-child { margin-left: 0; }
+  .mkey i.ab { height: 9px; background: rgba(192,57,43,.45); border-top: 2px solid #c0392b; box-sizing: border-box; }
+
+  /* Footer */
+  /* San Bruno Creek strip (under the NWS bar, only when the creek is at Monitoring or above) */
+  #creekStrip { position: absolute; left: 0; top: 56px; width: 800px; height: 30px; box-sizing: border-box;
+    display: none; align-items: center; gap: 8px; padding: 0 16px; font-size: 15px; color: #1a1a1a;
+    border-top: 2px solid rgba(255,255,255,.6); cursor: pointer; }
+  #stage.creekalert #creekStrip { display: flex; }
+  #creekStrip .sicon { font-size: 15px; font-weight: bold; }
+  #creekStrip .stext { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #creekStrip .stap { font-size: 12px; opacity: .85; white-space: nowrap; }
+  #creekStrip.lvl-warning { color: #fff; }
+  /* Make room for the strip: content moves down 28px and gets 28px shorter */
+  #stage.creekalert .panel, #stage.creekalert #creek, #stage.creekalert #about { top: 92px; height: 336px; }
+  #stage.creekalert .mini { height: 130px; }
+  /* Creek tab button takes the creek's alert color */
+  .tab.creek-monitoring { background: #f2d024; border-color: #f2d024; color: #1a1a1a; }
+  .tab.creek-watch { background: #e07b00; border-color: #e07b00; color: #fff; }
+  .tab.creek-warning { background: #c62828; border-color: #c62828; color: #fff; }
+  .tab.creek-beyond { background: #9c27b0; border-color: #9c27b0; color: #fff; }
+  .tab.on.creek-monitoring, .tab.on.creek-watch, .tab.on.creek-warning, .tab.on.creek-beyond { box-shadow: inset 0 0 0 3px var(--ink); }
+
+  #footer { position: absolute; left: 8px; right: 8px; top: 434px; height: 42px; display: flex;
+    align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+  #tabs { display: flex; gap: 6px; }
+  .tab { font-size: 15px; font-weight: bold; padding: 8px 10px; border-radius: 8px; color: var(--ink);
+    background: var(--panel); border: 2px solid var(--line); white-space: nowrap; }
+  .tab.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  #footright { text-align: right; line-height: 1.25; }
+
+  /* Creeks tab */
+  #creek { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+    border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    padding: 8px 10px 6px; }
+  #creek.show { display: flex; flex-direction: column; gap: 6px; }
+  #cpick { display: flex; gap: 6px; align-items: center; flex: none; }
+  .cbtn { font-size: 14px; font-weight: bold; padding: 4px 12px; border-radius: 7px; border: 2px solid var(--line);
+    background: var(--panel); color: var(--ink); white-space: nowrap; }
+  .cbtn.on { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+  .cbtn.on[style] { box-shadow: inset 0 0 0 3px var(--ink); }
+  .cinfo { margin-left: auto; font-size: 12.5px; color: var(--muted); padding: 4px 6px; }
+  #cbody { flex: 1; min-height: 0; display: flex; gap: 10px; }
+
+  /* About tab */
+  #about { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+    border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    padding: 14px 18px; gap: 18px; }
+  #about.show { display: flex; }
+
+  /* Disclaimer tab */
+  #disclaimer { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+    border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    padding: 26px 40px; flex-direction: column; justify-content: center; }
+  #disclaimer.show { display: flex; }
+  #disclaimer h3 { margin: 0 0 12px; font-size: 22px; }
+  #disclaimer p { margin: 0 0 14px; font-size: 18px; line-height: 1.5; }
+  #disclaimer .emerg { color: var(--red); font-weight: bold; }
+  #stage.creekalert #disclaimer { top: 92px; height: 336px; }
+  #aboutText { flex: 1; min-width: 0; font-size: 14px; line-height: 1.4; }
+  #aboutText h3 { margin: 0 0 6px; font-size: 18px; }
+  #aboutText p { margin: 0 0 7px; }
+  #aboutText .src { font-size: 12.5px; color: var(--muted); }
+  #aboutText .emerg { font-weight: bold; color: var(--red); }
+  #aboutContact { width: 330px; flex: none; border-left: 1px solid var(--line); padding-left: 18px;
+    display: flex; flex-direction: column; }
+  #aboutContact .org { font-size: 20px; font-weight: bold; }
+  #aboutContact .orgsub { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  #aboutContact .line { font-size: 15px; margin: 2px 0; }
+  #aboutContact .big { font-size: 19px; font-weight: bold; }
+  .qrs { display: flex; gap: 14px; margin-top: auto; }
+  .qr { text-align: center; font-size: 12px; color: var(--muted); width: 150px; }
+  .qr .code { width: 112px; height: 112px; margin: 0 auto 4px; padding: 6px; background: #fff; border-radius: 6px; }
+  .qr .code img, .qr .code canvas { width: 112px !important; height: 112px !important; }
+  #cleft { width: 206px; flex: none; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+  .sbox { border-left: 5px solid var(--green); }
+  .srow { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
+  .sbox .cstat { display: inline-block; font-size: 11px; font-weight: bold; color: #fff; border-radius: 4px; padding: 1px 5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+  .sbox .csub { font-size: 12.5px; line-height: 1.3; }
+  .sbox.two { padding: 4px 9px; } .sbox.two .cbig { font-size: 24px; } .sbox.two .csub { font-size: 12px; }
+  .tbox .cbig { font-size: 22px; } .tbox .csub { font-size: 12px; }
+  .trig { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.25; }
+  .trig b { color: var(--ink); } .trig.met { color: var(--red); font-weight: bold; } .trig.met b { color: var(--red); }
+  #stage.creekalert .tbox.slim .csub { display: none; }
+  .cbox { border-radius: 8px; padding: 6px 10px; background: rgba(26,58,92,.05); }
+  .clbl { font-size: 12px; color: var(--muted); }
+  .cbig { font-size: 30px; font-weight: bold; line-height: 1.1; }
+  .cunit { font-size: 14px; font-weight: normal; color: var(--muted); }
+  .csub { font-size: 13px; margin-top: 1px; }
+  #stageBox { border-left: 5px solid var(--green); }
+  #stageBox .cstat { display: inline-block; font-size: 12px; font-weight: bold; color: #fff; border-radius: 4px;
+    padding: 1px 6px; margin-top: 3px; background: var(--green); }
+  table.rain { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.rain th { font-size: 12px; font-weight: normal; color: var(--muted); text-align: right; padding: 0 0 2px 6px; white-space: nowrap; }
+  table.rain th:first-child { text-align: left; }
+  table.rain td { padding: 1px 0 1px 8px; text-align: right; font-weight: bold; font-size: 16px; }
+  table.rain td:first-child { text-align: left; font-weight: normal; font-size: 13px; white-space: nowrap; }
+  #cright { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .ctitle { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; height: 15px; }
+  .cchart { position: relative; }
+  #cnote { min-height: 15px; font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  #cnote i { display: inline-block; width: 14px; height: 0; }
+  #clock { font-size: 16px; font-weight: bold; color: var(--ink); white-space: nowrap; }
+  #stale { color: var(--amber); font-weight: bold; display: block; }
+
+  /* Detail overlay (touch) */
+  #detail { position: absolute; inset: 0; background: var(--panel); display: none; flex-direction: column; }
+  #detail.show { display: flex; }
+  #dhead { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 14px;
+    border-bottom: 1px solid var(--line); flex: none; }
+  #dtitle { font-size: 20px; font-weight: bold; }
+  #dclose { font-size: 18px; padding: 8px 16px; border-radius: 8px; background: var(--ink); color: var(--panel); }
+  #dbody { flex: 1; overflow-y: auto; padding: 10px 16px 16px; font-size: 16px; -webkit-overflow-scrolling: touch; }
+  #dbody table { width: 100%; border-collapse: collapse; font-size: 17px; }
+  #dbody th { text-align: left; font-size: 13px; color: var(--muted); font-weight: normal; padding: 0 10px 6px 0; border-bottom: 1px solid var(--line); }
+  #dbody td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  #dbody .red { color: var(--red); }
+  .dalert { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .dalert h3 { margin: 0 0 4px; font-size: 18px; }
+  .dalert .when { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .dalert dl { display: grid; grid-template-columns: 8.5em 1fr; gap: 3px 10px; margin: 0; font-size: 15px; }
+  .dalert dt { font-weight: bold; } .dalert dd { margin: 0; }
+  .dalert p { margin: 0 0 5px; font-size: 15px; }
+  .dalert dl + p { margin-top: 6px; }
+  #dnote { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+  /* Map tab */
+  #maptab { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
+    border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); overflow: hidden; }
+  #maptab.show { display: flex; }
+  #stage.creekalert #maptab { top: 92px; height: 336px; }
+  #kmap { width: 500px; height: 100%; flex: none; background: #dfe7ee; }
+  #kmap .leaflet-control-attribution { font-size: 9px; }
+  #kmap .leaflet-control-zoom a { width: 38px; height: 38px; line-height: 38px; font-size: 22px; }
+  .kmk { width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid #fff; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+  .kmk.sq { border-radius: 4px; }
+  .kmk.big { width: 26px; height: 26px; }
+  .kmk.sel { outline: 3px solid var(--ink); outline-offset: 2px; }
+  #mside { flex: 1; min-width: 0; padding: 10px 12px 8px; display: flex; flex-direction: column; overflow: hidden; }
+  .mh { font-size: 17px; font-weight: bold; line-height: 1.2; }
+  .msub { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
+  .mcount { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12.5px; margin-bottom: 4px; }
+  .mcount span, .mrow { display: flex; align-items: center; gap: 6px; }
+  .mdot { width: 11px; height: 11px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+  .mdot.sq { border-radius: 2px; }
+  .msec { font-size: 11.5px; font-weight: bold; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin: 8px 0 3px; }
+  .mrow { font-size: 14px; padding: 2px 0; }
+  .mrow .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mrow .v { font-weight: bold; white-space: nowrap; }
+  .mnone { font-size: 13.5px; color: var(--green); }
+  .mtap { margin-top: auto; font-size: 12px; color: var(--muted); }
+  .mbadge { display: inline-block; font-size: 12px; font-weight: bold; color: #fff; border-radius: 4px; padding: 2px 7px; margin-bottom: 4px; align-self: flex-start; }
+  .msens { border-top: 1px solid var(--line); padding: 5px 0 3px; }
+  .msens .r { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .msens .l { font-size: 13.5px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .msens .val { font-size: 20px; font-weight: bold; white-space: nowrap; }
+  .msens .val small { font-size: 12px; font-weight: normal; color: var(--muted); }
+  .msens .a { font-size: 11.5px; color: var(--muted); }
+  .msens .a.old { color: var(--amber); }
+  .msens canvas { width: 100%; height: 30px; display: block; margin-top: 2px; }
+  #mback { margin-top: auto; text-align: center; font-size: 15px; font-weight: bold; padding: 8px; border-radius: 8px;
+    background: var(--ink); color: var(--panel); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="alertbar" class="unknown">
+    <div id="alertIcon">…</div>
+    <div id="alertText">
+      <div id="alertMain">Loading NWS alerts…</div>
+      <div id="alertSub">San Mateo County</div>
+    </div>
+    <div id="alertMore" style="display:none"></div>
+  </div>
+
+  <div id="creekStrip" title="San Bruno Creek gauge">
+    <span class="sicon">▲</span><span class="stext" id="csText"></span><span class="stap">creeks tab ›</span>
+  </div>
+
+  <div class="panel" id="p0"></div>
+  <div class="panel" id="p1"></div>
+
+  <div id="creek">
+    <div id="cpick"></div>
+    <div id="cbody">
+      <div id="cleft"></div>
+      <div id="cright"></div>
+    </div>
+  </div>
+
+  <div id="about">
+    <div id="aboutText">
+      <h3>About this screen</h3>
+      <p><b>Bay Tides:</b> predicted and measured San Francisco Bay water levels at the NOAA tide gauges in
+        Redwood City and Alameda. Red marks tides above Mean Higher High Water (MHHW), the average height of
+        the highest tide each day.</p>
+      <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline. Tap the creek buttons to switch creeks, and "thresholds &amp; notes" for what each level means.</p>
+      <p><b>Measured above predicted</b> means storms, wind or runoff are pushing water higher than the tide
+        alone. Upcoming high tides will likely run higher too.</p>
+      <p class="emerg">In an emergency, call 911.</p>
+      <p class="src">Data: NOAA Tides &amp; Currents, National Weather Service, and the OneShoreline Early Warning
+        System (OneRain). Predicted tides do not include storm surge. Data refreshes automatically.</p>
+    </div>
+    <div id="aboutContact">
+      <div class="org">OneShoreline</div>
+      <div class="orgsub">San Mateo County Flood and Sea Level Rise Resiliency District</div>
+      <div class="line big">(650) 844-8310</div>
+      <div class="line">info@oneshoreline.org</div>
+      <div class="line">oneshoreline.org</div>
+      <div class="line" style="font-size:13px;color:var(--muted)">1700 S. El Camino Real, Suite 502<br>San Mateo, CA 94402</div>
+      <div class="qrs">
+        <div class="qr"><div class="code" id="qrContact"></div>Contact OneShoreline</div>
+        <div class="qr"><div class="code" id="qrAlert"></div>Get alerts: SMC Alert</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="disclaimer">
+    <h3>Disclaimer</h3>
+    <p>Data provided for informational purposes only; OneShoreline is not liable for data errors or mis-interpretation of data by users of this site. Thresholds shown are approximate and will be updated as more information about the hydrologic response of the watershed is gleaned from the monitoring data. Actual flood conditions may vary based on channel blockages, sensor errors, or other complications.</p>
+    <p class="emerg">In an emergency, call 911.</p>
+  </div>
+
+  <div id="maptab">
+    <div id="kmap"></div>
+    <div id="mside"><div class="mh">OneRain sites</div><div class="msub">Loading…</div></div>
+  </div>
+
+  <div id="footer">
+    <span id="clock">--:--</span>
+    <div id="tabs">
+      <span class="tab on" data-tab="tides">Bay Tides</span>
+      <span class="tab" data-tab="creek">Creeks</span>
+      <span class="tab" data-tab="map">Map</span>
+      <span class="tab" data-tab="about">About</span>
+      <span class="tab" data-tab="disclaimer">Disclaimer</span>
+    </div>
+    <span id="footright"><span id="stale"></span><span id="updated"></span></span>
+  </div>
+
+  <div id="detail">
+    <div id="dhead"><span id="dtitle"></span><span id="dclose">✕ Back</span></div>
+    <div id="dbody"></div>
+  </div>
+</div>
+
+<script>
+/* ===================== CONFIG ===================== */
+var STATIONS = [
+  { id: "9414523", name: "Redwood City", mhhw: 7.02 },   // MHHW in ft NAVD88
+  { id: "9414750", name: "Alameda",      mhhw: 6.37 }
+];
+var COUNTY_SAME = "006081";        // San Mateo County
+var DAYS = 7;
+var HISTORY_HOURS = 48;            // hours of measured water level shown (two full tide cycles, for multi-day activations)
+var ALERTS_EVERY_MIN = 3;
+var OBSERVED_EVERY_MIN = 6;        // NOAA posts water levels every 6 minutes
+var PREDICTIONS_EVERY_MIN = 60;
+var STALE_AFTER_MIN = 90;          // warn if any data is older than this
+var DETAIL_TIMEOUT_SEC = 45;       // detail screens return to the main view on their own
+var RELOAD_AT_HOUR = 3;            // full page reload once a day (3 AM) to keep the browser fresh
+
+// Creeks tab. OneRain doesn't let other sites read its data directly, so a GitHub Action
+// (.github/workflows/onerain.yml) downloads it every 5 minutes and publishes this file:
+var CREEK_DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json";
+var CREEK_EVERY_MIN = 3;           // how often the kiosk checks for new creek data
+var CREEK_PAST_HOURS = 36;         // creek tab graphs: hours shown before "now"
+var CREEK_AHEAD_HOURS = 12;        // ...and hours of predicted tide after "now"
+// The creeks, their gauges and flood thresholds are set in scripts/creek_config.py (one place for every page).
+var CREEK_AUTO_SWITCH_AT_WARNING = true;   // jump to a creek when it first reaches Flood Warning level
+var GAUGE_QUIET_HOURS = 12;        // gauges that report when the level changes: longer silence = may be offline
+var GAUGE_QUIET_HOURS_INTERVAL = 3; // gauges that report on a schedule (e.g. every 15 min)
+var CREEK_DATA_LATE_MIN = 30;      // warn if the published creek data is older than this
+// Map tab: every public OneRain site, published every 15 minutes by the same GitHub Action (scripts/fetch_sites.py)
+var SITES_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/sites.json";
+var SITES_EVERY_MIN = 5;           // how often the kiosk checks for new site data
+var SITE_QUIET_HOURS = 24;         // a site is "not reporting" when none of its sensors has reported for this long
+// About tab: QR codes people can scan with their phones
+var CONTACT_URL = "https://www.oneshoreline.org/contact-oneshoreline";
+var ALERT_SIGNUP_URL = "https://www.smcgov.org/dem/smc-alert";
+var ABOUT_RETURN_SEC = 120;        // the About tab returns to Bay Tides on its own after this long
+var ROTATE_SECONDS = 0;            // 0 = stay on the chosen tab; e.g. 30 = switch tabs every 30 seconds
+var TAB_RETURN_MIN = 0;            // 0 = stay; e.g. 10 = return to Bay Tides after 10 min on the creek tab
+
+// URL options: ?theme=dark  ?cursor=1 (show mouse pointer, handy when previewing on a computer)
+//              ?tab=creek (start on the Creeks tab; also tab=map, tab=about, tab=disclaimer)
+//              ?creek=atherton (which creek the Creeks tab shows first)  ?rotate=30 (switch tabs every 30 s)
+var params = new URLSearchParams(location.search);
+if (params.get("theme") === "dark") document.documentElement.dataset.theme = "dark";
+if (params.get("cursor") === "1") document.body.classList.add("cursor");
+if (params.get("rotate")) ROTATE_SECONDS = Number(params.get("rotate")) || 0;
+/* ================================================== */
+
+/* ---------- Scale the 800x480 design to fit the screen ---------- */
+function fit() {
+  var s = Math.min(window.innerWidth / 800, window.innerHeight / 480);
+  var st = document.getElementById("stage");
+  st.style.transform = "scale(" + s + ")";
+  st.style.left = Math.max(0, (window.innerWidth - 800 * s) / 2) + "px";
+  st.style.top = Math.max(0, (window.innerHeight - 480 * s) / 2) + "px";
+  // The layout is enlarged with a CSS scale, which would stretch the graphs' pixels and blur them on big
+  // screens. Draw the graphs at the enlarged size instead so they stay sharp at any screen size.
+  if (typeof Chart !== "undefined") {
+    var dpr = (window.devicePixelRatio || 1) * Math.max(1, s);
+    Chart.defaults.devicePixelRatio = dpr;
+    Object.values(Chart.instances || {}).forEach(function (c) { c.options.devicePixelRatio = dpr; c.resize(); });
+  }
+}
+window.addEventListener("resize", fit); fit();
+
+/* ---------- Time helpers (NOAA gives local clock times) ---------- */
+function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4]); }
+function nowLocal() {
+  var p = {};
+  new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+}
+function dayStart(ms) { var d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); }
+function ymd(ms) { var d = new Date(ms); return d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCDate()).padStart(2, "0"); }
+function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
+function fTime(ms) { return fmt(ms, { hour: "numeric", minute: "2-digit" }); }
+function fDay(ms) { return fmt(ms, { weekday: "short", month: "short", day: "numeric" }); }
+function relDay(ms, now) {
+  var d = (dayStart(ms) - dayStart(now)) / 86400000;
+  return d === 0 ? "Today" : d === 1 ? "Tomorrow" : fmt(ms, { weekday: "short" }) + " " + fmt(ms, { month: "numeric", day: "numeric" });
+}
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+function getJSON(url, accept) {
+  return fetch(url, { cache: "no-store", headers: accept ? { Accept: accept } : {} })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (j) { if (j.error) throw new Error(j.error.message || "error"); return j; });
+}
+function noaa(st, product, begin, end, extra) {
+  return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product +
+    "&station=" + st.id + "&begin_date=" + begin + "&end_date=" + end +
+    "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS" + (extra || "");
+}
+
+/* ---------- Tide windows above MHHW (same method as the dashboard widget) ---------- */
+function findWindows(pts, mhhw) {
+  function cross(a, b) {
+    if (b.v === a.v) return a.t;
+    return Math.round((a.t + (mhhw - a.v) / (b.v - a.v) * (b.t - a.t)) / 60000) * 60000;
+  }
+  var wins = [], cur = null;
+  for (var i = 0; i < pts.length; i++) {
+    var p = pts[i], prev = pts[i - 1];
+    if (p.v > mhhw) {
+      if (!cur) cur = { start: prev ? cross(prev, p) : p.t, peak: p.v, peakT: p.t };
+      if (p.v > cur.peak) { cur.peak = p.v; cur.peakT = p.t; }
+    } else if (cur) { cur.end = cross(prev, p); wins.push(cur); cur = null; }
+  }
+  if (cur) { cur.end = pts[pts.length - 1].t; wins.push(cur); }
+  return wins;
+}
+function applyOfficialPeaks(wins, highs) {
+  wins.forEach(function (w) {
+    var best = null;
+    highs.forEach(function (h) {
+      if (h.t >= w.start - 900000 && h.t <= w.end + 900000 && (!best || h.v > best.v)) best = h;
+    });
+    if (best) { w.peak = best.v; w.peakT = best.t; }
+  });
+}
+function dur(mins) { return mins < 60 ? mins + " min" : Math.floor(mins / 60) + " hr" + (mins % 60 ? " " + (mins % 60) + " min" : ""); }
+
+/* ---------- State ---------- */
+var startedAt = Date.now();
+var S = STATIONS.map(function (st) { return { st: st, pred: null, highs: null, obs: null, wins: [], chart: null,
+  tPred: 0, tObs: 0 }; });
+var A = { list: null, t: 0 };
+
+/* ---------- Station panels ---------- */
+function predAt(s, t) {
+  var p = s.pred; if (!p || !p.length) return null;
+  var i = Math.round((t - p[0].t) / 360000);             // 6-minute steps
+  return (i >= 0 && i < p.length) ? p[i].v : null;
+}
+
+function renderPanel(i) {
+  var s = S[i], st = s.st, now = nowLocal(), el = document.getElementById("p" + i);
+  if (!el.dataset.built) {
+    el.innerHTML =
+      '<div class="ph"><span class="pname">' + esc(st.name) + '</span><span class="pid">NOAA ' + st.id + ' · ft NAVD88</span></div>' +
+      '<div class="now"><div><div class="nowlbl">Measured water level</div><div class="nowline">' +
+        '<span class="nowval" data-k="nowval">–</span><span class="nowunit" data-k="nowunit">ft</span></div></div>' +
+        '<div class="nowdiff" data-k="nowdiff"></div></div>' +
+      '<div class="next" data-k="next"><div class="nextlbl" data-k="nextlbl">Next predicted above MHHW</div>' +
+        '<div class="nextval" data-k="nextval">Loading…</div><div class="nextsub" data-k="nextsub"></div></div>' +
+      '<div class="mini"><canvas data-k="canvas"></canvas></div>' +
+      '<div class="pfoot"><span data-k="days"></span><span class="tapnote">Tap for all times ›</span></div>' +
+      '<div class="mkey"><i style="border-top:2.5px solid #1e88e5"></i>Measured <i style="border-top:1.5px solid var(--ink)"></i>Predicted ' +
+      '<i style="border-top:1.5px dashed #e05c2a"></i>MHHW <i class="ab"></i>Above MHHW</div>';
+    el.dataset.built = "1";
+    el.addEventListener("click", function () { showStation(i); });
+  }
+  function q(k) { return el.querySelector('[data-k="' + k + '"]'); }
+
+  // Live water level vs predicted (this is where storm surge shows up)
+  var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null;
+  if (last && now - last.t < 60 * 60000) {
+    q("nowval").textContent = last.v.toFixed(2);
+    var ago = null;
+    for (var k = s.obs.length - 1; k >= 0; k--) { if (last.t - s.obs[k].t >= 30 * 60000) { ago = s.obs[k]; break; } }
+    var arrow = ago ? (last.v - ago.v > 0.05 ? " ↑" : last.v - ago.v < -0.05 ? " ↓" : " →") : "";
+    q("nowval").textContent = last.v.toFixed(2) + arrow;
+    q("nowunit").textContent = "ft · " + fTime(last.t);
+    var pv = predAt(s, last.t), d = q("nowdiff");
+    if (pv != null) {
+      var diff = last.v - pv;
+      d.innerHTML = Math.abs(diff) < 0.05 ? "As predicted" :
+        "<b>" + Math.abs(diff).toFixed(2) + " ft</b> " + (diff > 0 ? "above" : "below") + "<br>predicted tide";
+      d.className = "nowdiff " + (diff >= 0.5 ? "hi" : "lo");
+    } else d.textContent = "";
+  } else {
+    q("nowval").textContent = "–";
+    q("nowunit").textContent = s.tObs ? "no recent reading" : "";
+    q("nowdiff").textContent = "";
+  }
+
+  // Next time above MHHW
+  var upcoming = s.wins.filter(function (w) { return w.end > now; });
+  var nx = q("next");
+  if (!s.pred) {
+    if (s.predFailed) { nx.className = "next"; q("nextlbl").textContent = "Tide predictions"; q("nextval").textContent = "Can't reach NOAA — retrying"; q("nextsub").textContent = ""; }
+  }
+  else if (!upcoming.length) {
+    nx.className = "next clear";
+    q("nextlbl").textContent = "Predicted, next 7 days";
+    q("nextval").textContent = "No tides above MHHW";
+    q("nextsub").textContent = "MHHW = " + st.mhhw.toFixed(2) + " ft";
+  } else {
+    var w = upcoming[0], active = w.start <= now;
+    nx.className = "next";
+    q("nextlbl").textContent = active ? "Predicted above MHHW now — until" : "Next predicted above MHHW";
+    q("nextval").textContent = active ? fTime(w.end) + (dayStart(w.end) !== dayStart(now) ? " " + relDay(w.end, now) : "")
+                                      : relDay(w.start, now) + "  " + fTime(w.start) + " – " + fTime(w.end);
+    q("nextsub").innerHTML = "Peak <b>" + w.peak.toFixed(2) + " ft</b> at " + fTime(w.peakT) +
+      ' <span style="color:var(--red)">(' + (w.peak - st.mhhw).toFixed(2) + " ft above MHHW)</span>";
+  }
+  var dset = {}; upcoming.forEach(function (w) { dset[dayStart(w.start)] = 1; });
+  var nd = Object.keys(dset).length;
+  q("days").textContent = s.pred ? (nd ? nd + " of next " + DAYS + " days predicted above MHHW" : "MHHW = " + st.mhhw.toFixed(2) + " ft NAVD88") : "";
+
+  drawMini(i, q("canvas"));
+  if (typeof currentTab !== "undefined" && currentTab === "creek" && C.data) renderCreek();   // creek tab shows a tide too
+}
+
+var nowLinePlugin = {
+  id: "nowLine",
+  afterDatasetsDraw: function (c) {
+    var x = c.options.plugins.nowLine.x, xs = c.scales.x, ys = c.scales.y;
+    if (x == null || x < xs.min || x > xs.max) return;
+    var px = xs.getPixelForValue(x), ctx = c.ctx;
+    ctx.save(); ctx.strokeStyle = "#8a96a6"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px, ys.top); ctx.lineTo(px, ys.bottom); ctx.stroke(); ctx.restore();
+  }
+};
+
+function drawMini(i, canvas) {
+  var s = S[i]; if (!s.pred || typeof Chart === "undefined") return;
+  var now = nowLocal(), start = dayStart(now), m = s.st.mhhw;
+  var css = getComputedStyle(document.documentElement);
+  var ink = css.getPropertyValue("--ink").trim(), muted = css.getPropertyValue("--muted").trim(),
+      line = css.getPropertyValue("--line").trim();
+  var hrs = function (t) { return (t - start) / 3600000; };
+  var pts = s.pred.map(function (p) { return { x: hrs(p.t), y: p.v }; });
+  var mh = pts.map(function (p) { return { x: p.x, y: m }; });
+  var ab = pts.map(function (p) { return { x: p.x, y: Math.max(p.y, m) }; });
+  var ob = (s.obs || []).map(function (p) { return { x: hrs(p.t), y: p.v }; });
+  var ys = pts.map(function (p) { return p.y; }).concat(ob.map(function (p) { return p.y; }));
+  // Even-numbered bounds so the 2-ft axis labels never collide
+  var yMin = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), yMax = 2 * Math.ceil((Math.max(Math.max.apply(null, ys), m) + 0.3) / 2);
+
+  var data = { datasets: [
+    { data: mh, borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false, order: 3 },
+    { data: ab, borderColor: "rgba(0,0,0,0)", backgroundColor: "rgba(192,57,43,0.45)", borderWidth: 0, pointRadius: 0, tension: 0.3, fill: 0, order: 4 },
+    { data: pts, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false, order: 2,
+      segment: { borderColor: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? "#c0392b" : undefined; },
+                 borderWidth: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? 2.5 : undefined; } } },
+    { data: ob, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 1 }
+  ] };
+  var opts = {
+    responsive: true, maintainAspectRatio: false, animation: false, events: [],
+    layout: { padding: { right: 2 } },
+    plugins: { legend: { display: false }, tooltip: { enabled: false }, nowLine: { x: hrs(now) } },
+    scales: {
+      x: { type: "linear", min: -HISTORY_HOURS, max: DAYS * 24,
+        ticks: { stepSize: 12, autoSkip: false, maxRotation: 0, color: muted, font: { size: 11 },
+          callback: function (v) { return ((v % 24) + 24) % 24 === 12 ? fmt(start + v * 3600000, { weekday: "narrow" }) : ""; } },
+        grid: { color: function (c) { return c.tick && ((c.tick.value % 24) + 24) % 24 === 0 ? line : "rgba(0,0,0,0)"; }, drawTicks: false } },
+      y: { min: yMin, max: yMax, ticks: { stepSize: 2, color: muted, font: { size: 11 }, callback: function (v) { return v; } },
+        grid: { color: line } }
+    }
+  };
+  if (s.chart) { s.chart.data = data; s.chart.options = opts; s.chart.update("none"); }
+  else s.chart = new Chart(canvas, { type: "line", data: data, options: opts, plugins: [nowLinePlugin] });
+}
+
+/* ---------- Loading tide data ---------- */
+function loadPredictions(i) {
+  // Predictions start as far back as the measured history so the two lines can be compared.
+  var s = S[i], now = nowLocal(), b = ymd(now - HISTORY_HOURS * 3600000), e = ymd(dayStart(now) + (DAYS - 1) * 86400000);
+  return Promise.all([getJSON(noaa(s.st, "predictions", b, e)), getJSON(noaa(s.st, "predictions", b, e, "&interval=hilo"))])
+    .then(function (r) {
+      s.pred = (r[0].predictions || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; })
+                                       .filter(function (p) { return !isNaN(p.v); });
+      s.highs = (r[1].predictions || []).filter(function (p) { return p.type === "H"; })
+                                        .map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; });
+      s.wins = findWindows(s.pred, s.st.mhhw); applyOfficialPeaks(s.wins, s.highs);
+      s.tPred = Date.now(); renderPanel(i); tick();
+    }).catch(function () {   // keep last good data; staleness shows in the footer
+      s.predFailed = true; renderPanel(i);
+      if (!s.pred) setTimeout(function () { loadPredictions(i); }, 2 * 60000);   // retry sooner on first load
+    });
+}
+function loadObserved(i) {
+  var s = S[i], now = nowLocal();
+  return getJSON(noaa(s.st, "water_level", ymd(now - HISTORY_HOURS * 3600000), ymd(now)))
+    .then(function (r) {
+      s.obs = (r.data || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; })
+                            .filter(function (p) { return !isNaN(p.v) && p.t >= now - HISTORY_HOURS * 3600000; });
+      s.tObs = Date.now(); renderPanel(i); tick();
+    }).catch(function () { s.tObs = s.tObs || 0; renderPanel(i); });
+}
+
+/* ---------- NWS alerts ---------- */
+function classify(e) { return /warning|emergency/i.test(e) ? "warning" : /watch/i.test(e) ? "watch" : /advisory/i.test(e) ? "advisory" : "statement"; }
+var RANK = { warning: 0, watch: 1, advisory: 2, statement: 3 };
+
+function loadAlerts() {
+  return getJSON("https://api.weather.gov/alerts/active?area=CA", "application/geo+json").then(function (j) {
+    A.list = (j.features || []).map(function (f) { return f.properties; })
+      .filter(function (p) { return (p.geocode && p.geocode.SAME || []).indexOf(COUNTY_SAME) >= 0 && p.status === "Actual" && p.messageType !== "Cancel"; })
+      .sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
+    A.t = Date.now(); renderAlerts(); tick();
+  }).catch(function () { renderAlerts(); });
+}
+
+function untilText(iso) {
+  if (!iso) return "until further notice";
+  return "until " + new Date(iso).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function renderAlerts() {
+  var bar = document.getElementById("alertbar"), main = document.getElementById("alertMain"),
+      sub = document.getElementById("alertSub"), icon = document.getElementById("alertIcon"),
+      more = document.getElementById("alertMore");
+  if (A.list == null) { bar.className = "unknown"; icon.textContent = "?"; main.textContent = "NWS alerts unavailable"; sub.textContent = "Retrying…"; return; }
+  if (!A.list.length) {
+    bar.className = ""; icon.textContent = "✓"; main.textContent = "No active NWS alerts";
+    sub.textContent = "San Mateo County · National Weather Service"; more.style.display = "none"; return;
+  }
+  var top = A.list[0], cls = classify(top.event);
+  bar.className = cls; icon.textContent = cls === "statement" ? "ℹ" : "⚠";
+  main.textContent = top.event.toUpperCase();
+  sub.textContent = untilText(top.ends || top.expires) + " · NWS San Francisco Bay Area";
+  if (A.list.length > 1) { more.style.display = ""; more.textContent = "+" + (A.list.length - 1) + " more · tap"; }
+  else { more.style.display = ""; more.textContent = "Tap for details"; }
+}
+
+/* ---------- NWS text formatting (same as the dashboard alerts widget) ---------- */
+function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
+function labelCase(s) { return s.toLowerCase().replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); }
+function formatDesc(text) {
+  var parts = [];
+  String(text || "").split(/\n\s*\n/).forEach(function (b) {
+    b.split(/(?=^\*\s+[A-Z][A-Z /&-]+\.\.\.)/m).forEach(function (x) { if (x.trim()) parts.push(x.trim()); });
+  });
+  var html = "", rows = "";
+  function flush() { if (rows) { html += "<dl>" + rows + "</dl>"; rows = ""; } }
+  parts.forEach(function (part) {
+    var m = part.match(/^\*\s+([A-Z][A-Z /&-]+?)\.\.\.([\s\S]*)$/);
+    if (m) { rows += "<dt>" + esc(labelCase(m[1])) + "</dt><dd>" + esc(unwrap(m[2])) + "</dd>"; return; }
+    flush();
+    var t = unwrap(part), lead = t.match(/^\.\.\.(.*?)\.\.\.$/);
+    html += lead ? "<p><b>" + esc(lead[1]) + "</b></p>" : "<p>" + esc(t) + "</p>";
+  });
+  flush(); return html;
+}
+
+/* ---------- Detail screens (touch) ---------- */
+var detailTimer = null;
+function openDetail(title, html) {
+  document.getElementById("dtitle").textContent = title;
+  document.getElementById("dbody").innerHTML = html;
+  document.getElementById("dbody").scrollTop = 0;
+  document.getElementById("detail").classList.add("show");
+  bumpDetailTimer();
+}
+function closeDetail() { document.getElementById("detail").classList.remove("show"); clearTimeout(detailTimer); }
+function bumpDetailTimer() { clearTimeout(detailTimer); detailTimer = setTimeout(closeDetail, DETAIL_TIMEOUT_SEC * 1000); }
+document.getElementById("dclose").addEventListener("click", function (e) { e.stopPropagation(); closeDetail(); });
+document.getElementById("detail").addEventListener("touchstart", bumpDetailTimer, { passive: true });
+document.getElementById("dbody").addEventListener("scroll", bumpDetailTimer, { passive: true });
+
+document.getElementById("alertbar").addEventListener("click", function () {
+  if (!A.list) return;
+  if (!A.list.length) { openDetail("NWS alerts – San Mateo County", "<p>There are no active watches, warnings, or advisories.</p>"); return; }
+  openDetail("NWS alerts – San Mateo County", A.list.map(function (p) {
+    return '<div class="dalert"><h3 style="color:var(--' + (classify(p.event) === "warning" ? "red" : classify(p.event) === "statement" ? "ink" : "amber") + ')">' +
+      esc(p.event) + '</h3><div class="when">Issued ' +
+      new Date(p.sent).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) +
+      " · " + untilText(p.ends || p.expires) + "</div>" + formatDesc(p.description) +
+      (p.instruction ? "<p><b>Actions:</b> " + esc(unwrap(p.instruction)) + "</p>" : "") + "</div>";
+  }).join("") + '<div id="dnote">Source: National Weather Service (api.weather.gov)</div>');
+});
+
+function showStation(i) {
+  var s = S[i], st = s.st, now = nowLocal();
+  var wins = s.wins.filter(function (w) { return w.end > now; });
+  var html = wins.length ? "<table><tr><th>Day</th><th>Predicted above MHHW</th><th>Predicted high tide</th></tr>" + wins.map(function (w) {
+    return "<tr><td><b>" + fDay(w.start) + "</b></td><td>" + fTime(w.start) + " – " + fTime(w.end) +
+      ' <span style="color:var(--muted);font-size:14px">(' + dur(Math.round((w.end - w.start) / 60000)) + ")</span></td><td>" +
+      w.peak.toFixed(2) + ' ft at ' + fTime(w.peakT) + ' <span class="red" style="font-size:14px">+' + (w.peak - st.mhhw).toFixed(2) + "</span></td></tr>";
+  }).join("") + "</table>" : "<p>No tides are predicted to rise above MHHW in the next " + DAYS + " days.</p>";
+  html += '<div id="dnote">MHHW (Mean Higher High Water) = ' + st.mhhw.toFixed(2) + " ft NAVD88, the average height of the highest tide each day. " +
+    "Predicted tides do not include storm surge, wind, or runoff; compare with the measured water level (blue line) on the main screen. NOAA station " + st.id + ".</div>";
+  openDetail(st.name + " – predicted tides above MHHW", html);
+}
+
+/* ---------- Tabs ---------- */
+var currentTab = "tides", tabChangedAt = Date.now();
+var C = { data: null, t: 0, charts: {}, sel: params.get("creek") || null };
+
+function loadCreek() {
+  return fetch(CREEK_DATA_URL + "?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (j) { C.data = j; C.t = Date.now(); renderCreek(); })
+    .catch(function () { C.failed = true; renderCreek(); });
+}
+function pts(key) {
+  var s = C.data && C.data.sensors && C.data.sensors[key];
+  return s ? s.points.map(function (p) { return { t: parseLocal(p[0]), v: p[1] }; }) : [];
+}
+function rainSum(p, from, to) {
+  var sum = 0; p.forEach(function (x) { if (x.t > from && x.t <= to) sum += x.v; }); return sum;
+}
+function agoText(ms) {
+  var m = Math.round(ms / 60000);
+  return m < 60 ? m + " min ago" : m < 48 * 60 ? Math.round(m / 60) + " hr ago" : Math.round(m / 1440) + " days ago";
+}
+// Creek gauges and thresholds come from the data file (set in scripts/creek_config.py).
+function creeks() { return (C.data && C.data.creeks) || []; }
+function stageLevel(g, v) {
+  var lvl = null; (g.thresholds || []).forEach(function (t) { if (v >= t.value) lvl = t; }); return lvl;
+}
+function levelClass(l) { return ["", "monitoring", "watch", "warning", "beyond"][l ? Math.min(l.level, 4) : 0]; }
+function inkOn(l) { return l && l.level === 1 ? "#1a1a1a" : "#fff"; }
+function textCol(l) { return l.level === 1 ? "#8a6d00" : l.color; }   // readable on a white panel
+function tideFor(c) { return S.filter(function (s) { return s.st.id === c.tide; })[0] || S[1]; }
+
+/* Everything the screen needs about one creek, right now */
+function creekState(c, now) {
+  var gen = C.data && C.data.generated ? parseLocal(C.data.generated) : null;
+  var late = !gen || (now - gen) > CREEK_DATA_LATE_MIN * 60000;
+  var st = { c: c, late: late, gen: gen, top: null, topGauge: null, stages: [], rains: [] };
+  c.stages.forEach(function (g) {
+    var p = pts(g.key), last = p.length ? p[p.length - 1] : null;
+    var lat = C.data.sensors[g.key] && C.data.sensors[g.key].latest;
+    if (lat && (!last || parseLocal(lat[0]) > last.t)) last = { t: parseLocal(lat[0]), v: lat[1] };
+    var quietH = g.reports === "interval" ? GAUGE_QUIET_HOURS_INTERVAL : GAUGE_QUIET_HOURS;
+    var quiet = !last || (now - last.t) > quietH * 3600000, prev = null;
+    for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
+    var arrow = quiet || !prev ? "" : (last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "");
+    var lvl = last && !quiet ? stageLevel(g, last.v) : null;
+    var s = { g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl,
+      next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null };
+    st.stages.push(s);
+    // the creek's level for the alert strip: only from a current reading in current data
+    if (lvl && !late && (!st.top || lvl.level > st.top.level)) { st.top = lvl; st.topGauge = s; }
+  });
+  c.rain.forEach(function (g) {
+    var p = pts(g.key);
+    st.rains.push({ g: g, p: p, r1: rainSum(p, now - 3600000, now), r24: rainSum(p, now - 86400000, now) });
+  });
+  // Rain amounts that mean flooding is likely (some with a high tide too)
+  st.tideHigh = tideHighNow(c, now);
+  st.triggers = (c.rain_triggers || []).map(function (tr) {
+    var amt = rainSum(pts(tr.gauge), now - tr.minutes * 60000, now);
+    var met = amt >= tr.value && (!tr.high_tide || st.tideHigh);
+    var x = { tr: tr, amt: amt, met: met };
+    if (met && !late && (!st.top || tr.level > st.top.level)) { st.top = tr; st.topGauge = null; st.topTrigger = x; }
+    return x;
+  });
+  return st;
+}
+
+function tideHighNow(c, now) {
+  var tS = tideFor(c), tl = tS.obs && tS.obs.length ? tS.obs[tS.obs.length - 1] : null;
+  var v = tl && now - tl.t < 3600000 ? tl.v : predAt(tS, now);
+  return v != null && v >= tS.st.mhhw;
+}
+
+function selectedCreek() {
+  var list = creeks();
+  return list.filter(function (c) { return c.id === C.sel; })[0] || list[0];
+}
+
+function renderCreek() {
+  var now = nowLocal(), el = function (id) { return document.getElementById(id); };
+  if (!C.data || !creeks().length) {
+    el("cleft").innerHTML = '<div class="cbox"><div class="csub">' + (C.failed ? "Creek data unavailable — retrying" : "Loading…") + "</div></div>";
+    return;
+  }
+  var states = creeks().map(function (c) { return creekState(c, now); });
+  updateCreekAlert(states);
+  var c = selectedCreek(), st = states.filter(function (x) { return x.c === c; })[0];
+
+  // Creek buttons, each in its creek's alert color
+  el("cpick").innerHTML = states.map(function (x) {
+    var on = x.c === c, col = x.top ? x.top.color : null;
+    return '<span class="cbtn' + (on ? " on" : "") + '" data-creek="' + esc(x.c.id) + '"' +
+      (col ? ' style="background:' + col + ";border-color:" + col + ";color:" + inkOn(x.top) + '"' : "") + ">" +
+      (col ? "▲ " : "") + esc(x.c.name) + "</span>";
+  }).join("") + '<span class="cinfo" data-info="1">ⓘ thresholds &amp; notes</span>';
+
+  // Left column: each gauge's level, rain totals, tide now
+  var h = "", two = st.stages.length > 1;
+  st.stages.forEach(function (s, i) {
+    var g = s.g, col = s.quiet ? "#6b7a8c" : s.lvl ? s.lvl.color : "#2e7d32";
+    var sub = !s.last ? "No recent readings" : s.quiet
+      ? "<b style='color:var(--amber)'>Gauge may be offline</b> · last report " + fDay(s.last.t).replace(/^\w+, /, "") + " " + fTime(s.last.t)
+      : "<b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" + (s.lvl ? esc(s.lvl.name) : "Normal") + "</b> · " +
+        (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) : "highest level") + " · " + fTime(s.last.t);
+    h += '<div class="cbox sbox' + (two ? " two" : "") + '" data-info="1" style="border-left-color:' + col + '">' +
+      '<div class="clbl">' + esc(g.label) + " · stage</div>" +
+      '<div class="cbig">' + (s.last ? s.last.v.toFixed(2) + s.arrow : "–") + '<span class="cunit"> ft</span></div>' +
+      '<div class="csub">' + sub + "</div></div>";
+  });
+  function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
+  h += '<div class="cbox"><table class="rain"><tr><th>Rainfall (in)</th><th>1 hr</th><th>24 hr</th></tr>' +
+    st.rains.map(function (r) { return "<tr><td>" + esc(r.g.label) + "</td><td>" + inch(r.r1) + "</td><td>" + inch(r.r24) + "</td></tr>"; }).join("") + "</table>" +
+    st.triggers.map(function (x) {
+      return '<div class="trig' + (x.met ? " met" : "") + '">' + esc(x.tr.label) + ": <b>" + x.amt.toFixed(2) + "</b> of " + x.tr.value.toFixed(2) + " in" +
+        (x.tr.high_tide ? " · tide " + (st.tideHigh ? "<b>high</b>" : "not high") : "") + (x.met ? " ⚠" : "") + "</div>";
+    }).join("") + "</div>";
+  var tS = tideFor(c), tl = tS.obs && tS.obs.length ? tS.obs[tS.obs.length - 1] : null, tsub = "No recent reading", tval = "–";
+  if (tl && now - tl.t < 3600000) {
+    tval = tl.v.toFixed(2);
+    var pv = predAt(tS, tl.t), d = pv == null ? null : tl.v - pv;
+    tsub = fTime(tl.t) + (d == null ? "" : " · " + (Math.abs(d) < 0.05 ? "as predicted" :
+      "<span style='color:" + (d >= 0.5 ? "var(--red);font-weight:bold" : "inherit") + "'>" + Math.abs(d).toFixed(2) + " ft " + (d > 0 ? "above" : "below") + " predicted</span>"));
+  }
+  h += '<div class="cbox tbox' + (st.triggers.length || two ? " slim" : "") + '"><div class="clbl">' + esc(tS.st.name) + ' tide (measured)</div><div class="cbig">' + tval +
+    '<span class="cunit"> ft NAVD88</span></div><div class="csub">' + tsub + "</div></div>";
+  el("cleft").innerHTML = h;
+
+  drawCreekCharts(st, now);
+}
+
+/* Tap a creek button to switch; tap a gauge or "thresholds & notes" for the creek's details */
+document.getElementById("creek").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-creek]");
+  if (b) { e.stopPropagation(); C.sel = b.dataset.creek; tabChangedAt = Date.now(); destroyCreekCharts(); renderCreek(); return; }
+  if (e.target.closest("[data-info]")) { e.stopPropagation(); showCreekInfo(); }
+});
+function showCreekInfo() {
+  var c = selectedCreek(); if (!c) return;
+  var html = "<p>" + esc(c.intro) + "</p><table><tr><th>Gauge</th><th>Level</th><th>Stage</th></tr>";
+  c.stages.forEach(function (g) {
+    (g.thresholds || []).forEach(function (t, i) {
+      html += "<tr><td>" + (i ? "" : "<b>" + esc(g.label) + "</b> <span style='color:var(--muted);font-size:13px'>(" + esc(g.number) + ")</span>") + "</td>" +
+        "<td><span style='display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;background:" + t.color + "'></span>" + esc(t.name) + "</td>" +
+        "<td>" + t.value.toFixed(2) + " ft</td></tr>";
+    });
+  });
+  html += "</table>";
+  (c.rain_triggers || []).forEach(function (tr, i) {
+    if (!i) html += "<p style='margin-top:10px'><b>Flooding is likely</b> if any of these is met:</p><ul style='margin:0 0 6px;padding-left:22px'>";
+    html += "<li>" + esc(tr.label) + " at " + esc((c.rain.filter(function (g) { return g.key === tr.gauge; })[0] || {}).label || "") + " of " + tr.value.toFixed(2) + " in or more" +
+      (tr.high_tide ? ", while the tide is at or above MHHW" : "") + "</li>";
+    if (i === c.rain_triggers.length - 1) html += "</ul>";
+  });
+  if (c.note) html += "<p style='margin-top:10px'>" + esc(c.note) + "</p>";
+  c.stages.forEach(function (g) { if (g.note) html += "<p><b>" + esc(g.label) + ":</b> " + esc(g.note) + "</p>"; });
+  html += '<div id="dnote">Levels are on OneShoreline’s creek gauges, not National Weather Service alerts. Thresholds are approximate. ' +
+    "Rain gauges: " + c.rain.map(function (g) { return esc(g.label) + " (" + esc(g.where) + ")"; }).join(", ") + ". Tide: NOAA station " + esc(c.tide) + ".</div>";
+  openDetail(c.name + " – thresholds and notes", html);
+}
+
+/* ---------- Creek alert strip (any creek at Flood Monitoring or above) ---------- */
+var creekWarned = {};
+function updateCreekAlert(states) {
+  var stage = document.getElementById("stage"), strip = document.getElementById("creekStrip");
+  var tab = document.querySelector('.tab[data-tab="creek"]');
+  var alerting = states.filter(function (x) { return x.top; }).sort(function (a, b) { return b.top.level - a.top.level; });
+  var worst = alerting[0];
+  var was = stage.classList.contains("creekalert");
+  stage.classList.toggle("creekalert", !!worst);
+  tab.classList.remove("creek-monitoring", "creek-watch", "creek-warning", "creek-beyond");
+  if (worst) {
+    var l = worst.top, s = worst.topGauge, key = levelClass(l), trg = worst.topTrigger;
+    tab.classList.add("creek-" + key);
+    strip.className = "lvl-" + key;
+    strip.style.background = l.color; strip.style.color = inkOn(l);
+    var higher = s ? (s.g.thresholds || []).filter(function (t) { return t.value > l.value; })[0] : null;
+    if (!s) document.getElementById("csText").innerHTML =
+      "<b>" + esc(worst.c.name.toUpperCase()) + ": " + esc(l.name.toUpperCase()) + "</b> · " + esc(trg.tr.label) + " " + trg.amt.toFixed(2) +
+      " in <span style='opacity:.85'>(trigger " + trg.tr.value.toFixed(2) + " in" + (trg.tr.high_tide ? " with high tide" : "") + ")</span>";
+    else document.getElementById("csText").innerHTML =
+      "<b>" + esc(worst.c.name.toUpperCase()) + ": " + esc(l.name.toUpperCase()) + " level</b> · " +
+      s.last.v.toFixed(2) + " ft" + s.arrow + " <span style='opacity:.85'>· " +
+      (higher ? higher.name.replace("Flood ", "") + " at " + higher.value.toFixed(2) + " ft" : "highest level") +
+      (alerting.length > 1 ? " · +" + (alerting.length - 1) + " more creek" + (alerting.length > 2 ? "s" : "") : " · " + esc(s.g.label)) + "</span>";
+    strip.dataset.creek = worst.c.id;
+  }
+  // Jump to a creek when it first reaches Flood Warning (people can still tap back)
+  states.forEach(function (x) {
+    var warn = x.top && x.top.level >= 3;
+    if (CREEK_AUTO_SWITCH_AT_WARNING && warn && !creekWarned[x.c.id] && !(currentTab === "creek" && C.sel === x.c.id)) {
+      closeDetail(); C.sel = x.c.id; destroyCreekCharts(); showTab("creek");
+    }
+    creekWarned[x.c.id] = warn;
+  });
+  if (was !== !!worst) S.forEach(function (_, i) { renderPanel(i); });   // panels changed size
+}
+document.getElementById("creekStrip").addEventListener("click", function () {
+  closeDetail(); if (this.dataset.creek && this.dataset.creek !== C.sel) { C.sel = this.dataset.creek; destroyCreekCharts(); }
+  showTab("creek");
+});
+
+/* ---------- Creek graphs: rain, each gauge's stage, and the tide, stacked on one time axis ---------- */
+function destroyCreekCharts() {
+  Object.keys(C.charts).forEach(function (k) { C.charts[k].destroy(); });
+  C.charts = {}; C.chartsFor = null;
+}
+function drawCreekCharts(st, now) {
+  if (typeof Chart === "undefined" || currentTab !== "creek") return;
+  var c = st.c, right = document.getElementById("cright");
+  // Build the graph boxes for this creek once; after that, just update them
+  if (C.chartsFor !== c.id) {
+    destroyCreekCharts();
+    var parts = [{ id: "chRain", w: 0.65, title: "Rain per hour (in)", key: "cRainKey" }];
+    c.stages.forEach(function (g, i) { parts.push({ id: "chStage" + i, w: c.stages.length > 1 ? 1 : 1.5, title: esc(g.label) + " · stage (ft)", key: i ? "" : "cStageAge" }); });
+    parts.push({ id: "chTide", w: 1.05, title: esc(tideFor(c).st.name) + " tide (ft NAVD88)", key: "" });
+    var html = parts.map(function (p) {
+      return '<div class="ctitle"><span>' + p.title + "</span><span" + (p.key ? ' id="' + p.key + '"' : "") + "></span></div>" +
+        '<div class="cchart" data-w="' + p.w + '"><canvas id="' + p.id + '"></canvas></div>';
+    }).join("") + '<div id="cnote"></div>';
+    right.innerHTML = html;
+    C.chartsFor = c.id;
+  }
+  // Share the height among the graphs
+  var boxes = right.querySelectorAll(".cchart"), fixed = 0, wsum = 0;
+  Array.prototype.forEach.call(right.children, function (ch) { if (!ch.classList.contains("cchart")) fixed += ch.offsetHeight; });
+  Array.prototype.forEach.call(boxes, function (b) { wsum += +b.dataset.w; });
+  var avail = Math.max(120, right.clientHeight - fixed - 2);
+  Array.prototype.forEach.call(boxes, function (b) { b.style.height = Math.floor(avail * b.dataset.w / wsum) + "px"; });
+
+  var css = getComputedStyle(document.documentElement);
+  var ink = css.getPropertyValue("--ink").trim(), muted = css.getPropertyValue("--muted").trim(), line = css.getPropertyValue("--line").trim();
+  var x0 = now - CREEK_PAST_HOURS * 3600000, x1 = now + CREEK_AHEAD_HOURS * 3600000;
+  var H = function (t) { return (t - now) / 3600000; };         // hours relative to now
+  var Y_W = 34;
+  function xScale(show) {
+    return { type: "linear", min: H(x0), max: H(x1),
+      offset: false,          // bar charts pad their ends by default; turn that off so the graphs line up
+      ticks: { display: show, stepSize: 6, autoSkip: false, maxRotation: 0, color: muted, font: { size: 10 },
+        callback: function (v) {
+          var rounded = Math.round((now + v * 3600000) / 3600000) * 3600000, hr = new Date(rounded).getUTCHours();
+          return hr === 0 ? fmt(rounded, { weekday: "short" }) : fmt(rounded, { hour: "numeric" });
+        } },
+      afterBuildTicks: function (ax) {   // ticks on real clock hours (every 6 h)
+        var first = Math.ceil(x0 / 21600000) * 21600000, out = [];
+        for (var t = first; t <= x1; t += 21600000) out.push({ value: H(t) });
+        ax.ticks = out;
+      },
+      grid: { offset: false, color: function (cx) { return cx.tick && new Date(now + cx.tick.value * 3600000).getUTCHours() === 0 ? "#c9d2dc" : line; }, drawTicks: false } };
+  }
+  function yScale(min, max, step) {
+    return { min: min, max: max, afterFit: function (ax) { ax.width = Y_W; },
+      ticks: { stepSize: step, color: muted, font: { size: 10 }, callback: function (v) { return +v.toFixed(2); } }, grid: { color: line } };
+  }
+  function base(xShow) {
+    return { responsive: true, maintainAspectRatio: false, animation: false, events: [],
+      layout: { padding: { right: 4 } },
+      plugins: { legend: { display: false }, tooltip: { enabled: false }, nowLine: { x: 0 } },
+      scales: { x: xScale(xShow) } };
+  }
+  function put(id, cfg) {
+    if (C.charts[id]) { C.charts[id].data = cfg.data; C.charts[id].options = cfg.options; C.charts[id].update("none"); }
+    else C.charts[id] = new Chart(document.getElementById(id), { type: cfg.type || "line", data: cfg.data, options: cfg.options, plugins: [nowLinePlugin] });
+  }
+
+  // Rain: hourly totals for each gauge, side by side (separate readings, never stacked)
+  function hourly(p) {
+    var bins = {}; p.forEach(function (x) { if (x.t > x0 && x.t <= now) { var hh = Math.ceil(x.t / 3600000) * 3600000; bins[hh] = (bins[hh] || 0) + x.v; } });
+    return Object.keys(bins).filter(function (k) { return bins[k] > 0; }).map(function (k) { return { x: H(+k) - 0.5, y: bins[k] }; });
+  }
+  var RAIN_COLORS = st.rains.length > 1 ? ["#7e57c2", "#1e88e5", "#00897b"] : ["#1e88e5"];
+  var series = st.rains.map(function (r) { return hourly(r.p); });
+  var rmax = Math.max(0.1, Math.max.apply(null, [].concat.apply([], series).map(function (p) { return p.y; }).concat([0])));
+  var ropt = base(false);
+  ropt.scales.y = yScale(0, Math.ceil(rmax * 10) / 10, Math.ceil(rmax * 10) / 20);
+  ropt.datasets = { bar: { barPercentage: 1, categoryPercentage: 1 } };
+  var pxPerHr = Math.max(1, (document.getElementById("chRain").parentNode.clientWidth - 40) / (CREEK_PAST_HOURS + CREEK_AHEAD_HOURS));
+  var n = series.length, thick = Math.max(1.5, Math.min(4, pxPerHr * 0.76 / Math.max(1, n)));
+  put("chRain", { type: "bar", data: { datasets: series.map(function (sr, i) {
+    var off = (i - (n - 1) / 2) * (thick + 1.2) / pxPerHr;
+    return { data: sr.map(function (p) { return { x: p.x + off, y: p.y }; }), backgroundColor: RAIN_COLORS[i % RAIN_COLORS.length], barThickness: thick };
+  }) }, options: ropt });
+  document.getElementById("cRainKey").innerHTML = st.rains.map(function (r, i) {
+    return "<span style='color:" + RAIN_COLORS[i % RAIN_COLORS.length] + "'>■</span> " + esc(r.g.label) + (st.rains.length > 1 ? " (" + esc(r.g.where.replace(" watershed", "")) + ")" : "");
+  }).join(" &nbsp;");
+
+  // Each gauge's stage with its flood thresholds
+  st.stages.forEach(function (s, i) {
+    var g = s.g, ths = g.thresholds || [];
+    var sp = s.p.filter(function (p) { return p.t >= x0 - 6 * 3600000; }).map(function (p) { return { x: H(p.t), y: p.v }; });
+    var lastS = s.p.length ? s.p[s.p.length - 1] : null;
+    // A gauge that reports on change: no new report = level unchanged since the last one.
+    if (lastS && g.reports !== "interval" && now - lastS.t < GAUGE_QUIET_HOURS * 3600000) sp.push({ x: 0, y: lastS.v });
+    var vmax = Math.max.apply(null, sp.map(function (p) { return p.y; }).concat([0]));
+    // Show thresholds up to Flood Warning (and higher ones only once the water gets near them)
+    var shown = ths.filter(function (t) { return t.level <= 3 || vmax > t.value * 0.75; });
+    var smax = Math.max(shown.length ? shown[shown.length - 1].value + 0.4 : 1, vmax + 0.3);
+    var box = document.getElementById("chStage" + i).parentNode.clientHeight;
+    var stp = [1, 2, 4, 5, 10].filter(function (k) { return Math.ceil(smax / k) <= Math.max(2, Math.floor(box / 22)); })[0] || 10;
+    var sopt = base(false);
+    sopt.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);
+    var sets = shown.map(function (t) {
+      return { data: [{ x: H(x0), y: t.value }, { x: H(x1), y: t.value }], borderColor: t.color, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, fill: false };
+    });
+    sets.push({ data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.10)", borderWidth: 2, pointRadius: 0, fill: "origin", tension: 0 });
+    put("chStage" + i, { data: { datasets: sets }, options: sopt });
+  });
+
+  // Tide: measured + predicted
+  var tS = tideFor(c);
+  var tp = (tS.pred || []).filter(function (p) { return p.t >= x0 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
+  var to = (tS.obs || []).filter(function (p) { return p.t >= x0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
+  var tys = tp.concat(to).map(function (p) { return p.y; }).concat([tS.st.mhhw]);
+  var topt = base(true);
+  topt.scales.y = yScale(2 * Math.floor((Math.min.apply(null, tys) - 0.3) / 2), 2 * Math.ceil((Math.max.apply(null, tys) + 0.3) / 2), 2);
+  put("chTide", { data: { datasets: [
+      { data: [{ x: H(x0), y: tS.st.mhhw }, { x: H(x1), y: tS.st.mhhw }], borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
+      { data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
+      { data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false }
+    ] }, options: topt });
+
+  var age = document.getElementById("cStageAge");
+  if (age) age.innerHTML = st.late && st.gen ? "<b style='color:var(--amber)'>Creek data delayed · updated " + agoText(now - st.gen) + "</b>" : "";
+  var seen = {}, key = "";
+  c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (t.level <= 3 && !seen[t.name]) { seen[t.name] = 1; key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
+  document.getElementById("cnote").innerHTML = key +
+    "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span><span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span>" +
+    "<span><i style='border-top:1.5px dashed #e05c2a'></i>MHHW</span>";
+}
+
+function showTab(name) {
+  currentTab = name; tabChangedAt = Date.now();
+  var creek = name === "creek", about = name === "about", tides = name === "tides";
+  document.getElementById("creek").classList.toggle("show", creek);
+  document.getElementById("about").classList.toggle("show", about);
+  document.getElementById("disclaimer").classList.toggle("show", name === "disclaimer");
+  document.getElementById("maptab").classList.toggle("show", name === "map");
+  if (name === "map") showMapTab();
+  document.getElementById("p0").style.display = tides ? "" : "none";
+  document.getElementById("p1").style.display = tides ? "" : "none";
+  if (about) drawQRs();
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+    t.classList.toggle("on", t.dataset.tab === name);
+  });
+  if (creek) renderCreek();
+  if (tides) S.forEach(function (_, i) { renderPanel(i); });   // redraw graphs after being hidden
+}
+Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+  t.addEventListener("click", function (e) { e.stopPropagation(); closeDetail(); showTab(t.dataset.tab); });
+});
+every(CREEK_EVERY_MIN, loadCreek);
+setInterval(function () {
+  var secs = (Date.now() - tabChangedAt) / 1000;
+  if ((currentTab === "about" || currentTab === "disclaimer") && secs >= ABOUT_RETURN_SEC) { showTab("tides"); return; }
+  if (ROTATE_SECONDS > 0 && currentTab !== "about" && currentTab !== "disclaimer" && secs >= ROTATE_SECONDS && !document.getElementById("detail").classList.contains("show")) {
+    showTab(currentTab === "tides" ? "creek" : "tides"); return;
+  }
+  if (TAB_RETURN_MIN > 0 && currentTab === "creek" && secs >= TAB_RETURN_MIN * 60) showTab("tides");
+}, 5000);
+var qrDrawn = false;
+function drawQRs() {
+  if (qrDrawn || typeof QRCode === "undefined") return;
+  [["qrContact", CONTACT_URL], ["qrAlert", ALERT_SIGNUP_URL]].forEach(function (q) {
+    new QRCode(document.getElementById(q[0]), { text: q[1], width: 224, height: 224,
+      colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+  });
+  qrDrawn = true;
+}
+if (["creek", "map", "about", "disclaimer"].indexOf(params.get("tab")) >= 0) showTab(params.get("tab"));
+
+/* ---------- Map tab ---------- */
+var M = { data: null, map: null, markers: [], sel: null, timer: null };
+var MAP_HEX = ["#2e7d32", "#e6c200", "#e07b00", "#c62828", "#9c27b0"], MAP_OFF = "#8a96a3";
+var MAP_NAMES = ["Reporting", "Flood Monitoring", "Flood Watch", "Flood Warning", "Above Flood Warning"];
+function mLevelName(sensors, level) {
+  var n = null;
+  sensors.forEach(function (s) { (s.thresholds || []).forEach(function (t) { if (t.level === level) n = n || t.name; }); });
+  return n || MAP_NAMES[level];
+}
+function loadSites() {
+  return fetch(SITES_URL + "?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (j) {
+      j.sites = (j.sites || []).filter(function (s) { return s.lat != null && s.sensors && s.sensors.length; });
+      M.data = j; M.failed = false; if (currentTab === "map") renderMap();
+    })
+    .catch(function () { M.failed = true; if (currentTab === "map") renderMap(); });
+}
+function isRain(s) { return s.kind === "increment" || s.kind === "accumulation"; }
+function mSensorLevel(s, now) {
+  if (!s.thresholds || s.value == null || !s.time || now - parseLocal(s.time) > SITE_QUIET_HOURS * 36e5) return 0;
+  var l = 0; s.thresholds.forEach(function (x) { if (s.value >= x.value) l = Math.max(l, x.level); }); return l;
+}
+function mStatus(site, now) {
+  var newest = 0, level = 0, rain = null, rainOnly = true;
+  site.sensors.forEach(function (s) {
+    if (s.time) newest = Math.max(newest, parseLocal(s.time));
+    level = Math.max(level, mSensorLevel(s, now));
+    if (isRain(s)) { if (s.rain24 != null) rain = Math.max(rain || 0, s.rain24); } else rainOnly = false;
+  });
+  var off = !newest || now - newest > SITE_QUIET_HOURS * 36e5;
+  return { level: level, off: off, newest: newest, rain: rain, rainOnly: rainOnly,
+    color: off ? MAP_OFF : MAP_HEX[level], label: off ? "Not reporting" : mLevelName(site.sensors, level) };
+}
+function mNum(v, unit) { return v == null ? "–" : v.toFixed(Math.abs(v) >= 100 ? 0 : unit === "in" ? 2 : Math.abs(v) >= 10 ? 1 : 2); }
+function showMapTab() {
+  if (!M) { setTimeout(showMapTab, 0); return; }   // ?tab=map: wait until the page has finished loading
+  if (typeof L === "undefined") { document.getElementById("mside").innerHTML = '<div class="mh">Map unavailable</div><div class="msub">The map library could not load. Check the network.</div>'; return; }
+  if (!M.map) {
+    M.map = L.map("kmap", { zoomControl: true, attributionControl: true, zoomSnap: 0.5 });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 17,
+      attribution: '&copy; OpenStreetMap contributors' }).addTo(M.map);
+    M.map.attributionControl.setPrefix(false);
+    M.map.setView([37.45, -122.3], 9.5);
+    M.map.on("click", function () { if (M.sel) mapOverview(); });
+    M.fitted = false;
+  }
+  setTimeout(function () { M.map.invalidateSize(); renderMap(); }, 0);
+}
+function mapFitAll() {
+  if (!M.map || !M.data || !M.data.sites.length) return;
+  M.map.fitBounds(M.data.sites.map(function (s) { return [s.lat, s.lon]; }), { padding: [16, 16] });
+}
+function mapOverview() { M.sel = null; clearTimeout(M.timer); mapFitAll(); renderMap(); }
+function renderMap() {
+  if (!M.map) return;
+  var side = document.getElementById("mside");
+  if (!M.data) {
+    side.innerHTML = '<div class="mh">OneRain sites</div><div class="msub">' + (M.failed ? "⚠ Site data unavailable — check network" : "Loading…") + "</div>";
+    return;
+  }
+  var now = nowLocal();
+  M.markers.forEach(function (m) { M.map.removeLayer(m); }); M.markers = [];
+  var all = M.data.sites.map(function (s) { return { site: s, st: mStatus(s, now) }; });
+  all.slice().sort(function (a, b) { return (a.st.off ? -1 : a.st.level) - (b.st.off ? -1 : b.st.level); }).forEach(function (o) {
+    var big = o.st.level > 0 && !o.st.off, sel = M.sel === o.site.site;
+    var icon = L.divIcon({ className: "", iconSize: big ? [26, 26] : [20, 20], iconAnchor: big ? [13, 13] : [10, 10],
+      html: '<div class="kmk' + (o.st.rainOnly ? " sq" : "") + (big ? " big" : "") + (sel ? " sel" : "") + '" style="background:' + o.st.color + '"></div>' });
+    var m = L.marker([o.site.lat, o.site.lon], { icon: icon, zIndexOffset: (o.st.off ? -500 : o.st.level * 500) + (sel ? 3000 : 0) });
+    m.on("click", function () { M.sel = o.site.site; M.map.panTo([o.site.lat, o.site.lon]); renderMap(); mapTimer(); });
+    m.addTo(M.map); M.markers.push(m);
+  });
+  if (!M.fitted) { mapFitAll(); M.fitted = true; }
+  var gen = parseLocal(M.data.generated), late = now - gen > 45 * 60000;
+  var sub = M.data.sites.length + " sites · updated " + fTime(gen) + (late ? ' · <b style="color:var(--amber)">⚠ delayed</b>' : "");
+  var selSite = M.sel && all.find(function (o) { return o.site.site === M.sel; });
+  if (selSite) { side.innerHTML = siteDetail(selSite.site, selSite.st, now, sub); drawSparks(selSite.site, now); return; }
+
+  var n = [0, 0, 0, 0, 0], off = 0;
+  all.forEach(function (o) { if (o.st.off) off++; else n[o.st.level]++; });
+  var h = '<div class="mh">OneRain sites</div><div class="msub">' + sub + "</div>";
+  h += '<div class="mcount">' + n.map(function (c, i) { return c ? '<span><i class="mdot" style="background:' + MAP_HEX[i] + '"></i>' + c + " " + MAP_NAMES[i].replace("Flood ", "") + "</span>" : ""; }).join("") +
+    (off ? '<span><i class="mdot" style="background:' + MAP_OFF + '"></i>' + off + " not reporting</span>" : "") + "</div>";
+  var alerts = all.filter(function (o) { return !o.st.off && o.st.level; }).sort(function (a, b) { return b.st.level - a.st.level; });
+  h += '<div class="msec">At an alert level</div>';
+  h += alerts.length ? alerts.slice(0, 4).map(function (o) {
+    return '<div class="mrow"><i class="mdot" style="background:' + o.st.color + '"></i><span class="nm">' + esc(o.site.name) + '</span><span class="v">' + o.st.label.replace("Flood ", "") + "</span></div>";
+  }).join("") : '<div class="mnone">✓ No sites at an alert level</div>';
+  var rainy = all.filter(function (o) { return !o.st.off && o.st.rain >= 0.01; }).sort(function (a, b) { return b.st.rain - a.st.rain; });
+  h += '<div class="msec">Most rain, past 24 hours</div>';
+  h += rainy.length ? rainy.slice(0, alerts.length > 2 ? 3 : 5).map(function (o) {
+    return '<div class="mrow"><i class="mdot sq" style="background:#1e6fd9"></i><span class="nm">' + esc(o.site.name) + '</span><span class="v">' + o.st.rain.toFixed(2) + " in</span></div>";
+  }).join("") : '<div class="mnone" style="color:var(--muted)">No rain recorded</div>';
+  h += '<div class="mtap">Tap a site for its latest readings. ■ = rain gauge only.</div>';
+  side.innerHTML = h;
+}
+function siteDetail(site, st, now, sub) {
+  var h = '<div class="mh">' + esc(site.name) + '</div><div class="msub">Site ' + esc(site.number) + "</div>" +
+    '<span class="mbadge" style="background:' + st.color + '">' + st.label + "</span>";
+  site.sensors.slice(0, 3).forEach(function (s, i) {
+    var t = s.time ? parseLocal(s.time) : null, old = t && now - t > 3 * 36e5;
+    var val = isRain(s) && s.rain24 != null ? s.rain24.toFixed(2) + "<small> in / 24 h</small>" : mNum(s.value, s.unit) + "<small> " + esc(s.unit) + "</small>";
+    h += '<div class="msens"><div class="r"><span class="l">' + esc(s.name) + '</span><span class="val">' + val + "</span></div>" +
+      '<div class="a' + (old ? " old" : "") + '">' + (t ? fTime(t) + " · " + agoText(now - t) : "no recent report") +
+      (s.thresholds ? " · " + s.thresholds.map(function (x) { return x.name.replace("Flood ", "") + " " + x.value; }).join(" / ") : "") + "</div>" +
+      (((s.points && s.points.length > 1) || (s.hourly && s.hourly.length)) ? '<canvas id="msp' + i + '"></canvas>' : "") + "</div>";
+  });
+  if (site.sensors.length > 3) h += '<div class="a" style="font-size:11.5px;color:var(--muted)">+ ' + (site.sensors.length - 3) + " more on OneRain</div>";
+  h += '<div id="mback" onclick="event.stopPropagation(); mapOverview()">✕ Back to all sites</div>';
+  return h;
+}
+function drawSparks(site, now) {
+  site.sensors.slice(0, 3).forEach(function (s, i) {
+    var c = document.getElementById("msp" + i); if (!c) return;
+    var scale = Chart.defaults.devicePixelRatio || window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+    c.width = w * scale; c.height = h * scale;
+    var g = c.getContext("2d"); g.scale(scale, scale);
+    var t0 = now - 24 * 36e5, x = function (t) { return (t - t0) / (24 * 36e5) * (w - 2) + 1; };
+    if (s.hourly) {
+      var mx = Math.max(0.1, Math.max.apply(null, s.hourly.map(function (p) { return p[1]; })));
+      g.fillStyle = "#1e6fd9";
+      s.hourly.forEach(function (p) { var t = parseLocal(p[0]); if (t < t0) return; var bh = p[1] / mx * (h - 2); g.fillRect(x(t), h - bh, Math.max(2, w / 24 - 2), bh); });
+      return;
+    }
+    var p = s.points.map(function (q) { return [parseLocal(q[0]), q[1]]; }).filter(function (q) { return q[0] >= t0; });
+    if (p.length < 2) return;
+    var v = p.map(function (q) { return q[1]; }), lo = Math.min.apply(null, v), hi = Math.max.apply(null, v);
+    (s.thresholds || []).forEach(function (th) { if (th.value <= hi * 1.25 + 0.2) hi = Math.max(hi, th.value); });
+    if (hi - lo < 0.2) { hi += 0.1; lo -= 0.1; }
+    var y = function (val) { return h - 2 - (val - lo) / (hi - lo) * (h - 4); };
+    (s.thresholds || []).forEach(function (th) {
+      if (th.value > hi || th.value < lo) return;
+      g.strokeStyle = MAP_HEX[th.level]; g.setLineDash([3, 3]); g.lineWidth = 1;
+      g.beginPath(); g.moveTo(0, y(th.value)); g.lineTo(w, y(th.value)); g.stroke();
+    });
+    g.setLineDash([]); g.strokeStyle = "#1e88e5"; g.lineWidth = 1.8;
+    g.beginPath(); p.forEach(function (q, k) { if (k) g.lineTo(x(q[0]), y(q[1])); else g.moveTo(x(q[0]), y(q[1])); }); g.stroke();
+  });
+}
+function mapTimer() { clearTimeout(M.timer); M.timer = setTimeout(mapOverview, DETAIL_TIMEOUT_SEC * 1000); }
+document.getElementById("mside").addEventListener("click", function (e) { e.stopPropagation(); if (M.sel) mapTimer(); });
+every(SITES_EVERY_MIN, loadSites);
+setInterval(function () { if (currentTab === "map" && M.data) renderMap(); }, 60000);
+
+/* ---------- Clock, staleness, refresh schedule ---------- */
+function tick() {
+  var now = nowLocal();
+  document.getElementById("clock").textContent = fTime(now) + " · " + fDay(now);
+  var oldest = Math.min(A.t || 0, S[0].tPred || 0, S[1].tPred || 0);
+  var ageMin = oldest ? (Date.now() - oldest) / 60000 : Infinity;
+  var loading = (Date.now() - startedAt) < 60000;
+  document.getElementById("stale").textContent = (!loading && ageMin > STALE_AFTER_MIN) ? "⚠ Data out of date" : "";
+  var newest = Math.max(A.t || 0, S[0].tObs || 0, S[1].tObs || 0, S[0].tPred || 0, S[1].tPred || 0);
+  document.getElementById("updated").textContent = newest ? "Updated " + new Date(newest).toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" }) : "Loading…";
+  // Daily reload in the early morning
+  var d = new Date(now);
+  if (d.getUTCHours() === RELOAD_AT_HOUR && d.getUTCMinutes() === 0 && Date.now() - startedAt > 3600000) location.reload();
+}
+
+function every(min, fn) { fn(); setInterval(fn, min * 60000); }
+every(ALERTS_EVERY_MIN, loadAlerts);
+S.forEach(function (_, i) {
+  renderPanel(i);
+  every(PREDICTIONS_EVERY_MIN, function () { loadPredictions(i).then(function () { loadObserved(i); }); });
+  setInterval(function () { loadObserved(i); }, OBSERVED_EVERY_MIN * 60000);
+});
+// Redraw panels each minute so "now" markers and "Today/Tomorrow" stay current
+setInterval(function () { S.forEach(function (_, i) { renderPanel(i); }); }, 60000);
+tick(); setInterval(tick, 15000);
+</script>
+</body>
+</html>
