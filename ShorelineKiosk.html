@@ -120,7 +120,9 @@
   .ccl { display: inline-block; min-width: 0; color: var(--muted); font-size: 12px; margin-right: 6px; }
   .ccv { font-weight: bold; font-size: 16px; margin-right: 6px; }
   .ccr .m { color: var(--muted); }
-  .ccr.wrap { white-space: normal; }
+  .ccr, .ccr.wrap { white-space: normal; }
+  .ccg .ccl { display: block; margin: 0; line-height: 1.2; }
+  .ccg .ccr { margin-top: -1px; }
 
   /* About tab */
   #about { position: absolute; left: 8px; top: 64px; width: 784px; height: 364px; box-sizing: border-box;
@@ -871,7 +873,7 @@ function renderAllCreeks(states, now) {
         ? "<span style='color:var(--amber);font-weight:bold'>offline</span> <span class='m'>· last " + fDay(s.last.t).replace(/^\w+, /, "") + "</span>"
         : "<b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" + (s.lvl ? esc(s.lvl.name.replace("Flood ", "")) : "Normal") + "</b>" +
           (s.next ? " <span class='m'>· " + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) + "</span>" : "");
-      h += '<div class="ccr"><span class="ccl">' + esc(s.g.label) + '</span><span class="ccv">' + (s.last ? s.last.v.toFixed(2) + s.arrow + " ft" : "–") + "</span>" + lv + "</div>";
+      h += '<div class="ccg"><div class="ccl">' + esc(s.g.label) + '</div><div class="ccr wrap"><span class="ccv">' + (s.last ? s.last.v.toFixed(2) + s.arrow + " ft" : "–") + "</span>" + lv + "</div></div>";
     });
     var wins = rainWindows(c);
     h += '<div class="ccr wrap"><span class="ccl">Rain</span><span class="m">' + (st.rains.length > 1
