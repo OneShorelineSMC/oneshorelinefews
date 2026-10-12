@@ -69,6 +69,17 @@
   .pick button .stt { font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .pick button.on { border-color: var(--ink); background: var(--soft); box-shadow: inset 0 0 0 1px var(--ink); }
   .two.stack { grid-template-columns: 1fr; }
+  /* All creeks summary */
+  .back { display: inline-block; font-size: 14px; color: var(--muted); text-decoration: none; margin: 0 2px 6px; }
+  .acard { border-left: 6px solid var(--green); cursor: pointer; }
+  .ah { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .an { font-size: 18px; font-weight: 700; color: var(--ink); }
+  .ac { font-size: 12px; font-weight: 700; border-radius: 5px; padding: 2px 8px; white-space: nowrap; }
+  .ag { margin-top: 5px; }
+  .ag .gl { font-size: 12.5px; color: var(--muted); }
+  .ag .gv { font-size: 15px; } .ag .gv b.v { font-size: 19px; color: var(--ink); margin-right: 4px; }
+  .ar { font-size: 13.5px; color: var(--muted); margin-top: 5px; } .ar b { color: var(--text); }
+  .ago { font-size: 13px; color: var(--muted); text-align: right; margin-top: 4px; }
   table.rain.one th, table.rain.one td { text-align: center !important; }
   table.rain th { white-space: nowrap; padding-left: 8px !important; }
   table.rain td + td { padding-left: 8px; }
@@ -141,6 +152,9 @@
 <main>
   <!-- ===================== CREEK ===================== -->
   <div id="creekView">
+    <div id="allView"></div>
+    <div id="one">
+    <a class="back" href="#all" id="backAll">‹ All creeks</a>
     <div class="intro" id="intro"></div>
     <div id="stages"></div>
     <div class="two" id="rainBox">
@@ -153,6 +167,7 @@
     </div>
     <div style="height:12px"></div>
     <div class="card" id="graphs"></div>
+    </div>
     <div class="note">For informational purposes only; thresholds are approximate.
       <a href="#about" id="discLink">Read the disclaimer</a></div>
     <div class="note" id="updated">Loading…</div>
@@ -198,6 +213,7 @@
 </main>
 
 <nav>
+  <button data-href="index.html"><span class="i">🏠</span>Home</button>
   <button class="on" data-tab="creek"><span class="i">🌊</span>Creeks<span class="dot" id="navDot"></span></button>
   <button data-href="SiteMap.html"><span class="i">🗺️</span>Map</button>
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
@@ -240,23 +256,29 @@ function getJSON(url, accept) {
 var $ = function (id) { return document.getElementById(id); };
 
 /* ---------- state ---------- */
-var D = { creek: null, tides: {}, alerts: null, charts: {}, sel: null, built: null };
-try { D.sel = localStorage.getItem("creek"); } catch (e) {}
+var D = { creek: null, tides: {}, alerts: null, charts: {}, sel: "all", built: null };
 var hashCreek = location.hash.replace("#", "");
-if (hashCreek && hashCreek !== "about") D.sel = hashCreek;
+if (hashCreek && hashCreek !== "about") D.sel = hashCreek;   // e.g. Creeks.html#belmont; no hash = All creeks
 
 /* ---------- data loading ---------- */
 function loadCreek() {
-  return getJSON(CREEK_DATA_URL + "?t=" + Date.now()).then(function (j) { D.creek = j; D.creekFailed = false; render(); loadTide(); })
+  return getJSON(CREEK_DATA_URL + "?t=" + Date.now()).then(function (j) { D.creek = j; D.creekFailed = false; render(); loadTides(); })
     .catch(function () { D.creekFailed = true; render(); });
 }
 function noaa(station, product, begin, end) {
   return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product + "&station=" + station +
     "&begin_date=" + begin + "&end_date=" + end + "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
 }
-function loadTide() {
-  var c = creek(); if (!c) return Promise.resolve();
-  var id = c.tide, T = D.tides[id] = D.tides[id] || { st: TIDE_STATIONS[id] || { id: id, name: "Tide", mhhw: null } };
+// The tide stations the current view needs (both of them on All creeks)
+function loadTides(force) {
+  var c = creek(), ids = c ? [c.tide] : creeks().map(function (x) { return x.tide; });
+  ids.filter(function (id, i) { return ids.indexOf(id) === i; }).forEach(function (id) {
+    if (force && D.tides[id]) D.tides[id].at = 0;
+    loadTide(id);
+  });
+}
+function loadTide(id) {
+  var T = D.tides[id] = D.tides[id] || { st: TIDE_STATIONS[id] || { id: id, name: "Tide", mhhw: null } };
   if (T.loading || (T.at && Date.now() - T.at < 5 * 60000)) { render(); return Promise.resolve(); }
   T.loading = true;
   var now = nowLocal(), b = ymd(now - (PAST_HOURS + 6) * 3600000), e = ymd(now + (AHEAD_HOURS + 24) * 3600000);
@@ -321,7 +343,10 @@ $("alert").addEventListener("click", function () {
 
 /* ---------- creeks ---------- */
 function creeks() { return (D.creek && D.creek.creeks) || []; }
-function creek() { var l = creeks(); return l.filter(function (c) { return c.id === D.sel; })[0] || l[0]; }
+function creek() {   // the creek being shown, or null on All creeks
+  if (D.sel === "all") return null;
+  var l = creeks(); return l.filter(function (c) { return c.id === D.sel; })[0] || null;
+}
 function pts(key) {
   var s = D.creek && D.creek.sensors && D.creek.sensors[key];
   return s ? s.points.map(function (p) { return { t: parseLocal(p[0]), v: p[1] }; }) : [];
@@ -382,9 +407,9 @@ function render() {
     if (D.creekFailed) $("stages").innerHTML = '<div class="card">Creek data unavailable — retrying.</div>';
     return;
   }
-  var c = creek(); if (!c) return;
+  var c = creek();
   var states = creeks().map(function (x) { return creekState(x, now); });
-  var st = states.filter(function (x) { return x.c === c; })[0];
+  var st = c ? states.filter(function (x) { return x.c === c; })[0] : null;
 
   // creek tiles: short name plus current status, with a bar in the status color
   $("pick").innerHTML = states.map(function (x) {
@@ -395,6 +420,15 @@ function render() {
   var worst = states.filter(function (x) { return x.top; }).sort(function (a, b) { return b.top.level - a.top.level; })[0];
   $("navDot").style.display = worst ? "inline-block" : "none";
   if (worst) $("navDot").style.background = worst.top.color;
+  $("allView").style.display = c ? "none" : "";
+  $("one").style.display = c ? "" : "none";
+  if (!c) {
+    document.title = "Creek Conditions – OneShoreline";
+    renderAll(states, now);
+    var gen0 = states.length && states[0].gen;
+    $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " · ") + "refreshes automatically";
+    return;
+  }
   document.title = c.name + " – OneShoreline";
   $("intro").textContent = c.intro;
 
@@ -441,13 +475,52 @@ function render() {
   drawCharts(st, now);
   $("updated").textContent = (st.late && st.gen ? "⚠ Creek data delayed · updated " + agoText(now - st.gen) + " · " : "Updated " + fTime(now) + " · ") + "refreshes automatically";
 }
-$("pick").addEventListener("click", function (e) {
-  var b = e.target.closest("button[data-creek]"); if (!b) return;
-  D.sel = b.dataset.creek;
-  try { localStorage.setItem("creek", D.sel); } catch (x) {}
+/* All creeks: one card per creek; tap a card for that creek */
+function renderAll(states, now) {
+  function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
+  $("allView").innerHTML = '<div class="intro">Current conditions at OneShoreline\u2019s creek gauges. Tap a creek for its graphs and thresholds.</div>' +
+    states.map(function (st) {
+      var c = st.c, s = statusWord(st), chip = st.top ? st.top.color : s.bar, ink = st.top && st.top.level === 1 ? "#1a1a1a" : "#fff";
+      var h = '<div class="card acard" data-creek="' + esc(c.id) + '" style="border-left-color:' + s.bar + '">' +
+        '<div class="ah"><span class="an">' + esc(c.name) + '</span><span class="ac" style="background:' + chip + ";color:" + ink + '">' +
+        esc(st.top ? st.top.name : s.w) + "</span></div>";
+      st.stages.forEach(function (g) {
+        var lv = !g.last ? "no data" : g.quiet
+          ? '<span class="warn">offline</span> · last report ' + fDate(g.last.t)
+          : "<b style='color:" + (g.lvl ? (g.lvl.level === 1 ? "#8a6d00" : g.lvl.color) : "var(--green)") + "'>" + (g.lvl ? esc(g.lvl.name.replace("Flood ", "")) : "Normal") + "</b>" +
+            (g.next ? ' <span class="lbl">· ' + (g.next.value - g.last.v).toFixed(2) + " ft below " + esc(g.next.name.replace("Flood ", "")) + "</span>" : "");
+        h += '<div class="ag"><div class="gl">' + esc(g.g.label) + '</div><div class="gv"><b class="v">' + (g.last ? g.last.v.toFixed(2) + g.arrow + " ft" : "–") + "</b> " + lv + "</div></div>";
+      });
+      var wins = rainWindows(c);
+      h += '<div class="ar">Rain ' + st.rains.map(function (r) {
+        return (st.rains.length > 1 ? esc(r.g.label) + ": " : "") + wins.map(function (m, i) { return winLabel(m) + " <b>" + inch(r.w[i]) + "</b>"; }).join(" · ");
+      }).join("<br>") + " in</div>";
+      if (st.triggers.length) {
+        var met = st.triggers.filter(function (x) { return x.met; });
+        h += '<div class="ar">Flooding-likely triggers: ' + (met.length ? '<b style="color:var(--red)">MET</b>' : "not met") + "</div>";
+      }
+      var T = D.tides[c.tide], tl = tideNow(T, now);
+      if (tl) {
+        var pv = predAt(T, tl.t), d = pv == null ? null : tl.v - pv;
+        h += '<div class="ar">' + esc(T.st.name) + " tide <b>" + tl.v.toFixed(2) + "</b> ft NAVD88" + (d == null || Math.abs(d) < 0.05 ? "" :
+          " · <span style='color:" + (d >= 0.5 ? "var(--red);font-weight:bold" : "inherit") + "'>" + Math.abs(d).toFixed(2) + " ft " + (d > 0 ? "above" : "below") + " predicted</span>") + "</div>";
+      }
+      return h + '<div class="ago">Details ›</div></div>';
+    }).join("");
+}
+
+function showCreek(id) {
+  D.sel = id || "all";
   try { history.replaceState(null, "", "#" + D.sel); } catch (x) {}
-  render(); loadTide(); window.scrollTo(0, 0);
+  render(); loadTides(); window.scrollTo(0, 0);
+}
+$("pick").addEventListener("click", function (e) {
+  var b = e.target.closest("button[data-creek]"); if (b) showCreek(b.dataset.creek);
 });
+$("allView").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-creek]"); if (b) showCreek(b.dataset.creek);
+});
+$("backAll").addEventListener("click", function (e) { e.preventDefault(); showCreek("all"); });
 
 /* ---------- graphs: rain, each gauge's stage, and the tide on one time axis ---------- */
 var nowLine = {
@@ -574,7 +647,9 @@ function drawCharts(st, now) {
 /* ---------- tabs ---------- */
 Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (b) {
   b.addEventListener("click", function () {
-    if (b.dataset.href) { location.href = b.dataset.href; return; }   // the Map button opens the site map page
+    if (b.dataset.href) { location.href = b.dataset.href; return; }   // Home and Map open their own pages
+    // tapping Creeks while already on a creek goes back to All creeks
+    if (b.dataset.tab === "creek" && !document.body.classList.contains("about") && D.sel !== "all") { showCreek("all"); return; }
     document.body.classList.toggle("about", b.dataset.tab === "about");
     Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (x) { x.classList.toggle("on", x === b); });
     window.scrollTo(0, 0);
@@ -594,7 +669,7 @@ function refreshAll() { loadAlerts(); loadCreek(); }
 refreshAll();
 setInterval(loadAlerts, 3 * 60000);
 setInterval(loadCreek, 3 * 60000);
-setInterval(function () { var c = creek(); if (c && D.tides[c.tide]) D.tides[c.tide].at = 0; loadTide(); }, 6 * 60000);
+setInterval(function () { loadTides(true); }, 6 * 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshAll(); });
 var lastNarrow = window.innerWidth < 520;
 window.addEventListener("resize", function () { var n = window.innerWidth < 520; if (n !== lastNarrow) { lastNarrow = n; render(); } });
