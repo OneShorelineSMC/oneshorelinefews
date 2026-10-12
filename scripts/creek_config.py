@@ -193,9 +193,15 @@ def load_thresholds(path=THRESHOLDS_CSV):
             assert minutes > 0
         except (ValueError, AssertionError):
             errors.append(f"{where}: rain thresholds need 'minutes' (e.g. 30 or 240)"); continue
-        high_tide = r.get("high_tide", "").lower() in ("yes", "y", "true", "1")
+        tide_txt = r.get("tide_at_least_navd88", "")
+        high_tide = bool(tide_txt) or r.get("high_tide", "").lower() in ("yes", "y", "true", "1")
         item.update({"gauge": key, "minutes": minutes, "high_tide": high_tide,
                      "label": _window(minutes) + " rain" + (" + high tide" if high_tide else "")})
+        if tide_txt:   # high tide = the creek's NOAA tide station at or above this level, in ft NAVD88
+            try:
+                item["tide_min"] = float(tide_txt)
+            except ValueError:
+                errors.append(f"{where}: tide_at_least_navd88 must be a number (ft NAVD88)"); continue
         triggers.setdefault(creek["id"], []).append(item)
     if errors:
         return errors

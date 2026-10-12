@@ -184,7 +184,8 @@ def main():
     for key, s in SENSORS.items():
         entry = {k: s[k] for k in ("name", "kind", "unit")}
         try:
-            entry["points"], entry["latest"], pages = fetch_sensor(session, s, start, now + dt.timedelta(minutes=5))
+            s_start = now - dt.timedelta(hours=s.get("hours", HOURS))
+            entry["points"], entry["latest"], pages = fetch_sensor(session, s, s_start, now + dt.timedelta(minutes=5))
             entry["fetched"] = result["generated"]
             entry["error"] = None
             print(f"{key}: {len(entry['points'])} readings in the last {HOURS} h "

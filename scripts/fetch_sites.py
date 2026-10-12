@@ -26,6 +26,10 @@ import os
 from creek_config import THRESHOLD_ERRORS, map_thresholds
 from fetch_onerain import SITE, TZ, Session, parse_readings, sensor_page, to_time
 
+# OneRain's tide stations report in MLLW. The public pages show NAVD88 only, so tide readings are shifted by the
+# station's NOAA datum difference (NAVD88 minus MLLW). Redwood City 9414523: NAVD88 is 1.18 ft above MLLW.
+TIDE_MLLW_TO_NAVD88 = {"9414523": -1.18}
+
 HISTORY_HOURS = 24   # history kept per sensor for the small graphs and the 24-hour rain total
 MAX_POINTS = 96      # graph points kept per sensor (keeps the file small)
 PAUSE_SEC = 0.25     # pause between requests, to be gentle on OneRain
@@ -220,6 +224,12 @@ def main():
                     s["kind"] = rain_kind(s) or "level"
                     s["history_error"] = f"{type(e).__name__}: {e}"[:200]
                 time.sleep(PAUSE_SEC)
+                if number in TIDE_MLLW_TO_NAVD88 and re.search(r"tide", s["name"], re.I) and s["unit"] == "ft":
+                    shift = TIDE_MLLW_TO_NAVD88[number]
+                    if s["value"] is not None:
+                        s["value"] = round(s["value"] + shift, 2)
+                    s["points"] = [[t, round(v + shift, 3)] for t, v in s.get("points", [])]
+                    s["unit"] = "ft NAVD88"
                 s["url"] = (f"{SITE}/sensor/?site_id={site_id}&site={uuid}"
                             f"&device_id={s['device_id']}&device={s['device']}")
                 del s["device"]
