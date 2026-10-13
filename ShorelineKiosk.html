@@ -884,7 +884,7 @@ function renderCreek() {
 
   var all = C.sel === "all" || !creeks().some(function (x) { return x.id === C.sel; });
   // Creek buttons, each in its creek's alert color
-  el("cpick").innerHTML = '<span class="cbtn' + (all ? " on" : "") + '" data-creek="all">All creeks</span>' + states.map(function (x) {
+  el("cpick").innerHTML = '<span class="cbtn' + (all ? " on" : "") + '" data-creek="all">Dashboard Creeks</span>' + states.map(function (x) {
     var on = !all && x.c === c, col = x.top ? x.top.color : null;
     return '<span class="cbtn' + (on ? " on" : "") + '" data-creek="' + esc(x.c.id) + '"' +
       (col ? ' style="background:' + col + ";border-color:" + col + ";color:" + inkOn(x.top) + '"' : "") + ">" +
