@@ -89,7 +89,7 @@
   .tide.red .th { color: var(--red); } .tide.ok .th { color: var(--ok); }
   .tide .th span { font-weight: normal; font-size: 14px; color: var(--text); }
   .tide .tn { display: block; font-size: 14px; color: var(--muted); margin-top: 4px; }
-  .tide .tn b { font-size: 16px; color: var(--ink); }
+  .tide .tn { color: var(--text); font-size: 15px; }
   .tide .ts { display: block; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
   .tide .go { display: block; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--link); }
 
@@ -161,7 +161,7 @@
   <div class="rising" id="rising"></div>
   <div class="calm" id="calm"></div>
 
-  <h2 class="sec">Bay tide · Redwood City <a href="Tides.html">Tide details ›</a></h2>
+  <h2 class="sec">Bay tides <a href="Tides.html">Tide details ›</a></h2>
   <a class="box tide gray" id="tide" href="Tides.html" aria-live="polite"><span class="th">Loading tides…</span></a>
 
   <h2 class="sec">More</h2>
@@ -482,25 +482,39 @@ function renderTide() {
   TD.pred.forEach(function (p) { if (p.t > tail) ser.push({ t: p.t, v: p.v, src: "predicted" }); });
   ser = ser.filter(function (p) { return p.t >= now - 12 * 36e5 && p.t <= dayStart(now) + TIDE_DAYS * 864e5; });
   var ups = findWindows(ser, m).filter(function (w) { return w.end > now; });
-  function wt(w) {
-    return relDay(w.start, now) + " " + fTime(w.start).replace(/ (AM|PM)$/, function (x) { return fTime(w.end).slice(-3) === x ? "" : x; }) +
-      "–" + fTime(w.end) + " (" + w.peak.toFixed(2) + " ft)";
+
+  // Plain English for everyone: rounded times, "normal high tide" instead of MHHW, no datums or model names
+  function r15(t) { return Math.round(t / 9e5) * 9e5; }
+  function clock(t) { return fTime(r15(t)).replace(":00", ""); }
+  function span(w) { var a = clock(w.start), b = clock(w.end); return (a.slice(-2) === b.slice(-2) ? a.slice(0, -3) : a) + "–" + b; }
+  function dayWord(t) {
+    var d = Math.round((dayStart(t) - dayStart(now)) / 864e5);
+    return d === 0 ? "today" : d === 1 ? "tomorrow" : fmt(t, { weekday: "long" });
   }
-  var head;
-  if (!ups.length) { el.className = "box tide ok"; head = esc("No tides above MHHW in the next " + TIDE_DAYS + " days"); }
+  function feet(x) { var r = Math.round(x * 10) / 10; return r < 0.1 ? "just" : Math.abs(r - 0.5) < 0.05 ? "about half a foot" : "about " + r.toFixed(1) + " ft"; }
+  var head, sub = "";
+  if (!ups.length) { el.className = "box tide ok"; head = "No unusually high tides expected in the next " + TIDE_DAYS + " days."; }
   else {
     el.className = "box tide red";
-    var f = ups[0], on = f.start <= now;
-    head = esc(on ? "Above MHHW now, until " + fTime(f.end) + " · " + (f.peakT <= now ? "peaked " : "peak ") + f.peak.toFixed(2) + " ft " + f.src + " at " + fTime(f.peakT)
-      : "Tides above MHHW: " + wt(f)) + (ups[1] ? esc(" · " + wt(ups[1])) : "") + (ups.length > 2 ? " <span>+" + (ups.length - 2) + " more this week</span>" : "");
+    var on = ups[0].start <= now, list = on ? ups.slice(1) : ups;
+    if (on) head = "The tide is higher than usual right now, until about " + clock(ups[0].end) + "." +
+      (list.length ? " Next: " + dayWord(list[0].start) + " about " + span(list[0]) + "." : "");
+    else head = "Higher-than-usual high tides: " + list.slice(0, 2).map(function (w) { return dayWord(w.start) + " about " + span(w); }).join(" and ") +
+      (list.length > 2 ? ", and " + (list.length - 2) + " more time" + (list.length > 3 ? "s" : "") + " this week" : "") + ".";
+    var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
+    sub = (top.peakT <= now ? "It reached " : "At its highest, ") + feet(top.peak - m) + " above a normal high tide (" + dayWord(top.peakT) + " around " + clock(top.peakT) + ").";
   }
   var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
   if (last && now - last.t < 36e5) {
     var pv = null; TD.pred.forEach(function (p) { if (Math.abs(p.t - last.t) <= 3e5) pv = p.v; });
-    nowTxt = "Now <b>" + last.v.toFixed(2) + " ft</b> · " + esc(fTime(last.t)) + (pv == null ? "" : Math.abs(last.v - pv) < 0.05 ? " · as predicted" : " · " + sgn(last.v - pv) + " ft vs predicted");
+    if (pv != null) nowTxt = Math.abs(last.v - pv) < 0.2 ? "Right now the Bay is about where the tide tables predict."
+      : "Right now the Bay is " + feet(Math.abs(last.v - pv)) + " " + (last.v > pv ? "higher" : "lower") + " than the tide tables predict" +
+        (last.v > pv ? ", which can happen with storms, wind or heavy runoff." : ".");
   }
-  el.innerHTML = '<span class="th">' + head + "</span>" + (nowTxt ? '<span class="tn">' + nowTxt + "</span>" : "") +
-    '<span class="ts">ft NAVD88 · MHHW ' + m.toFixed(2) + " ft · " + (fe ? "measured, NOAA model forecast through " + esc(fmt(fe, { weekday: "short" }) + " " + fTime(fe)) + ", then predicted" : "predicted tide (NOAA model forecast unavailable)") + "</span>" +
+  el.innerHTML = '<span class="th">' + esc(head) + "</span>" + (sub ? '<span class="tn">' + esc(sub) + "</span>" : "") +
+    (nowTxt ? '<span class="tn">' + esc(nowTxt) + "</span>" : "") +
+    '<span class="ts">A \u201cnormal high tide\u201d is the average highest tide of the day at the NOAA tide gauge in Redwood City. Higher tides reach ' +
+    "farther onto low shorelines, marshes and trails. Based on NOAA tide measurements, forecasts and predictions.</span>" +
     '<span class="go">Tide details ›</span>';
 }
 
