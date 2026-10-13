@@ -181,14 +181,13 @@ Redwood City only (NOAA 9414523, ft NAVD88). Three parts:
   or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood / Storm
   Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
 
-- **Tide season line** (under the NWS row): San Mateo County Emergency Management's tide days of concern for
-  Oct 2026 – Apr 2027 (`data/tide_days_lookup_2026-27.json`). It shows today's category or King Tide window
-  ("King Tide today", "King Tide window now", "Elevated tide today"), otherwise the next day of concern within 7
-  days ("Elevated tide Sun Oct 25 · in 4 days", "King Tide window starts Sat Nov 21"), otherwise "No tide days of
-  concern in the next 7 days". It sits below the NWS row and never replaces it. Dates and labels only: the County's
-  heights are MLLW at the San Francisco gauge, not NAVD88 at Redwood City. The County's list is for San Francisco;
-  Redwood City tides usually run higher, so the day cards can show red on a day the County doesn't list. "Today" is
-  the Pacific-time date; the line disappears after Apr 30, 2027. Tap it for the windows and the next days of concern.
+- **King Tides line** (under the NWS row): San Mateo County Emergency Management's King Tide dates for
+  Oct 2026 – Apr 2027 (`data/tide_days_lookup_2026-27.json`). It appears only around King Tides: "King Tide window
+  starts Sat Nov 21 · in 5 days" (up to 7 days ahead), "King Tide window now", "King Tide today". The rest of the time
+  it is hidden, so it never says "no concern" next to a red day card or an NWS advisory. The County's dates are
+  astronomical predictions for the San Francisco gauge, without weather; Redwood City runs higher and NWS adds surge,
+  so the day cards and NWS row stay the actual forecast. Dates and labels only (the County's heights are MLLW at San
+  Francisco). "Today" is the Pacific-time date; nothing shows after Apr 30, 2027. Tap it for the three windows.
 
 ## Title bar
 
@@ -302,7 +301,7 @@ Near the top of the `<script>` section in `ShorelineKiosk.html`:
 | `OFFSET_HIGH_FT`      | 0.5     | ...and this big is shown in red                 |
 | `NWS_OFFICE`          | MTR     | NWS office whose forecast discussion is checked for tide notes |
 | `AFD_EVERY_MIN`       | 30      | How often the forecast discussion is checked    |
-| `TIDE_DAYS_URL`       | data/tide_days_lookup_2026-27.json | County tide days of concern for the Tide season line |
+| `TIDE_DAYS_URL`       | data/tide_days_lookup_2026-27.json | County King Tide dates for the King Tides line |
 | `TIDE_DAYS_EVERY_HOURS` | 6     | How often that file is re-read                  |
 | `DAYS`                | 7       | Days of predicted tides                        |
 | `STALE_AFTER_MIN`     | 90      | When the "out of date" warning appears         |

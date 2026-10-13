@@ -225,13 +225,14 @@
 <main>
   <div class="intro" id="intro">Measured and predicted Bay water levels at the NOAA tide gauges in Redwood City and Alameda, and the
     times high tides are predicted to rise above MHHW in the next 7 days.</div>
-  <div class="card hide" id="season" role="button"><span class="chip">TIDE SEASON</span>
-    <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src">San Mateo County outlook (San Francisco gauge) · see calendar</span></span><span class="go">›</span></div>
+  <div class="card hide" id="season" role="button"><span class="chip">KING TIDES</span>
+    <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src">San Mateo County dates · astronomical predictions for San Francisco, no weather · see calendar</span></span><span class="go">›</span></div>
   <div id="cards"></div>
   <div style="height:12px"></div>
   <div class="card hide" id="calcard">
-    <h2>Tide season, Oct 2026 – Apr 2027</h2>
-    <div class="lbl">Days of concern from San Mateo County Emergency Management. Tap a day.</div>
+    <h2>King Tide season (San Francisco predictions)</h2>
+    <div class="lbl">Oct 2026 – Apr 2027, from San Mateo County Emergency Management. Planning view: astronomical tide
+      predictions for San Francisco, without weather. For the actual forecast, check the Redwood City card above and NWS alerts. Tap a day.</div>
     <div class="ckey"><span><i style="background:var(--king)"></i>King Tide</span><span><i style="background:var(--elevbg);box-shadow:inset 0 0 0 1px var(--elev)"></i>Elevated tide</span>
       <span><i style="box-shadow:inset 0 0 0 2px var(--king)"></i>King Tide window</span><span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span></div>
     <div class="months" id="months"></div>
@@ -556,28 +557,23 @@ function tsInSeason(today) {
   var s = TS.data && TS.data.meta && TS.data.meta.season;
   return !!(TS.data && TS.data.days && s && today >= s.start && today <= s.end);
 }
-// One-line status: today's category or window, else the next day of concern within 7 days.
-// Returns null outside the season (after Apr 30, 2027) or before the file loads.
+// King Tides only, so the line never contradicts the Redwood City day cards or NWS: it shows King Tide days and
+// King Tide windows (now, or starting within 7 days) and is hidden the rest of the time. Elevated days and
+// "no days of concern" are not shown; the day cards cover this week at Redwood City.
 function tideSeason(day) {
   var today = day || tsToday();
   if (!tsInSeason(today)) return null;
   var by = {}; TS.data.days.forEach(function (x) { by[x.date] = x; });
   var t = by[today] || { category: "NONE" }, w = t.window_id ? tsWindow(t.window_id) : null;
   if (t.category === "KING") return { cls: "king", main: "King Tide today", sub: w ? "window " + tsRange(w.start, w.end) : "" };
-  if (w) return { cls: "king", main: "King Tide window now", sub: tsWinText(w) + (t.category !== "NONE" ? " · today: " + tsLabel(t.category) : "") };
-  var nextWin = tsWindows().filter(function (x) { return x.start > today; })[0];
+  if (w) return { cls: "king", main: "King Tide window now", sub: tsWinText(w) };
   for (var n = 1; n <= 7; n++) {
     var d = tsAdd(today, n), x = by[d]; if (!x) break;
-    var xw = x.window_id ? tsWindow(x.window_id) : null;
-    if (x.category === "NONE" && !xw) continue;
-    var when = n === 1 ? "tomorrow" : "in " + n + " days";
-    if (t.category === "ELEVATED") break;   // today's status comes first
+    var xw = x.window_id ? tsWindow(x.window_id) : null, when = n === 1 ? "tomorrow" : "in " + n + " days";
     if (xw && xw.start === d) return { cls: "king", main: "King Tide window starts " + tsDay(d), sub: when + " · " + tsWinText(xw) };
-    return { cls: x.category === "KING" ? "king" : "elev", main: tsLabel(x.category) + " " + tsDay(d), sub: when };
+    if (x.category === "KING") return { cls: "king", main: "King Tide " + tsDay(d), sub: when };
   }
-  if (t.category === "ELEVATED") return { cls: "elev", main: "Elevated tide today", sub: nextWin ? "next King Tide window " + tsWinText(nextWin) : "" };
-  var nx = TS.data.days.filter(function (x) { return x.date > today && x.category !== "NONE"; })[0];
-  return { cls: "", main: "No tide days of concern in the next 7 days", sub: nx ? "next: " + tsLabel(nx.category) + ", " + tsDay(nx.date) : "none left this season" };
+  return null;
 }
 function loadTideSeason(after) {
   return fetch(TIDE_DAYS_URL + "?d=" + tsToday(), { cache: "no-cache" })
@@ -586,17 +582,19 @@ function loadTideSeason(after) {
     .catch(function () { /* keep the last good copy; the line hides if there is none */ })
     .then(function () { if (after) after(); });
 }
-var TS_SOURCE = "San Mateo County Emergency Management, “Tide days of concern, Oct 2026 to Apr 2027,” based on predicted high tides at NOAA’s San Francisco gauge (9414290). " +
-  "South Bay tides, including Redwood City, usually run higher than San Francisco, so a day the County doesn’t list can still go above MHHW here. Storm surge adds to any of these tides.";
+var TS_SOURCE = "King Tide dates from San Mateo County Emergency Management, \u201cTide days of concern, Oct 2026 to Apr 2027.\u201d " +
+  "They are astronomical tide predictions for NOAA\u2019s San Francisco gauge (9414290) and don\u2019t include weather. " +
+  "Redwood City tides usually run higher than San Francisco, and storms, wind and runoff can add more, so check the Redwood City predictions and NWS alerts for the actual forecast.";
 
 function renderSeason() {
-  var st = tideSeason(), el = $("season");
-  el.classList.toggle("hide", !st); $("calcard").classList.toggle("hide", !st);
+  var st = tideSeason(), el = $("season"), inSeason = tsInSeason(tsToday());
+  $("calcard").classList.toggle("hide", !inSeason);   // calendar: all season; status card: only around King Tides
+  if (inSeason) renderCalendar();
+  el.classList.toggle("hide", !st);
   if (!st) return;
   el.className = "card " + st.cls;
   $("tsmain").textContent = st.main;
   $("tssub").textContent = st.sub ? " · " + st.sub : "";
-  renderCalendar();
 }
 var calBuiltFor = "";
 function renderCalendar() {
@@ -626,7 +624,7 @@ function renderCalendar() {
     return "<li><b>King Tide window " + esc(tsRange(w.start, w.end)) + "</b> · King Tide " + esc(tsDates(w.king_tide_dates)) +
       (w.end < today ? ' <span class="lbl">(past)</span>' : "") + "</li>";
   }).join("");
-  $("calsrc").textContent = TS_SOURCE + " Heights in the County sheet are at San Francisco (MLLW) and aren't shown here; the station cards above use NAVD88.";
+  $("calsrc").textContent = TS_SOURCE + " Elevated tide days are the County's next level down (lower than King Tides). Heights in the County sheet are at San Francisco (MLLW) and aren't shown here; the station cards above use NAVD88.";
   $("calsel").textContent = "";
 }
 $("months").addEventListener("click", function (e) {
