@@ -172,7 +172,9 @@ the week next, details behind a tap.
 
 - **Headline band** (top, the color goes around the whole box): red with "Tides above MHHW: Today 12:55–3:25 PM
   (7.64 ft) · Tomorrow 1:17–4:03 PM (7.70 ft) +1 more this week", or green with "No tides above MHHW in the next 7
-  days". It uses the NOAA model forecast for as far as it reaches, then the astronomical prediction. MHHW (7.02 ft) is
+  days". Heights come from one series: measured for what has already happened, then the NOAA model forecast, then
+  the astronomical prediction, so the band and the cards always agree (e.g. "Above MHHW now, until 3:24 PM · peaked
+  7.62 ft measured at 2:12 PM"; the card shows the same 7.62 marked "measured"). MHHW (7.02 ft) is
   a placeholder threshold until OneShoreline sets tide levels tied to known impacts. On the right: "Now 6.69 ft
   rising · +0.45 vs predicted"; tap it for the measured-vs-predicted table for the past week, the "running higher
   than predicted" summary and the model's accuracy over the last 24 hours. Tap the rest of the band for the times.
@@ -185,10 +187,11 @@ the week next, details behind a tap.
   `ofs_water_level`, requested in ft NAVD88, updated 4 times a day, about 2 days ahead). It is model guidance, not an
   official forecast; NWS advisories take precedence. If it is missing, older than 12 hours or doesn't reach 6 hours
   ahead, the tab uses the predictions alone.
-- **NWS row** (bottom): never repeats the alert already in the top alert bar. It shows the lines about tides or
-  coastal flooding from the latest NWS San Francisco Bay Area forecast discussion (api.weather.gov, office MTR),
-  or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood / Storm
-  Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
+- **NWS row** (bottom): never repeats the alert already in the top alert bar. It shows "What NWS forecasters are
+  saying about tides": the lines about tides or coastal flooding from the NWS San Francisco Bay Area office's latest
+  forecast discussion (api.weather.gov, office MTR; ignored if older than 24 hours; the issue time is on the tap
+  screen), or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood /
+  Storm Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
 
 - **King Tides line** (under the NWS row): San Mateo County Emergency Management's King Tide dates for
   Oct 2026 – Apr 2027 (`data/tide_days_lookup_2026-27.json`). It appears only around King Tides: "King Tide window

@@ -439,6 +439,18 @@ function modelOK(s, now) {
   return !!(s.ofs && s.ofs.length && Date.now() - s.tOfs < MODEL_MAX_AGE_HOURS * 3600000 &&
     s.ofs[s.ofs.length - 1].t >= now + MODEL_MIN_AHEAD_HOURS * 3600000);
 }
+// Stretches above MHHW that haven't ended, from measured readings for what has happened and the model forecast after
+// that, so a peak that already passed is reported as measured (the same rule as the kiosk)
+function aboveNowAndForecast(s, now) {
+  var ser = [], tail = -Infinity;
+  (s.obs || []).forEach(function (o) { if (o.t >= now - 12 * 3600000) { ser.push({ t: o.t, v: o.v, src: "measured" }); tail = o.t; } });
+  (s.ofs || []).forEach(function (o) { if (o.t > tail) ser.push({ t: o.t, v: o.v, src: "forecast" }); });
+  return findWindows(ser, s.st.mhhw).filter(function (w) { return w.end > now; }).map(function (w) {
+    var pk = null; ser.forEach(function (p) { if (p.t >= w.start && p.t <= w.end && (!pk || p.v > pk.v)) pk = p; });
+    if (pk) { w.peak = pk.v; w.peakT = pk.t; w.src = pk.src; }
+    return w;
+  });
+}
 function modelCheck(s, now) {   // 90% of the last 24 h of measured readings were within this of the model
   var m = {}; (s.ofs || []).forEach(function (o) { m[o.t] = o.v; });
   var d = []; (s.obs || []).forEach(function (o) { if (o.t >= now - 86400000 && m[o.t] != null) d.push(Math.abs(o.v - m[o.t])); });
@@ -481,16 +493,16 @@ function render() {
     // next time above MHHW: the NOAA model forecast while it lasts, then the prediction
     var nx = q(".next"), up = (s.wins || []).filter(function (w) { return w.end > now; });
     var useModel = modelOK(s, now), fe = useModel ? s.ofs[s.ofs.length - 1].t : now;
-    var fw = useModel ? findWindows(s.ofs.filter(function (o) { return o.t >= now; }), s.st.mhhw) : [];
+    var fw = useModel ? aboveNowAndForecast(s, now) : [];
     var upLater = up.filter(function (w) { return w.start >= fe; });
     q(".src").textContent = useModel ? "NOAA model forecast through " + fmt(fe, { weekday: "short" }) + " " + fTime(fe) + ", then predicted tide" : "";
     if (!s.pred) {
       q(".nl").textContent = s.failed ? "Tide predictions unavailable — retrying" : "Loading predictions…";
     } else if (fw.length) {
       var f = fw[0], on = f.start <= now;
-      nx.className = "next"; q(".nl").textContent = on ? "Above MHHW now (NOAA forecast)" : "Next forecast above MHHW (NOAA model)";
+      nx.className = "next"; q(".nl").textContent = on ? "Above MHHW now" : "Next forecast above MHHW (NOAA model)";
       q(".nx").textContent = relDay(f.start, now) + " " + fTime(f.start) + " – " + fTime(f.end);
-      q(".np").textContent = "Forecast peak " + f.peak.toFixed(2) + " ft at " + fTime(f.peakT) + " (" + (f.peak - s.st.mhhw).toFixed(2) + " ft above MHHW)" +
+      q(".np").textContent = (f.peakT <= now ? "Peaked " : "Peak ") + f.peak.toFixed(2) + " ft " + f.src + " at " + fTime(f.peakT) + " (" + (f.peak - s.st.mhhw).toFixed(2) + " ft above MHHW)" +
         (fw.length > 1 ? " · " + fw.length + " times in the forecast" : "");
     } else if (useModel) {
       var nU = upLater[0];
@@ -510,9 +522,9 @@ function render() {
     var mc = useModel ? modelCheck(s, now) : null;
     q(".mc").textContent = mc != null ? "NOAA model vs measured, last 24 hours: within ±" + mc.toFixed(2) + " ft" : "";
     q(".fckey").style.display = useModel ? "" : "none";
-    q(".wl").innerHTML = (useModel ? '<p class="lbl" style="margin:4px 0 2px">NOAA forecast above MHHW (model, through ' + esc(fmt(fe, { weekday: "short" })) + " " + esc(fTime(fe)) + "):</p>" +
-      (fw.length ? "<table><tr><th>Day</th><th>Forecast above MHHW</th><th>Forecast peak</th></tr>" + fw.map(function (w) {
-        return "<tr><td><b>" + esc(fDay(w.start)) + "</b></td><td>" + esc(fTime(w.start)) + " – " + esc(fTime(w.end)) + "</td><td>" + w.peak.toFixed(2) + " ft " +
+    q(".wl").innerHTML = (useModel ? '<p class="lbl" style="margin:4px 0 2px">Above MHHW, measured so far then NOAA forecast (through ' + esc(fmt(fe, { weekday: "short" })) + " " + esc(fTime(fe)) + "):</p>" +
+      (fw.length ? "<table><tr><th>Day</th><th>Above MHHW</th><th>Peak</th></tr>" + fw.map(function (w) {
+        return "<tr><td><b>" + esc(fDay(w.start)) + "</b></td><td>" + esc(fTime(w.start)) + " – " + esc(fTime(w.end)) + "</td><td>" + w.peak.toFixed(2) + " ft " + esc(w.src) + " " +
           '<span class="red">+' + (w.peak - s.st.mhhw).toFixed(2) + "</span></td></tr>"; }).join("") + "</table>" : '<p class="lbl">None.</p>') +
       '<p class="lbl" style="margin:10px 0 2px">Predicted tide (astronomical), next ' + DAYS + " days:</p>" : "") +
       (up.length ? '<table><tr><th>Day</th><th>Above MHHW</th><th>High tide</th></tr>' + up.map(function (w) {
