@@ -58,7 +58,7 @@ Each one is added to the OneRain dashboard as an iFrame/web-page widget pointing
 
 | File | Purpose |
 |------|---------|
-| `ShorelineKiosk.html` | The kiosk page, laid out at 800×480 for a 7" touchscreen and scaled sharply to fit any screen (e.g. 1024×600). Tabs: **Bay Tides** (both stations: measured vs predicted, next time above MHHW, 9-day graph), **Creeks** (an All creeks summary card for each creek, then per creek: each gauge's stage with flood thresholds, rainfall, and the Bay tide, all on one timeline), **Map** (every public OneRain site, colored by status; tap one for its readings), **About** (contact info and QR codes), and **Disclaimer**. An NWS alert bar stays on top of every tab, and a creek alert strip appears when any creek reaches Flood Monitoring / Watch / Warning level. To protect the screen from burn-in, the whole picture moves by 2 pixels every 10 minutes (too small to notice); KIOSK_SETUP.md also explains how to switch the screen off after hours. |
+| `ShorelineKiosk.html` | The kiosk page, laid out at 800×480 for a 7" touchscreen and scaled sharply to fit any screen (e.g. 1024×600). Tabs: **Bay Tides** (Redwood City only: the next 7 days of predicted high tides as day cards over a matching graph, how measured high tides compared with predictions over the past 7 days, and NWS coastal flood alerts or forecast-discussion notes about tides), **Creeks** (an All creeks summary card for each creek, then per creek: each gauge's stage with flood thresholds, rainfall, and the Bay tide, all on one timeline), **Map** (every public OneRain site, colored by status; tap one for its readings), **About** (contact info and QR codes), and **Disclaimer**. An NWS alert bar stays on top of every tab, and a creek alert strip appears when any creek reaches Flood Monitoring / Watch / Warning level. To protect the screen from burn-in, the whole picture moves by 2 pixels every 10 minutes (too small to notice); KIOSK_SETUP.md also explains how to switch the screen off after hours. |
 | `KIOSK_SETUP.md` | Step-by-step Raspberry Pi setup, kiosk options, and all settings. |
 
 ### Phone page
@@ -151,7 +151,8 @@ picks up changes the next time someone opens it (a pull-down refresh may be need
 
 - **NOAA CO-OPS Tides & Currents API**: tide predictions and measured water levels
   (`api.tidesandcurrents.noaa.gov`)
-- **National Weather Service API**: active alerts (`api.weather.gov`); official alert pages on
+- **National Weather Service API**: active alerts and the San Francisco Bay Area forecast discussion (kiosk
+  Tides tab) (`api.weather.gov`); official alert pages on
   `forecast.weather.gov`
 - **OneShoreline Early Warning System (OneRain Contrail)**: creek stage, rainfall and all map sites
   (`oneshorelineearlywarning.onerain.com`)

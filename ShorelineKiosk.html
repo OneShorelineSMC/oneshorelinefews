@@ -53,39 +53,72 @@
   #alertSub { font-size: 13px; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #alertMore { font-size: 13px; background: rgba(255,255,255,.22); border-radius: 12px; padding: 4px 10px; white-space: nowrap; }
 
-  /* Station panels */
-  .panel { position: absolute; top: 76px; width: 388px; height: 352px; box-sizing: border-box;
-    background: var(--panel); border-radius: 10px; padding: 10px 14px; overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-  #p0 { left: 8px; } #p1 { left: 404px; }
-  .ph { display: flex; justify-content: space-between; align-items: baseline; }
-  .pname { font-size: 20px; font-weight: bold; }
-  .pid { font-size: 12px; color: var(--muted); }
+  /* Bay Tides tab: Redwood City only */
+  #tides { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
+    background: var(--panel); border-radius: 10px; padding: 8px 12px 8px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); display: flex; flex-direction: column; gap: 6px; }
+  #tides.hide { display: none; }
+  #stage.creekalert #tides { top: 104px; height: 324px; gap: 4px; padding-top: 6px; padding-bottom: 6px; }
+  .th { display: flex; align-items: baseline; gap: 10px; flex: none; }
+  .tname { font-size: 19px; font-weight: bold; }
+  .tid { font-size: 12px; color: var(--muted); }
+  .th .tmhhw { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed #e05c2a; vertical-align: middle; margin-right: 4px; }
+  #tmain { flex: 1; min-height: 0; display: flex; gap: 10px; }
 
-  .now { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px; }
-  .nowlbl { font-size: 13px; color: var(--muted); }
-  .nowline { white-space: nowrap; }
-  .nowval { font-size: 30px; font-weight: bold; }
-  .nowunit { font-size: 14px; color: var(--muted); margin-left: 4px; }
-  .nowdiff { font-size: 15px; text-align: right; padding-bottom: 4px; }
-  .nowdiff.hi { color: var(--red); font-weight: bold; }
-  .nowdiff.lo { color: var(--muted); }
+  /* Left: now + past 7 days */
+  #tleft { width: 222px; flex: none; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .tbx { border-radius: 8px; background: rgba(26,58,92,.05); padding: 6px 10px; }
+  .tlbl { font-size: 12px; color: var(--muted); }
+  .tnow { font-size: 28px; font-weight: bold; line-height: 1.1; white-space: nowrap; }
+  .tnow small { font-size: 13px; font-weight: normal; color: var(--muted); margin-left: 4px; }
+  .tdiff { font-size: 14px; margin-top: 1px; }
+  .hi { color: var(--red); } .warm { color: var(--amber); }
+  #tpast { flex: 1; min-height: 0; display: flex; flex-direction: column; cursor: pointer; }
+  .tverd { font-size: 14px; font-weight: bold; line-height: 1.25; margin-top: 2px; }
+  .tverd.hi { color: var(--red); } .tverd.warm { color: var(--amber); } .tverd.ok { color: var(--green); }
+  .tvsub { font-size: 12px; color: var(--muted); line-height: 1.25; margin-top: 1px; }
+  #tbars { position: relative; flex: 1; min-height: 40px; margin-top: 4px; }
+  #tbars canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-  .next { margin-top: 6px; padding: 6px 10px; border-radius: 6px; background: rgba(192,57,43,.09);
-    border-left: 4px solid var(--red); }
-  .next.clear { background: rgba(46,125,50,.09); border-left-color: var(--green); }
-  .nextlbl { font-size: 13px; color: var(--muted); }
-  .nextval { font-size: 19px; font-weight: bold; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .next.clear .nextval { color: var(--green); }
-  .nextsub { font-size: 14px; margin-top: 1px; }
+  /* Right: 7-day look-ahead (the main element) */
+  #tright { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
+  .tsec { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; height: 15px; white-space: nowrap; }
+  .tsec b { color: var(--ink); font-size: 13px; }
+  #tdays { display: grid; grid-template-columns: repeat(7, 1fr); flex: none; }
+  .tday { border-top: 4px solid var(--line); padding: 4px 4px 5px; text-align: center; border-right: 1px solid var(--line); min-width: 0; }
+  .tday:last-child { border-right: 0; }
+  .tday .dn { font-size: 13px; font-weight: bold; white-space: nowrap; }
+  .tday .dv { font-size: 21px; font-weight: bold; line-height: 1.15; }
+  .tday .dt { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  .tday .dx { font-size: 11.5px; font-weight: bold; margin-top: 2px; line-height: 1.2; min-height: 14px; }
+  .tday.over { border-top-color: #c0392b; background: rgba(192,57,43,.09); }
+  .tday.over .dv, .tday.over .dx { color: var(--red); }
+  .tday.maybe { border-top-color: #e69f00; background: rgba(230,159,0,.10); }
+  .tday.maybe .dx { color: var(--amber); }
+  .tday.under .dx { color: var(--green); font-weight: normal; }
+  .tday.past .dv { color: var(--muted); }
+  #tchart { position: relative; flex: 1; min-height: 60px; }
+  #tkey { font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; white-space: nowrap; height: 15px; }
+  #tkey i { display: inline-block; width: 14px; height: 0; margin-right: 3px; vertical-align: middle; }
+  #tkey i.ab { height: 9px; background: rgba(192,57,43,.45); border-top: 2px solid #c0392b; box-sizing: border-box; }
+  #tkey .tap { margin-left: auto; }
 
-  .mini { position: relative; height: 148px; margin-top: 6px; }
-  .pfoot { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 2px; }
-  .tapnote { font-size: 12px; color: var(--muted); }
-  .mkey { font-size: 11.5px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-  .mkey i { display: inline-block; width: 14px; height: 0; margin-left: 6px; }
-  .mkey i:first-child { margin-left: 0; }
-  .mkey i.ab { height: 9px; background: rgba(192,57,43,.45); border-top: 2px solid #c0392b; box-sizing: border-box; }
+  /* Bottom: NWS coastal flood information */
+  #tnws { flex: none; display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 5px 12px;
+    background: rgba(46,125,50,.09); border-left: 5px solid var(--green); cursor: pointer; min-height: 40px; box-sizing: border-box; }
+  #tnws.alert { background: rgba(217,130,0,.12); border-left-color: #c77700; }
+  #tnws.warn { background: rgba(192,57,43,.11); border-left-color: #b71c1c; }
+  #tnws.afd { background: rgba(10,85,135,.08); border-left-color: #0A5587; }
+  #tnws.unknown { background: rgba(107,122,140,.10); border-left-color: #6b7a8c; }
+  #tnws .ni { font-size: 18px; line-height: 1; }
+  #tnws .nt { flex: 1; min-width: 0; }
+  #tnws .nm { font-size: 14.5px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #tnws .ns { font-size: 12.5px; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  #stage.creekalert #tnws .ns { -webkit-line-clamp: 1; }
+  #tnws .nmore { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  #tnws.alert .nm { color: #9a5c00; } #tnws.warn .nm { color: var(--red); }
+  :root[data-theme="dark"] #tnws.alert .nm { color: var(--amber); }
 
   /* Footer */
   /* San Bruno Creek strip (under the NWS bar, only when the creek is at Monitoring or above) */
@@ -98,8 +131,7 @@
   #creekStrip .stap { font-size: 12px; opacity: .85; white-space: nowrap; }
   #creekStrip.lvl-warning { color: #fff; }
   /* Make room for the strip: content moves down 28px and gets 28px shorter */
-  #stage.creekalert .panel, #stage.creekalert #creek, #stage.creekalert #about { top: 104px; height: 324px; }
-  #stage.creekalert .mini { height: 120px; }
+  #stage.creekalert #creek, #stage.creekalert #about { top: 104px; height: 324px; }
   /* Creek tab button takes the creek's alert color */
   .tab.creek-monitoring { background: #f2d024; border-color: #f2d024; color: #1a1a1a; }
   .tab.creek-watch { background: #e07b00; border-color: #e07b00; color: #fff; }
@@ -298,8 +330,25 @@
     <span class="sicon">▲</span><span class="stext" id="csText"></span><span class="stap">creeks tab ›</span>
   </div>
 
-  <div class="panel" id="p0"></div>
-  <div class="panel" id="p1"></div>
+  <div id="tides">
+    <div class="th"><span class="tname">Redwood City · Bay tide</span><span class="tid" id="tid">NOAA 9414523 · ft NAVD88</span>
+      <span class="tmhhw" id="tmhhw"></span></div>
+    <div id="tmain">
+      <div id="tleft">
+        <div class="tbx" id="tnowbox"><div class="tlbl">Measured now</div><div class="tnow" id="tnow">–</div><div class="tdiff" id="tdiff"></div></div>
+        <div class="tbx" id="tpast"><div class="tlbl">Past 7 days: high tides vs predicted</div>
+          <div class="tverd" id="tverd">Loading…</div><div class="tvsub" id="tvsub"></div><div id="tbars"><canvas id="tbarsc"></canvas></div></div>
+      </div>
+      <div id="tright">
+        <div class="tsec"><span><b>Next 7 days</b> · highest predicted tide each day</span><span id="tcount"></span></div>
+        <div id="tdays"></div>
+        <div id="tchart"><canvas id="tchartc"></canvas></div>
+        <div id="tkey"></div>
+      </div>
+    </div>
+    <div id="tnws" class="unknown"><span class="ni" id="tnwsi">…</span><div class="nt"><div class="nm" id="tnwsm">Checking NWS coastal flood information…</div>
+      <div class="ns" id="tnwss"></div></div><span class="nmore" id="tnwsmore"></span></div>
+  </div>
 
   <div id="creek">
     <div id="cpick"></div>
@@ -313,12 +362,13 @@
   <div id="about">
     <div id="aboutText">
       <h3>About this screen</h3>
-      <p><b>Bay Tides:</b> predicted and measured San Francisco Bay water levels at the NOAA tide gauges in
-        Redwood City and Alameda. Red marks tides above Mean Higher High Water (MHHW), the average height of
-        the highest tide each day.</p>
+      <p><b>Bay Tides:</b> the NOAA tide gauge in Redwood City. The next 7 days show each day's highest predicted
+        tide; red marks tides above Mean Higher High Water (MHHW), the average height of the highest tide each day.
+        The bars show how measured high tides compared with predictions over the past week, and the bottom row shows
+        NWS coastal flood alerts or forecast notes about tides.</p>
       <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline. Tap the creek buttons to switch creeks, and "thresholds &amp; notes" for what each level means.</p>
-      <p><b>Measured above predicted</b> means storms, wind or runoff are pushing water higher than the tide
-        alone. Upcoming high tides will likely run higher too.</p>
+      <p><b>Running higher than predicted</b> means storms, wind or runoff are pushing water higher than the tide
+        alone. Upcoming high tides will likely run higher too; the dashed orange line shows the forecast tide if that continues.</p>
       <p class="emerg">In an emergency, call 911.</p>
       <p class="src">Data: NOAA Tides &amp; Currents, National Weather Service, and the OneShoreline Early Warning
         System (OneRain). Predicted tides do not include storm surge. Data refreshes automatically.</p>
@@ -370,11 +420,18 @@
 /* ===================== CONFIG ===================== */
 var STATIONS = [
   { id: "9414523", name: "Redwood City", mhhw: 7.02 },   // MHHW in ft NAVD88
-  { id: "9414750", name: "Alameda",      mhhw: 6.37 }
+  { id: "9414750", name: "Alameda",      mhhw: 6.37 }    // used only by the Creeks tab (San Bruno, Colma)
 ];
+var TIDE_STATION = "9414523";      // the Bay Tides tab shows this station only (Redwood City)
 var COUNTY_SAME = "006081";        // San Mateo County
 var DAYS = 7;
-var HISTORY_HOURS = 48;            // hours of measured water level shown (two full tide cycles, for multi-day activations)
+var PAST_DAYS = 7;                 // days of measured water level loaded, to compare with predictions
+var OFFSET_RECENT_HIGHS = 4;       // "running higher than predicted" = average of the last 4 high tides (about 2 days)
+var OFFSET_NOTE_FT = 0.2;          // a difference this big (ft) is called out, and the look-ahead shows "if Bay stays high"
+var OFFSET_HIGH_FT = 0.5;          // ...and this big is shown in red
+var NWS_OFFICE = "MTR";            // NWS San Francisco Bay Area: its forecast discussion is checked for tide/coastal flood notes
+var AFD_EVERY_MIN = 30;
+var AFD_MAX_AGE_HOURS = 24;        // ignore a forecast discussion older than this
 var ALERTS_EVERY_MIN = 3;
 var OBSERVED_EVERY_MIN = 6;        // NOAA posts water levels every 6 minutes
 var PREDICTIONS_EVERY_MIN = 60;
@@ -535,80 +592,108 @@ var S = STATIONS.map(function (st) { return { st: st, pred: null, highs: null, o
   tPred: 0, tObs: 0 }; });
 var A = { list: null, t: 0 };
 
-/* ---------- Station panels ---------- */
+/* ---------- Bay Tides tab (Redwood City only) ---------- */
 function predAt(s, t) {
   var p = s.pred; if (!p || !p.length) return null;
   var i = Math.round((t - p[0].t) / 360000);             // 6-minute steps
   return (i >= 0 && i < p.length) ? p[i].v : null;
 }
+function tideS() { return S.filter(function (s) { return s.st.id === TIDE_STATION; })[0] || S[0]; }
+function $t(id) { return document.getElementById(id); }
+function sgn(v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 
-function renderPanel(i) {
-  var s = S[i], st = s.st, now = nowLocal(), el = document.getElementById("p" + i);
-  if (!el.dataset.built) {
-    el.innerHTML =
-      '<div class="ph"><span class="pname">' + esc(st.name) + '</span><span class="pid">NOAA ' + st.id + ' · ft NAVD88</span></div>' +
-      '<div class="now"><div><div class="nowlbl">Measured water level</div><div class="nowline">' +
-        '<span class="nowval" data-k="nowval">–</span><span class="nowunit" data-k="nowunit">ft</span></div></div>' +
-        '<div class="nowdiff" data-k="nowdiff"></div></div>' +
-      '<div class="next" data-k="next"><div class="nextlbl" data-k="nextlbl">Next predicted above MHHW</div>' +
-        '<div class="nextval" data-k="nextval">Loading…</div><div class="nextsub" data-k="nextsub"></div></div>' +
-      '<div class="mini"><canvas data-k="canvas"></canvas></div>' +
-      '<div class="pfoot"><span data-k="days"></span><span class="tapnote">Tap for all times ›</span></div>' +
-      '<div class="mkey"><i style="border-top:2.5px solid #1e88e5"></i>Measured <i style="border-top:1.5px solid var(--ink)"></i>Predicted ' +
-      '<i style="border-top:1.5px dashed #e05c2a"></i>MHHW <i class="ab"></i>Above MHHW</div>';
-    el.dataset.built = "1";
-    el.addEventListener("click", function () { showStation(i); });
-  }
-  function q(k) { return el.querySelector('[data-k="' + k + '"]'); }
+// Each high tide in the past PAST_DAYS days: the measured peak (within 90 min of the predicted high) minus the
+// predicted high. This is how storms, wind, runoff or a seasonal Bay rise show up.
+function highResiduals(s, now) {
+  if (!s.highs || !s.obs || !s.obs.length) return [];
+  var out = [], win = 90 * 60000;
+  s.highs.forEach(function (h) {
+    if (h.t < now - PAST_DAYS * 86400000 || h.t + win > now) return;
+    var best = null, n = 0;
+    s.obs.forEach(function (o) { if (Math.abs(o.t - h.t) <= win) { n++; if (!best || o.v > best.v) best = o; } });
+    if (best && n >= 10) out.push({ t: h.t, pred: h.v, meas: best.v, mt: best.t, d: best.v - h.v });
+  });
+  return out;
+}
+// Recent offset: average at the last few high tides (about two days), if they are recent enough
+function recentOffset(R, now) {
+  var rec = R.slice(-OFFSET_RECENT_HIGHS);
+  if (rec.length < 2 || now - rec[rec.length - 1].t > 18 * 3600000) return null;
+  return rec.reduce(function (a, r) { return a + r.d; }, 0) / rec.length;
+}
 
-  // Live water level vs predicted (this is where storm surge shows up)
+function renderPanel(i) {   // called whenever a station's data changes
+  if (S[i] && S[i].st.id === TIDE_STATION) renderTides();
+  if (typeof currentTab !== "undefined" && currentTab === "creek" && C.data) renderCreek();   // creek tab shows a tide too
+}
+
+function renderTides() {
+  var s = tideS(), st = s.st, now = nowLocal();
+  $t("tid").textContent = "NOAA " + st.id + " · ft NAVD88";
+  $t("tmhhw").innerHTML = "<i></i>MHHW " + st.mhhw.toFixed(2) + " ft";
+
+  // Measured now, and how far from predicted
   var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null;
   if (last && now - last.t < 60 * 60000) {
-    q("nowval").textContent = last.v.toFixed(2);
     var ago = null;
     for (var k = s.obs.length - 1; k >= 0; k--) { if (last.t - s.obs[k].t >= 30 * 60000) { ago = s.obs[k]; break; } }
     var arrow = ago ? (last.v - ago.v > 0.05 ? " ↑" : last.v - ago.v < -0.05 ? " ↓" : " →") : "";
-    q("nowval").textContent = last.v.toFixed(2) + arrow;
-    q("nowunit").textContent = "ft · " + fTime(last.t);
-    var pv = predAt(s, last.t), d = q("nowdiff");
+    $t("tnow").innerHTML = last.v.toFixed(2) + arrow + "<small>ft · " + fTime(last.t) + "</small>";
+    var pv = predAt(s, last.t), d = $t("tdiff");
     if (pv != null) {
       var diff = last.v - pv;
-      d.innerHTML = Math.abs(diff) < 0.05 ? "As predicted" :
-        "<b>" + Math.abs(diff).toFixed(2) + " ft</b> " + (diff > 0 ? "above" : "below") + "<br>predicted tide";
-      d.className = "nowdiff " + (diff >= 0.5 ? "hi" : "lo");
-    } else d.textContent = "";
+      d.innerHTML = Math.abs(diff) < 0.05 ? "As predicted" : "<b>" + Math.abs(diff).toFixed(2) + " ft " + (diff > 0 ? "above" : "below") + "</b> predicted";
+      d.className = "tdiff" + (diff >= OFFSET_HIGH_FT ? " hi" : diff >= OFFSET_NOTE_FT ? " warm" : "");
+    } else { d.textContent = ""; d.className = "tdiff"; }
   } else {
-    q("nowval").textContent = "–";
-    q("nowunit").textContent = s.tObs ? "no recent reading" : "";
-    q("nowdiff").textContent = "";
+    $t("tnow").innerHTML = "–<small>" + (s.tObs ? "no recent reading" : "loading") + "</small>";
+    $t("tdiff").textContent = "";
   }
 
-  // Next time above MHHW
-  var upcoming = s.wins.filter(function (w) { return w.end > now; });
-  var nx = q("next");
-  if (!s.pred) {
-    if (s.predFailed) { nx.className = "next"; q("nextlbl").textContent = "Tide predictions"; q("nextval").textContent = "Can't reach NOAA — retrying"; q("nextsub").textContent = ""; }
+  // Past 7 days: measured vs predicted at each high tide
+  var R = highResiduals(s, now), off = recentOffset(R, now);
+  s.res = R; s.offset = off;
+  var v = $t("tverd"), vs = $t("tvsub");
+  if (!s.pred || !s.obs) { v.className = "tverd"; v.textContent = s.predFailed ? "Can't reach NOAA — retrying" : "Loading…"; vs.textContent = ""; }
+  else if (off == null) { v.className = "tverd"; v.textContent = "Not enough recent measurements"; vs.textContent = ""; }
+  else {
+    v.className = "tverd " + (off >= OFFSET_HIGH_FT ? "hi" : off >= OFFSET_NOTE_FT ? "warm" : "ok");
+    v.textContent = Math.abs(off) < OFFSET_NOTE_FT ? "About as predicted (" + sgn(off) + " ft)" :
+      "Running " + Math.abs(off).toFixed(2) + " ft " + (off > 0 ? "higher" : "lower") + " than predicted";
+    var top = R.reduce(function (a, r) { return !a || r.d > a.d ? r : a; }, null);
+    vs.textContent = "Last " + Math.min(OFFSET_RECENT_HIGHS, R.length) + " high tides" +
+      (top && top.d >= OFFSET_NOTE_FT ? " · most: " + sgn(top.d) + " ft " + fmt(top.t, { weekday: "short" }) + " " + fTime(top.t) : "");
   }
-  else if (!upcoming.length) {
-    nx.className = "next clear";
-    q("nextlbl").textContent = "Predicted, next 7 days";
-    q("nextval").textContent = "No tides above MHHW";
-    q("nextsub").textContent = "MHHW = " + st.mhhw.toFixed(2) + " ft";
-  } else {
-    var w = upcoming[0], active = w.start <= now;
-    nx.className = "next";
-    q("nextlbl").textContent = active ? "Predicted above MHHW now — until" : "Next predicted above MHHW";
-    q("nextval").textContent = active ? fTime(w.end) + (dayStart(w.end) !== dayStart(now) ? " " + relDay(w.end, now) : "")
-                                      : relDay(w.start, now) + "  " + fTime(w.start) + " – " + fTime(w.end);
-    q("nextsub").innerHTML = "Peak <b>" + w.peak.toFixed(2) + " ft</b> at " + fTime(w.peakT) +
-      ' <span style="color:var(--red)">(' + (w.peak - st.mhhw).toFixed(2) + " ft above MHHW)</span>";
-  }
-  var dset = {}; upcoming.forEach(function (w) { dset[dayStart(w.start)] = 1; });
-  var nd = Object.keys(dset).length;
-  q("days").textContent = s.pred ? (nd ? nd + " of next " + DAYS + " days predicted above MHHW" : "MHHW = " + st.mhhw.toFixed(2) + " ft NAVD88") : "";
+  drawBars(s, now);
 
-  drawMini(i, q("canvas"));
-  if (typeof currentTab !== "undefined" && currentTab === "creek" && C.data) renderCreek();   // creek tab shows a tide too
+  // Next 7 days
+  renderDays(s, now, off);
+  drawTideChart(s, now, off);
+}
+
+function renderDays(s, now, off) {
+  var st = s.st, el = $t("tdays"), h = "", nOver = 0, nMaybe = 0, adj = off != null && off >= OFFSET_NOTE_FT;
+  if (!s.highs) { el.innerHTML = ""; $t("tcount").textContent = ""; return; }
+  for (var d = 0; d < DAYS; d++) {
+    var a = dayStart(now) + d * 86400000, b = a + 86400000;
+    var top = s.highs.filter(function (x) { return x.t >= a && x.t < b; }).reduce(function (m, x) { return !m || x.v > m.v ? x : m; }, null);
+    var name = d === 0 ? "Today" : fmt(a, { weekday: "short" }) + " " + fmt(a, { day: "numeric" });
+    if (!top) { h += '<div class="tday"><div class="dn">' + name + '</div><div class="dv">–</div></div>'; continue; }
+    var over = top.v > st.mhhw, maybe = !over && adj && top.v + off > st.mhhw, past = top.t < now - 60 * 60000;
+    var meas = past && s.res ? s.res.filter(function (r) { return r.t === top.t; })[0] : null;
+    var cls = over ? "over" : maybe ? "maybe" : "under", dx;
+    if (past && meas) dx = '<span class="' + (meas.meas > st.mhhw ? "hi" : "") + '">measured<br>' + meas.meas.toFixed(2) + " ft</span>";
+    else if (over) dx = sgn(top.v - st.mhhw) + " ft<br>over MHHW";
+    else if (maybe) dx = (top.v + off).toFixed(2) + " if Bay<br>stays high";
+    else dx = "below MHHW";
+    if (over && !past) nOver++; if (maybe && !past) nMaybe++;
+    h += '<div class="tday ' + cls + (past ? " past" : "") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) +
+      '</div><div class="dt">' + fTime(top.t) + '</div><div class="dx">' + dx + "</div></div>";
+  }
+  el.innerHTML = h;
+  $t("tcount").innerHTML = nOver ? "<b style='color:var(--red)'>" + nOver + " of 7 days above MHHW</b>" + (nMaybe ? " · " + (nOver + nMaybe) + " if Bay stays high" : "")
+    : nMaybe ? "<b style='color:var(--amber)'>" + nMaybe + " day" + (nMaybe > 1 ? "s" : "") + " above MHHW if Bay stays high</b>" : "No tides predicted above MHHW";
 }
 
 var nowLinePlugin = {
@@ -621,51 +706,78 @@ var nowLinePlugin = {
     ctx.beginPath(); ctx.moveTo(px, ys.top); ctx.lineTo(px, ys.bottom); ctx.stroke(); ctx.restore();
   }
 };
+var TC = { chart: null, bars: null };
 
-function drawMini(i, canvas) {
-  var s = S[i]; if (!s.pred || typeof Chart === "undefined") return;
-  var now = nowLocal(), start = dayStart(now), m = s.st.mhhw;
-  var css = getComputedStyle(document.documentElement);
-  var ink = css.getPropertyValue("--ink").trim(), muted = css.getPropertyValue("--muted").trim(),
-      line = css.getPropertyValue("--line").trim();
-  var hrs = function (t) { return (t - start) / 3600000; };
-  var pts = s.pred.map(function (p) { return { x: hrs(p.t), y: p.v }; });
-  var mh = pts.map(function (p) { return { x: p.x, y: m }; });
+// 7-day graph lined up under the day cards: one card per day column, no side axes taking up width.
+function drawTideChart(s, now, off) {
+  if (!s.pred || typeof Chart === "undefined" || $t("tides").classList.contains("hide")) return;
+  var start = dayStart(now), m = s.st.mhhw, ink = cssVar("--ink"), muted = cssVar("--muted"), line = cssVar("--line");
+  var hrs = function (t) { return (t - start) / 3600000; }, end = start + DAYS * 86400000;
+  var pr = s.pred.filter(function (p) { return p.t >= start && p.t <= end; });
+  var pts = pr.map(function (p) { return { x: hrs(p.t), y: p.v }; });
+  var mh = [{ x: 0, y: m }, { x: DAYS * 24, y: m }];
   var ab = pts.map(function (p) { return { x: p.x, y: Math.max(p.y, m) }; });
-  var ob = (s.obs || []).map(function (p) { return { x: hrs(p.t), y: p.v }; });
-  var ys = pts.map(function (p) { return p.y; }).concat(ob.map(function (p) { return p.y; }));
-  // Even-numbered bounds so the 2-ft axis labels never collide
-  var yMin = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), yMax = 2 * Math.ceil((Math.max(Math.max.apply(null, ys), m) + 0.3) / 2);
-
+  var ob = (s.obs || []).filter(function (p) { return p.t >= start; }).map(function (p) { return { x: hrs(p.t), y: p.v }; });
+  var adj = off != null && off >= OFFSET_NOTE_FT ? pr.filter(function (p) { return p.t >= now; }).map(function (p) { return { x: hrs(p.t), y: p.v + off }; }) : [];
+  var ys = pts.concat(ob, adj).map(function (p) { return p.y; }).concat([m]);
+  var yMin = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), yMax = 2 * Math.ceil((Math.max.apply(null, ys) + 0.3) / 2);
   var data = { datasets: [
     { data: mh, borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false, order: 3 },
-    { data: ab, borderColor: "rgba(0,0,0,0)", backgroundColor: "rgba(192,57,43,0.45)", borderWidth: 0, pointRadius: 0, tension: 0.3, fill: 0, order: 4 },
+    { data: ab, borderColor: "rgba(0,0,0,0)", backgroundColor: "rgba(192,57,43,0.45)", borderWidth: 0, pointRadius: 0, tension: 0.3, fill: 0, order: 5 },
     { data: pts, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false, order: 2,
       segment: { borderColor: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? "#c0392b" : undefined; },
                  borderWidth: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? 2.5 : undefined; } } },
+    { data: adj, borderColor: "#e69f00", borderWidth: 2, borderDash: [4, 3], pointRadius: 0, tension: 0.3, fill: false, order: 4 },
     { data: ob, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 1 }
   ] };
   var opts = {
     responsive: true, maintainAspectRatio: false, animation: false, events: [],
-    layout: { padding: { right: 2 } },
+    layout: { padding: 0 },
     plugins: { legend: { display: false }, tooltip: { enabled: false }, nowLine: { x: hrs(now) } },
     scales: {
-      x: { type: "linear", min: -HISTORY_HOURS, max: DAYS * 24,
-        ticks: { stepSize: 12, autoSkip: false, maxRotation: 0, color: muted, font: { size: 11 },
-          callback: function (v) { return ((v % 24) + 24) % 24 === 12 ? fmt(start + v * 3600000, { weekday: "narrow" }) : ""; } },
-        grid: { color: function (c) { return c.tick && ((c.tick.value % 24) + 24) % 24 === 0 ? line : "rgba(0,0,0,0)"; }, drawTicks: false } },
-      y: { min: yMin, max: yMax, ticks: { stepSize: 2, color: muted, font: { size: 11 }, callback: function (v) { return v; } },
-        grid: { color: line } }
+      x: { type: "linear", min: 0, max: DAYS * 24, ticks: { display: false, stepSize: 24 }, border: { display: false },
+        grid: { color: function (c) { return c.tick && c.tick.value % 24 === 0 && c.tick.value > 0 && c.tick.value < DAYS * 24 ? line : "rgba(0,0,0,0)"; }, drawTicks: false } },
+      y: { min: yMin, max: yMax, border: { display: false },
+        ticks: { display: false, stepSize: 2 },
+        grid: { color: line, drawTicks: false } }
     }
   };
-  if (s.chart) { s.chart.data = data; s.chart.options = opts; s.chart.update("none"); }
-  else s.chart = new Chart(canvas, { type: "line", data: data, options: opts, plugins: [nowLinePlugin] });
+  if (TC.chart) { TC.chart.data = data; TC.chart.options = opts; TC.chart.update("none"); }
+  else TC.chart = new Chart($t("tchartc"), { type: "line", data: data, options: opts, plugins: [nowLinePlugin] });
+  $t("tkey").innerHTML = "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span><span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span>" +
+    (adj.length ? "<span><i style='border-top:2px dashed #e69f00'></i>If Bay stays " + Math.abs(off).toFixed(2) + " ft high</span>" : "") +
+    "<span><i class='ab'></i>Above MHHW</span><span class='tap'>Tap for times ›</span>";
+}
+
+// One bar per high tide: measured minus predicted (feet). Above zero = higher than predicted.
+function drawBars(s, now) {
+  var R = s.res || [];
+  if (typeof Chart === "undefined" || $t("tides").classList.contains("hide")) return;
+  var muted = cssVar("--muted"), line = cssVar("--line"), ink = cssVar("--ink");
+  var lo = Math.min(-0.5, Math.min.apply(null, R.map(function (r) { return r.d; }).concat([0])) - 0.1);
+  var hi = Math.max(0.5, Math.max.apply(null, R.map(function (r) { return r.d; }).concat([0])) + 0.1);
+  var seen = {};
+  var labels = R.map(function (r) { var k = dayStart(r.t); if (seen[k]) return ""; seen[k] = 1; return fmt(r.t, { weekday: "narrow" }); });
+  var data = { labels: labels, datasets: [{ data: R.map(function (r) { return r.d; }), borderWidth: 0, barPercentage: 0.8, categoryPercentage: 0.9,
+    backgroundColor: R.map(function (r) { return r.d >= OFFSET_HIGH_FT ? "#c0392b" : r.d >= OFFSET_NOTE_FT ? "#e69f00" : r.d <= -OFFSET_NOTE_FT ? "#56B4E9" : "#8a96a6"; }) }] };
+  var opts = {
+    responsive: true, maintainAspectRatio: false, animation: false, events: [], layout: { padding: { top: 2 } },
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    scales: {
+      x: { ticks: { color: muted, font: { size: 10 }, maxRotation: 0, autoSkip: false, padding: 1 }, grid: { display: false }, border: { display: false } },
+      y: { min: Math.floor(lo * 2) / 2, max: Math.ceil(hi * 2) / 2, border: { display: false },
+        ticks: { stepSize: 0.5, color: muted, font: { size: 10 }, padding: 2, callback: function (v) { return v === 0 ? "0" : (v > 0 ? "+" : "−") + Math.abs(v); } },
+        grid: { drawTicks: false, color: function (c) { return c.tick && c.tick.value === 0 ? ink : line; } } }
+    }
+  };
+  if (TC.bars) { TC.bars.data = data; TC.bars.options = opts; TC.bars.update("none"); }
+  else TC.bars = new Chart($t("tbarsc"), { type: "bar", data: data, options: opts });
 }
 
 /* ---------- Loading tide data ---------- */
 function loadPredictions(i) {
   // Predictions start as far back as the measured history so the two lines can be compared.
-  var s = S[i], now = nowLocal(), b = ymd(now - HISTORY_HOURS * 3600000), e = ymd(dayStart(now) + (DAYS - 1) * 86400000);
+  var s = S[i], now = nowLocal(), b = ymd(now - PAST_DAYS * 86400000), e = ymd(dayStart(now) + (DAYS - 1) * 86400000);
   return Promise.all([getJSON(noaa(s.st, "predictions", b, e)), getJSON(noaa(s.st, "predictions", b, e, "&interval=hilo"))])
     .then(function (r) {
       s.pred = (r[0].predictions || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; })
@@ -681,10 +793,10 @@ function loadPredictions(i) {
 }
 function loadObserved(i) {
   var s = S[i], now = nowLocal();
-  return getJSON(noaa(s.st, "water_level", ymd(now - HISTORY_HOURS * 3600000), ymd(now)))
+  return getJSON(noaa(s.st, "water_level", ymd(now - PAST_DAYS * 86400000), ymd(now)))
     .then(function (r) {
       s.obs = (r.data || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; })
-                            .filter(function (p) { return !isNaN(p.v) && p.t >= now - HISTORY_HOURS * 3600000; });
+                            .filter(function (p) { return !isNaN(p.v) && p.t >= now - PAST_DAYS * 86400000; });
       s.tObs = Date.now(); renderPanel(i); tick();
     }).catch(function () { s.tObs = s.tObs || 0; renderPanel(i); });
 }
@@ -711,6 +823,7 @@ function renderAlerts() {
   var bar = document.getElementById("alertbar"), main = document.getElementById("alertMain"),
       sub = document.getElementById("alertSub"), icon = document.getElementById("alertIcon"),
       more = document.getElementById("alertMore");
+  renderNws();
   if (A.list == null) { bar.className = "unknown"; icon.textContent = "?"; main.textContent = "NWS alerts unavailable"; sub.textContent = "Retrying…"; return; }
   if (!A.list.length) {
     bar.className = ""; icon.textContent = "✓"; main.textContent = "No active NWS alerts";
@@ -759,30 +872,131 @@ document.getElementById("dclose").addEventListener("click", function (e) { e.sto
 document.getElementById("detail").addEventListener("touchstart", bumpDetailTimer, { passive: true });
 document.getElementById("dbody").addEventListener("scroll", bumpDetailTimer, { passive: true });
 
-document.getElementById("alertbar").addEventListener("click", function () {
-  if (!A.list) return;
-  if (!A.list.length) { openDetail("NWS alerts – San Mateo County", "<p>There are no active watches, warnings, or advisories.</p>"); return; }
-  openDetail("NWS alerts – San Mateo County", A.list.map(function (p) {
+function alertsHtml(list) {
+  return list.map(function (p) {
     return '<div class="dalert"><h3 style="color:var(--' + (classify(p.event) === "warning" ? "red" : classify(p.event) === "statement" ? "ink" : "amber") + ')">' +
       esc(p.event) + '</h3><div class="when">Issued ' +
       new Date(p.sent).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) +
-      " · " + untilText(p.ends || p.expires) + "</div>" + formatDesc(p.description) +
+      " · " + esc(untilText(p.ends || p.expires)) + "</div>" + formatDesc(p.description) +
       (p.instruction ? "<p><b>Actions:</b> " + esc(unwrap(p.instruction)) + "</p>" : "") + "</div>";
-  }).join("") + '<div id="dnote">Source: National Weather Service (api.weather.gov)</div>');
+  }).join("");
+}
+document.getElementById("alertbar").addEventListener("click", function () {
+  if (!A.list) return;
+  if (!A.list.length) { openDetail("NWS alerts – San Mateo County", "<p>There are no active watches, warnings, or advisories.</p>"); return; }
+  openDetail("NWS alerts – San Mateo County", alertsHtml(A.list) + '<div id="dnote">Source: National Weather Service (api.weather.gov)</div>');
 });
 
-function showStation(i) {
-  var s = S[i], st = s.st, now = nowLocal();
+/* ---------- NWS coastal flood information for the Bay Tides tab ---------- */
+// 1) any active NWS coastal flood / storm surge / tsunami alert for the county;
+// 2) otherwise, what the latest NWS Bay Area forecast discussion says about tides and coastal flooding.
+var COASTAL_RE = /coastal flood|storm surge|tsunami/i;
+var TIDE_WORDS_RE = /\b(tides?|tidal|coastal flood\w*|king tides?|storm surge|water levels?|inundation)\b/i;
+var AFD = { id: null, issued: null, lines: null, t: 0 };
+function coastalAlerts() { return (A.list || []).filter(function (p) { return COASTAL_RE.test(p.event || ""); }); }
+function descField(text, name) {
+  var m = String(text || "").match(new RegExp("\\*\\s+" + name + "\\.\\.\\.([\\s\\S]*?)(?=\\n\\s*\\n|\\n\\*\\s|$)"));
+  return m ? unwrap(m[1]) : "";
+}
+// Sentences and key-message bullets that mention tides or coastal flooding (not aviation, not the advisory list)
+function afdTideLines(text) {
+  var out = [], seen = {};
+  String(text || "").split(/\n(?=\.[A-Z])/).forEach(function (sec) {
+    var m = sec.match(/^\.([A-Z][A-Z0-9 \/&-]*?)\.\.\./), name = m ? m[1] : "";
+    if (!m || /AVIATION|WATCHES|WARNINGS|ADVISORIES/.test(name)) return;
+    var body = sec.slice(m[0].length).replace(/^.*(Issued|Updated) at.*$/gim, "").replace(/&&|\$\$/g, "");
+    body.split(/\n\s*[-*\u2022]\s+|\n\s*\n/).forEach(function (chunk) {
+      unwrap(chunk).split(/(?<=[.!?])\s+(?=[A-Z])/).forEach(function (x) {
+        x = x.trim();
+        if (x.length < 12 || !TIDE_WORDS_RE.test(x) || seen[x]) return;
+        seen[x] = 1; out.push(x.length > 240 ? x.slice(0, 237) + "…" : x);
+      });
+    });
+  });
+  return out.slice(0, 5);
+}
+function loadAFD() {
+  return getJSON("https://api.weather.gov/products/types/AFD/locations/" + NWS_OFFICE).then(function (j) {
+    var g = (j["@graph"] || [])[0];
+    if (!g || !g.id) throw new Error("no AFD");
+    if (g.id === AFD.id) { AFD.t = Date.now(); return; }
+    return getJSON("https://api.weather.gov/products/" + encodeURIComponent(g.id)).then(function (p) {
+      AFD.id = g.id; AFD.issued = p.issuanceTime || g.issuanceTime; AFD.lines = afdTideLines(p.productText); AFD.t = Date.now();
+    });
+  }).then(renderNws).catch(function () { renderNws(); });
+}
+function afdFresh() { return AFD.lines && AFD.issued && Date.now() - new Date(AFD.issued) < AFD_MAX_AGE_HOURS * 3600000; }
+function afdWhen() {
+  return new Date(AFD.issued).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
+}
+function renderNws() {
+  var box = $t("tnws"); if (!box) return;
+  var ca = coastalAlerts(), afd = afdFresh() ? AFD.lines : null;
+  if (ca.length) {
+    var top = ca[0], what = descField(top.description, "WHAT") || unwrap(top.headline || "");
+    box.className = classify(top.event) === "warning" ? "warn" : "alert";
+    $t("tnwsi").textContent = "⚠";
+    $t("tnwsm").textContent = top.event + " · " + untilText(top.ends || top.expires) + (ca.length > 1 ? " (+" + (ca.length - 1) + " more)" : "");
+    $t("tnwss").textContent = what;
+    $t("tnwsmore").textContent = "Tap for details ›";
+  } else if (afd && afd.length) {
+    box.className = "afd"; $t("tnwsi").textContent = "ℹ";
+    $t("tnwsm").textContent = "NWS forecast discussion · " + afdWhen() + (A.list ? " · no coastal flood alerts" : "");
+    $t("tnwss").textContent = afd.slice(0, 2).join(" ");
+    $t("tnwsmore").textContent = "Tap ›";
+  } else if (A.list != null) {
+    box.className = ""; $t("tnwsi").textContent = "✓";
+    $t("tnwsm").textContent = "No NWS coastal flood alerts for San Mateo County";
+    $t("tnwss").textContent = afd ? "The latest NWS Bay Area forecast discussion (" + afdWhen() + ") doesn't mention high tides or coastal flooding." : "";
+    $t("tnwsmore").textContent = "";
+  } else {
+    box.className = "unknown"; $t("tnwsi").textContent = "?";
+    $t("tnwsm").textContent = "NWS information unavailable"; $t("tnwss").textContent = "Retrying…"; $t("tnwsmore").textContent = "";
+  }
+}
+$t("tnws").addEventListener("click", function () {
+  var ca = coastalAlerts(), afd = afdFresh() ? AFD.lines : null, html = "";
+  if (ca.length) html += alertsHtml(ca);
+  if (afd && afd.length) html += "<h3 style='margin:4px 0 6px;font-size:18px'>NWS Bay Area forecast discussion</h3><div class='when' style='font-size:14px;color:var(--muted);margin-bottom:6px'>Issued " +
+    esc(afdWhen()) + " · lines about tides and coastal flooding</div>" + afd.map(function (x) { return "<p style='margin:0 0 8px'>" + esc(x) + "</p>"; }).join("");
+  if (!html) html = "<p>No NWS coastal flood alerts for San Mateo County, and the latest NWS Bay Area forecast discussion doesn't mention high tides or coastal flooding.</p>";
+  html += '<div id="dnote">Source: National Weather Service (api.weather.gov), San Francisco Bay Area office. Predicted tides do not include storm surge; ' +
+    "NWS coastal flood advisories account for expected surge and wind.</div>";
+  openDetail("NWS – tides and coastal flooding", html);
+});
+
+function showLookAhead() {
+  var s = tideS(), st = s.st, now = nowLocal(), off = s.offset, adj = off != null && off >= OFFSET_NOTE_FT;
   var wins = s.wins.filter(function (w) { return w.end > now; });
   var html = wins.length ? "<table><tr><th>Day</th><th>Predicted above MHHW</th><th>Predicted high tide</th></tr>" + wins.map(function (w) {
     return "<tr><td><b>" + fDay(w.start) + "</b></td><td>" + fTime(w.start) + " – " + fTime(w.end) +
       ' <span style="color:var(--muted);font-size:14px">(' + dur(Math.round((w.end - w.start) / 60000)) + ")</span></td><td>" +
-      w.peak.toFixed(2) + ' ft at ' + fTime(w.peakT) + ' <span class="red" style="font-size:14px">+' + (w.peak - st.mhhw).toFixed(2) + "</span></td></tr>";
+      w.peak.toFixed(2) + ' ft at ' + fTime(w.peakT) + ' <span class="red" style="font-size:14px">' + sgn(w.peak - st.mhhw) + "</span></td></tr>";
   }).join("") + "</table>" : "<p>No tides are predicted to rise above MHHW in the next " + DAYS + " days.</p>";
+  if (adj) {
+    var extra = (s.highs || []).filter(function (h) { return h.t > now && h.v <= st.mhhw && h.v + off > st.mhhw; });
+    html += "<p style='margin-top:12px'><b style='color:var(--amber)'>If the Bay stays " + off.toFixed(2) + " ft higher than predicted</b> (its average at the last " +
+      OFFSET_RECENT_HIGHS + " high tides), " + (extra.length ? "these high tides would also go above MHHW: " +
+      extra.map(function (h) { return fDay(h.t) + " " + fTime(h.t) + " (" + (h.v + off).toFixed(2) + " ft)"; }).join("; ") + "."
+      : "no other high tides would go above MHHW.") + "</p>";
+  }
   html += '<div id="dnote">MHHW (Mean Higher High Water) = ' + st.mhhw.toFixed(2) + " ft NAVD88, the average height of the highest tide each day. " +
-    "Predicted tides do not include storm surge, wind, or runoff; compare with the measured water level (blue line) on the main screen. NOAA station " + st.id + ".</div>";
-  openDetail(st.name + " – predicted tides above MHHW", html);
+    "Predicted tides do not include storm surge, wind, or runoff. NOAA station " + st.id + ".</div>";
+  openDetail(st.name + " – next " + DAYS + " days", html);
 }
+function showPast() {
+  var s = tideS(), R = (s.res || []).slice().reverse();
+  var html = R.length ? "<table><tr><th>High tide</th><th>Predicted</th><th>Measured</th><th>Difference</th></tr>" + R.map(function (r) {
+    return "<tr><td><b>" + fDay(r.t) + "</b> " + fTime(r.t) + "</td><td>" + r.pred.toFixed(2) + " ft</td><td>" + r.meas.toFixed(2) + " ft</td><td" +
+      (r.d >= OFFSET_HIGH_FT ? ' class="red"' : "") + "><b>" + sgn(r.d) + " ft</b></td></tr>";
+  }).join("") + "</table>" : "<p>Not enough measurements yet.</p>";
+  html += '<div id="dnote">Measured = the highest NOAA reading within 90 minutes of each predicted high tide (preliminary data). ' +
+    "A positive difference means the Bay ran higher than the astronomical tide, usually from storms, wind, runoff or a seasonal rise. " +
+    "Upcoming high tides are likely to run high too while this continues. All heights ft NAVD88; NOAA station " + s.st.id + ".</div>";
+  openDetail(s.st.name + " – measured vs predicted, past " + PAST_DAYS + " days", html);
+}
+$t("tright").addEventListener("click", showLookAhead);
+$t("tpast").addEventListener("click", showPast);
 
 /* ---------- Tabs ---------- */
 var currentTab = "tides", tabChangedAt = Date.now();
@@ -1045,7 +1259,7 @@ function updateCreekAlert(states) {
     }
     creekWarned[x.c.id] = warn;
   });
-  if (was !== !!worst) S.forEach(function (_, i) { renderPanel(i); });   // panels changed size
+  if (was !== !!worst) renderTides();   // panel changed size
 }
 document.getElementById("creekStrip").addEventListener("click", function () {
   closeDetail(); if (this.dataset.creek && this.dataset.creek !== C.sel) { C.sel = this.dataset.creek; C.selAt = Date.now(); destroyCreekCharts(); }
@@ -1213,14 +1427,13 @@ function showTab(name) {
   document.getElementById("disclaimer").classList.toggle("show", name === "disclaimer");
   document.getElementById("maptab").classList.toggle("show", name === "map");
   if (name === "map") showMapTab();
-  document.getElementById("p0").style.display = tides ? "" : "none";
-  document.getElementById("p1").style.display = tides ? "" : "none";
+  document.getElementById("tides").classList.toggle("hide", !tides);
   if (about) { drawQRs(); fitAbout(); }
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
     t.classList.toggle("on", t.dataset.tab === name);
   });
   if (creek) renderCreek();
-  if (tides) S.forEach(function (_, i) { renderPanel(i); });   // redraw graphs after being hidden
+  if (tides) renderTides();   // redraw graphs after being hidden
 }
 Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
   t.addEventListener("click", function (e) { e.stopPropagation(); closeDetail(); showTab(t.dataset.tab); });
@@ -1410,13 +1623,14 @@ function tick() {
 
 function every(min, fn) { fn(); setInterval(fn, min * 60000); }
 every(ALERTS_EVERY_MIN, loadAlerts);
+every(AFD_EVERY_MIN, loadAFD);
 S.forEach(function (_, i) {
   renderPanel(i);
   every(PREDICTIONS_EVERY_MIN, function () { loadPredictions(i).then(function () { loadObserved(i); }); });
   setInterval(function () { loadObserved(i); }, OBSERVED_EVERY_MIN * 60000);
 });
 // Redraw panels each minute so "now" markers and "Today/Tomorrow" stay current
-setInterval(function () { S.forEach(function (_, i) { renderPanel(i); }); }, 60000);
+setInterval(renderTides, 60000);
 tick(); setInterval(tick, 15000);
 </script>
 </body>

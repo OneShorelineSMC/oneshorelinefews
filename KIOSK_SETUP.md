@@ -25,7 +25,7 @@ Options you can add to the end of the URL:
 ## Preview on a computer first
 
 Open the kiosk URL in any browser; the mouse pointer appears when you move the mouse. The layout scales to fit the window, so it looks the
-same as on the 7" screen. Click the alert bar or a station panel to see the touch screens.
+same as on the 7" screen. Click the alert bar or a part of the Bay Tides panel to see the touch screens.
 
 ## What you need
 
@@ -165,6 +165,21 @@ own map:
   (see below), so the map can lag OneRain by up to about 20 minutes.
 - **Alert levels** on the map come from the creek gauges and thresholds in `scripts/creek_config.py`.
 
+## Bay Tides tab
+
+Redwood City only (NOAA 9414523, ft NAVD88). Three parts:
+
+- **Next 7 days** (the main part): one card per day with that day's highest predicted tide and its time. Red cards
+  go above MHHW (7.02 ft). The graph under the cards lines up with them, one column per day. If the Bay has been
+  running at least 0.2 ft higher than predicted, a dashed orange line shows the tide with that offset added, and days
+  that would then go above MHHW turn orange ("7.41 if Bay stays high"). Tap for the list of times above MHHW.
+- **Measured now** and **Past 7 days**: the current reading and its difference from predicted; one bar per high tide
+  for the past week (measured peak minus predicted high; orange 0.2 ft and up, red 0.5 ft and up); and a one-line
+  summary from the last 4 high tides. Tap for the table of every high tide.
+- **NWS row** (bottom): an active NWS Coastal Flood / Storm Surge / Tsunami alert for San Mateo County with its
+  "What" text. With no such alert, it shows the lines about tides or coastal flooding from the latest NWS San
+  Francisco Bay Area forecast discussion (api.weather.gov, office MTR), or says there's nothing. Tap for details.
+
 ## Title bar
 
 A slim OneShoreline-blue bar across the top of every tab reads **FLOOD EARLY WARNING SYSTEM | OneShoreline |
@@ -269,8 +284,14 @@ Near the top of the `<script>` section in `ShorelineKiosk.html`:
 
 | Setting               | Default | Meaning                                        |
 |-----------------------|---------|------------------------------------------------|
-| `STATIONS`            | Redwood City, Alameda | NOAA station IDs, names, and MHHW (ft NAVD88) |
-| `HISTORY_HOURS`       | 48      | Hours of measured water level on the graphs    |
+| `STATIONS`            | Redwood City, Alameda | NOAA station IDs, names, and MHHW (ft NAVD88). Alameda is used only by the Creeks tab |
+| `TIDE_STATION`        | 9414523 | The station on the Bay Tides tab (Redwood City) |
+| `PAST_DAYS`           | 7       | Days of measured water level compared with predictions |
+| `OFFSET_RECENT_HIGHS` | 4       | "Running higher than predicted" averages this many recent high tides (about 2 days) |
+| `OFFSET_NOTE_FT`      | 0.2     | A difference this big is called out, and the look-ahead shows "if Bay stays high" |
+| `OFFSET_HIGH_FT`      | 0.5     | ...and this big is shown in red                 |
+| `NWS_OFFICE`          | MTR     | NWS office whose forecast discussion is checked for tide notes |
+| `AFD_EVERY_MIN`       | 30      | How often the forecast discussion is checked    |
 | `DAYS`                | 7       | Days of predicted tides                        |
 | `STALE_AFTER_MIN`     | 90      | When the "out of date" warning appears         |
 | `DETAIL_TIMEOUT_SEC`  | 45      | When detail screens close on their own         |
