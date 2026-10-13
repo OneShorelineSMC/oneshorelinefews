@@ -167,8 +167,8 @@
   details.all td { border-bottom: 1px solid var(--line); padding: 6px 6px 6px 0; }
   .red { color: var(--red); }
   .explain p { font-size: 14px; line-height: 1.45; margin: 0 0 8px; }
-  /* Two stations side by side on wide screens; ?embed=1 hides the page chrome for dashboards */
-  @media (min-width: 760px) { #cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } #cards .card { margin-bottom: 0; } main { max-width: 1100px; } }
+  /* Redwood City only; a little wider on big screens. ?embed=1 hides the page chrome for dashboards */
+  @media (min-width: 760px) { main { max-width: 900px; } #cards .card { margin-bottom: 0; } }
   body.embed header, body.embed #alert, body.embed #alertList, body.embed nav, body.embed .explain, body.embed #intro, body.embed .owner { display: none; }
   body.embed { padding-bottom: 0; }
 
@@ -223,7 +223,7 @@
 <div id="alertList"></div>
 
 <main>
-  <div class="intro" id="intro">Measured and predicted Bay water levels at the NOAA tide gauges in Redwood City and Alameda, and the
+  <div class="intro" id="intro">Measured and predicted Bay water levels at the NOAA tide gauge in Redwood City, and the
     times high tides are predicted to rise above MHHW in the next 7 days.</div>
   <div class="card hide" id="season" role="button"><span class="chip">KING TIDES</span>
     <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src">San Mateo County dates · astronomical predictions for San Francisco, no weather · see calendar</span></span><span class="go">›</span></div>
@@ -344,8 +344,7 @@ $("alert").addEventListener("click", function () {
 
 /* ===================== CONFIG ===================== */
 var STATIONS = [
-  { id: "9414523", name: "Redwood City", mhhw: 7.02 },   // MHHW in ft NAVD88
-  { id: "9414750", name: "Alameda",      mhhw: 6.37 }
+  { id: "9414523", name: "Redwood City", mhhw: 7.02 }    // MHHW in ft NAVD88 (Redwood City only)
 ];
 var COUNTY_SAME = "006081";        // San Mateo County, for NWS alerts
 var HISTORY_HOURS = 48;            // measured water level shown before "now"
