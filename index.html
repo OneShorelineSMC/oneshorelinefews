@@ -11,108 +11,177 @@
 <title>OneShoreline Flood Early Warning</title>
 <style>
   :root {
-    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587;
-    --ok: #2e7d32; --amber: #c77700; --red: #b71c1c; --gray: #6b7a8c;
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587;
+    --ok: #2e7d32; --amber: #c77700; --red: #b71c1c; --gray: #8a96a3; --link: #0A5587;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542; }
+    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542; --link: #6ea8fe;
+      --ok: #66bb6a; --amber: #ffa726; --red: #ef5350; }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
+  body { margin: 0; background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.45; }
-  header { background: var(--brand); color: #fff; padding: calc(22px + env(safe-area-inset-top)) 16px 22px; }
   .wrap { max-width: 860px; margin: 0 auto; }
-  header .logo { display: block; height: 66px; width: auto; margin: 0 0 14px; }
-  header .org { font-size: 14px; opacity: .85; letter-spacing: .02em; }
-  h1 { font-size: 28px; margin: 2px 0 6px; line-height: 1.2; }
-  header p { margin: 0; opacity: .92; font-size: 16px; max-width: 640px; }
-  main { padding: 16px 16px 32px; }
+  a { color: var(--link); }
 
-  .status { display: grid; gap: 8px; margin-top: -2px; margin-bottom: 18px; }
-  .st { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 10px; padding: 10px 14px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.07); border-left: 6px solid var(--gray); text-decoration: none; color: inherit; font-size: 15px; }
-  .st b { font-weight: 700; }
-  .st .sm { color: var(--muted); font-size: 13px; }
-  .st.ok { border-left-color: var(--ok); } .st.amber { border-left-color: var(--amber); } .st.red { border-left-color: var(--red); }
-  .st .go { margin-left: auto; color: var(--muted); font-size: 18px; }
+  /* Compact header: one row */
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header .mark { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; line-height: 1.25; }
 
+  /* 911 line, right under the header */
+  .e911 { background: var(--card); border-bottom: 1px solid var(--line); padding: 7px 16px; font-size: 15px; }
+  .e911 b { color: var(--red); }
+  .e911 a { color: var(--red); font-weight: 700; }
+
+  main { padding: 14px 16px 32px; }
+  h2.sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 22px 0 8px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  h2.sec:first-child { margin-top: 4px; }
+  h2.sec a { font-size: 12.5px; text-transform: none; letter-spacing: 0; font-weight: 600; white-space: nowrap; }
+
+  /* Status boxes: the status color goes all the way around the box */
+  .box { background: var(--card); border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    border: 3px solid var(--line); }
+  .box.ok { border-color: var(--ok); }
+  .box.amber { border-color: #e07b00; background: color-mix(in srgb, #e07b00 7%, var(--card)); }
+  .box.red { border-color: #c62828; background: color-mix(in srgb, #c62828 7%, var(--card)); }
+  .box.gray { border-color: var(--gray); }
+
+  /* NWS alerts, shown in full */
+  .alerts { display: grid; gap: 10px; }
+  .al h3 { margin: 0; font-size: 18px; color: var(--ink); }
+  .al.red h3 { color: var(--red); } .al.amber h3 { color: #a35f00; }
+  @media (prefers-color-scheme: dark) { .al.amber h3 { color: var(--amber); } }
+  .al .when { font-size: 13.5px; color: var(--muted); margin: 1px 0 8px; }
+  .al dl { display: grid; grid-template-columns: 5.6em 1fr; gap: 4px 10px; margin: 0; font-size: 15px; }
+  .al dt { font-weight: 700; color: var(--ink); } .al dd { margin: 0; }
+  .al p { margin: 6px 0 0; font-size: 15px; }
+  .al details { margin-top: 6px; font-size: 14px; } .al summary { cursor: pointer; color: var(--muted); }
+  .al.none { display: flex; align-items: center; gap: 10px; font-size: 15.5px; }
+  .al.none .ck { color: var(--ok); font-size: 20px; }
+  .al.none b { color: var(--ink); }
+
+  /* Creek status cards */
+  .creeks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 760px) { .creeks { grid-template-columns: repeat(4, 1fr); } }
+  a.ck { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; padding: 10px 12px; }
+  a.ck:hover, a.ck:focus-visible { box-shadow: 0 0 0 2px var(--brand), 0 1px 4px rgba(0,0,0,.07); }
+  .ck .nm { font-size: 17px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+  .ck .badge { align-self: flex-start; font-size: 12px; font-weight: 700; border-radius: 5px; padding: 2px 8px; color: #fff; background: var(--gray); }
+  .ck .g { font-size: 13.5px; line-height: 1.3; }
+  .ck .g .l { display: block; font-size: 12px; color: var(--muted); }
+  .ck .g b { font-size: 16px; color: var(--ink); }
+  .ck .g .q { color: var(--muted); }
+  .ck .rain { font-size: 13px; color: var(--muted); }
+  .ck .rain b { color: var(--text); }
+  .ck .go { margin-top: auto; padding-top: 2px; font-size: 13px; font-weight: 600; color: var(--link); }
+  .note { font-size: 13px; color: var(--muted); margin: 8px 2px 0; }
+
+  /* Rapidly rising */
+  .rising { display: grid; gap: 10px; margin-top: 10px; }
+  .rs { display: flex; gap: 12px; align-items: flex-start; text-decoration: none; color: inherit; }
+  .rs .ar { font-size: 26px; line-height: 1; color: #e07b00; font-weight: 700; }
+  .rs.red .ar { color: #c62828; }
+  .rs h3 { margin: 0; font-size: 16.5px; color: var(--ink); }
+  .rs p { margin: 2px 0 0; font-size: 14.5px; }
+  .calm { font-size: 13.5px; color: var(--muted); margin: 8px 2px 0; }
+
+  /* Page links */
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-  a.card { display: flex; flex-direction: column; background: var(--card); border-radius: 12px; padding: 16px;
+  a.card { display: flex; flex-direction: column; background: var(--card); border-radius: 12px; padding: 14px 16px;
     text-decoration: none; color: inherit; box-shadow: 0 1px 4px rgba(0,0,0,.07); border: 1px solid transparent; }
   a.card:hover, a.card:focus-visible { border-color: var(--brand); }
-  .card .ic { font-size: 26px; line-height: 1; }
-  .card h2 { font-size: 18px; margin: 8px 0 4px; }
+  .card .ic { font-size: 24px; line-height: 1; }
+  .card h3 { font-size: 17px; margin: 6px 0 3px; color: var(--ink); }
   .card p { margin: 0; font-size: 14.5px; color: var(--muted); }
-  .card .lnk { margin-top: auto; padding-top: 10px; font-size: 14px; font-weight: 600; color: var(--brand); }
-  @media (prefers-color-scheme: dark) { .card .lnk { color: #6ea8fe; } }
+  .card .lnk { margin-top: auto; padding-top: 8px; font-size: 14px; font-weight: 600; color: var(--link); }
 
-  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 26px 0 8px; }
-  .alerts { background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
-    display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-  .alerts p { margin: 0; flex: 1; min-width: 220px; font-size: 15px; }
+  /* SMC Alert */
+  .smc { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .smc p { margin: 0; flex: 1; min-width: 240px; font-size: 15px; }
+  .smc .not { display: block; margin-top: 6px; font-size: 14px; color: var(--muted); }
   .btn { display: inline-block; background: var(--brand); color: #fff; text-decoration: none; font-weight: 600;
     padding: 10px 16px; border-radius: 9px; font-size: 15px; white-space: nowrap; }
-  .emerg { color: var(--red); font-weight: 700; margin: 14px 0 0; font-size: 15px; }
-  @media (prefers-color-scheme: dark) { .emerg { color: #ef5350; } }
-  .contact { font-size: 14.5px; }
-  .contact a { color: inherit; }
+
+  /* System status */
+  .sys { display: grid; gap: 0; padding: 4px 14px; }
+  .sys .row { display: flex; gap: 10px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  .sys .row:first-child { border-top: 0; }
+  .sys .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--gray); transform: translateY(1px); }
+  .sys .dot.ok { background: var(--ok); } .sys .dot.amber { background: #e07b00; } .sys .dot.red { background: #c62828; }
+  .sys .k { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .sys .v { flex: 1; min-width: 0; }
+  .sys a { white-space: nowrap; }
+  @media (max-width: 480px) { .sys .row { flex-wrap: wrap; } .sys .v { flex-basis: 100%; padding-left: 20px; margin-top: -4px; } }
+  .ck .met { font-size: 12.5px; font-weight: 700; color: #c62828; }
+  @media (prefers-color-scheme: dark) { .ck .met { color: #ef5350; } }
+
+  .contact { font-size: 14.5px; } .contact a { color: inherit; }
   .fine { font-size: 13px; color: var(--muted); }
-  /* Ownership line */
-  .owner { text-align: center; font-size: 12.5px; color: var(--muted); margin: 18px 0 10px; line-height: 1.45; }
-  .owner img { display: block; margin: 0 auto 6px; height: 37px; width: auto; }
+  .owner { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.45; }
+  .owner img { display: block; margin: 0 0 6px; height: 37px; width: auto; }
   .owner a { color: inherit; }
-  footer .owner { margin: 0 0 12px; text-align: left; }
-  footer .owner img { margin: 0 0 6px; }
   footer { border-top: 1px solid var(--line); margin-top: 26px; padding-top: 14px; }
 </style>
 </head>
 <body>
 <header>
   <div class="wrap">
-    <img class="logo" src="img/oneshoreline-logo-white.png" alt="OneShoreline" width="288" height="66">
-    <div class="org">San Mateo County Flood and Sea Level Rise Resiliency District</div>
-    <h1>Flood Early Warning</h1>
-    <p>Real-time creek levels, rainfall and San Francisco Bay tides from OneShoreline's monitoring network.</p>
+    <img class="mark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="36" height="36">
+    <div><h1>Flood Early Warning</h1>
+      <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
   </div>
 </header>
+<div class="e911"><div class="wrap"><b>In an emergency, call <a href="tel:911">911</a>.</b> This site shows conditions; no one is watching it to send help.</div></div>
 
 <main class="wrap">
-  <div class="status" aria-live="polite">
-    <a class="st" id="stNws" href="https://forecast.weather.gov/MapClick.php?lat=37.55&lon=-122.31" target="_blank" rel="noopener">
-      <span><b>National Weather Service:</b> <span id="nwsText">checking…</span><br><span class="sm">San Mateo County</span></span><span class="go">›</span></a>
-    <a class="st" id="stCreek" href="Creeks.html">
-      <span><b>Creeks:</b> <span id="creekText">checking…</span><br><span class="sm" id="creekNames">OneShoreline creek gauges</span></span><span class="go">›</span></a>
-    <a class="st" id="stSites" href="SiteMap.html">
-      <span><b>Monitoring network:</b> <span id="sitesText">checking…</span><br><span class="sm">all OneShoreline sites</span></span><span class="go">›</span></a>
-  </div>
+  <h2 class="sec">National Weather Service · San Mateo County <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">NWS forecast ↗</a></h2>
+  <div class="alerts" id="alerts" aria-live="polite"><div class="box al none gray"><span>Checking NWS alerts…</span></div></div>
 
+  <h2 class="sec">Creeks <a href="Creeks.html">All creek details ›</a></h2>
+  <div class="creeks" id="creeks" aria-live="polite">
+    <div class="box ck gray"><span class="nm">Loading…</span></div>
+  </div>
+  <div class="rising" id="rising"></div>
+  <div class="calm" id="calm"></div>
+
+  <h2 class="sec">More</h2>
   <div class="grid">
-    <a class="card" href="Creeks.html">
-      <span class="ic">🌊</span><h2>Creek conditions</h2>
-      <p>Creek levels with flood thresholds, rainfall and the Bay tide for Colma, San Bruno, Belmont and Atherton.</p>
-      <span class="lnk">Open ›</span></a>
     <a class="card" href="Tides.html">
-      <span class="ic">〰️</span><h2>Bay tides</h2>
-      <p>Measured and predicted tides at Redwood City, and when high tides will rise above MHHW this week.</p>
+      <span class="ic">〰️</span><h3>Bay tides</h3>
+      <p>Measured and predicted tides at Redwood City, when high tides will rise above MHHW this week, and the King Tide season.</p>
       <span class="lnk">Open ›</span></a>
     <a class="card" href="SiteMap.html">
-      <span class="ic">🗺️</span><h2>Sensor map</h2>
+      <span class="ic">🗺️</span><h3>Sensor map</h3>
       <p>Every public rain, creek and tide gauge in the network. Tap a site for its latest readings.</p>
       <span class="lnk">Open map ›</span></a>
+  </div>
+
+  <h2 class="sec">Get alerts</h2>
+  <div class="box smc">
+    <p>Sign up for <b>SMC Alert</b> to get emergency alerts for San Mateo County by text, email or phone.
+      <span class="not"><b>This site does not send alerts.</b> SMC Alert messages are sent by San Mateo County officials and are not set off
+        by the creek, rain or tide readings shown here, so a high reading on this site does not mean an alert has gone out.</span></p>
+    <a class="btn" href="https://www.smcgov.org/dem/smc-alert" target="_blank" rel="noopener">Sign up for SMC Alert</a>
+  </div>
+
+  <h2 class="sec">System status</h2>
+  <div class="box sys" id="sys">
+    <div class="row"><span class="dot" id="dCreek"></span><span class="k">Creek data</span><span class="v" id="vCreek">checking…</span></div>
+    <div class="row"><span class="dot" id="dGauges"></span><span class="k">Creek gauges</span><span class="v" id="vGauges">checking…</span></div>
+    <div class="row"><span class="dot" id="dSites"></span><span class="k">Monitoring network</span><span class="v"><span id="vSites">checking…</span> · <a href="SiteMap.html">map ›</a></span></div>
+  </div>
+  <div class="grid" style="margin-top:12px">
     <a class="card" href="https://oneshorelineearlywarning.onerain.com/" target="_blank" rel="noopener">
-      <span class="ic">📈</span><h2>Detailed data</h2>
+      <span class="ic">📈</span><h3>Detailed data</h3>
       <p>Full history, graphs and tide outlooks on the OneShoreline Early Warning System (OneRain).</p>
       <span class="lnk">Open OneRain ↗</span></a>
   </div>
 
-  <h3>Get alerts</h3>
-  <div class="alerts">
-    <p>Sign up for <b>SMC Alert</b> to get emergency alerts for San Mateo County by text, email or phone.</p>
-    <a class="btn" href="https://www.smcgov.org/dem/smc-alert" target="_blank" rel="noopener">Sign up for SMC Alert</a>
-  </div>
-  <p class="emerg">In an emergency, call 911.</p>
-
-  <h3>Contact</h3>
+  <h2 class="sec">Contact</h2>
   <div class="contact">
     <b>OneShoreline</b> · 1700 S. El Camino Real, Suite 502, San Mateo, CA 94402<br>
     <a href="tel:+16508448310">(650) 844-8310</a> · <a href="mailto:info@oneshoreline.org">info@oneshoreline.org</a> ·
@@ -132,67 +201,222 @@
 </main>
 
 <script>
+/* ===================== CONFIG ===================== */
 var DATA = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
 var COUNTY_SAME = "006081";
-function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4]); }
+var CREEK_DATA_LATE_MIN = 30;        // creek data older than this = "delayed" (same as the creek page)
+var GAUGE_QUIET_HOURS = 12;          // gauges that report when the level changes
+var GAUGE_QUIET_HOURS_INTERVAL = 3;  // gauges that report on a schedule
+var SITE_QUIET_HOURS = 24;
+// "Rapidly rising" (PROVISIONAL, logic to be confirmed): a gauge counts when its level rose at least RISE_FT
+// in the last RISE_MINUTES, its newest reading is under RISE_FRESH_MIN old, and the creek data is current.
+// Tidal gauges (they rise with every high tide) count only if the creek's rain gauges had at least
+// RISE_TIDAL_RAIN_IN in the last RISE_TIDAL_RAIN_HOURS.
+var RISE_FT = 0.5, RISE_MINUTES = 60, RISE_FRESH_MIN = 90;
+var RISE_TIDAL = ["stage"];          // gauge keys that rise and fall with the tide (San Bruno Creek at First Avenue)
+var RISE_TIDAL_RAIN_IN = 0.10, RISE_TIDAL_RAIN_HOURS = 3;
+var RISE_ETA_HOURS = 3;              // say when the next flood level would be reached, if within this many hours
+var MAX_ALERTS_OPEN = 3;             // NWS alerts shown in full; any more are listed with a tap to open
+/* ================================================== */
+
+function parseLocal(s) { var a = String(s).split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
 function nowLocal() {
   var p = {}; new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hourCycle: "h23", year: "numeric",
     month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" }).formatToParts(new Date())
     .forEach(function (x) { p[x.type] = +x.value; });
   return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
 }
-function set(id, cls, text) {
-  var el = document.getElementById(id); el.classList.remove("ok", "amber", "red"); if (cls) el.classList.add(cls);
-  el.querySelector("span span").textContent = text;
-}
+function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
+function fTime(ms) { return fmt(ms, { hour: "numeric", minute: "2-digit" }); }
+function agoText(ms) { var m = Math.round(ms / 60000); return m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " hr ago" : Math.round(m / 1440) + " days ago"; }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function hex(c, fb) { return /^#[0-9a-fA-F]{3,8}$/.test(String(c)) ? c : fb; }   // colors only from the data job's fixed table
+function $(id) { return document.getElementById(id); }
 function getJSON(url, accept) {
   return fetch(url, { cache: "no-store", headers: accept ? { Accept: accept } : {} })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
 }
+function untilText(iso) {
+  return iso ? "until " + new Date(iso).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" }) : "until further notice";
+}
+function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
+function labelCase(s) { return s.toLowerCase().replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); }
 
+/* ---------- NWS alerts, shown in full ---------- */
+function classify(e) { return /warning|emergency/i.test(e) ? "warning" : /watch/i.test(e) ? "watch" : /advisory/i.test(e) ? "advisory" : "statement"; }
+var RANK = { warning: 0, watch: 1, advisory: 2, statement: 3 };
+function alertBody(p) {   // "* WHAT...", "* WHERE..." sections as a list; anything else under "More details"
+  var rows = "", extra = "";
+  String(p.description || "").split(/\n\s*\n/).forEach(function (b) {
+    b.split(/(?=^\*\s+[A-Z][A-Z /&-]+\.\.\.)/m).forEach(function (part) {
+      part = part.trim(); if (!part) return;
+      var m = part.match(/^\*\s+([A-Z][A-Z /&-]+?)\.\.\.([\s\S]*)$/);
+      if (m) rows += "<dt>" + esc(labelCase(m[1])) + "</dt><dd>" + esc(unwrap(m[2])) + "</dd>";
+      else extra += "<p>" + esc(unwrap(part).replace(/^\.\.\.|\.\.\.$/g, "")) + "</p>";
+    });
+  });
+  var h = rows ? "<dl>" + rows + "</dl>" : extra;
+  if (p.instruction) h += "<p><b>What to do:</b> " + esc(unwrap(p.instruction)) + "</p>";
+  if (rows && extra) h += "<details><summary>More details</summary>" + extra + "</details>";
+  return h;
+}
 function nws() {
   getJSON("https://api.weather.gov/alerts/active?area=CA", "application/geo+json").then(function (d) {
     var list = (d.features || []).map(function (f) { return f.properties; }).filter(function (p) {
-      return (p.geocode && p.geocode.SAME || []).some(function (s) { return String(s).slice(-6) === COUNTY_SAME; });
-    });
-    var names = []; list.forEach(function (p) { if (names.indexOf(p.event) < 0) names.push(p.event); });
-    var warn = names.some(function (n) { return /warning|emergency/i.test(n); });
-    set("stNws", !names.length ? "ok" : warn ? "red" : "amber", names.length ? names.join(", ") : "No watches, warnings or advisories");
-  }).catch(function () { set("stNws", "", "unavailable right now"); });
+      return ((p.geocode && p.geocode.SAME) || []).some(function (s) { return String(s).slice(-6) === COUNTY_SAME; }) &&
+        p.status === "Actual" && p.messageType !== "Cancel";
+    }).sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
+    if (!list.length) {
+      $("alerts").innerHTML = '<div class="box al none ok"><span class="ck">✓</span><span><b>No watches, warnings or advisories</b> for San Mateo County.</span></div>';
+      return;
+    }
+    $("alerts").innerHTML = list.map(function (p, i) {
+      var c = classify(p.event), cls = c === "warning" ? "red" : c === "statement" ? "gray" : "amber";
+      var head = "<h3>" + esc(p.event) + "</h3><div class='when'>" + esc(untilText(p.ends || p.expires)) + " · NWS San Francisco Bay Area</div>";
+      if (i < MAX_ALERTS_OPEN) return '<div class="box al ' + cls + '">' + head + alertBody(p) + "</div>";
+      return '<details class="box al ' + cls + '"><summary>' + head + "</summary>" + alertBody(p) + "</details>";
+    }).join("");
+  }).catch(function () {
+    $("alerts").innerHTML = '<div class="box al none gray"><span>NWS alerts are unavailable right now. Check <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">weather.gov</a>.</span></div>';
+  });
 }
 
-function creek() {
+/* ---------- Creeks: the same status as the creek page's tiles ---------- */
+var C = { data: null, tides: {} };
+function pts(key) {
+  var s = C.data.sensors[key];
+  return s && s.points ? s.points.map(function (p) { return { t: parseLocal(p[0]), v: p[1] }; }) : [];
+}
+function rainSum(p, from, to) { var s = 0; p.forEach(function (x) { if (x.t > from && x.t <= to) s += x.v; }); return s; }
+function stageLevel(g, v) { var l = null; (g.thresholds || []).forEach(function (t) { if (v >= t.value) l = t; }); return l; }
+function valueAt(p, t) { var v = null; p.forEach(function (x) { if (x.t <= t) v = x; }); return v; }
+function tideNowFor(id, now) {   // measured if recent, else predicted (needed only for rain + high tide triggers)
+  var T = C.tides[id]; if (!T) return null;
+  if (T.obs && now - T.obs.t < 3600000) return T.obs.v;
+  var best = null; (T.pred || []).forEach(function (x) { if (!best || Math.abs(x.t - now) < Math.abs(best.t - now)) best = x; });
+  return best && Math.abs(best.t - now) < 3600000 ? best.v : null;
+}
+var TIDE_MHHW = { "9414523": 7.02, "9414750": 6.37 };
+function creekState(c, now) {
+  var gen = C.data.generated ? parseLocal(C.data.generated) : null;
+  var late = !gen || now - gen > CREEK_DATA_LATE_MIN * 60000;
+  var st = { c: c, late: late, gen: gen, top: null, stages: [], rising: [] };
+  var rainP = c.rain.map(function (g) { return pts(g.key); });
+  c.stages.forEach(function (g) {
+    var p = pts(g.key), last = p.length ? p[p.length - 1] : null;
+    var lat = C.data.sensors[g.key] && C.data.sensors[g.key].latest;
+    if (lat && (!last || parseLocal(lat[0]) > last.t)) { last = { t: parseLocal(lat[0]), v: lat[1] }; p = p.concat([last]); }
+    var qh = g.reports === "interval" ? GAUGE_QUIET_HOURS_INTERVAL : GAUGE_QUIET_HOURS;
+    var quiet = !last || now - last.t > qh * 3600000, prev = null;
+    for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
+    var arrow = quiet || !prev ? "" : last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "";
+    var lvl = last && !quiet ? stageLevel(g, last.v) : null;
+    var s = { g: g, last: last, quiet: quiet, arrow: arrow, lvl: lvl,
+      next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null };
+    st.stages.push(s);
+    if (lvl && !late && (!st.top || lvl.level > st.top.level)) st.top = lvl;
+    // rapidly rising (provisional rule; see CONFIG)
+    if (!late && last && !quiet && now - last.t <= RISE_FRESH_MIN * 60000) {
+      var ref = valueAt(p, last.t - RISE_MINUTES * 60000);
+      var rise = ref ? last.v - ref.v : null;
+      var tidalOk = RISE_TIDAL.indexOf(g.key) < 0 || rainP.some(function (rp) { return rainSum(rp, now - RISE_TIDAL_RAIN_HOURS * 3600000, now) >= RISE_TIDAL_RAIN_IN; });
+      if (rise != null && rise >= RISE_FT && tidalOk) {
+        var eta = s.next ? (s.next.value - last.v) / (rise / (RISE_MINUTES / 60)) : null;
+        st.rising.push({ s: s, rise: rise, eta: eta != null && eta <= RISE_ETA_HOURS ? eta : null });
+      }
+    }
+  });
+  st.rains = (c.rain_windows || [60, 1440]).filter(function (m) { return m === 60 || m === 1440; }).map(function (m) {
+    return { m: m, v: Math.max.apply(null, rainP.map(function (rp) { return rainSum(rp, now - m * 60000, now); }).concat([0])) };
+  });
+  (c.rain_triggers || []).forEach(function (tr) {
+    var amt = rainSum(pts(tr.gauge), now - tr.minutes * 60000, now), ok = amt >= tr.value;
+    if (ok && tr.high_tide) {
+      var tv = tideNowFor(c.tide, now), need = tr.tide_min != null ? tr.tide_min : TIDE_MHHW[c.tide];
+      ok = tv != null && need != null && tv >= need;
+    }
+    if (ok && !late && (!st.top || tr.level > st.top.level)) st.top = tr;
+  });
+  return st;
+}
+function statusOf(st) {
+  if (st.top) return { w: st.top.minutes ? "Rain trigger" : st.top.name.replace("Flood ", ""), color: hex(st.top.color, "#c62828"),
+    ink: st.top.level === 1 ? "#1a1a1a" : "#fff", lvl: st.top.level };
+  if (st.late) return { w: "Data delayed", color: "#8a96a3", ink: "#fff", lvl: 0 };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: "Offline", color: "#8a96a3", ink: "#fff", lvl: 0 };
+  return { w: "Normal", color: "#2e7d32", ink: "#fff", lvl: 0, ok: true };
+}
+function renderCreeks() {
+  var now = nowLocal(), states = (C.data.creeks || []).map(function (c) { return creekState(c, now); });
+  $("creeks").innerHTML = states.map(function (st) {
+    var s = statusOf(st), c = st.c;
+    var style = s.ok ? "" : ' style="border-color:' + s.color + ";background:color-mix(in srgb," + s.color + (s.lvl ? " 9%" : " 5%") + ',var(--card))"';
+    var h = '<a class="box ck' + (s.ok ? " ok" : "") + '" href="Creeks.html#' + encodeURIComponent(c.id) + '"' + style +
+      ' aria-label="' + esc(c.name) + ": " + esc(s.w) + '">' +
+      '<span class="nm">' + esc(c.short || c.name) + "</span>" +
+      '<span class="badge" style="background:' + s.color + ";color:" + s.ink + '">' + esc(s.w) + "</span>" +
+      (st.top && st.top.minutes ? '<span class="met">Met: ' + esc(st.top.label || "rain trigger") + "</span>" : "");
+    st.stages.forEach(function (x) {
+      h += '<span class="g">' + (st.stages.length > 1 ? '<span class="l">' + esc(x.g.label) + "</span>" : "");
+      if (!x.last) h += '<span class="q">no readings</span>';
+      else if (x.quiet) h += '<span class="q">not reporting since ' + esc(fmt(x.last.t, { month: "short", day: "numeric" })) + "</span>";
+      else h += "<b>" + x.last.v.toFixed(2) + x.arrow + "</b> ft · " + esc(fTime(x.last.t));
+      h += "</span>";
+    });
+    if (st.rains.length) h += '<span class="rain">Rain ' + st.rains.map(function (r) {
+      return (r.m === 60 ? "1 hr " : "24 hr ") + "<b>" + (r.v < 0.005 ? "0" : r.v.toFixed(2)) + "</b>"; }).join(" · ") + " in</span>";
+    return h + '<span class="go">Details ›</span></a>';
+  }).join("");
+
+  // Rapidly rising
+  var rising = []; states.forEach(function (st) { st.rising.forEach(function (r) { r.st = st; rising.push(r); }); });
+  $("rising").innerHTML = rising.map(function (r) {
+    var x = r.s, c = r.st.c, red = x.lvl && x.lvl.level >= 3 || (r.eta != null && x.next && x.next.level >= 3);
+    var eta = r.eta == null ? "" : " At this rate it reaches " + esc(x.next.name) + " (" + x.next.value.toFixed(2) + " ft) in about " +
+      (r.eta < 1 ? Math.max(5, Math.round(r.eta * 60 / 5) * 5) + " min" : (Math.round(r.eta * 2) / 2) + " hr") + ".";
+    return '<a class="box rs ' + (red ? "red" : "amber") + '" href="Creeks.html#' + encodeURIComponent(c.id) + '"><span class="ar">⇡</span><span>' +
+      "<h3>Rapidly rising: " + esc(c.name) + (c.stages.length > 1 ? " at " + esc(x.g.label) : "") + "</h3>" +
+      "<p>Up " + r.rise.toFixed(2) + " ft in the last " + (RISE_MINUTES === 60 ? "hour" : RISE_MINUTES + " min") + ", now " + x.last.v.toFixed(2) + " ft (" + esc(fTime(x.last.t)) + ")." + eta + "</p></span></a>";
+  }).join("");
+  var anyLate = states.some(function (s) { return s.late; });
+  $("calm").textContent = rising.length ? "" : anyLate ? "Rapid-rise check paused: creek data is delayed." :
+    "No creek gauges rising rapidly (" + RISE_FT.toFixed(1) + " ft or more in the last hour).";
+
+  // System status rows for creek data and gauges
+  var gen = states.length ? states[0].gen : null;
+  sys("dCreek", "vCreek", anyLate ? "amber" : "ok", gen ? (anyLate ? "Delayed · last updated " + agoText(now - gen) : "Current · updated " + fTime(gen)) : "No update time");
+  var all = [], off = [];
+  states.forEach(function (st) { st.stages.forEach(function (x) { all.push(x); if (x.quiet) off.push({ st: st, x: x }); }); });
+  sys("dGauges", "vGauges", off.length ? "amber" : "ok", (all.length - off.length) + " of " + all.length + " reporting" + (off.length ? " · not reporting: " + off.map(function (o) {
+    return (o.st.c.short || o.st.c.name) + (o.st.c.stages.length > 1 ? " (" + o.x.g.label + ")" : "") + (o.x.last ? " since " + fmt(o.x.last.t, { month: "short", day: "numeric" }) : "");
+  }).join(", ") : ""));
+}
+function sys(dot, val, cls, text) { $(dot).className = "dot " + (cls || ""); $(val).textContent = text; }
+
+function loadTides() {   // only the stations that a rain + high tide trigger needs
+  var ids = [];
+  (C.data.creeks || []).forEach(function (c) { (c.rain_triggers || []).forEach(function (tr) { if (tr.high_tide && ids.indexOf(c.tide) < 0) ids.push(c.tide); }); });
+  return Promise.all(ids.map(function (id) {
+    var base = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=" + encodeURIComponent(id) +
+      "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
+    var T = C.tides[id] = C.tides[id] || {};
+    return Promise.all([
+      getJSON(base + "&product=water_level&date=latest").then(function (j) { var x = (j.data || [])[0]; T.obs = x ? { t: parseLocal(x.t), v: parseFloat(x.v) } : null; }).catch(function () {}),
+      getJSON(base + "&product=predictions&date=today").then(function (j) { T.pred = (j.predictions || []).map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }); }).catch(function () {})
+    ]);
+  }));
+}
+function creeks() {
   getJSON(DATA + "creeks.json?t=" + Date.now()).then(function (d) {
-    var now = nowLocal(), late = !d.generated || now - parseLocal(d.generated) > 30 * 60000, worst = null, offline = 0;
-    var list = d.creeks || [];
-    list.forEach(function (c) {
-      c.stages.forEach(function (g) {
-        var s = d.sensors[g.key] || {}, p = s.points || [], last = p.length ? p[p.length - 1] : s.latest;
-        if (s.latest && (!last || s.latest[0] > last[0])) last = s.latest;
-        var quietH = g.reports === "interval" ? 3 : 12;
-        if (!last || (now - parseLocal(last[0])) / 36e5 > quietH) { offline++; return; }
-        (g.thresholds || []).forEach(function (t) {
-          if (last[1] >= t.value && !late && (!worst || t.level > worst.t.level)) worst = { c: c, t: t, v: last[1], g: g };
-        });
-      });
-    });
-    // rain amounts that mean flooding is likely (those that also need a high tide are shown on the creek page)
-    list.forEach(function (c) {
-      (c.rain_triggers || []).forEach(function (tr) {
-        if (tr.high_tide || late) return;
-        var p = (d.sensors[tr.gauge] || {}).points || [], amt = 0;
-        p.forEach(function (x) { if (parseLocal(x[0]) > now - tr.minutes * 60000) amt += x[1]; });
-        if (amt >= tr.value && (!worst || tr.level > worst.t.level)) worst = { c: c, t: tr, rain: amt };
-      });
-    });
-    document.getElementById("creekNames").textContent = list.map(function (c) { return c.name.replace(" Creek", "").replace(" Channel", ""); }).join(" · ");
-    if (worst) set("stCreek", worst.t.level >= 3 ? "red" : "amber", worst.rain != null
-      ? worst.c.name + ": " + worst.t.name + " · " + worst.t.label.toLowerCase() + " " + worst.rain.toFixed(2) + " in"
-      : worst.c.name + " at " + worst.t.name + " level (" + worst.v.toFixed(2) + " ft)");
-    else set("stCreek", late ? "" : "ok", late ? "data delayed" : "all below flood levels" + (offline ? " · " + offline + " gauge" + (offline > 1 ? "s" : "") + " not reporting" : ""));
-  }).catch(function () { set("stCreek", "", "unavailable right now"); });
+    C.data = d; renderCreeks();
+    return loadTides().then(renderCreeks);
+  }).catch(function () {
+    if (!C.data) $("creeks").innerHTML = '<div class="box ck gray" style="grid-column:1/-1"><span class="nm">Creek data unavailable right now</span><span class="g">Retrying in a few minutes. <a href="Creeks.html">Creek page ›</a></span></div>';
+    sys("dCreek", "vCreek", "amber", "Unavailable right now");
+  });
 }
 
+/* ---------- Monitoring network ---------- */
 function sites() {
   getJSON(DATA + "sites.json?t=" + Date.now()).then(function (d) {
     var now = nowLocal(), n = 0, alert = 0, top = 0, off = 0;
@@ -204,16 +428,18 @@ function sites() {
         if (s.time) newest = Math.max(newest, parseLocal(s.time));
         if (s.thresholds && s.value != null) s.thresholds.forEach(function (t) { if (s.value >= t.value) lvl = Math.max(lvl, t.level); });
       });
-      if (!newest || now - newest > 24 * 36e5) off++;
+      if (!newest || now - newest > SITE_QUIET_HOURS * 36e5) off++;
       else if (lvl) { alert++; top = Math.max(top, lvl); }
     });
-    set("stSites", alert ? (top >= 3 ? "red" : "amber") : "ok",
-      alert ? alert + (alert === 1 ? " site" : " sites") + " at an alert level" : (n - off) + " of " + n + " sites reporting, none at an alert level");
-  }).catch(function () { set("stSites", "", "unavailable right now"); });
+    sys("dSites", "vSites", alert ? (top >= 3 ? "red" : "amber") : off ? "amber" : "ok",
+      (n - off) + " of " + n + " sites reporting" + (alert ? " · " + alert + (alert === 1 ? " site" : " sites") + " at an alert level" : " · none at an alert level"));
+  }).catch(function () { sys("dSites", "vSites", "amber", "Unavailable right now"); });
 }
-function all() { nws(); creek(); sites(); }
+
+function all() { nws(); creeks(); sites(); }
 all();
 setInterval(all, 5 * 60000);
+setInterval(function () { if (C.data) renderCreeks(); }, 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) all(); });
 </script>
 </body>
