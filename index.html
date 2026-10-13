@@ -81,6 +81,7 @@
 
   .ck .g .l, .ck .rain .l { display: block; font-size: 12px; color: var(--muted); }
   .ck .rain .met { color: #c62828; font-weight: 700; }
+  .ck .rain > span:not(.l) { white-space: nowrap; }   /* keep "15 min 0.08" together when the line wraps */
   @media (prefers-color-scheme: dark) { .ck .rain .met { color: #ef5350; } }
   /* Bay tide card (same rule as the Tides page and the kiosk) */
   a.tide { display: block; text-decoration: none; color: inherit; }

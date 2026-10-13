@@ -16,11 +16,11 @@
 <style>
   :root {
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #6b7a8c; --line: #e3e8ee;
-    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75;
+    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75; --fcline: #009E73;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
-      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --mhhw: #9aa8b8; }
+      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --mhhw: #9aa8b8; --fcline: #4fc3d9; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
@@ -311,7 +311,11 @@ function loadTide(id) {
   var toPts = function (arr) { return (arr || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; }).filter(function (p) { return !isNaN(p.v); }); };
   return Promise.all([
     getJSON(noaa(id, "predictions", b, e)).then(function (j) { T.pred = toPts(j.predictions); }),
-    getJSON(noaa(id, "water_level", b, ymd(now))).then(function (j) { T.obs = toPts(j.data); }).catch(function () { T.obs = T.obs || []; })
+    getJSON(noaa(id, "water_level", b, ymd(now))).then(function (j) { T.obs = toPts(j.data); }).catch(function () { T.obs = T.obs || []; }),
+    // NOAA model forecast (SFBOFS water level guidance at this station, ft NAVD88); optional, the graph works without it
+    getJSON(noaa(id, "ofs_water_level", ymd(now - 86400000), ymd(now + 3 * 86400000))).then(function (j) {
+      var p = toPts(j.data || j.predictions); if (p.length) { T.ofs = p; T.tOfs = Date.now(); }
+    }).catch(function () {})
   ]).then(function () { T.at = Date.now(); }).catch(function () {}).then(function () { T.loading = false; render(); });
 }
 function classify(e) { return /warning|emergency/i.test(e) ? "warning" : /watch/i.test(e) ? "watch" : /advisory/i.test(e) ? "advisory" : "statement"; }
@@ -668,17 +672,22 @@ function drawCharts(st, now) {
     $("tideTitle").textContent = T.st.name + " tide (ft NAVD88)";
     var tp = (T.pred || []).filter(function (p) { return p.t >= x0 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
     var to = (T.obs || []).filter(function (p) { return p.t >= x0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
-    var tys = tp.concat(to).map(function (p) { return p.y; }).concat([T.st.mhhw]);
+    // model forecast only if it is from the last 12 h and reaches at least 6 h ahead (same rule as the kiosk)
+    var fcOK = T.ofs && T.ofs.length && Date.now() - T.tOfs < 12 * 3600000 && T.ofs[T.ofs.length - 1].t >= now + 6 * 3600000;
+    var tf = fcOK ? T.ofs.filter(function (p) { return p.t >= now - 30 * 60000 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
+    var tys = tp.concat(to, tf).map(function (p) { return p.y; }).concat([T.st.mhhw]);
     var tO = base(true); tO.scales.y = yScale(2 * Math.floor((Math.min.apply(null, tys) - 0.3) / 2), 2 * Math.ceil((Math.max.apply(null, tys) + 0.3) / 2), 2);
     put("chTide", { data: { datasets: [
       { label: "MHHW", data: [{ x: H(x0), y: T.st.mhhw }, { x: H(x1), y: T.st.mhhw }], borderColor: css("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
       { label: "Predicted (ft)", data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
-      { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] }, options: tO });
+      { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+      { label: "NOAA forecast (ft)", data: tf, borderColor: css("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] }, options: tO });
   }
   var seen = {}, key = "";
   c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
     key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
-  $("key").innerHTML = key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span><span><i style='border-top:2px solid " + ink + "'></i>Predicted</span>" +
+  $("key").innerHTML = key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
+    (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px solid var(--fcline)'></i>NOAA forecast</span>" : "") + "<span><i style='border-top:2px solid " + ink + "'></i>Predicted</span>" +
     (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "");
   var notes = [];
   if (c.note) notes.push(esc(c.note));

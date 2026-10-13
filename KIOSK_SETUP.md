@@ -235,7 +235,8 @@ For the chosen creek, all on one time axis (last 36 hours plus the next 12 hours
 - **Each stage gauge** (Atherton Channel has two) with its current level, colored by the highest threshold
   passed, and a graph with its Flood Monitoring / Watch / Warning lines
 - **Rain per hour** at the creek's rain gauge(s), with "Accumulated rain" totals matching the creek's OneRain
-  dashboard (Atherton 30 min; Belmont 30 min and 4 hr; Colma 6 hr; plus 1 hr and 24 hr). Belmont also has a
+  dashboard (Atherton 30 min; Belmont 30 min and 4 hr; Colma 6 hr; San Bruno, which is very flashy, 15 min, 30 min and
+  3 hr; plus 1 hr and 24 hr). San Bruno's two rain gauges are shown as a small table, one row per time window. Belmont also has a
   4-hour running-total graph with its 0.42 in trigger line. **When no rain has fallen in the last 36 hours the
   rain graphs fold into one line** ("Rain: none in the last 36 hours") and give their space to stage and tide;
   they come back with the first rain.
