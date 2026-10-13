@@ -235,6 +235,11 @@ For the chosen creek, all on one time axis (last 36 hours plus the next 12 hours
   running-total graph with its 0.42 in trigger line.
 - **The Bay tide** at the nearest NOAA station (Alameda or Redwood City), measured and predicted. Creeks near
   the Bay rise and fall with the tide, so this shows whether a rise is coming from rain, the tide, or both.
+- **Graph legends:** each graph's legend is on its own title row (rain gauges; running rain total and its trigger;
+  stage with its Monitoring/Watch/Warning lines and values; tide with measured, NOAA forecast, predicted and MHHW).
+  The tide graph includes the NOAA model forecast (green) for the creek's tide station (Redwood City or Alameda).
+  A "Now" tag on the top graph marks the line that runs through all of them. MHHW is drawn in slate gray so orange
+  only ever means Flood Watch; Belmont's 4-hour rain trigger line uses its own level color (Flood Warning red).
 - **Belmont Creek's rain triggers**: flooding is likely if 30-minute rain exceeds 0.20 in, or 4-hour rain
   exceeds 0.42 in while the tide is high (at or above MHHW at Redwood City). The running amounts are shown
   under the rain totals and turn red when met.

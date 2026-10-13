@@ -21,11 +21,11 @@
   /* Designed at exactly 800x480 and scaled to fit whatever screen it's on. */
   :root {
     --bg: #f0f4f8; --panel: #ffffff; --ink: #003B5C; --muted: #6b7a8c; --line: #e3e8ee;
-    --red: #c0392b; --amber: #d98200; --green: #2e7d32; --blue: #1e6fd9; --fc: #005A70;
+    --red: #c0392b; --amber: #d98200; --green: #2e7d32; --blue: #1e6fd9; --fc: #005A70; --fcline: #009E73; --mhhw: #455a75;
   }
   :root[data-theme="dark"] {
     --bg: #0e1319; --panel: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542;
-    --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --blue: #6ea8fe; --fc: #4fc3d9;
+    --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --blue: #6ea8fe; --fc: #4fc3d9; --fcline: #4fc3d9; --mhhw: #9aa8b8;
   }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg);
     font-family: Arial, Helvetica, sans-serif; color: var(--ink); cursor: none; }
@@ -63,7 +63,7 @@
   .tname { font-size: 19px; font-weight: bold; }
   .tid { font-size: 12px; color: var(--muted); }
   .th .tmhhw { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed #e05c2a; vertical-align: middle; margin-right: 4px; }
+  .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed var(--mhhw); vertical-align: middle; margin-right: 4px; }
   /* Headline band: the one line a responder reads first. The color goes around the whole box. */
   #thead { flex: none; display: flex; align-items: center; gap: 12px; border: 3px solid #8a96a3; border-radius: 8px;
     padding: 4px 12px; min-height: 38px; box-sizing: border-box; background: rgba(138,150,163,.08); cursor: pointer; }
@@ -255,10 +255,11 @@
   table.rain td { padding: 1px 0 1px 8px; text-align: right; font-weight: bold; font-size: 16px; }
   table.rain td:first-child { text-align: left; font-weight: normal; font-size: 13px; white-space: nowrap; }
   #cright { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .ctitle { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; height: 15px; }
+  .ctitle { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; height: 15px; white-space: nowrap; }
+  .ctitle > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* the legend keeps its room */
+  .ctitle .ck { flex: none; display: flex; gap: 9px; align-items: center; font-size: 11px; }
+  .ctitle .ck i { display: inline-block; width: 13px; height: 0; margin-right: 3px; vertical-align: middle; }
   .cchart { position: relative; }
-  #cnote { min-height: 15px; font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  #cnote i { display: inline-block; width: 14px; height: 0; }
   #clock { font-size: 16px; font-weight: bold; color: var(--ink); white-space: nowrap; }
   #stale { color: var(--amber); font-weight: bold; display: block; }
 
@@ -793,13 +794,13 @@ function drawTideChart(s, now) {
   var ys = pts.concat(ob, fc).map(function (p) { return p.y; }).concat([m]);
   var yMin = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), yMax = 2 * Math.ceil((Math.max.apply(null, ys) + 0.3) / 2);
   var data = { datasets: [
-    { data: mh, borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false, order: 3 },
+    { data: mh, borderColor: cssVar("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false, order: 3 },
     { data: ab, borderColor: "rgba(0,0,0,0)", backgroundColor: "rgba(192,57,43,0.45)", borderWidth: 0, pointRadius: 0, tension: 0.3, fill: 0, order: 5 },
     { data: pts, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false, order: 2,
       segment: { borderColor: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? "#c0392b" : undefined; },
                  borderWidth: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? 2.5 : undefined; } } },
     { data: ob, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 1 },
-    { data: fc, borderColor: cssVar("--fc"), borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 0 }
+    { data: fc, borderColor: cssVar("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 0 }
   ] };
   var opts = {
     responsive: true, maintainAspectRatio: false, animation: false, events: [],
@@ -817,8 +818,8 @@ function drawTideChart(s, now) {
   if (TC.chart) { TC.chart.data = data; TC.chart.options = opts; TC.chart.update("none"); }
   else TC.chart = new Chart($t("tchartc"), { type: "line", data: data, options: opts, plugins: [nowLinePlugin] });
   $t("tkey").innerHTML = "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span>" +
-    (fc.length ? "<span><i style='border-top:2.5px solid var(--fc)'></i>NOAA forecast</span>" : "") + "<span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span>" +
-    "<span><i style='border-top:1.5px dashed #e05c2a'></i>MHHW " + s.st.mhhw.toFixed(2) + " ft</span><span><i class='ab'></i>Above MHHW</span>";
+    (fc.length ? "<span><i style='border-top:2.5px solid var(--fcline)'></i>NOAA forecast</span>" : "") + "<span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span>" +
+    "<span><i style='border-top:1.5px dashed var(--mhhw)'></i>MHHW " + s.st.mhhw.toFixed(2) + " ft</span><span><i class='ab'></i>Above MHHW</span>";
 }
 
 /* ---------- Loading tide data ---------- */
@@ -850,15 +851,16 @@ function loadObserved(i) {
 
 // NOAA model water level guidance (ofs_water_level) for the Bay Tides station, in ft NAVD88 like everything else:
 // from yesterday (to check it against the measured level) to as far ahead as the latest model run goes.
-function loadModel() {
-  var s = tideS(), now = nowLocal();
-  return getJSON(noaa(s.st, "ofs_water_level", ymd(now - 86400000), ymd(now + 3 * 86400000)))
-    .then(function (r) {
-      var rows = r.data || r.predictions || [];
-      var p = rows.map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); });
-      if (p.length) { s.ofs = p; s.tOfs = Date.now(); }
-      renderTides();
-    }).catch(function () { renderTides(); });   // no model: the tab shows the predictions as before
+function loadModel() {   // every station: Redwood City for the Bay Tides tab, and each creek's tide graph
+  var now = nowLocal();
+  return Promise.all(S.map(function (s) {
+    return getJSON(noaa(s.st, "ofs_water_level", ymd(now - 86400000), ymd(now + 3 * 86400000)))
+      .then(function (r) {
+        var rows = r.data || r.predictions || [];
+        var p = rows.map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); });
+        if (p.length) { s.ofs = p; s.tOfs = Date.now(); }
+      }).catch(function () {});   // no model: the graphs show the predictions as before
+  })).then(function () { renderTides(); if (currentTab === "creek" && C.data) renderCreek(); });
 }
 
 /* ---------- NWS alerts ---------- */
@@ -1454,14 +1456,15 @@ function drawCreekCharts(st, now) {
   // Build the graph boxes for this creek once; after that, just update them
   if (C.chartsFor !== c.id) {
     destroyCreekCharts();
+    // Each graph has its own legend on its title row
     var parts = [{ id: "chRain", w: 0.65, title: "Rain per hour (in)", key: "cRainKey" }];
-    if (c.rain_running && c.rain_running.line) parts.push({ id: "chRun", w: 0.7, title: esc(c.rain_running.label), key: "" });
-    c.stages.forEach(function (g, i) { parts.push({ id: "chStage" + i, w: c.stages.length > 1 ? 1 : 1.5, title: esc(g.label) + " · stage (ft)", key: i ? "" : "cStageAge" }); });
-    parts.push({ id: "chTide", w: 1.05, title: esc(tideFor(c).st.name) + " tide (ft NAVD88)", key: "" });
+    if (c.rain_running && c.rain_running.line) parts.push({ id: "chRun", w: 0.7, title: esc(c.rain_running.label), key: "cRunKey" });
+    c.stages.forEach(function (g, i) { parts.push({ id: "chStage" + i, w: c.stages.length > 1 ? 1 : 1.5, title: esc(g.label) + " · stage (ft)", key: "cStageKey" + i }); });
+    parts.push({ id: "chTide", w: 1.05, title: esc(tideFor(c).st.name) + " tide (ft NAVD88)", key: "cTideKey" });
     var html = parts.map(function (p) {
-      return '<div class="ctitle"><span>' + p.title + "</span><span" + (p.key ? ' id="' + p.key + '"' : "") + "></span></div>" +
+      return '<div class="ctitle"><span>' + p.title + '</span><span class="ck" id="' + p.key + '"></span></div>' +
         '<div class="cchart" data-w="' + p.w + '"><canvas id="' + p.id + '"></canvas></div>';
-    }).join("") + '<div id="cnote"></div>';
+    }).join("");
     right.innerHTML = html;
     C.chartsFor = c.id;
   }
@@ -1516,6 +1519,8 @@ function drawCreekCharts(st, now) {
   var series = st.rains.map(function (r) { return hourly(r.p); });
   var rmax = Math.max(0.1, Math.max.apply(null, [].concat.apply([], series).map(function (p) { return p.y; }).concat([0])));
   var ropt = base(false);
+  ropt.plugins.nowLine.label = true;   // one "Now" tag on the top graph; the line runs through every graph below it
+  ropt.layout.padding.top = 2;
   ropt.scales.y = yScale(0, Math.ceil(rmax * 10) / 10, Math.ceil(rmax * 10) / 20);
   ropt.datasets = { bar: { barPercentage: 1, categoryPercentage: 1 } };
   var pxPerHr = Math.max(1, (document.getElementById("chRain").parentNode.clientWidth - 40) / (CREEK_PAST_HOURS + CREEK_AHEAD_HOURS));
@@ -1531,14 +1536,18 @@ function drawCreekCharts(st, now) {
   // Running rain total (e.g. Belmont's 4-hour rain) with its trigger line
   if (c.rain_running && c.rain_running.line) {
     var rr = c.rain_running, rp = pts(rr.gauge), run = [];
+    var rtr = (c.rain_triggers || []).filter(function (tr) { return tr.gauge === rr.gauge && tr.minutes === rr.minutes; })[0];
+    var rcol = rtr && /^#[0-9a-fA-F]{3,8}$/.test(rtr.color) ? rtr.color : "#c62828";
     for (var tt = Math.ceil(x0 / 600000) * 600000; tt <= now; tt += 600000) run.push({ x: H(tt), y: rainSum(rp, tt - rr.minutes * 60000, tt) });
     var runMax = Math.max(rr.line * 1.25, Math.max.apply(null, run.map(function (p) { return p.y; }).concat([0])) * 1.1);
     var top = Math.ceil(runMax * 10) / 10, qopt = base(false);
     qopt.scales.y = yScale(0, top, top / 2);
     put("chRun", { data: { datasets: [
-      { data: [{ x: H(x0), y: rr.line }, { x: H(x1), y: rr.line }], borderColor: "#e07b00", borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, fill: false },
+      { data: [{ x: H(x0), y: rr.line }, { x: H(x1), y: rr.line }], borderColor: rcol, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, fill: false },
       { data: run, borderColor: "#1e88e5", backgroundColor: "rgba(30,136,229,0.15)", borderWidth: 2, pointRadius: 0, fill: "origin", tension: 0 }
     ] }, options: qopt });
+    document.getElementById("cRunKey").innerHTML = "<span><i style='border-top:2px solid #1e88e5'></i>Rain total</span><span><i style='border-top:2px dashed " + rcol + "'></i>" +
+      (rtr ? esc(rtr.label || "Trigger") + " " : "Trigger ") + rr.line.toFixed(2) + " in</span>";
   }
 
   // Each gauge's stage with its flood thresholds
@@ -1561,28 +1570,28 @@ function drawCreekCharts(st, now) {
     });
     sets.push({ data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.10)", borderWidth: 2, pointRadius: 0, fill: "origin", tension: 0 });
     put("chStage" + i, { data: { datasets: sets }, options: sopt });
+    document.getElementById("cStageKey" + i).innerHTML = (i === 0 && st.late && st.gen ? "<b style='color:var(--amber)'>Data delayed · " + agoText(now - st.gen) + "</b>" : "") +
+      "<span><i style='border-top:2px solid var(--ink)'></i>Stage</span>" +
+      shown.map(function (t) { return "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + " " + t.value.toFixed(2) + "</span>"; }).join("");
   });
 
-  // Tide: measured + predicted
-  var tS = tideFor(c);
+  // Tide: measured, NOAA model forecast and predicted (ft NAVD88)
+  var tS = tideFor(c), tFc = modelOK(tS, now);
   var tp = (tS.pred || []).filter(function (p) { return p.t >= x0 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
   var to = (tS.obs || []).filter(function (p) { return p.t >= x0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
-  var tys = tp.concat(to).map(function (p) { return p.y; }).concat([tS.st.mhhw]);
+  var tf = tFc ? tS.ofs.filter(function (p) { return p.t >= now - 30 * 60000 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
+  var tys = tp.concat(to, tf).map(function (p) { return p.y; }).concat([tS.st.mhhw]);
   var topt = base(true);
   topt.scales.y = yScale(2 * Math.floor((Math.min.apply(null, tys) - 0.3) / 2), 2 * Math.ceil((Math.max.apply(null, tys) + 0.3) / 2), 2);
   put("chTide", { data: { datasets: [
-      { data: [{ x: H(x0), y: tS.st.mhhw }, { x: H(x1), y: tS.st.mhhw }], borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
+      { data: [{ x: H(x0), y: tS.st.mhhw }, { x: H(x1), y: tS.st.mhhw }], borderColor: cssVar("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
       { data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
-      { data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false }
+      { data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false },
+      { data: tf, borderColor: cssVar("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false }
     ] }, options: topt });
-
-  var age = document.getElementById("cStageAge");
-  if (age) age.innerHTML = st.late && st.gen ? "<b style='color:var(--amber)'>Creek data delayed · updated " + agoText(now - st.gen) + "</b>" : "";
-  var seen = {}, key = "";
-  c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (t.level <= 3 && !seen[t.name]) { seen[t.name] = 1; key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
-  document.getElementById("cnote").innerHTML = key +
-    "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span><span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span>" +
-    "<span><i style='border-top:1.5px dashed #e05c2a'></i>MHHW</span>";
+  document.getElementById("cTideKey").innerHTML = "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span>" +
+    (tf.length ? "<span><i style='border-top:2.5px solid var(--fcline)'></i>NOAA forecast</span>" : "") +
+    "<span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span><span><i style='border-top:1.5px dashed var(--mhhw)'></i>MHHW " + tS.st.mhhw.toFixed(2) + "</span>";
 }
 
 // Shrink the About text a little if it doesn't fit (fonts differ between computers and the Pi, and the

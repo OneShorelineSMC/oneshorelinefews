@@ -16,11 +16,11 @@
 <style>
   :root {
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #6b7a8c; --line: #e3e8ee;
-    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05);
+    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
-      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); }
+      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --mhhw: #9aa8b8; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
@@ -412,6 +412,11 @@ function creekState(c, now) {
   return st;
 }
 
+// The running-rain graph's trigger line takes the trigger's own level color (e.g. Belmont 4-hour = Flood Warning red)
+function runColor(c) {
+  var rr = c.rain_running, tr = rr && (c.rain_triggers || []).filter(function (t) { return t.gauge === rr.gauge && t.minutes === rr.minutes; })[0];
+  return tr && /^#[0-9a-fA-F]{3,8}$/.test(tr.color) ? tr.color : "#c62828";
+}
 function rainWindows(c) { return (c.rain_windows || [60, 1440]).slice().sort(function (a, b) { return a - b; }); }
 function winLabel(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
 // One or two words for a creek's tile: its level, or Offline / Delayed / Normal
@@ -574,7 +579,7 @@ function drawCharts(st, now) {
       h += '<div class="gtitle"><span><b style="color:' + col + '">' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + "</span><span>in/hr</span></div>" +
         '<div class="gbox" style="height:64px"><canvas id="chRain' + i + '"></canvas></div>';
     });
-    if (c.rain_running && c.rain_running.line) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span style="color:#e07b00">- - trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
+    if (c.rain_running && c.rain_running.line) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span style="color:' + runColor(c) + '">- - trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
       '<div class="gbox" style="height:80px"><canvas id="chRun"></canvas></div>';
     st.stages.forEach(function (s, i) {
       h += '<div class="gtitle"><span>' + esc(s.g.label) + " · stage (ft)</span><span></span></div>" +
@@ -634,7 +639,7 @@ function drawCharts(st, now) {
     var top = Math.ceil(Math.max(rr.line * 1.25, Math.max.apply(null, run.map(function (p) { return p.y; }).concat([0])) * 1.1) * 10) / 10;
     var qo = base(false); qo.scales.y = yScale(0, top, top / 2);
     put("chRun", { data: { datasets: [
-      { label: "Trigger", data: [{ x: H(x0), y: rr.line }, { x: H(x1), y: rr.line }], borderColor: "#e07b00", borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, pointHoverRadius: 0 },
+      { label: "Trigger", data: [{ x: H(x0), y: rr.line }, { x: H(x1), y: rr.line }], borderColor: runColor(c), borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, pointHoverRadius: 0 },
       { label: rr.label, data: run, borderColor: "#1e88e5", backgroundColor: "rgba(30,136,229,0.15)", borderWidth: 2, pointRadius: 0, fill: "origin" }] }, options: qo });
   }
   // stage for each gauge, with its thresholds
@@ -660,7 +665,7 @@ function drawCharts(st, now) {
     var tys = tp.concat(to).map(function (p) { return p.y; }).concat([T.st.mhhw]);
     var tO = base(true); tO.scales.y = yScale(2 * Math.floor((Math.min.apply(null, tys) - 0.3) / 2), 2 * Math.ceil((Math.max.apply(null, tys) + 0.3) / 2), 2);
     put("chTide", { data: { datasets: [
-      { label: "MHHW", data: [{ x: H(x0), y: T.st.mhhw }, { x: H(x1), y: T.st.mhhw }], borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
+      { label: "MHHW", data: [{ x: H(x0), y: T.st.mhhw }, { x: H(x1), y: T.st.mhhw }], borderColor: css("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
       { label: "Predicted (ft)", data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
       { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] }, options: tO });
   }
@@ -668,7 +673,7 @@ function drawCharts(st, now) {
   c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
     key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
   $("key").innerHTML = key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span><span><i style='border-top:2px solid " + ink + "'></i>Predicted</span>" +
-    (T ? "<span><i style='border-top:2px dashed #e05c2a'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "");
+    (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "");
   var notes = [];
   if (c.note) notes.push(esc(c.note));
   (c.rain_triggers || []).forEach(function (tr) { notes.push("<b>Flooding likely:</b> " + esc(tr.label.toLowerCase()) + " of " + tr.value.toFixed(2) + " in or more" + (tr.high_tide ? (tr.tide_min != null ? " while the " + esc(T ? T.st.name : "Bay") + " tide is at or above " + tr.tide_min.toFixed(2) + " ft NAVD88" : " while the tide is at or above MHHW") : "")); });

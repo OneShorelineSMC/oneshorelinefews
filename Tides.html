@@ -16,11 +16,11 @@
 <style>
   :root {
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #6b7a8c; --line: #e3e8ee;
-    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --fc: #005A70;
+    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75; --fc: #005A70; --fcline: #009E73;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
-      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --fc: #4fc3d9; }
+      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --fc: #4fc3d9; --fcline: #4fc3d9; --mhhw: #9aa8b8; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
@@ -663,12 +663,12 @@ function drawChart(s, i, now, useModel) {
   var lo = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), hi = 2 * Math.ceil((Math.max.apply(null, ys) + 0.3) / 2);
   var narrow = window.innerWidth < 520;
   var data = { datasets: [
-    { label: "MHHW", data: [{ x: 0, y: m }, { x: DAYS * 24, y: m }], borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
+    { label: "MHHW", data: [{ x: 0, y: m }, { x: DAYS * 24, y: m }], borderColor: css("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
     { label: "above", data: above, borderColor: "transparent", backgroundColor: "rgba(192,57,43,0.45)", pointRadius: 0, pointHoverRadius: 0, fill: { target: 0 }, tension: 0.3 },
     { label: "Predicted (ft)", data: tp, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
       segment: { borderColor: function (cx) { return cx.p0.parsed.y > m && cx.p1.parsed.y > m ? "#c0392b" : ink; } }, borderColor: ink },
     { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-    { label: "NOAA forecast (ft)", data: fc, borderColor: css("--fc"), borderWidth: 2.5, pointRadius: 0, tension: 0.2 }
+    { label: "NOAA forecast (ft)", data: fc, borderColor: css("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2 }
   ] };
   var opts = { responsive: true, maintainAspectRatio: false, animation: false,
     interaction: { mode: "nearest", axis: "x", intersect: false },
@@ -689,8 +689,8 @@ function drawChart(s, i, now, useModel) {
   if (D.charts[i]) { D.charts[i].data = data; D.charts[i].options = opts; D.charts[i].update("none"); }
   else D.charts[i] = new Chart($("ch" + i), { type: "line", data: data, options: opts, plugins: [nowLine] });
   $("st" + i).querySelector(".key").innerHTML = '<span><i style="border-top:3px solid #1e88e5"></i>Measured</span>' +
-    (fc.length ? '<span><i style="border-top:3px solid var(--fc)"></i>NOAA forecast</span>' : "") +
-    '<span><i style="border-top:2px solid var(--ink)"></i>Predicted</span><span><i style="border-top:2px dashed #e05c2a"></i>MHHW ' + m.toFixed(2) +
+    (fc.length ? '<span><i style="border-top:3px solid var(--fcline)"></i>NOAA forecast</span>' : "") +
+    '<span><i style="border-top:2px solid var(--ink)"></i>Predicted</span><span><i style="border-top:2px dashed var(--mhhw)"></i>MHHW ' + m.toFixed(2) +
     ' ft</span><span><i class="ab"></i>Above MHHW</span>';
 }
 
