@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NWSAlertsSanMateo</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #212529;
+    --muted: #6c757d;
+    --link: #0d6efd;
+    --rule: #dee2e6;
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161c;
+    --fg: #e6e9ee;
+    --muted: #9aa4b2;
+    --link: #6ea8fe;
+    --rule: #2b323c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  body { padding: 16px 22px; }
+
+  h1 { font-size: 21px; font-weight: 400; margin: 0 0 14px; }
+  h2 { font-size: 18px; font-weight: 400; margin: 0 0 6px; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .status { display: flex; align-items: center; gap: 12px; color: #fff; border-radius: 6px;
+    padding: 10px 16px; margin-bottom: 12px; background: #2e7d32; }
+  .status.warning { background: #b71c1c; }
+  .status.watch, .status.advisory { background: #c77700; }
+  .status.statement { background: #455a75; }
+  .status.unknown { background: #6b7a8c; }
+  .sicon { font-size: 24px; line-height: 1; }
+  .stext { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+  .smain { font-size: 19px; font-weight: bold; letter-spacing: .01em; }
+  .ssub { font-size: 14px; opacity: .92; }
+  .smore { font-size: 13px; background: rgba(255,255,255,.22); border-radius: 12px; padding: 3px 10px; white-space: nowrap; }
+  .smore:empty { display: none; }
+  .signup { font-size: 14px; background: #eef5fd; border-left: 4px solid var(--link);
+    border-radius: 4px; padding: 10px 14px; margin-bottom: 16px; }
+  :root[data-theme="dark"] .signup { background: #1a2433; }
+  .alert { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--rule); }
+  .alert .title { display: inline-block; font-size: 16px; margin-bottom: 2px; }
+  .desc { font-size: 13.5px; margin-top: 4px; }
+  .desc p { margin: 0 0 6px; }
+  .desc .lead { font-weight: 600; }
+  .desc dl { display: grid; grid-template-columns: 9.5em 1fr; gap: 4px 12px; margin: 0; }
+  .desc dt { font-weight: 700; white-space: nowrap; }
+  .desc dd { margin: 0; }
+  @media (max-width: 520px) {
+    .desc dl { grid-template-columns: 1fr; gap: 0; }
+    .desc dd { margin-bottom: 6px; }
+  }
+  .empty, .error, .updated, .loading { color: var(--muted); }
+  .updated { font-size: 11px; }
+
+</style>
+</head>
+<body>
+<div class="status unknown" id="status">
+  <span class="sicon" id="sIcon">…</span>
+  <span class="stext"><span class="smain" id="sMain">Checking NWS alerts…</span><span class="ssub" id="sSub"></span></span>
+  <span class="smore" id="sMore"></span>
+</div>
+<div class="signup">
+  <strong>Get alerts on your phone.</strong>
+  Sign up for <a href="https://www.smcgov.org/dem/smc-alert" target="_blank" rel="noopener">SMC Alert</a>,
+  San Mateo County's free emergency alert system for flood, severe weather, and tsunami warnings,
+  sent by text, email, or phone call.
+</div>
+<main id="content"><div class="loading">Loading…</div></main>
+
+<script>
+/* ================= CONFIG ================= */
+// County FIPS in "SAME" format (0 + state 06 + county 081). Every NWS land alert lists the
+// counties it touches this way, whether it was issued by county or by forecast zone.
+const COUNTY_SAME = "006081";
+const COUNTY_LABEL = "San Mateo County (CAC081) CA";
+const STATE = "CA";
+
+// Marine alerts don't carry county codes. Add marine zone IDs here to include them, e.g.
+//   PZZ545 = Point Reyes to Pigeon Point out to 10 nm
+//   PZZ531 = San Francisco Bay south of the Bay Bridge
+const MARINE_ZONES = [];   // e.g. ["PZZ545", "PZZ531"]
+
+const REFRESH_MINUTES = 3;
+
+// Optional URL params:  ?theme=dark   ?marine=1   ?refresh=5   ?heading=0 (hide top heading)
+const params = new URLSearchParams(location.search);
+if (params.get("theme") === "dark") document.documentElement.dataset.theme = "dark";
+if (params.get("heading") === "0") document.getElementById("heading").remove();
+const includeMarine = params.get("marine") === "1" || MARINE_ZONES.length > 0;
+const marineZones = MARINE_ZONES.length ? MARINE_ZONES : ["PZZ545", "PZZ531"];
+const refreshMs = (Number(params.get("refresh")) || REFRESH_MINUTES) * 60 * 1000;
+/* ========================================== */
+
+const contentEl = document.getElementById("content");
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// "October 11 at 7:19AM PDT"
+function fmt(iso) {
+  if (!iso) return "further notice";
+  const d = new Date(iso);
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles", month: "long", day: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short"
+  }).formatToParts(d).map(p => [p.type, p.value]));
+  return `${parts.month} ${parts.day} at ${parts.hour}:${parts.minute}${parts.dayPeriod} ${parts.timeZoneName}`;
+}
+
+function titleText(p) {
+  return `${p.event} issued ${fmt(p.sent)} until ${fmt(p.ends || p.expires)} by ${p.senderName || "NWS"}`;
+}
+
+// Join NWS line-wrapped text into normal sentences ("low-\nlying" -> "low-lying").
+function unwrap(text) {
+  return String(text || "")
+    .replace(/-\s*\n\s*(?=[a-z])/g, "-")
+    .replace(/\s*\n\s*/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function labelCase(s) {
+  return s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
+}
+
+// Turn NWS description text into readable HTML:
+//   "* WHAT...xyz"  -> labeled row (What | xyz)
+//   "...HEADLINE..." -> bold lead line
+//   anything else    -> paragraph
+function formatDesc(text) {
+  const blocks = String(text || "").split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  // Some alerts arrive with no blank lines; split on "* LABEL..." markers in that case too.
+  const parts = blocks.flatMap(b => b.split(/(?=^\*\s+[A-Z][A-Z /&-]+\.\.\.)/m)).map(b => b.trim()).filter(Boolean);
+
+  let html = "", rows = "";
+  const flushRows = () => { if (rows) { html += `<dl>${rows}</dl>`; rows = ""; } };
+
+  for (const part of parts) {
+    const m = part.match(/^\*\s+([A-Z][A-Z /&-]+?)\.\.\.([\s\S]*)$/);
+    if (m) {
+      rows += `<dt>${esc(labelCase(m[1]))}</dt><dd>${esc(unwrap(m[2]))}</dd>`;
+      continue;
+    }
+    flushRows();
+    const t = unwrap(part);
+    const lead = t.match(/^\.\.\.(.*?)\.\.\.$/);
+    html += lead ? `<p class="lead">${esc(lead[1])}</p>` : `<p>${esc(t)}</p>`;
+  }
+  flushRows();
+  return html;
+}
+
+/* ---------- Official NWS links ----------
+   alerts.weather.gov (the old per-alert pages) was shut down by NWS in Dec 2025.
+   The official replacement is the weather.gov "Hazardous Weather Conditions" page,
+   which needs the NWS forecast zone. We look up San Mateo's zones from the NWS
+   itself (no hard-coded zone numbers), then pick the one each alert covers. */
+const SAMPLE_POINTS = [            // spread across the county: coast, bayside, hills
+  [37.6138, -122.4869],            // Pacifica
+  [37.4636, -122.4286],            // Half Moon Bay
+  [37.2550, -122.3830],            // Pescadero
+  [37.4852, -122.2364],            // Redwood City
+  [37.5630, -122.3255],            // San Mateo
+  [37.6547, -122.4077],            // South San Francisco
+  [37.3190, -122.2740],            // La Honda (Santa Cruz Mtns)
+];
+let smZonesPromise = null;         // Map zoneId -> {lat, lon, fireZone}
+function getSanMateoZones() {
+  if (!smZonesPromise) {
+    smZonesPromise = Promise.allSettled(
+      SAMPLE_POINTS.map(([lat, lon]) => getJSON(`https://api.weather.gov/points/${lat},${lon}`)
+        .then(d => ({ lat, lon, props: d.properties })))
+    ).then(rs => {
+      const zones = new Map();
+      for (const r of rs) {
+        if (r.status !== "fulfilled") continue;
+        const { lat, lon, props } = r.value;
+        const zone = (props.forecastZone || "").split("/").pop();
+        const fire = (props.fireWeatherZone || "").split("/").pop();
+        if (zone && !zones.has(zone)) zones.set(zone, { lat, lon, fire });
+        if (fire && !zones.has(fire)) zones.set(fire, { lat, lon, fire });
+      }
+      if (!zones.size) smZonesPromise = null;   // retry next refresh
+      return zones;
+    });
+  }
+  return smZonesPromise;
+}
+
+function nwsUrl(p, smZones) {
+  const ugcs = p.geocode?.UGC || [];
+  // Prefer a zone this alert covers that is inside San Mateo County.
+  let zone = ugcs.find(u => smZones.has(u));
+  let info = zone ? smZones.get(zone) : null;
+  if (!zone) {
+    // Fall back to any San Mateo zone (county-coded alerts), else the alert's first zone.
+    const first = smZones.entries().next().value;
+    if (first && ugcs.includes("CAC081")) [zone, info] = first;
+    else zone = ugcs[0] || "";
+  }
+  const q = new URLSearchParams({
+    warnzone: zone,
+    warncounty: "CAC081",
+    local_place1: "San Mateo County CA",
+    product1: p.event,
+  });
+  if (info?.fire) q.set("firewxzone", info.fire);
+  if (info) { q.set("lat", info.lat); q.set("lon", info.lon); }
+  return `https://forecast.weather.gov/showsigwx.php?${q.toString()}`;
+}
+
+async function getJSON(url) {
+  const r = await fetch(url, { headers: { Accept: "application/geo+json" }, cache: "no-store" });
+  if (!r.ok) throw new Error(`NWS API returned ${r.status}`);
+  return r.json();
+}
+
+const RANK = e => /warning|emergency/i.test(e) ? 0 : /watch/i.test(e) ? 1 : /advisory/i.test(e) ? 2 : 3;
+const LEVEL = ["warning", "watch", "advisory", "statement"];
+
+// Color-coded status banner (same as the Raspberry Pi kiosk): red = warning, amber = watch/advisory.
+function setStatus(alerts) {
+  const bar = document.getElementById("status");
+  const icon = document.getElementById("sIcon"), main = document.getElementById("sMain"),
+        sub = document.getElementById("sSub"), more = document.getElementById("sMore");
+  if (alerts === null) {               // couldn't load
+    if (bar.className.includes("unknown")) { main.textContent = "NWS alerts unavailable"; sub.textContent = "Retrying…"; icon.textContent = "?"; }
+    return;
+  }
+  if (!alerts.length) {
+    bar.className = "status"; icon.textContent = "✓";
+    main.textContent = "No active NWS alerts"; sub.textContent = "San Mateo County"; more.textContent = "";
+    return;
+  }
+  const top = alerts[0], level = LEVEL[RANK(top.event)];
+  const until = top.ends || top.expires;
+  bar.className = "status " + level;
+  icon.textContent = level === "statement" ? "ℹ" : "⚠";
+  main.textContent = top.event.toUpperCase();
+  sub.textContent = until
+    ? "until " + new Date(until).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" })
+    : "until further notice";
+  more.textContent = alerts.length > 1 ? "+" + (alerts.length - 1) + " more below" : "";
+}
+
+/* ---------- List view ---------- */
+async function loadList() {
+  try {
+    const requests = [getJSON(`https://api.weather.gov/alerts/active?area=${STATE}`)];
+    if (includeMarine) requests.push(getJSON(`https://api.weather.gov/alerts/active?zone=${marineZones.join(",")}`));
+    const [results, smZones] = await Promise.all([Promise.all(requests), getSanMateoZones()]);
+
+    const seen = new Map();
+    for (const f of results[0].features || []) {
+      if ((f.properties?.geocode?.SAME || []).includes(COUNTY_SAME)) seen.set(f.properties.id, f.properties);
+    }
+    if (results[1]) for (const f of results[1].features || []) seen.set(f.properties.id, f.properties);
+
+    const alerts = [...seen.values()]
+      .filter(p => p.status === "Actual" && p.messageType !== "Cancel")
+      .sort((a, b) => RANK(a.event) - RANK(b.event) || new Date(b.sent) - new Date(a.sent));
+
+    setStatus(alerts);
+    if (!alerts.length) {
+      contentEl.innerHTML = `<div class="empty">There are no active watches, warnings, or advisories for San Mateo County.</div>`;
+      return;
+    }
+
+    contentEl.innerHTML = alerts.map(p => `
+      <div class="alert">
+        <a class="title" href="${esc(nwsUrl(p, smZones))}" target="_blank" rel="noopener">${esc(titleText(p))}</a>
+        <div class="desc">${formatDesc(p.description)}</div>
+      </div>`).join("");
+  } catch (err) {
+    setStatus(null);
+    // Keep the last good list on screen; only show the error if nothing has loaded yet.
+    if (!contentEl.querySelector(".alert, .empty")) {
+      contentEl.innerHTML = `<div class="error">Couldn't reach the NWS alert service (${esc(err.message)}). Retrying automatically.</div>`;
+    }
+  }
+}
+
+loadList();
+setInterval(loadList, refreshMs);
+</script>
+</body>
+</html>
