@@ -14,7 +14,7 @@ Options you can add to the end of the URL:
 | Option      | Effect                                                    |
 |-------------|-----------------------------------------------------------|
 | `?theme=dark` | Dark background – easier on the eyes in a dim EOC        |
-| `?cursor=1`   | Show the mouse pointer (handy when previewing on a computer) |
+| `?cursor=1`   | Always show the mouse pointer. (Without it the pointer is hidden for the touchscreen, but appears whenever a mouse moves and hides after 3 seconds.) |
 | `?zoom=0`     | Use the older picture scaling instead of CSS zoom (only if a screen looks wrong) |
 | `?tab=creek`  | Start on the Creeks tab (add `&creek=belmont` etc. to choose the creek) |
 | `?rotate=30`  | Switch between Bay Tides and Creeks every 30 seconds |
@@ -24,7 +24,7 @@ Options you can add to the end of the URL:
 
 ## Preview on a computer first
 
-Open the kiosk URL with `?cursor=1` in any browser. The layout scales to fit the window, so it looks the
+Open the kiosk URL in any browser; the mouse pointer appears when you move the mouse. The layout scales to fit the window, so it looks the
 same as on the 7" screen. Click the alert bar or a station panel to see the touch screens.
 
 ## What you need

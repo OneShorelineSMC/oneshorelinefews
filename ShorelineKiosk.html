@@ -28,7 +28,9 @@
   }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg);
     font-family: Arial, Helvetica, sans-serif; color: var(--ink); cursor: none; }
-  body.cursor { cursor: default; }
+  body.cursor, body.mouse { cursor: default; }
+  body.cursor .tab, body.mouse .tab { cursor: pointer; }
+  #stage { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
   #stage { position: absolute; left: 0; top: 0; width: 800px; height: 480px; transform-origin: 0 0; }
 
   /* Title bar (every tab) */
@@ -109,6 +111,7 @@
   .tab { font-size: 15px; font-weight: bold; padding: 8px 10px; border-radius: 8px; color: var(--ink);
     background: var(--panel); border: 2px solid var(--line); white-space: nowrap; }
   .tab.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  @media (hover: hover) { body.mouse .tab:not(.on):hover, body.cursor .tab:not(.on):hover { border-color: var(--muted); } }
   #footright { text-align: right; line-height: 1.25; }
 
   /* Creeks tab */
@@ -399,12 +402,23 @@ var PIXEL_SHIFT_PX = 2;            // ...by up to this many pixels
 var ROTATE_SECONDS = 0;            // 0 = stay on the chosen tab; e.g. 30 = switch tabs every 30 seconds
 var TAB_RETURN_MIN = 0;            // 0 = stay; e.g. 10 = return to Bay Tides after 10 min on the creek tab
 
-// URL options: ?theme=dark  ?cursor=1 (show mouse pointer, handy when previewing on a computer)
+// URL options: ?theme=dark  ?cursor=1 (always show the mouse pointer; otherwise it shows while a mouse moves)
 //              ?tab=creek (start on the Creeks tab; also tab=map, tab=about, tab=disclaimer)
 //              ?creek=atherton (which creek the Creeks tab shows first)  ?rotate=30 (switch tabs every 30 s)
 var params = new URLSearchParams(location.search);
 if (params.get("theme") === "dark") document.documentElement.dataset.theme = "dark";
 if (params.get("cursor") === "1") document.body.classList.add("cursor");
+// The pointer is hidden for the touchscreen, but shows while a real mouse is moving (e.g. viewing on a computer)
+// and hides again after 3 seconds without movement. Touches don't show it.
+(function () {
+  var t = null;
+  window.addEventListener("pointermove", function (e) {
+    if (e.pointerType !== "mouse") return;
+    document.body.classList.add("mouse");
+    clearTimeout(t);
+    t = setTimeout(function () { document.body.classList.remove("mouse"); }, 3000);
+  }, { passive: true });
+})();
 if (params.get("rotate")) ROTATE_SECONDS = Number(params.get("rotate")) || 0;
 /* ================================================== */
 
