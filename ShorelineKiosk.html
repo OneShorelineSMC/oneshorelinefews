@@ -83,7 +83,7 @@
   .tsec { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; height: 15px; white-space: nowrap; }
   .tsec b { color: var(--ink); font-size: 13px; }
   .tsec .tap { font-size: 11.5px; }
-  #tdays { display: grid; grid-template-columns: repeat(7, 1fr); flex: none; }
+  #tdays { display: grid; grid-template-columns: repeat(7, 1fr); flex: none; margin-left: 30px; }   /* 30px = graph's y-axis */
   .tday { border-top: 4px solid var(--line); padding: 4px 4px 5px; text-align: center; border-right: 1px solid var(--line); min-width: 0; }
   .tday:last-child { border-right: 0; }
   .tday .dn { font-size: 13px; font-weight: bold; white-space: nowrap; }
@@ -106,17 +106,16 @@
   #tkey .tap { margin-left: auto; }
 
   /* Bottom: NWS coastal flood information */
-  #tnws { flex: none; display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 5px 12px;
-    background: rgba(46,125,50,.09); border-left: 5px solid var(--green); cursor: pointer; min-height: 40px; box-sizing: border-box; }
+  #tnws { flex: none; display: flex; align-items: center; gap: 8px; border-radius: 8px; padding: 3px 12px;
+    background: rgba(46,125,50,.09); border-left: 5px solid var(--green); cursor: pointer; min-height: 28px; box-sizing: border-box; }
   #tnws.alert { background: rgba(217,130,0,.12); border-left-color: #c77700; }
   #tnws.warn { background: rgba(192,57,43,.11); border-left-color: #b71c1c; }
   #tnws.afd { background: rgba(10,85,135,.08); border-left-color: #0A5587; }
   #tnws.unknown { background: rgba(107,122,140,.10); border-left-color: #6b7a8c; }
-  #tnws .ni { font-size: 18px; line-height: 1; }
-  #tnws .nt { flex: 1; min-width: 0; }
-  #tnws .nm { font-size: 14.5px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #tnws .ns { font-size: 12.5px; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  #stage.creekalert #tnws .ns { -webkit-line-clamp: 1; }
+  #tnws .ni { font-size: 15px; line-height: 1; }
+  #tnws .nt { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+  #tnws .nm { flex: none; max-width: 60%; font-size: 13.5px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
+  #tnws .ns { flex: 1; min-width: 0; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
   #tnws .nmore { font-size: 12px; color: var(--muted); white-space: nowrap; }
   /* King Tides line (County King Tide dates), under the NWS row; shown only around King Tide windows */
   #tseason { flex: none; display: flex; align-items: center; gap: 6px; height: 18px; font-size: 13px; white-space: nowrap; cursor: pointer; }
@@ -768,7 +767,13 @@ var nowLinePlugin = {
     if (x == null || x < xs.min || x > xs.max) return;
     var px = xs.getPixelForValue(x), ctx = c.ctx;
     ctx.save(); ctx.strokeStyle = "#8a96a6"; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(px, ys.top); ctx.lineTo(px, ys.bottom); ctx.stroke(); ctx.restore();
+    ctx.beginPath(); ctx.moveTo(px, ys.top); ctx.lineTo(px, ys.bottom); ctx.stroke();
+    if (c.options.plugins.nowLine.label) {   // a small "Now" tag at the top of the line
+      ctx.font = "bold 10.5px Arial, sans-serif"; var tw = ctx.measureText("Now").width;
+      ctx.fillStyle = "#6b7a8c"; ctx.fillRect(px - tw / 2 - 4, ys.top, tw + 8, 14);
+      ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("Now", px, ys.top + 7.5);
+    }
+    ctx.restore();
   }
 };
 var TC = { chart: null, bars: null };
@@ -799,12 +804,13 @@ function drawTideChart(s, now) {
   var opts = {
     responsive: true, maintainAspectRatio: false, animation: false, events: [],
     layout: { padding: 0 },
-    plugins: { legend: { display: false }, tooltip: { enabled: false }, nowLine: { x: hrs(now) } },
+    plugins: { legend: { display: false }, tooltip: { enabled: false }, nowLine: { x: hrs(now), label: true } },
     scales: {
       x: { type: "linear", min: 0, max: DAYS * 24, ticks: { display: false, stepSize: 24 }, border: { display: false },
         grid: { color: function (c) { return c.tick && c.tick.value % 24 === 0 && c.tick.value > 0 && c.tick.value < DAYS * 24 ? line : "rgba(0,0,0,0)"; }, drawTicks: false } },
-      y: { min: yMin, max: yMax, border: { display: false },
-        ticks: { display: false, stepSize: 2 },
+      y: { min: yMin, max: yMax, border: { display: false }, afterFit: function (ax) { ax.width = 30; },   // matches #tdays margin
+        ticks: { stepSize: 2, autoSkip: false, color: muted, font: { size: 10.5 }, padding: 3,
+          callback: function (v) { return v % 4 === 0 ? v + " ft" : ""; } },   // label every 4 ft, gridline every 2
         grid: { color: line, drawTicks: false } }
     }
   };
@@ -996,22 +1002,22 @@ function renderNws() {
     $t("tnwsi").textContent = "⚠";
     $t("tnwsm").textContent = "Also: " + top.event + " · " + untilText(top.ends || top.expires) + (ca.length > 1 ? " (+" + (ca.length - 1) + " more)" : "");
     $t("tnwss").textContent = what;
-    $t("tnwsmore").textContent = "Tap for details ›";
+    $t("tnwsmore").textContent = "Tap ›";
   } else if (afd && afd.length) {
     box.className = "afd"; $t("tnwsi").textContent = "ℹ";
-    $t("tnwsm").textContent = "What NWS forecasters are saying about tides" + (A.list && !all.length ? " · no coastal flood alerts" : "");
+    $t("tnwsm").textContent = "NWS forecasters on tides:";
     $t("tnwss").textContent = afd.slice(0, 2).join(" ");
     $t("tnwsmore").textContent = "Tap ›";
   } else if (all.length) {   // the coastal alert is in the top bar and the discussion adds nothing
     var t0 = all[0];
     box.className = "afd"; $t("tnwsi").textContent = "ℹ";
-    $t("tnwsm").textContent = "What to expect (NWS)";
+    $t("tnwsm").textContent = "What to expect (NWS):";
     $t("tnwss").textContent = descField(t0.description, "WHAT") || descField(t0.description, "IMPACTS") || "See the alert bar above for details.";
     $t("tnwsmore").textContent = "Tap ›";
   } else if (A.list != null) {
     box.className = ""; $t("tnwsi").textContent = "✓";
-    $t("tnwsm").textContent = "No NWS coastal flood alerts for San Mateo County";
-    $t("tnwss").textContent = afd ? "NWS forecasters aren't currently mentioning high tides or coastal flooding." : "";
+    $t("tnwsm").textContent = "No NWS coastal flood alerts";
+    $t("tnwss").textContent = afd ? "and forecasters aren't mentioning high tides." : "";
     $t("tnwsmore").textContent = "";
   } else {
     box.className = "unknown"; $t("tnwsi").textContent = "?";

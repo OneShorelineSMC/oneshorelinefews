@@ -180,15 +180,14 @@ the week next, details behind a tap.
   than predicted" summary and the model's accuracy over the last 24 hours. Tap the rest of the band for the times.
 - **Next 7 days:** one card per day with that day's highest tide and time; red above MHHW. Cards marked "fcst" use the
   NOAA model forecast; later days use the prediction. The graph under the cards lines up with them and has three
-  lines: measured (blue), NOAA forecast (teal) and predicted (dark). Tap for the forecast and predicted times above
+  lines: measured (blue), NOAA forecast (teal) and predicted (dark), heights in ft NAVD88 on the left, and a "Now" tag on the current time. Tap for the forecast and predicted times above
   MHHW and the "if the Bay stays high" scenario for the days after the forecast ends.
 - **NOAA model forecast:** NOAA's San Francisco Bay Operational Forecast System publishes a water-level forecast for
   the Redwood City gauge that includes wind, air pressure and river flow (Tides & Currents product
   `ofs_water_level`, requested in ft NAVD88, updated 4 times a day, about 2 days ahead). It is model guidance, not an
   official forecast; NWS advisories take precedence. If it is missing, older than 12 hours or doesn't reach 6 hours
   ahead, the tab uses the predictions alone.
-- **NWS row** (bottom): never repeats the alert already in the top alert bar. It shows "What NWS forecasters are
-  saying about tides": the lines about tides or coastal flooding from the NWS San Francisco Bay Area office's latest
+- **NWS row** (bottom): never repeats the alert already in the top alert bar. It shows "NWS forecasters on tides:" the lines about tides or coastal flooding from the NWS San Francisco Bay Area office's latest
   forecast discussion (api.weather.gov, office MTR; ignored if older than 24 hours; the issue time is on the tap
   screen), or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood /
   Storm Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
