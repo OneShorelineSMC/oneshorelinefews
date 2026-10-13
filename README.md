@@ -33,6 +33,12 @@ described under *Creek data job*.
 |------|---------|
 | `index.html` | Landing page at `https://fews.oneshoreline.org/`: shows live NWS, creek and network status, and links to the creek page, the sensor map and OneRain, plus SMC Alert sign-up, contact info and the disclaimer. |
 | `CNAME` | Tells GitHub Pages the site's address (`fews.oneshoreline.org`). |
+| `img/` | OneShoreline logo and icons used by the pages: `oneshoreline-logo.png` (color, for light backgrounds), `oneshoreline-logo-white.png` (white and green, for the blue title bars and dark mode), `oneshoreline-mark.png` / `oneshoreline-mark-white.png` (the round mark alone), and the browser-tab and home-screen icons (`icon-32.png`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`). Keep the folder name and file names; the pages link to them. |
+
+**Brand colors.** Title bars and buttons use OneShoreline Blue `#0A5587`; headings use Dark Navy `#003B5C`.
+OneShoreline Green `#3AAE2A` appears in the logo only (it's too light for white text). The flood-status colors
+(green Normal, yellow Monitoring, orange Watch, red Warning, purple Above Warning) are kept separate from the brand
+colors on purpose, so status always reads the same way.
 
 ### Dashboard widgets (used in OneRain)
 

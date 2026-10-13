@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#005085">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <title>OneShoreline Sensor Map</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
@@ -13,7 +16,7 @@
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root {
-    --bg: #f0f4f8; --card: #ffffff; --ink: #1a3a5c; --muted: #66768a; --line: #e3e8ee; --brand: #005085;
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587;
     --ok: #2e7d32; --l1: #e6c200; --l2: #e07b00; --l3: #c62828; --off: #8a96a3; --rain: #1e6fd9;
   }
   @media (prefers-color-scheme: dark) {
@@ -27,6 +30,8 @@
   header { background: var(--brand); color: #fff; padding: calc(8px + env(safe-area-inset-top)) 14px 8px; flex: none; }
   .hrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   h1 { font-size: 18px; margin: 0; }
+  .hmark { width: 34px; height: 34px; flex: none; }
+  .htitle { display: flex; align-items: center; gap: 10px; min-width: 0; }
   /* Bottom nav (same as the creek page) */
   nav { flex: none; display: flex; background: var(--card); border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom); z-index: 1500; }
@@ -114,9 +119,9 @@
 <body>
 <header>
   <div class="hrow">
-    <div>
-      <h1>OneShoreline Sensor Map</h1>
-      <div id="sub">Loading…</div>
+    <div class="htitle"><img class="hmark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="34" height="34"><div>
+      <h1>Sensor Map</h1>
+      <div id="sub">Loading…</div></div>
     </div>
     <div class="seg"><button data-view="map" class="on">Map</button><button data-view="list">List</button></div>
   </div>

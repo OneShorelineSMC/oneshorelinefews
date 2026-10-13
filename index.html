@@ -3,12 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#005085">
+<meta name="theme-color" content="#0A5587">
 <meta name="description" content="Real-time creek, rain and tide information from OneShoreline's flood early warning system in San Mateo County.">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <title>OneShoreline Flood Early Warning</title>
 <style>
   :root {
-    --bg: #f0f4f8; --card: #ffffff; --ink: #1a3a5c; --muted: #66768a; --line: #e3e8ee; --brand: #005085;
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587;
     --ok: #2e7d32; --amber: #c77700; --red: #b71c1c; --gray: #6b7a8c;
   }
   @media (prefers-color-scheme: dark) {
@@ -19,6 +22,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; line-height: 1.45; }
   header { background: var(--brand); color: #fff; padding: calc(22px + env(safe-area-inset-top)) 16px 22px; }
   .wrap { max-width: 860px; margin: 0 auto; }
+  header .logo { display: block; height: 66px; width: auto; margin: 0 0 14px; }
   header .org { font-size: 14px; opacity: .85; letter-spacing: .02em; }
   h1 { font-size: 28px; margin: 2px 0 6px; line-height: 1.2; }
   header p { margin: 0; opacity: .92; font-size: 16px; max-width: 640px; }
@@ -53,13 +57,20 @@
   .contact { font-size: 14.5px; }
   .contact a { color: inherit; }
   .fine { font-size: 13px; color: var(--muted); }
+  /* Ownership line */
+  .owner { text-align: center; font-size: 12.5px; color: var(--muted); margin: 18px 0 10px; line-height: 1.45; }
+  .owner img { display: block; margin: 0 auto 6px; height: 37px; width: auto; }
+  .owner a { color: inherit; }
+  footer .owner { margin: 0 0 12px; text-align: left; }
+  footer .owner img { margin: 0 0 6px; }
   footer { border-top: 1px solid var(--line); margin-top: 26px; padding-top: 14px; }
 </style>
 </head>
 <body>
 <header>
   <div class="wrap">
-    <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div>
+    <img class="logo" src="img/oneshoreline-logo-white.png" alt="OneShoreline" width="288" height="66">
+    <div class="org">San Mateo County Flood and Sea Level Rise Resiliency District</div>
     <h1>Flood Early Warning</h1>
     <p>Real-time creek levels, rainfall and San Francisco Bay tides from OneShoreline's monitoring network.</p>
   </div>
@@ -109,6 +120,11 @@
   </div>
 
   <footer>
+    <div class="owner">
+      <picture><source srcset="img/oneshoreline-logo-white.png" media="(prefers-color-scheme: dark)"><img src="img/oneshoreline-logo.png" alt="OneShoreline" width="160" height="37"></picture>
+      <div>Operated by OneShoreline, the San Mateo County Flood and Sea Level Rise Resiliency District ·
+        <a href="https://www.oneshoreline.org" target="_blank" rel="noopener">oneshoreline.org</a></div>
+    </div>
     <p class="fine"><b>Disclaimer:</b> Data provided for informational purposes only; OneShoreline is not liable for data errors or mis-interpretation of data by users of this site. Thresholds shown are approximate and will be updated as more information about the hydrologic response of the watershed is gleaned from the monitoring data. Actual flood conditions may vary based on channel blockages, sensor errors, or other complications.</p>
     <p class="fine">Data: OneShoreline Early Warning System (OneRain), National Weather Service, NOAA Tides &amp; Currents.
       <a href="ShorelineKiosk.html" style="color:inherit">Office display</a></p>

@@ -3,16 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1a3a5c">
+<meta name="theme-color" content="#0A5587">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bay Tides">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <title>Bay Tides – OneShoreline</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
   integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root {
-    --bg: #f0f4f8; --card: #ffffff; --ink: #1a3a5c; --text: #22303f; --muted: #6b7a8c; --line: #e3e8ee;
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #6b7a8c; --line: #e3e8ee;
     --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05);
   }
   @media (prefers-color-scheme: dark) {
@@ -26,10 +29,16 @@
   a { color: inherit; }
 
   /* Title bar */
-  header { background: #1a3a5c; color: #fff; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; }
+  header { background: #0A5587; color: #fff; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    display: flex; align-items: center; gap: 11px; }
+  header .hmark { width: 38px; height: 38px; flex: none; }
   header h1 { margin: 0; font-size: 19px; }
   header .sub { font-size: 12.5px; opacity: .8; }
 
+  /* Ownership line */
+  .owner { text-align: center; font-size: 12.5px; color: var(--muted); margin: 18px 0 10px; line-height: 1.45; }
+  .owner img { display: block; margin: 0 auto 6px; height: 37px; width: auto; }
+  .owner a { color: inherit; }
   /* NWS alert banner */
   #alert { color: #fff; background: #6b7a8c; padding: 10px 16px; display: flex; gap: 10px; align-items: center; cursor: pointer; }
   #alert.none { background: #2e7d32; } #alert.warning { background: #b71c1c; }
@@ -123,7 +132,7 @@
     border-radius: 10px; padding: 12px 14px; margin-top: 8px; font-size: 15.5px; color: var(--ink); }
   .btn .i { font-size: 20px; width: 26px; text-align: center; }
   .btn small { display: block; color: var(--muted); font-size: 12.5px; }
-  .btn.primary { background: #1a3a5c; color: #fff; } .btn.primary small { color: rgba(255,255,255,.8); }
+  .btn.primary { background: #0A5587; color: #fff; } .btn.primary small { color: rgba(255,255,255,.8); }
   .addr { font-size: 13.5px; color: var(--muted); margin-top: 10px; }
 
   /* Bottom tab bar */
@@ -160,14 +169,17 @@
   .explain p { font-size: 14px; line-height: 1.45; margin: 0 0 8px; }
   /* Two stations side by side on wide screens; ?embed=1 hides the page chrome for dashboards */
   @media (min-width: 760px) { #cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } #cards .card { margin-bottom: 0; } main { max-width: 1100px; } }
-  body.embed header, body.embed #alert, body.embed #alertList, body.embed nav, body.embed .explain, body.embed #intro { display: none; }
+  body.embed header, body.embed #alert, body.embed #alertList, body.embed nav, body.embed .explain, body.embed #intro, body.embed .owner { display: none; }
   body.embed { padding-bottom: 0; }
 </style>
 </head>
 <body>
 <header>
+  <img class="hmark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="38" height="38">
+  <div>
   <h1>Bay Tides</h1>
   <div class="sub">OneShoreline Early Warning · San Francisco Bay, San Mateo County</div>
+  </div>
 </header>
 
 <div id="alert" class="unknown" role="button" aria-expanded="false">
@@ -191,6 +203,11 @@
       For informational purposes only. <a href="Creeks.html#about">Disclaimer</a> · In an emergency, call 911.</p>
   </div>
   <div class="note" id="updated">Loading…</div>
+<div class="owner">
+  <picture><source srcset="img/oneshoreline-logo-white.png" media="(prefers-color-scheme: dark)"><img src="img/oneshoreline-logo.png" alt="OneShoreline" width="160" height="37"></picture>
+  <div>Operated by OneShoreline, the San Mateo County Flood and Sea Level Rise Resiliency District ·
+    <a href="https://www.oneshoreline.org" target="_blank" rel="noopener">oneshoreline.org</a></div>
+</div>
 </main>
 
 <nav>

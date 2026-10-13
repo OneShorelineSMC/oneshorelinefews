@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
 <title>Shoreline Kiosk – San Mateo County</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
   integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
@@ -19,7 +20,7 @@
 <style>
   /* Designed at exactly 800x480 and scaled to fit whatever screen it's on. */
   :root {
-    --bg: #f0f4f8; --panel: #ffffff; --ink: #1a3a5c; --muted: #6b7a8c; --line: #e3e8ee;
+    --bg: #f0f4f8; --panel: #ffffff; --ink: #003B5C; --muted: #6b7a8c; --line: #e3e8ee;
     --red: #c0392b; --amber: #d98200; --green: #2e7d32; --blue: #1e6fd9;
   }
   :root[data-theme="dark"] {
@@ -35,8 +36,9 @@
 
   /* Title bar (every tab) */
   #brand { position: absolute; left: 0; top: 0; width: 800px; height: 20px; box-sizing: border-box; padding: 0 16px;
-    display: flex; align-items: center; gap: 8px; background: #005085; color: #fff; font-size: 12.5px; letter-spacing: .02em; white-space: nowrap; }
+    display: flex; align-items: center; gap: 8px; background: #0A5587; color: #fff; font-size: 12.5px; letter-spacing: .02em; white-space: nowrap; }
   #brand b { font-weight: bold; letter-spacing: .04em; }
+  #brand img { width: 15px; height: 15px; margin-right: 1px; }
   #brand .sep { opacity: .55; }
   /* Alert bar */
   #alertbar { position: absolute; left: 0; top: 20px; width: 800px; height: 48px; box-sizing: border-box;
@@ -165,7 +167,9 @@
   #aboutText .emerg { font-weight: bold; color: var(--red); }
   #aboutContact { width: 330px; flex: none; border-left: 1px solid var(--line); padding-left: 18px;
     display: flex; flex-direction: column; }
-  #aboutContact .org { font-size: 20px; font-weight: bold; }
+  #aboutContact .org img { display: block; height: 52px; width: auto; margin: 0 0 4px -2px; }
+  #aboutContact .org .dk, :root[data-theme="dark"] #aboutContact .org .lt { display: none; }
+  :root[data-theme="dark"] #aboutContact .org .dk { display: block; }
   #aboutContact .orgsub { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
   #aboutContact .line { font-size: 15px; margin: 2px 0; }
   #aboutContact .big { font-size: 19px; font-weight: bold; }
@@ -279,7 +283,7 @@
 </head>
 <body>
 <div id="stage">
-  <div id="brand"><b>FLOOD EARLY WARNING SYSTEM</b><span class="sep">|</span><span>OneShoreline</span><span class="sep">|</span><span>San Mateo County</span></div>
+  <div id="brand"><img src="img/oneshoreline-mark-white.png" alt=""><b>FLOOD EARLY WARNING SYSTEM</b><span class="sep">|</span><span>OneShoreline</span><span class="sep">|</span><span>San Mateo County</span></div>
   <div id="alertbar" class="unknown">
     <div id="alertIcon">…</div>
     <div id="alertText">
@@ -319,7 +323,7 @@
         System (OneRain). Predicted tides do not include storm surge. Data refreshes automatically.</p>
     </div>
     <div id="aboutContact">
-      <div class="org">OneShoreline</div>
+      <div class="org"><img class="lt" src="img/oneshoreline-logo.png" alt="OneShoreline" width="227" height="52"><img class="dk" src="img/oneshoreline-logo-white.png" alt="OneShoreline" width="227" height="52"></div>
       <div class="orgsub">San Mateo County Flood and Sea Level Rise Resiliency District</div>
       <div class="line big">(650) 844-8310</div>
       <div class="line">info@oneshoreline.org</div>
