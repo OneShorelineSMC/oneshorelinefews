@@ -181,6 +181,15 @@ Redwood City only (NOAA 9414523, ft NAVD88). Three parts:
   or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood / Storm
   Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
 
+- **Tide season line** (under the NWS row): San Mateo County Emergency Management's tide days of concern for
+  Oct 2026 – Apr 2027 (`data/tide_days_lookup_2026-27.json`). It shows today's category or King Tide window
+  ("King Tide today", "King Tide window now", "Elevated tide today"), otherwise the next day of concern within 7
+  days ("Elevated tide Sun Oct 25 · in 4 days", "King Tide window starts Sat Nov 21"), otherwise "No tide days of
+  concern in the next 7 days". It sits below the NWS row and never replaces it. Dates and labels only: the County's
+  heights are MLLW at the San Francisco gauge, not NAVD88 at Redwood City. The County's list is for San Francisco;
+  Redwood City tides usually run higher, so the day cards can show red on a day the County doesn't list. "Today" is
+  the Pacific-time date; the line disappears after Apr 30, 2027. Tap it for the windows and the next days of concern.
+
 ## Title bar
 
 A slim OneShoreline-blue bar across the top of every tab reads **FLOOD EARLY WARNING SYSTEM | OneShoreline |
@@ -293,6 +302,8 @@ Near the top of the `<script>` section in `ShorelineKiosk.html`:
 | `OFFSET_HIGH_FT`      | 0.5     | ...and this big is shown in red                 |
 | `NWS_OFFICE`          | MTR     | NWS office whose forecast discussion is checked for tide notes |
 | `AFD_EVERY_MIN`       | 30      | How often the forecast discussion is checked    |
+| `TIDE_DAYS_URL`       | data/tide_days_lookup_2026-27.json | County tide days of concern for the Tide season line |
+| `TIDE_DAYS_EVERY_HOURS` | 6     | How often that file is re-read                  |
 | `DAYS`                | 7       | Days of predicted tides                        |
 | `STALE_AFTER_MIN`     | 90      | When the "out of date" warning appears         |
 | `DETAIL_TIMEOUT_SEC`  | 45      | When detail screens close on their own         |

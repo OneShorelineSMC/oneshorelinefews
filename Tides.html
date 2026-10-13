@@ -171,6 +171,39 @@
   @media (min-width: 760px) { #cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } #cards .card { margin-bottom: 0; } main { max-width: 1100px; } }
   body.embed header, body.embed #alert, body.embed #alertList, body.embed nav, body.embed .explain, body.embed #intro, body.embed .owner { display: none; }
   body.embed { padding-bottom: 0; }
+
+  /* Tide season (County "tide days of concern"): status line and season calendar */
+  :root { --king: #6A3D8F; --elev: #005A70; --elevbg: rgba(0,90,112,.16); }
+  @media (prefers-color-scheme: dark) { :root { --king: #9b72c4; --elev: #6fd0e3; --elevbg: rgba(111,208,227,.16); } }
+  #season { display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer; }
+  #season.hide, #calcard.hide { display: none; }
+  #season .chip { flex: none; font-size: 11px; font-weight: 700; color: #fff; background: #6b7a8c; border-radius: 5px; padding: 3px 7px; letter-spacing: .03em; }
+  #season.king .chip { background: #6A3D8F; } #season.elev .chip { background: #005A70; }
+  #season .st { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.3; }
+  #season .st b { color: var(--ink); }
+  #season .st .src { display: block; font-size: 12px; color: var(--muted); }
+  #season .go { color: var(--muted); font-size: 18px; }
+  #calcard h2 { font-size: 17px; margin: 0 0 2px; color: var(--ink); }
+  .ckey { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin: 6px 0 10px; }
+  .ckey i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; }
+  .months { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 16px; }
+  .mon h3 { margin: 0 0 4px; font-size: 13.5px; color: var(--ink); }
+  .mgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .mgrid .wd { font-size: 10.5px; color: var(--muted); text-align: center; padding-bottom: 2px; }
+  .mgrid .d { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 4px;
+    color: var(--text); cursor: pointer; font-variant-numeric: tabular-nums; }
+  .mgrid .d.e { background: var(--elevbg); color: var(--elev); font-weight: 700; }
+  .mgrid .d.k { background: var(--king); color: #fff; font-weight: 700; }
+  .mgrid .d.w { box-shadow: inset 0 0 0 2px var(--king); }
+  .mgrid .d.k.w { box-shadow: none; }
+  .mgrid .d.past { opacity: .4; }
+  .mgrid .d.today { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .mgrid .d.sel { outline: 2px solid #e69f00; outline-offset: 1px; }
+  #calsel { min-height: 20px; font-size: 14px; margin-top: 10px; color: var(--ink); }
+  .wlist { font-size: 14px; margin: 10px 0 0; padding: 0; list-style: none; }
+  .wlist li { padding: 5px 0; border-top: 1px solid var(--line); }
+  .wlist b { color: var(--king); }
+  body.embed #calcard, body.embed #season .src { display: none; }
 </style>
 </head>
 <body>
@@ -192,8 +225,20 @@
 <main>
   <div class="intro" id="intro">Measured and predicted Bay water levels at the NOAA tide gauges in Redwood City and Alameda, and the
     times high tides are predicted to rise above MHHW in the next 7 days.</div>
+  <div class="card hide" id="season" role="button"><span class="chip">TIDE SEASON</span>
+    <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src">San Mateo County outlook (San Francisco gauge) · see calendar</span></span><span class="go">›</span></div>
   <div id="cards"></div>
   <div style="height:12px"></div>
+  <div class="card hide" id="calcard">
+    <h2>Tide season, Oct 2026 – Apr 2027</h2>
+    <div class="lbl">Days of concern from San Mateo County Emergency Management. Tap a day.</div>
+    <div class="ckey"><span><i style="background:var(--king)"></i>King Tide</span><span><i style="background:var(--elevbg);box-shadow:inset 0 0 0 1px var(--elev)"></i>Elevated tide</span>
+      <span><i style="box-shadow:inset 0 0 0 2px var(--king)"></i>King Tide window</span><span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span></div>
+    <div class="months" id="months"></div>
+    <div id="calsel"></div>
+    <ul class="wlist" id="wlist"></ul>
+    <p class="lbl" id="calsrc" style="margin:10px 0 0;line-height:1.4"></p>
+  </div>
   <div class="card explain">
     <p><b>MHHW</b> (Mean Higher High Water) is the average height of the highest tide each day. Tides above it reach farther
       up shorelines, marshes and low-lying areas than usual.</p>
@@ -305,6 +350,7 @@ var COUNTY_SAME = "006081";        // San Mateo County, for NWS alerts
 var HISTORY_HOURS = 48;            // measured water level shown before "now"
 var DAYS = 7;                      // days of predictions
 var SURGE_ALERT_FT = 0.5;          // measured this far above predicted is shown in red
+var TIDE_DAYS_URL = "data/tide_days_lookup_2026-27.json";   // County tide days of concern (dates and labels only)
 var EMBED = /[?&]embed=1\b/.test(location.search);   // ?embed=1: no title bar, alert banner or bottom bar (for dashboards)
 /* ================================================== */
 if (EMBED) document.body.classList.add("embed");
@@ -476,6 +522,124 @@ function drawChart(s, i, now) {
 }
 
 
+/* ---------- Tide season: San Mateo County EM "tide days of concern" (San Francisco gauge) ---------- */
+// Dates and labels only. The County's heights are ft MLLW at San Francisco (NOAA 9414290), not NAVD88 at
+// Redwood City, so they are never shown. "Today" is the Pacific-time date.
+var TS = { data: null, t: 0 };
+function tsToday() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
+function tsAdd(iso, n) { return new Date(Date.parse(iso + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10); }
+function tsFmt(iso, o) { return new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
+function tsDay(iso) { return tsFmt(iso, { weekday: "short" }) + " " + tsFmt(iso, { month: "short", day: "numeric" }); }
+function tsMD(iso) { return tsFmt(iso, { month: "short", day: "numeric" }); }
+function tsRange(a, b) {
+  if (a === b) return tsMD(a);
+  return tsMD(a) + "–" + (a.slice(0, 7) === b.slice(0, 7) ? tsFmt(b, { day: "numeric" }) : tsMD(b));
+}
+function tsDates(list) {   // ["2026-12-22","2026-12-23","2026-12-24","2026-12-25"] -> "Dec 22–25"
+  var out = [], a = null, b = null;
+  (list || []).slice().sort().forEach(function (d) {
+    if (b && tsAdd(b, 1) === d) { b = d; return; }
+    if (a) out.push(tsRange(a, b)); a = b = d;
+  });
+  if (a) out.push(tsRange(a, b));
+  return out.join(", ");
+}
+function tsLabel(c) { return c === "KING" ? "King Tide" : c === "ELEVATED" ? "Elevated tide" : ""; }
+function tsWindows() { return (TS.data && TS.data.meta && TS.data.meta.windows) || []; }
+function tsWindow(id) { return tsWindows().filter(function (w) { return w.id === id; })[0] || null; }
+function tsWinText(w) {   // "Nov 21–28, King Tide Nov 25"
+  return tsRange(w.start, w.end) + (w.king_tide_dates && w.king_tide_dates.length ? ", King Tide " + tsDates(w.king_tide_dates) : "");
+}
+function tsInSeason(today) {
+  var s = TS.data && TS.data.meta && TS.data.meta.season;
+  return !!(TS.data && TS.data.days && s && today >= s.start && today <= s.end);
+}
+// One-line status: today's category or window, else the next day of concern within 7 days.
+// Returns null outside the season (after Apr 30, 2027) or before the file loads.
+function tideSeason(day) {
+  var today = day || tsToday();
+  if (!tsInSeason(today)) return null;
+  var by = {}; TS.data.days.forEach(function (x) { by[x.date] = x; });
+  var t = by[today] || { category: "NONE" }, w = t.window_id ? tsWindow(t.window_id) : null;
+  if (t.category === "KING") return { cls: "king", main: "King Tide today", sub: w ? "window " + tsRange(w.start, w.end) : "" };
+  if (w) return { cls: "king", main: "King Tide window now", sub: tsWinText(w) + (t.category !== "NONE" ? " · today: " + tsLabel(t.category) : "") };
+  var nextWin = tsWindows().filter(function (x) { return x.start > today; })[0];
+  for (var n = 1; n <= 7; n++) {
+    var d = tsAdd(today, n), x = by[d]; if (!x) break;
+    var xw = x.window_id ? tsWindow(x.window_id) : null;
+    if (x.category === "NONE" && !xw) continue;
+    var when = n === 1 ? "tomorrow" : "in " + n + " days";
+    if (t.category === "ELEVATED") break;   // today's status comes first
+    if (xw && xw.start === d) return { cls: "king", main: "King Tide window starts " + tsDay(d), sub: when + " · " + tsWinText(xw) };
+    return { cls: x.category === "KING" ? "king" : "elev", main: tsLabel(x.category) + " " + tsDay(d), sub: when };
+  }
+  if (t.category === "ELEVATED") return { cls: "elev", main: "Elevated tide today", sub: nextWin ? "next King Tide window " + tsWinText(nextWin) : "" };
+  var nx = TS.data.days.filter(function (x) { return x.date > today && x.category !== "NONE"; })[0];
+  return { cls: "", main: "No tide days of concern in the next 7 days", sub: nx ? "next: " + tsLabel(nx.category) + ", " + tsDay(nx.date) : "none left this season" };
+}
+function loadTideSeason(after) {
+  return fetch(TIDE_DAYS_URL + "?d=" + tsToday(), { cache: "no-cache" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (j) { if (!j || !j.days || !j.meta) throw new Error("bad file"); TS.data = j; TS.t = Date.now(); })
+    .catch(function () { /* keep the last good copy; the line hides if there is none */ })
+    .then(function () { if (after) after(); });
+}
+var TS_SOURCE = "San Mateo County Emergency Management, “Tide days of concern, Oct 2026 to Apr 2027,” based on predicted high tides at NOAA’s San Francisco gauge (9414290). " +
+  "South Bay tides, including Redwood City, usually run higher than San Francisco, so a day the County doesn’t list can still go above MHHW here. Storm surge adds to any of these tides.";
+
+function renderSeason() {
+  var st = tideSeason(), el = $("season");
+  el.classList.toggle("hide", !st); $("calcard").classList.toggle("hide", !st);
+  if (!st) return;
+  el.className = "card " + st.cls;
+  $("tsmain").textContent = st.main;
+  $("tssub").textContent = st.sub ? " · " + st.sub : "";
+  renderCalendar();
+}
+var calBuiltFor = "";
+function renderCalendar() {
+  var today = tsToday(), D = TS.data;
+  if (calBuiltFor === today + TS.t) return;   // rebuild only when the day or the file changes
+  calBuiltFor = today + TS.t;
+  var by = {}; D.days.forEach(function (x) { by[x.date] = x; });
+  var months = [], d = D.meta.season.start.slice(0, 8) + "01";
+  while (d <= D.meta.season.end) { months.push(d); var m = +d.slice(5, 7); d = (m === 12 ? (+d.slice(0, 4) + 1) + "-01" : d.slice(0, 5) + String(m + 1).padStart(2, "0")) + "-01"; }
+  $("months").innerHTML = months.map(function (m0) {
+    var first = new Date(m0 + "T12:00:00Z"), pad = first.getUTCDay(), h = "";
+    h += '<div class="mon"><h3>' + esc(tsFmt(m0, { month: "long", year: "numeric" })) + '</h3><div class="mgrid">' +
+      ["S", "M", "T", "W", "T", "F", "S"].map(function (w) { return '<span class="wd">' + w + "</span>"; }).join("");
+    for (var i = 0; i < pad; i++) h += "<span></span>";
+    for (var day = m0; day.slice(0, 7) === m0.slice(0, 7); day = tsAdd(day, 1)) {
+      var x = by[day], c = "d";
+      if (x) c += x.category === "KING" ? " k" : x.category === "ELEVATED" ? " e" : "";
+      if (x && x.window_id) c += " w";
+      if (day < today) c += " past";
+      if (day === today) c += " today";
+      var lab = tsDay(day) + (x && x.category !== "NONE" ? ": " + tsLabel(x.category) : "") + (x && x.window_id ? ", King Tide window" : "");
+      h += '<span class="' + c + '" data-d="' + esc(day) + '" title="' + esc(lab) + '" aria-label="' + esc(lab) + '">' + (+day.slice(8)) + "</span>";
+    }
+    return h + "</div></div>";
+  }).join("");
+  $("wlist").innerHTML = tsWindows().map(function (w) {
+    return "<li><b>King Tide window " + esc(tsRange(w.start, w.end)) + "</b> · King Tide " + esc(tsDates(w.king_tide_dates)) +
+      (w.end < today ? ' <span class="lbl">(past)</span>' : "") + "</li>";
+  }).join("");
+  $("calsrc").textContent = TS_SOURCE + " Heights in the County sheet are at San Francisco (MLLW) and aren't shown here; the station cards above use NAVD88.";
+  $("calsel").textContent = "";
+}
+$("months").addEventListener("click", function (e) {
+  var c = e.target.closest(".d"); if (!c) return;
+  var day = c.dataset.d, x = null; TS.data.days.forEach(function (y) { if (y.date === day) x = y; });
+  var w = x && x.window_id ? tsWindow(x.window_id) : null;
+  Array.prototype.forEach.call(document.querySelectorAll(".mgrid .d.sel"), function (s) { s.classList.remove("sel"); });
+  c.classList.add("sel");
+  $("calsel").textContent = tsDay(day) + " · " + (x && x.category !== "NONE" ? tsLabel(x.category) : "no day of concern listed") +
+    (w ? " · King Tide window " + tsRange(w.start, w.end) : "");
+});
+$("season").addEventListener("click", function () { if (!EMBED) $("calcard").scrollIntoView({ behavior: "smooth", block: "start" }); });
+
 /* ---------- bottom bar ---------- */
 Array.prototype.forEach.call(document.querySelectorAll("nav button[data-href]"), function (b) {
   b.addEventListener("click", function () { location.href = b.dataset.href; });
@@ -485,6 +649,9 @@ Array.prototype.forEach.call(document.querySelectorAll("nav button[data-href]"),
 function refreshTides() { S.forEach(function (s) { loadObserved(s); }); }
 function refreshAll() { if (!EMBED) loadAlerts(); S.forEach(function (s) { loadPredictions(s).then(function () { loadObserved(s); }); }); }
 refreshAll();
+loadTideSeason(renderSeason);
+setInterval(function () { loadTideSeason(renderSeason); }, 6 * 3600000);
+setInterval(renderSeason, 60000);   // rolls over at midnight (Pacific)
 setInterval(function () { if (!EMBED) loadAlerts(); }, 3 * 60000);
 setInterval(refreshTides, 6 * 60000);
 setInterval(function () { S.forEach(loadPredictions); }, 60 * 60000);
