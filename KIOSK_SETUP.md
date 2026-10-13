@@ -169,7 +169,15 @@ own map:
 
 Redwood City only (NOAA 9414523, ft NAVD88). Three parts:
 
-- **Next 7 days** (the main part): one card per day with that day's highest predicted tide and its time. Red cards
+- **NOAA model forecast** (about the first 2 days): NOAA's San Francisco Bay Operational Forecast System publishes a
+  water-level forecast for the Redwood City gauge that includes wind, air pressure and river flow (Tides & Currents
+  product `ofs_water_level`, requested in ft NAVD88 like everything else, updated 4 times a day). Where it reaches,
+  the day cards use its peak (marked "fcst") and the graph shows it as a solid teal line; after it ends, the cards
+  and graph use the astronomical prediction, and the "if Bay stays high" line covers only those later days. The
+  Past 7 days box adds "NOAA model ±0.08 ft vs measured" (90% of the last 24 hours of readings were that close).
+  It is model guidance, not an official forecast; NWS advisories take precedence. If the model data is missing,
+  older than 12 hours or doesn't reach 6 hours ahead, the tab shows the predictions as before.
+- **Next 7 days** (the main part): one card per day with that day's highest tide and its time (forecast, then predicted). Red cards
   go above MHHW (7.02 ft). The graph under the cards lines up with them, one column per day. If the Bay has been
   running at least 0.2 ft higher than predicted, a dashed orange line shows the tide with that offset added, and days
   that would then go above MHHW turn orange ("7.41 if Bay stays high"). Tap for the list of times above MHHW.
@@ -299,6 +307,9 @@ Near the top of the `<script>` section in `ShorelineKiosk.html`:
 | `OFFSET_RECENT_HIGHS` | 4       | "Running higher than predicted" averages this many recent high tides (about 2 days) |
 | `OFFSET_NOTE_FT`      | 0.2     | A difference this big is called out, and the look-ahead shows "if Bay stays high" |
 | `OFFSET_HIGH_FT`      | 0.5     | ...and this big is shown in red                 |
+| `MODEL_EVERY_MIN`     | 60      | How often the NOAA model forecast is downloaded |
+| `MODEL_MAX_AGE_HOURS` | 12      | Ignore a model download older than this         |
+| `MODEL_MIN_AHEAD_HOURS` | 6     | Ignore a model run that doesn't reach this far ahead |
 | `NWS_OFFICE`          | MTR     | NWS office whose forecast discussion is checked for tide notes |
 | `AFD_EVERY_MIN`       | 30      | How often the forecast discussion is checked    |
 | `TIDE_DAYS_URL`       | data/tide_days_lookup_2026-27.json | County King Tide dates for the King Tides line |
