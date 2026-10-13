@@ -559,6 +559,12 @@ function relDay(ms, now) {
   var d = (dayStart(ms) - dayStart(now)) / 86400000;
   return d === 0 ? "Today" : d === 1 ? "Tomorrow" : fmt(ms, { weekday: "short" }) + " " + fmt(ms, { month: "numeric", day: "numeric" });
 }
+// "PDT" in summer, "PST" in winter: the Pacific time zone the page shows every time in
+function tzAbbr() {
+  var z = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "short" }).formatToParts(new Date())
+    .filter(function (p) { return p.type === "timeZoneName"; })[0];
+  return z ? z.value : "Pacific";
+}
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
 function getJSON(url, accept) {
@@ -1795,13 +1801,13 @@ setInterval(function () { if (currentTab === "map" && M.data) renderMap(); }, 60
 /* ---------- Clock, staleness, refresh schedule ---------- */
 function tick() {
   var now = nowLocal();
-  document.getElementById("clock").textContent = fTime(now) + " · " + fDay(now);
+  document.getElementById("clock").textContent = fTime(now) + " " + tzAbbr() + " · " + fDay(now);
   var oldest = Math.min(A.t || 0, S[0].tPred || 0, S[1].tPred || 0);
   var ageMin = oldest ? (Date.now() - oldest) / 60000 : Infinity;
   var loading = (Date.now() - startedAt) < 60000;
   document.getElementById("stale").textContent = (!loading && ageMin > STALE_AFTER_MIN) ? "⚠ Data out of date" : "";
   var newest = Math.max(A.t || 0, S[0].tObs || 0, S[1].tObs || 0, S[0].tPred || 0, S[1].tPred || 0);
-  document.getElementById("updated").textContent = newest ? "Updated " + new Date(newest).toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" }) : "Loading…";
+  document.getElementById("updated").textContent = newest ? "Updated " + new Date(newest).toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" }) + " " + tzAbbr() : "Loading…";
   // Daily reload in the early morning
   var d = new Date(now);
   if (d.getUTCHours() === RELOAD_AT_HOUR && d.getUTCMinutes() === 0 && Date.now() - startedAt > 3600000) location.reload();

@@ -241,6 +241,12 @@ function nowLocal() {
 function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
 function fTime(ms) { return fmt(ms, { hour: "numeric", minute: "2-digit" }); }
 function agoText(ms) { var m = Math.round(ms / 60000); return m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " hr ago" : Math.round(m / 1440) + " days ago"; }
+// "PDT" in summer, "PST" in winter: the Pacific time zone the page shows every time in
+function tzAbbr() {
+  var z = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "short" }).formatToParts(new Date())
+    .filter(function (p) { return p.type === "timeZoneName"; })[0];
+  return z ? z.value : "Pacific";
+}
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function hex(c, fb) { return /^#[0-9a-fA-F]{3,8}$/.test(String(c)) ? c : fb; }   // colors only from the data job's fixed table
 function $(id) { return document.getElementById(id); }
@@ -401,7 +407,7 @@ function renderCreeks() {
 
   // System status rows for creek data and gauges
   var gen = states.length ? states[0].gen : null;
-  sys("dCreek", "vCreek", anyLate ? "amber" : "ok", gen ? (anyLate ? "Delayed · last updated " + agoText(now - gen) : "Current · updated " + fTime(gen)) : "No update time");
+  sys("dCreek", "vCreek", anyLate ? "amber" : "ok", gen ? (anyLate ? "Delayed · last updated " + agoText(now - gen) : "Current · updated " + fTime(gen) + " " + tzAbbr()) : "No update time");
   var all = [], off = [];
   states.forEach(function (st) { st.stages.forEach(function (x) { all.push(x); if (x.quiet) off.push({ st: st, x: x }); }); });
   sys("dGauges", "vGauges", off.length ? "amber" : "ok", (all.length - off.length) + " of " + all.length + " reporting" + (off.length ? " · not reporting: " + off.map(function (o) {

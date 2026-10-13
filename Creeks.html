@@ -266,6 +266,12 @@ function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign(
 function fTime(ms) { return fmt(ms, { hour: "numeric", minute: "2-digit" }); }
 function fDate(ms) { return fmt(ms, { month: "short", day: "numeric" }); }
 function agoText(ms) { var m = Math.round(ms / 60000); return m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " hr ago" : Math.round(m / 1440) + " days ago"; }
+// "PDT" in summer, "PST" in winter: the Pacific time zone the page shows every time in
+function tzAbbr() {
+  var z = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", timeZoneName: "short" }).formatToParts(new Date())
+    .filter(function (p) { return p.type === "timeZoneName"; })[0];
+  return z ? z.value : "Pacific";
+}
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 function getJSON(url, accept) {
@@ -462,7 +468,7 @@ function render() {
     document.title = "Creek Conditions – OneShoreline";
     renderAll(states, now);
     var gen0 = states.length && states[0].gen;
-    $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " · ") + "refreshes automatically";
+    $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
     return;
   }
   document.title = c.name + " – OneShoreline";
@@ -509,7 +515,7 @@ function render() {
   } else { $("tide").textContent = "–"; $("tideSub").textContent = T && T.at ? "No recent reading" : "Loading…"; }
 
   drawCharts(st, now);
-  $("updated").textContent = (st.late && st.gen ? "⚠ Creek data delayed · updated " + agoText(now - st.gen) + " · " : "Updated " + fTime(now) + " · ") + "refreshes automatically";
+  $("updated").textContent = (st.late && st.gen ? "⚠ Creek data delayed · updated " + agoText(now - st.gen) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
 }
 /* All creeks: one card per creek; tap a card for that creek */
 function renderAll(states, now) {

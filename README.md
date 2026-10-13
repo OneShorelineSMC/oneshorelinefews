@@ -148,6 +148,13 @@ picks up changes the next time someone opens it (a pull-down refresh may be need
 
 ---
 
+## Times
+
+Every time on every page is Pacific time as on local clocks: PDT in summer, PST in winter (America/Los_Angeles),
+whatever time zone the viewer's device is set to. NOAA data is requested in local time (`time_zone=lst_ldt`),
+OneRain readings are converted to America/Los_Angeles by the data job, and NWS times are converted before display.
+The kiosk clock and the "Updated" lines show the current zone (e.g. "12:45 PM PDT").
+
 ## Data sources
 
 - **NOAA CO-OPS Tides & Currents API**: tide predictions, measured water levels, and the San Francisco Bay Operational Forecast System's water-level forecast at Redwood City (`ofs_water_level`), all in ft NAVD88
