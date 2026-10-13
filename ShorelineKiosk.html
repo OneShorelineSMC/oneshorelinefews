@@ -97,6 +97,7 @@
   .tday.under .dx { color: var(--green); font-weight: normal; }
   .tday.past .dv { color: var(--muted); }
   .tday .dt .fc { color: var(--fc); font-weight: bold; }
+  .tday .dt .ms { color: #1e88e5; font-weight: bold; }
   .tvsub.model { color: var(--fc); }
   #tchart { position: relative; flex: 1; min-height: 60px; }
   #tkey { font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; white-space: nowrap; height: 15px; }
@@ -339,7 +340,7 @@
 
   <div id="tides">
     <div class="th"><span class="tname">Redwood City · Bay tide</span><span class="tid" id="tid">NOAA 9414523 · ft NAVD88</span>
-      <span class="tmhhw" id="tmhhw"></span></div>
+</div>
     <div id="thead" class="unknown"><div class="hm" id="thm">Loading tides…</div><div class="hnow" id="thnow"></div></div>
     <div id="tright">
       <div class="tsec"><span><b>Next 7 days</b> · <span id="tsechint">highest predicted tide each day</span></span><span class="tap">Tap for times ›</span></div>
@@ -666,14 +667,27 @@ function renderPanel(i) {   // called whenever a station's data changes
 }
 
 // Every stretch of time above MHHW in the next 7 days: the NOAA model forecast while it lasts, then the prediction
-function upcomingAbove(s, now) {
-  var out = [], fe = now;
+// One series for "how high": measured for what has already happened, then the NOAA model forecast, then the
+// astronomical prediction. The headline, the day cards and the tap screen all read from this, so they agree.
+function bestSeries(s, now) {
+  var out = [], tail = -Infinity;
+  (s.obs || []).forEach(function (o) { out.push({ t: o.t, v: o.v, src: "measured" }); tail = o.t; });
   if (modelOK(s, now)) {
-    fe = modelEnd(s);
-    findWindows(s.ofs.filter(function (o) { return o.t >= now - 6 * 60000; }), s.st.mhhw).forEach(function (w) { w.fc = true; out.push(w); });
+    s.ofs.forEach(function (o) { if (o.t > tail) out.push({ t: o.t, v: o.v, src: "fcst" }); });
+    tail = Math.max(tail, modelEnd(s));
   }
-  (s.wins || []).forEach(function (w) { if (w.end > now && w.start >= fe) out.push(w); });
+  (s.pred || []).forEach(function (p) { if (p.t > tail) out.push({ t: p.t, v: p.v, src: "pred" }); });
   return out;
+}
+function srcWord(src) { return src === "measured" ? "measured" : src === "fcst" ? "forecast" : "predicted"; }
+// Every stretch above MHHW that hasn't ended yet, with its peak and where the peak value comes from
+function upcomingAbove(s, now) {
+  var ser = bestSeries(s, now).filter(function (p) { return p.t >= now - 12 * 3600000 && p.t <= dayStart(now) + DAYS * 86400000; });
+  return findWindows(ser, s.st.mhhw).filter(function (w) { return w.end > now; }).map(function (w) {
+    var pk = null; ser.forEach(function (p) { if (p.t >= w.start && p.t <= w.end && (!pk || p.v > pk.v)) pk = p; });
+    if (pk) { w.peak = pk.v; w.peakT = pk.t; w.src = pk.src; }
+    return w;
+  });
 }
 function winText(w, now) {
   return relDay(w.start, now) + " " + fTime(w.start).replace(/ (AM|PM)$/, function (m) { return fTime(w.end).slice(-3) === m ? "" : m; }) +
@@ -683,7 +697,6 @@ function winText(w, now) {
 function renderTides() {
   var s = tideS(), st = s.st, now = nowLocal();
   $t("tid").textContent = "NOAA " + st.id + " · ft NAVD88";
-  $t("tmhhw").innerHTML = "<i></i>MHHW " + st.mhhw.toFixed(2) + " ft";
 
   // Past high tides vs predicted (kept for the tap screen; not on the main view)
   var R = highResiduals(s, now), off = recentOffset(R, now);
@@ -699,7 +712,8 @@ function renderTides() {
     else {
       hd.className = "over";
       var first = ups[0], on = first.start <= now;
-      var lead = on ? "Above MHHW now, until " + fTime(first.end) + " (peak " + first.peak.toFixed(2) + " ft)" : "Tides above MHHW: " + winText(first, now);
+      var lead = on ? "Above MHHW now, until " + fTime(first.end) + " · " + (first.peakT <= now ? "peaked " : "peak ") + first.peak.toFixed(2) +
+        " ft " + srcWord(first.src) + " at " + fTime(first.peakT) : "Tides above MHHW: " + winText(first, now);
       var rest = (on ? ups.slice(1) : ups.slice(1)).slice(0, 1).map(function (w) { return winText(w, now); });
       var more = ups.length - 1 - rest.length;
       hm.innerHTML = esc(lead) + (rest.length ? " · " + esc(rest[0]) : "") + (more > 0 ? " <span>+" + more + " more this week</span>" : "");
@@ -722,32 +736,29 @@ function renderTides() {
 }
 
 function renderDays(s, now) {
-  var st = s.st, el = $t("tdays"), h = "";
-  var useModel = modelOK(s, now), fcDays = 0;
+  var st = s.st, el = $t("tdays"), h = "", fcDays = 0;
   if (!s.highs) { el.innerHTML = ""; return; }
+  var ser = bestSeries(s, now);
   for (var d = 0; d < DAYS; d++) {
     var a = dayStart(now) + d * 86400000, b = a + 86400000;
-    // Each high tide that day: the NOAA model forecast where it reaches, else the astronomical prediction
+    // Each high tide that day: the highest value near it in the measured / forecast / predicted series
     var top = null;
     s.highs.filter(function (x) { return x.t >= a && x.t < b; }).forEach(function (x) {
-      var past = x.t < now - 60 * 60000, mp = !past && useModel ? modelPeak(s, x) : null;
-      var c = mp ? { t: mp.t, v: mp.v, fc: true, pred: x } : { t: x.t, v: x.v, fc: false, pred: x };
+      var pk = null;
+      ser.forEach(function (p) { if (Math.abs(p.t - x.t) <= 90 * 60000 && (!pk || p.v > pk.v)) pk = p; });
+      var c = pk || { t: x.t, v: x.v, src: "pred" };
       if (!top || c.v > top.v) top = c;
     });
     var name = d === 0 ? "Today" : fmt(a, { weekday: "short" }) + " " + fmt(a, { day: "numeric" });
     if (!top) { h += '<div class="tday"><div class="dn">' + name + '</div><div class="dv">–</div></div>'; continue; }
-    var over = top.v > st.mhhw, past = top.t < now - 60 * 60000;
-    var meas = past && s.res ? s.res.filter(function (r) { return r.t === top.pred.t; })[0] : null;
-    var dx;
-    if (past && meas) dx = '<span class="' + (meas.meas > st.mhhw ? "hi" : "") + '">measured<br>' + meas.meas.toFixed(2) + " ft</span>";
-    else if (over) dx = sgn(top.v - st.mhhw) + " ft<br>over MHHW";
-    else dx = "below MHHW";
-    if (top.fc) fcDays++;
-    h += '<div class="tday ' + (over ? "over" : "under") + (past ? " past" : "") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) +
-      '</div><div class="dt">' + fTime(top.t) + (top.fc ? ' <span class="fc">fcst</span>' : "") + '</div><div class="dx">' + dx + "</div></div>";
+    var over = top.v > st.mhhw;
+    var tag = top.src === "fcst" ? ' <span class="fc">fcst</span>' : top.src === "measured" ? ' <span class="ms">measured</span>' : "";
+    if (top.src === "fcst") fcDays++;
+    h += '<div class="tday ' + (over ? "over" : "under") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) +
+      '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (over ? sgn(top.v - st.mhhw) + " ft<br>over MHHW" : "below MHHW") + "</div></div>";
   }
   el.innerHTML = h;
-  $t("tsechint").textContent = fcDays ? "highest tide each day · NOAA forecast, then predicted" : "highest predicted tide each day";
+  $t("tsechint").textContent = fcDays ? "highest tide each day · measured, NOAA forecast, then predicted" : "highest predicted tide each day";
 }
 
 var nowLinePlugin = {
@@ -801,7 +812,7 @@ function drawTideChart(s, now) {
   else TC.chart = new Chart($t("tchartc"), { type: "line", data: data, options: opts, plugins: [nowLinePlugin] });
   $t("tkey").innerHTML = "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span>" +
     (fc.length ? "<span><i style='border-top:2.5px solid var(--fc)'></i>NOAA forecast</span>" : "") + "<span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span>" +
-    "<span><i class='ab'></i>Above MHHW</span>";
+    "<span><i style='border-top:1.5px dashed #e05c2a'></i>MHHW " + s.st.mhhw.toFixed(2) + " ft</span><span><i class='ab'></i>Above MHHW</span>";
 }
 
 /* ---------- Loading tide data ---------- */
@@ -988,7 +999,7 @@ function renderNws() {
     $t("tnwsmore").textContent = "Tap for details ›";
   } else if (afd && afd.length) {
     box.className = "afd"; $t("tnwsi").textContent = "ℹ";
-    $t("tnwsm").textContent = "NWS forecast discussion · " + afdWhen() + (A.list && !all.length ? " · no coastal flood alerts" : "");
+    $t("tnwsm").textContent = "What NWS forecasters are saying about tides" + (A.list && !all.length ? " · no coastal flood alerts" : "");
     $t("tnwss").textContent = afd.slice(0, 2).join(" ");
     $t("tnwsmore").textContent = "Tap ›";
   } else if (all.length) {   // the coastal alert is in the top bar and the discussion adds nothing
@@ -1000,7 +1011,7 @@ function renderNws() {
   } else if (A.list != null) {
     box.className = ""; $t("tnwsi").textContent = "✓";
     $t("tnwsm").textContent = "No NWS coastal flood alerts for San Mateo County";
-    $t("tnwss").textContent = afd ? "The latest NWS Bay Area forecast discussion (" + afdWhen() + ") doesn't mention high tides or coastal flooding." : "";
+    $t("tnwss").textContent = afd ? "NWS forecasters aren't currently mentioning high tides or coastal flooding." : "";
     $t("tnwsmore").textContent = "";
   } else {
     box.className = "unknown"; $t("tnwsi").textContent = "?";
@@ -1010,9 +1021,9 @@ function renderNws() {
 $t("tnws").addEventListener("click", function () {
   var ca = coastalAlerts(), afd = afdFresh() ? AFD.lines : null, html = "";
   if (ca.length) html += alertsHtml(ca);
-  if (afd && afd.length) html += "<h3 style='margin:4px 0 6px;font-size:18px'>NWS Bay Area forecast discussion</h3><div class='when' style='font-size:14px;color:var(--muted);margin-bottom:6px'>Issued " +
-    esc(afdWhen()) + " · lines about tides and coastal flooding</div>" + afd.map(function (x) { return "<p style='margin:0 0 8px'>" + esc(x) + "</p>"; }).join("");
-  if (!html) html = "<p>No NWS coastal flood alerts for San Mateo County, and the latest NWS Bay Area forecast discussion doesn't mention high tides or coastal flooding.</p>";
+  if (afd && afd.length) html += "<h3 style='margin:4px 0 6px;font-size:18px'>What NWS forecasters are saying about tides</h3><div class='when' style='font-size:14px;color:var(--muted);margin-bottom:6px'>From the NWS San Francisco Bay Area office's forecast discussion, issued " +
+    esc(afdWhen()) + "</div>" + afd.map(function (x) { return "<p style='margin:0 0 8px'>" + esc(x) + "</p>"; }).join("");
+  if (!html) html = "<p>No NWS coastal flood alerts for San Mateo County, and NWS forecasters aren't currently mentioning high tides or coastal flooding.</p>";
   html += '<div id="dnote">Source: National Weather Service (api.weather.gov), San Francisco Bay Area office. Predicted tides do not include storm surge; ' +
     "NWS coastal flood advisories account for expected surge and wind.</div>";
   openDetail("NWS – tides and coastal flooding", html);
@@ -1022,7 +1033,7 @@ function showLookAhead() {
   var s = tideS(), st = s.st, now = nowLocal(), off = s.offset, adj = off != null && off >= OFFSET_NOTE_FT;
   var wins = s.wins.filter(function (w) { return w.end > now; }), html = "";
   if (modelOK(s, now)) {   // NOAA model forecast first, for as far as it goes
-    var fe = modelEnd(s), fwins = findWindows(s.ofs.filter(function (o) { return o.t >= now; }), st.mhhw);
+    var fe = modelEnd(s), fwins = upcomingAbove(s, now).filter(function (w) { return w.start < fe; });
     var hs = (s.highs || []).filter(function (h) { return h.t >= now - 60 * 60000 && h.t + 90 * 60000 <= fe; });
     html += "<h3 style='margin:4px 0 6px;font-size:18px'>NOAA model forecast, through " + esc(fDay(fe)) + " " + esc(fTime(fe)) + "</h3>" +
       (hs.length ? "<table><tr><th>High tide</th><th>Predicted</th><th>Forecast</th><th>Difference</th></tr>" + hs.map(function (h) {
@@ -1030,8 +1041,8 @@ function showLookAhead() {
         return "<tr><td><b>" + fDay(mp.t) + "</b> " + fTime(mp.t) + "</td><td>" + h.v.toFixed(2) + " ft</td><td" + (mp.v > st.mhhw ? ' class="red"' : "") +
           "><b>" + mp.v.toFixed(2) + " ft</b></td><td>" + sgn(mp.v - h.v) + " ft</td></tr>";
       }).join("") + "</table>" : "") +
-      "<p style='margin-top:8px'>" + (fwins.length ? "Forecast above MHHW: " + fwins.map(function (w) {
-        return fDay(w.start) + " " + fTime(w.start) + " – " + fTime(w.end) + " (peak " + w.peak.toFixed(2) + " ft)"; }).join("; ") + "."
+      "<p style='margin-top:8px'>" + (fwins.length ? "Above MHHW (measured so far, then forecast): " + fwins.map(function (w) {
+        return fDay(w.start) + " " + fTime(w.start) + " – " + fTime(w.end) + " (peak " + w.peak.toFixed(2) + " ft " + srcWord(w.src) + ")"; }).join("; ") + "."
         : "Not forecast to rise above MHHW in this period.") + "</p>" +
       "<h3 style='margin:14px 0 6px;font-size:18px'>Predicted tide (astronomical), next " + DAYS + " days</h3>";
   }
