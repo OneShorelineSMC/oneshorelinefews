@@ -176,9 +176,10 @@ Redwood City only (NOAA 9414523, ft NAVD88). Three parts:
 - **Measured now** and **Past 7 days**: the current reading and its difference from predicted; one bar per high tide
   for the past week (measured peak minus predicted high; orange 0.2 ft and up, red 0.5 ft and up); and a one-line
   summary from the last 4 high tides. Tap for the table of every high tide.
-- **NWS row** (bottom): an active NWS Coastal Flood / Storm Surge / Tsunami alert for San Mateo County with its
-  "What" text. With no such alert, it shows the lines about tides or coastal flooding from the latest NWS San
-  Francisco Bay Area forecast discussion (api.weather.gov, office MTR), or says there's nothing. Tap for details.
+- **NWS row** (bottom): never repeats the alert already in the top alert bar. It shows the lines about tides or
+  coastal flooding from the latest NWS San Francisco Bay Area forecast discussion (api.weather.gov, office MTR),
+  or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood / Storm
+  Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
 
 ## Title bar
 

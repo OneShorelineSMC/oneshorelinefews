@@ -929,20 +929,30 @@ function afdFresh() { return AFD.lines && AFD.issued && Date.now() - new Date(AF
 function afdWhen() {
   return new Date(AFD.issued).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
 }
+// The top alert bar already shows the highest-priority NWS alert, so this row never repeats it:
+// it shows a coastal alert only when the top bar is showing a different one, and otherwise the
+// tide notes from the NWS forecast discussion.
 function renderNws() {
   var box = $t("tnws"); if (!box) return;
-  var ca = coastalAlerts(), afd = afdFresh() ? AFD.lines : null;
+  var all = coastalAlerts(), shownAbove = A.list && A.list.length ? A.list[0] : null;
+  var ca = all.filter(function (p) { return p !== shownAbove; }), afd = afdFresh() ? AFD.lines : null;
   if (ca.length) {
     var top = ca[0], what = descField(top.description, "WHAT") || unwrap(top.headline || "");
     box.className = classify(top.event) === "warning" ? "warn" : "alert";
     $t("tnwsi").textContent = "⚠";
-    $t("tnwsm").textContent = top.event + " · " + untilText(top.ends || top.expires) + (ca.length > 1 ? " (+" + (ca.length - 1) + " more)" : "");
+    $t("tnwsm").textContent = "Also: " + top.event + " · " + untilText(top.ends || top.expires) + (ca.length > 1 ? " (+" + (ca.length - 1) + " more)" : "");
     $t("tnwss").textContent = what;
     $t("tnwsmore").textContent = "Tap for details ›";
   } else if (afd && afd.length) {
     box.className = "afd"; $t("tnwsi").textContent = "ℹ";
-    $t("tnwsm").textContent = "NWS forecast discussion · " + afdWhen() + (A.list ? " · no coastal flood alerts" : "");
+    $t("tnwsm").textContent = "NWS forecast discussion · " + afdWhen() + (A.list && !all.length ? " · no coastal flood alerts" : "");
     $t("tnwss").textContent = afd.slice(0, 2).join(" ");
+    $t("tnwsmore").textContent = "Tap ›";
+  } else if (all.length) {   // the coastal alert is in the top bar and the discussion adds nothing
+    var t0 = all[0];
+    box.className = "afd"; $t("tnwsi").textContent = "ℹ";
+    $t("tnwsm").textContent = "What to expect (NWS)";
+    $t("tnwss").textContent = descField(t0.description, "WHAT") || descField(t0.description, "IMPACTS") || "See the alert bar above for details.";
     $t("tnwsmore").textContent = "Tap ›";
   } else if (A.list != null) {
     box.className = ""; $t("tnwsi").textContent = "✓";
