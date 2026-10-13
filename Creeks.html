@@ -217,6 +217,7 @@
 <nav>
   <button data-href="index.html"><span class="i">🏠</span>Home</button>
   <button class="on" data-tab="creek"><span class="i">🌊</span>Creeks<span class="dot" id="navDot"></span></button>
+  <button data-href="Tides.html"><span class="i">〰️</span>Tides</button>
   <button data-href="SiteMap.html"><span class="i">🗺️</span>Map</button>
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
@@ -428,7 +429,7 @@ function render() {
   $("pick").innerHTML = states.map(function (x) {
     var s = statusWord(x);
     return '<button data-creek="' + esc(x.c.id) + '" class="' + (x.c === c ? "on" : "") + '" style="border-top-color:' + s.bar + '"' +
-      ' aria-label="' + esc(x.c.name) + ": " + s.w + '"><span class="nm">' + esc(x.c.short || x.c.name.replace(/ (Creek|Channel)$/, "")) + '</span><span class="stt" style="color:' + s.col + '">' + s.w + "</span></button>";
+      ' aria-label="' + esc(x.c.name) + ": " + esc(s.w) + '"><span class="nm">' + esc(x.c.short || x.c.name.replace(/ (Creek|Channel)$/, "")) + '</span><span class="stt" style="color:' + s.col + '">' + esc(s.w) + "</span></button>";
   }).join("");
   var worst = states.filter(function (x) { return x.top; }).sort(function (a, b) { return b.top.level - a.top.level; })[0];
   $("navDot").style.display = worst ? "inline-block" : "none";
