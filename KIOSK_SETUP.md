@@ -220,8 +220,12 @@ on its own after 2 minutes and isn't part of the automatic tab rotation.
 
 ## Creeks tab
 
-The **Creeks** tab opens on **All creeks**: one card per creek (Colma, San Bruno, Belmont, Atherton) with its
-status, each gauge's current level, rain totals, Belmont's rain triggers and the tide. Tap a card, or a creek
+The **Creeks** tab opens on **Dashboard Creeks**: one card per creek (Colma, San Bruno, Belmont, Atherton),
+bordered all the way around in its status color, with each gauge's stage (an offline gauge shows "Offline · since
+Jun 3", never an old number), accumulated rain over the creek's own windows (a window that has reached a trigger is
+red), and the Bay tide in ft NAVD88 with how far it is below or above MHHW and whether it is rising or falling.
+Rain-trigger progress (Belmont, Atherton) appears only once it rains; when a trigger is met the card just says
+"Trigger met ⚠ 4 hr rain + high tide" (the amounts are on the rain and tide rows). Tap a card, or a creek
 button across the top, for that creek's graphs. Each button turns yellow, orange or red when that creek is at a
 flood level. A single creek goes back to All creeks after 5 minutes (`CREEK_RETURN_MIN`). The NWS alert bar
 stays at the top on every tab.
@@ -230,19 +234,24 @@ For the chosen creek, all on one time axis (last 36 hours plus the next 12 hours
 
 - **Each stage gauge** (Atherton Channel has two) with its current level, colored by the highest threshold
   passed, and a graph with its Flood Monitoring / Watch / Warning lines
-- **Rain per hour** at the creek's rain gauge(s), with the same rain totals as the creek's OneRain dashboard
-  (Atherton 30 min; Belmont 30 min and 4 hr; Colma 6 hr; plus 1 hr and 24 hr). Belmont also has a 4-hour
-  running-total graph with its 0.42 in trigger line.
-- **The Bay tide** at the nearest NOAA station (Alameda or Redwood City), measured and predicted. Creeks near
-  the Bay rise and fall with the tide, so this shows whether a rise is coming from rain, the tide, or both.
+- **Rain per hour** at the creek's rain gauge(s), with "Accumulated rain" totals matching the creek's OneRain
+  dashboard (Atherton 30 min; Belmont 30 min and 4 hr; Colma 6 hr; plus 1 hr and 24 hr). Belmont also has a
+  4-hour running-total graph with its 0.42 in trigger line. **When no rain has fallen in the last 36 hours the
+  rain graphs fold into one line** ("Rain: none in the last 36 hours") and give their space to stage and tide;
+  they come back with the first rain.
+- **The Bay tide** at the nearest NOAA station (Alameda or Redwood City), measured, NOAA forecast and predicted.
+  All four creeks are tidally influenced, so every creek keeps its tide graph; it shows whether a rise is coming
+  from rain, the tide, or both. The left column has the tide now ("Bay tide 6.24 ft · 0.78 below MHHW, rising",
+  plus "+0.45 vs predicted" when the Bay is running 0.2 ft or more off the tide tables).
 - **Graph legends:** each graph's legend is on its own title row (rain gauges; running rain total and its trigger;
   stage with its Monitoring/Watch/Warning lines and values; tide with measured, NOAA forecast, predicted and MHHW).
   The tide graph includes the NOAA model forecast (green) for the creek's tide station (Redwood City or Alameda).
-  A "Now" tag on the top graph marks the line that runs through all of them. MHHW is drawn in slate gray so orange
+  A "Now" tag on the top graph (rain, or the first stage graph when dry) marks the line that runs through all of them. MHHW is drawn in slate gray so orange
   only ever means Flood Watch; Belmont's 4-hour rain trigger line uses its own level color (Flood Warning red).
 - **Belmont Creek's rain triggers**: flooding is likely if 30-minute rain exceeds 0.20 in, or 4-hour rain
-  exceeds 0.42 in while the tide is high (at or above MHHW at Redwood City). The running amounts are shown
-  under the rain totals and turn red when met.
+  exceeds 0.42 in while the tide is high (6.32 ft NAVD88 at Redwood City). When dry the left column lists what
+  sets each trigger off; once it rains it shows the running amounts ("4 hr rain 0.30 of 0.42 in + tide 6.10 of
+  6.32 ft"), red when met.
 
 Tap **ⓘ thresholds & notes** (or any stage box) for the creek's full threshold list, what the levels mean,
 and gauge notes.

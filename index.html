@@ -483,7 +483,7 @@ function renderTide() {
   ser = ser.filter(function (p) { return p.t >= now - 12 * 36e5 && p.t <= dayStart(now) + TIDE_DAYS * 864e5; });
   var ups = findWindows(ser, m).filter(function (w) { return w.end > now; });
 
-  // Plain English for everyone: rounded times, "normal high tide" instead of MHHW, no datums or model names
+  // Plain English, still precise: rounded times, "average high tide" (MHHW, named and defined in the small print)
   function r15(t) { return Math.round(t / 9e5) * 9e5; }
   function clock(t) { return fTime(r15(t)).replace(":00", ""); }
   function span(w) { var a = clock(w.start), b = clock(w.end); return (a.slice(-2) === b.slice(-2) ? a.slice(0, -3) : a) + "–" + b; }
@@ -493,28 +493,29 @@ function renderTide() {
   }
   function feet(x) { var r = Math.round(x * 10) / 10; return r < 0.1 ? "just" : Math.abs(r - 0.5) < 0.05 ? "about half a foot" : "about " + r.toFixed(1) + " ft"; }
   var head, sub = "";
-  if (!ups.length) { el.className = "box tide ok"; head = "No unusually high tides expected in the next " + TIDE_DAYS + " days."; }
+  if (!ups.length) { el.className = "box tide ok"; head = "No tides higher than an average high tide expected in the next " + TIDE_DAYS + " days."; }
   else {
     el.className = "box tide red";
     var on = ups[0].start <= now, list = on ? ups.slice(1) : ups;
-    if (on) head = "The tide is higher than usual right now, until about " + clock(ups[0].end) + "." +
+    if (on) head = "The tide is higher than an average high tide right now, until about " + clock(ups[0].end) + "." +
       (list.length ? " Next: " + dayWord(list[0].start) + " about " + span(list[0]) + "." : "");
-    else head = "Higher-than-usual high tides: " + list.slice(0, 2).map(function (w) { return dayWord(w.start) + " about " + span(w); }).join(" and ") +
+    else head = "Tides higher than an average high tide: " + list.slice(0, 2).map(function (w) { return dayWord(w.start) + " about " + span(w); }).join(" and ") +
       (list.length > 2 ? ", and " + (list.length - 2) + " more time" + (list.length > 3 ? "s" : "") + " this week" : "") + ".";
     var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
-    sub = (top.peakT <= now ? "It reached " : "At its highest, ") + feet(top.peak - m) + " above a normal high tide (" + dayWord(top.peakT) + " around " + clock(top.peakT) + ").";
+    sub = (top.peakT <= now ? "It reached " : "At its highest, ") + feet(top.peak - m) + " above an average high tide (" + dayWord(top.peakT) + " around " + clock(top.peakT) + ").";
   }
   var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
   if (last && now - last.t < 36e5) {
     var pv = null; TD.pred.forEach(function (p) { if (Math.abs(p.t - last.t) <= 3e5) pv = p.v; });
     if (pv != null) nowTxt = Math.abs(last.v - pv) < 0.2 ? "Right now the Bay is about where the tide tables predict."
       : "Right now the Bay is " + feet(Math.abs(last.v - pv)) + " " + (last.v > pv ? "higher" : "lower") + " than the tide tables predict" +
-        (last.v > pv ? ", which can happen with storms, wind or heavy runoff." : ".");
+        (last.v > pv ? ". Storms, onshore wind, heavy runoff and El Niño conditions can all raise the Bay above the predicted tide." : ".");
   }
   el.innerHTML = '<span class="th">' + esc(head) + "</span>" + (sub ? '<span class="tn">' + esc(sub) + "</span>" : "") +
     (nowTxt ? '<span class="tn">' + esc(nowTxt) + "</span>" : "") +
-    '<span class="ts">A \u201cnormal high tide\u201d is the average highest tide of the day at the NOAA tide gauge in Redwood City. Higher tides reach ' +
-    "farther onto low shorelines, marshes and trails. Based on NOAA tide measurements, forecasts and predictions.</span>" +
+    '<span class="ts">\u201cAverage high tide\u201d is Mean Higher High Water (MHHW): the average of each day\u2019s highest tide at the NOAA tide gauge in ' +
+    "Redwood City, " + m.toFixed(2) + " ft NAVD88. Tides above it reach farther onto low shorelines, marshes and trails. " +
+    "Based on NOAA tide measurements, NOAA\u2019s model forecast and the predicted (astronomical) tide.</span>" +
     '<span class="go">Tide details ›</span>';
 }
 
