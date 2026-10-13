@@ -161,15 +161,16 @@
   #about { overflow: hidden; }
   #stage.creekalert #aboutText { font-size: 12.5px; line-height: 1.32; }
   #stage.creekalert #aboutText p { margin-bottom: 5px; }
-  #aboutText h3 { margin: 0 0 6px; font-size: 18px; }
+  #aboutText h3 { margin: 0 0 6px; font-size: 1.33em; }
   #aboutText p { margin: 0 0 7px; }
-  #aboutText .src { font-size: 12.5px; color: var(--muted); }
+  #aboutText .src { font-size: .93em; color: var(--muted); }
   #aboutText .emerg { font-weight: bold; color: var(--red); }
   #aboutContact { width: 330px; flex: none; border-left: 1px solid var(--line); padding-left: 18px;
     display: flex; flex-direction: column; }
-  #aboutContact .org img { display: block; height: 52px; width: auto; margin: 0 0 4px -2px; }
+  #aboutContact .org img { display: block; height: 42px; width: auto; margin: 0 0 3px -2px; }
   #aboutContact .org .dk, :root[data-theme="dark"] #aboutContact .org .lt { display: none; }
   :root[data-theme="dark"] #aboutContact .org .dk { display: block; }
+  #stage.creekalert #aboutContact .addr { display: none; }   /* shorter panel during a creek alert */
   #aboutContact .orgsub { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
   #aboutContact .line { font-size: 15px; margin: 2px 0; }
   #aboutContact .big { font-size: 19px; font-weight: bold; }
@@ -323,12 +324,12 @@
         System (OneRain). Predicted tides do not include storm surge. Data refreshes automatically.</p>
     </div>
     <div id="aboutContact">
-      <div class="org"><img class="lt" src="img/oneshoreline-logo.png" alt="OneShoreline" width="227" height="52"><img class="dk" src="img/oneshoreline-logo-white.png" alt="OneShoreline" width="227" height="52"></div>
+      <div class="org"><img class="lt" src="img/oneshoreline-logo.png" alt="OneShoreline" width="183" height="42"><img class="dk" src="img/oneshoreline-logo-white.png" alt="OneShoreline" width="183" height="42"></div>
       <div class="orgsub">San Mateo County Flood and Sea Level Rise Resiliency District</div>
       <div class="line big">(650) 844-8310</div>
       <div class="line">info@oneshoreline.org</div>
       <div class="line">oneshoreline.org</div>
-      <div class="line" style="font-size:13px;color:var(--muted)">1700 S. El Camino Real, Suite 502<br>San Mateo, CA 94402</div>
+      <div class="line addr" style="font-size:13px;color:var(--muted)">1700 S. El Camino Real, Suite 502<br>San Mateo, CA 94402</div>
       <div class="qrs">
         <div class="qr"><div class="code" id="qrContact"></div>Contact OneShoreline</div>
         <div class="qr"><div class="code" id="qrAlert"></div>Get alerts: SMC Alert</div>
@@ -1193,6 +1194,17 @@ function drawCreekCharts(st, now) {
     "<span><i style='border-top:1.5px dashed #e05c2a'></i>MHHW</span>";
 }
 
+// Shrink the About text a little if it doesn't fit (fonts differ between computers and the Pi, and the
+// creek alert strip makes the panel shorter). Never below 10.5 px.
+function fitAbout() {
+  var el = document.getElementById("aboutText");
+  if (!document.getElementById("about").classList.contains("show")) return;
+  el.style.fontSize = "";
+  var size = parseFloat(getComputedStyle(el).fontSize);
+  while (el.scrollHeight > el.clientHeight && size > 10.5) { size -= 0.5; el.style.fontSize = size + "px"; }
+}
+setInterval(fitAbout, 3000);   // re-check when the alert strip comes or goes
+
 function showTab(name) {
   currentTab = name; tabChangedAt = Date.now();
   var creek = name === "creek", about = name === "about", tides = name === "tides";
@@ -1203,7 +1215,7 @@ function showTab(name) {
   if (name === "map") showMapTab();
   document.getElementById("p0").style.display = tides ? "" : "none";
   document.getElementById("p1").style.display = tides ? "" : "none";
-  if (about) drawQRs();
+  if (about) { drawQRs(); fitAbout(); }
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
     t.classList.toggle("on", t.dataset.tab === name);
   });
