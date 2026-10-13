@@ -113,7 +113,7 @@ Headers: Authorization: Bearer <token> · Accept: application/vnd.github+json ·
 
 - The cron-job.org job uses a **GitHub fine-grained personal access token** with **Resource owner:
   OneShorelineSMC**, access to **only this repository**, and **Actions: Read and write** only. **The token
-  expires on the date chosen when it was created.** When it expires, the kiosk's Creeks tab and the phone page
+  is set to no expiration date.** If it expires, the kiosk's Creeks tab and the phone page
   show *"Creek data delayed"* and the map shows *"data delayed"*. To fix it: create a new token
   (https://github.com/settings/personal-access-tokens/new, same settings) and paste it into the cron-job.org
   job's `Authorization` header as `Bearer <token>`. If OneShorelineSMC requires approval for tokens, an
