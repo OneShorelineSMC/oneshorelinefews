@@ -167,23 +167,24 @@ own map:
 
 ## Bay Tides tab
 
-Redwood City only (NOAA 9414523, ft NAVD88). Three parts:
+Redwood City only (NOAA 9414523, ft NAVD88). Built for a responder walking in at shift change: one sentence first,
+the week next, details behind a tap.
 
-- **NOAA model forecast** (about the first 2 days): NOAA's San Francisco Bay Operational Forecast System publishes a
-  water-level forecast for the Redwood City gauge that includes wind, air pressure and river flow (Tides & Currents
-  product `ofs_water_level`, requested in ft NAVD88 like everything else, updated 4 times a day). Where it reaches,
-  the day cards use its peak (marked "fcst") and the graph shows it as a solid teal line; after it ends, the cards
-  and graph use the astronomical prediction, and the "if Bay stays high" line covers only those later days. The
-  Past 7 days box adds "NOAA model ±0.08 ft vs measured" (90% of the last 24 hours of readings were that close).
-  It is model guidance, not an official forecast; NWS advisories take precedence. If the model data is missing,
-  older than 12 hours or doesn't reach 6 hours ahead, the tab shows the predictions as before.
-- **Next 7 days** (the main part): one card per day with that day's highest tide and its time (forecast, then predicted). Red cards
-  go above MHHW (7.02 ft). The graph under the cards lines up with them, one column per day. If the Bay has been
-  running at least 0.2 ft higher than predicted, a dashed orange line shows the tide with that offset added, and days
-  that would then go above MHHW turn orange ("7.41 if Bay stays high"). Tap for the list of times above MHHW.
-- **Measured now** and **Past 7 days**: the current reading and its difference from predicted; one bar per high tide
-  for the past week (measured peak minus predicted high; orange 0.2 ft and up, red 0.5 ft and up); and a one-line
-  summary from the last 4 high tides. Tap for the table of every high tide.
+- **Headline band** (top, the color goes around the whole box): red with "Tides above MHHW: Today 12:55–3:25 PM
+  (7.64 ft) · Tomorrow 1:17–4:03 PM (7.70 ft) +1 more this week", or green with "No tides above MHHW in the next 7
+  days". It uses the NOAA model forecast for as far as it reaches, then the astronomical prediction. MHHW (7.02 ft) is
+  a placeholder threshold until OneShoreline sets tide levels tied to known impacts. On the right: "Now 6.69 ft
+  rising · +0.45 vs predicted"; tap it for the measured-vs-predicted table for the past week, the "running higher
+  than predicted" summary and the model's accuracy over the last 24 hours. Tap the rest of the band for the times.
+- **Next 7 days:** one card per day with that day's highest tide and time; red above MHHW. Cards marked "fcst" use the
+  NOAA model forecast; later days use the prediction. The graph under the cards lines up with them and has three
+  lines: measured (blue), NOAA forecast (teal) and predicted (dark). Tap for the forecast and predicted times above
+  MHHW and the "if the Bay stays high" scenario for the days after the forecast ends.
+- **NOAA model forecast:** NOAA's San Francisco Bay Operational Forecast System publishes a water-level forecast for
+  the Redwood City gauge that includes wind, air pressure and river flow (Tides & Currents product
+  `ofs_water_level`, requested in ft NAVD88, updated 4 times a day, about 2 days ahead). It is model guidance, not an
+  official forecast; NWS advisories take precedence. If it is missing, older than 12 hours or doesn't reach 6 hours
+  ahead, the tab uses the predictions alone.
 - **NWS row** (bottom): never repeats the alert already in the top alert bar. It shows the lines about tides or
   coastal flooding from the latest NWS San Francisco Bay Area forecast discussion (api.weather.gov, office MTR),
   or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood / Storm

@@ -64,27 +64,25 @@
   .tid { font-size: 12px; color: var(--muted); }
   .th .tmhhw { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
   .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed #e05c2a; vertical-align: middle; margin-right: 4px; }
-  #tmain { flex: 1; min-height: 0; display: flex; gap: 10px; }
-
-  /* Left: now + past 7 days */
-  #tleft { width: 222px; flex: none; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
-  .tbx { border-radius: 8px; background: rgba(26,58,92,.05); padding: 6px 10px; }
-  .tlbl { font-size: 12px; color: var(--muted); }
-  .tnow { font-size: 28px; font-weight: bold; line-height: 1.1; white-space: nowrap; }
-  .tnow small { font-size: 13px; font-weight: normal; color: var(--muted); margin-left: 4px; }
-  .tdiff { font-size: 14px; margin-top: 1px; }
-  .hi { color: var(--red); } .warm { color: var(--amber); }
-  #tpast { flex: 1; min-height: 0; display: flex; flex-direction: column; cursor: pointer; }
-  .tverd { font-size: 14px; font-weight: bold; line-height: 1.25; margin-top: 2px; }
-  .tverd.hi { color: var(--red); } .tverd.warm { color: var(--amber); } .tverd.ok { color: var(--green); }
-  .tvsub { font-size: 12px; color: var(--muted); line-height: 1.25; margin-top: 1px; }
-  #tbars { position: relative; flex: 1; min-height: 40px; margin-top: 4px; }
-  #tbars canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* Headline band: the one line a responder reads first. The color goes around the whole box. */
+  #thead { flex: none; display: flex; align-items: center; gap: 12px; border: 3px solid #8a96a3; border-radius: 8px;
+    padding: 4px 12px; min-height: 38px; box-sizing: border-box; background: rgba(138,150,163,.08); cursor: pointer; }
+  #thead.over { border-color: #c62828; background: rgba(198,40,40,.08); }
+  #thead.ok { border-color: #2e7d32; background: rgba(46,125,50,.07); }
+  #thead .hm { flex: 1; min-width: 0; font-size: 16.5px; font-weight: bold; line-height: 1.2; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  #thead.over .hm { color: var(--red); } #thead.ok .hm { color: var(--green); }
+  #thead .hm span { font-weight: normal; color: var(--ink); }
+  #thead .hnow { flex: none; text-align: right; font-size: 12.5px; color: var(--muted); line-height: 1.25; white-space: nowrap; }
+  #thead .hnow b { font-size: 17px; color: var(--ink); }
+  #stage.creekalert #thead .hm { -webkit-line-clamp: 1; font-size: 15.5px; }
+  #stage.creekalert #thead { min-height: 32px; padding: 2px 12px; }
 
   /* Right: 7-day look-ahead (the main element) */
-  #tright { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
+  #tright { flex: 1; min-height: 0; display: flex; flex-direction: column; cursor: pointer; }
   .tsec { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; height: 15px; white-space: nowrap; }
   .tsec b { color: var(--ink); font-size: 13px; }
+  .tsec .tap { font-size: 11.5px; }
   #tdays { display: grid; grid-template-columns: repeat(7, 1fr); flex: none; }
   .tday { border-top: 4px solid var(--line); padding: 4px 4px 5px; text-align: center; border-right: 1px solid var(--line); min-width: 0; }
   .tday:last-child { border-right: 0; }
@@ -342,18 +340,12 @@
   <div id="tides">
     <div class="th"><span class="tname">Redwood City · Bay tide</span><span class="tid" id="tid">NOAA 9414523 · ft NAVD88</span>
       <span class="tmhhw" id="tmhhw"></span></div>
-    <div id="tmain">
-      <div id="tleft">
-        <div class="tbx" id="tnowbox"><div class="tlbl">Measured now</div><div class="tnow" id="tnow">–</div><div class="tdiff" id="tdiff"></div></div>
-        <div class="tbx" id="tpast"><div class="tlbl">Past 7 days: high tides vs predicted</div>
-          <div class="tverd" id="tverd">Loading…</div><div class="tvsub" id="tvsub"></div><div class="tvsub model" id="tvmodel"></div><div id="tbars"><canvas id="tbarsc"></canvas></div></div>
-      </div>
-      <div id="tright">
-        <div class="tsec"><span><b>Next 7 days</b> · <span id="tsechint">highest predicted tide each day</span></span><span id="tcount"></span></div>
-        <div id="tdays"></div>
-        <div id="tchart"><canvas id="tchartc"></canvas></div>
-        <div id="tkey"></div>
-      </div>
+    <div id="thead" class="unknown"><div class="hm" id="thm">Loading tides…</div><div class="hnow" id="thnow"></div></div>
+    <div id="tright">
+      <div class="tsec"><span><b>Next 7 days</b> · <span id="tsechint">highest predicted tide each day</span></span><span class="tap">Tap for times ›</span></div>
+      <div id="tdays"></div>
+      <div id="tchart"><canvas id="tchartc"></canvas></div>
+      <div id="tkey"></div>
     </div>
     <div id="tnws" class="unknown"><span class="ni" id="tnwsi">…</span><div class="nt"><div class="nm" id="tnwsm">Checking NWS coastal flood information…</div>
       <div class="ns" id="tnwss"></div></div><span class="nmore" id="tnwsmore"></span></div>
@@ -376,7 +368,7 @@
       <p><b>Bay Tides:</b> the NOAA tide gauge in Redwood City. The next 7 days show each day's highest predicted
         tide (for about the first 2 days, NOAA's model forecast, which adds wind, air pressure and river flow); red marks tides above
         Mean Higher High Water (MHHW), the average height of the highest tide each day.
-        The bars show how measured high tides compared with predictions over the past week, and the bottom row shows
+        Tap "Now" for how measured tides compared with predictions over the past week. The bottom row shows
         NWS coastal flood alerts or forecast notes about tides. Around San Mateo County's King Tide windows, a King Tides
         line shows the dates (astronomical predictions for San Francisco, without weather).</p>
       <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline. Tap the creek buttons to switch creeks, and "thresholds &amp; notes" for what each level means.</p>
@@ -440,7 +432,7 @@ var COUNTY_SAME = "006081";        // San Mateo County
 var DAYS = 7;
 var PAST_DAYS = 7;                 // days of measured water level loaded, to compare with predictions
 var OFFSET_RECENT_HIGHS = 4;       // "running higher than predicted" = average of the last 4 high tides (about 2 days)
-var OFFSET_NOTE_FT = 0.2;          // a difference this big (ft) is called out, and the look-ahead shows "if Bay stays high"
+var OFFSET_NOTE_FT = 0.2;          // a difference this big (ft) is called out (tap screens), incl. "if Bay stays high" after the forecast
 var OFFSET_HIGH_FT = 0.5;          // ...and this big is shown in red
 // NOAA model forecast (SFBOFS water level guidance at the Redwood City gauge, ft NAVD88, ~2 days ahead).
 // Used for the graph and the day cards while it lasts; days after it use the astronomical prediction.
@@ -673,57 +665,66 @@ function renderPanel(i) {   // called whenever a station's data changes
   if (typeof currentTab !== "undefined" && currentTab === "creek" && C.data) renderCreek();   // creek tab shows a tide too
 }
 
+// Every stretch of time above MHHW in the next 7 days: the NOAA model forecast while it lasts, then the prediction
+function upcomingAbove(s, now) {
+  var out = [], fe = now;
+  if (modelOK(s, now)) {
+    fe = modelEnd(s);
+    findWindows(s.ofs.filter(function (o) { return o.t >= now - 6 * 60000; }), s.st.mhhw).forEach(function (w) { w.fc = true; out.push(w); });
+  }
+  (s.wins || []).forEach(function (w) { if (w.end > now && w.start >= fe) out.push(w); });
+  return out;
+}
+function winText(w, now) {
+  return relDay(w.start, now) + " " + fTime(w.start).replace(/ (AM|PM)$/, function (m) { return fTime(w.end).slice(-3) === m ? "" : m; }) +
+    "–" + fTime(w.end) + " (" + w.peak.toFixed(2) + " ft)";
+}
+
 function renderTides() {
   var s = tideS(), st = s.st, now = nowLocal();
   $t("tid").textContent = "NOAA " + st.id + " · ft NAVD88";
   $t("tmhhw").innerHTML = "<i></i>MHHW " + st.mhhw.toFixed(2) + " ft";
 
-  // Measured now, and how far from predicted
-  var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null;
+  // Past high tides vs predicted (kept for the tap screen; not on the main view)
+  var R = highResiduals(s, now), off = recentOffset(R, now);
+  s.res = R; s.offset = off;
+
+  // Headline: is the Bay going above MHHW in the next 7 days, and when?
+  var hd = $t("thead"), hm = $t("thm");
+  if (!s.pred) {
+    hd.className = "unknown"; hm.textContent = s.predFailed ? "Can't reach NOAA tide data — retrying" : "Loading tides…";
+  } else {
+    var ups = upcomingAbove(s, now);
+    if (!ups.length) { hd.className = "ok"; hm.textContent = "No tides above MHHW in the next 7 days"; }
+    else {
+      hd.className = "over";
+      var first = ups[0], on = first.start <= now;
+      var lead = on ? "Above MHHW now, until " + fTime(first.end) + " (peak " + first.peak.toFixed(2) + " ft)" : "Tides above MHHW: " + winText(first, now);
+      var rest = (on ? ups.slice(1) : ups.slice(1)).slice(0, 1).map(function (w) { return winText(w, now); });
+      var more = ups.length - 1 - rest.length;
+      hm.innerHTML = esc(lead) + (rest.length ? " · " + esc(rest[0]) : "") + (more > 0 ? " <span>+" + more + " more this week</span>" : "");
+    }
+  }
+
+  // Now: measured level, trend and difference from predicted (one short line)
+  var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null, hn = $t("thnow");
   if (last && now - last.t < 60 * 60000) {
     var ago = null;
     for (var k = s.obs.length - 1; k >= 0; k--) { if (last.t - s.obs[k].t >= 30 * 60000) { ago = s.obs[k]; break; } }
-    var arrow = ago ? (last.v - ago.v > 0.05 ? " ↑" : last.v - ago.v < -0.05 ? " ↓" : " →") : "";
-    $t("tnow").innerHTML = last.v.toFixed(2) + arrow + "<small>ft · " + fTime(last.t) + "</small>";
-    var pv = predAt(s, last.t), d = $t("tdiff");
-    if (pv != null) {
-      var diff = last.v - pv;
-      d.innerHTML = Math.abs(diff) < 0.05 ? "As predicted" : "<b>" + Math.abs(diff).toFixed(2) + " ft " + (diff > 0 ? "above" : "below") + "</b> predicted";
-      d.className = "tdiff" + (diff >= OFFSET_HIGH_FT ? " hi" : diff >= OFFSET_NOTE_FT ? " warm" : "");
-    } else { d.textContent = ""; d.className = "tdiff"; }
-  } else {
-    $t("tnow").innerHTML = "–<small>" + (s.tObs ? "no recent reading" : "loading") + "</small>";
-    $t("tdiff").textContent = "";
-  }
+    var trend = ago ? (last.v - ago.v > 0.05 ? " rising" : last.v - ago.v < -0.05 ? " falling" : " steady") : "";
+    var pv = predAt(s, last.t), diff = pv == null ? null : last.v - pv;
+    hn.innerHTML = "Now <b>" + last.v.toFixed(2) + " ft</b>" + esc(trend) + "<br>" + fTime(last.t) +
+      (diff == null ? "" : Math.abs(diff) < 0.05 ? " · as predicted" : " · " + sgn(diff) + " vs predicted") + " ›";
+  } else hn.textContent = s.tObs ? "No recent reading" : "";
 
-  // Past 7 days: measured vs predicted at each high tide
-  var R = highResiduals(s, now), off = recentOffset(R, now);
-  s.res = R; s.offset = off;
-  var v = $t("tverd"), vs = $t("tvsub");
-  if (!s.pred || !s.obs) { v.className = "tverd"; v.textContent = s.predFailed ? "Can't reach NOAA — retrying" : "Loading…"; vs.textContent = ""; }
-  else if (off == null) { v.className = "tverd"; v.textContent = "Not enough recent measurements"; vs.textContent = ""; }
-  else {
-    v.className = "tverd " + (off >= OFFSET_HIGH_FT ? "hi" : off >= OFFSET_NOTE_FT ? "warm" : "ok");
-    v.textContent = Math.abs(off) < OFFSET_NOTE_FT ? "About as predicted (" + sgn(off) + " ft)" :
-      "Running " + Math.abs(off).toFixed(2) + " ft " + (off > 0 ? "higher" : "lower") + " than predicted";
-    var top = R.reduce(function (a, r) { return !a || r.d > a.d ? r : a; }, null);
-    vs.textContent = "Last " + Math.min(OFFSET_RECENT_HIGHS, R.length) + " high tides" +
-      (top && top.d >= OFFSET_NOTE_FT ? " · most: " + sgn(top.d) + " ft " + fmt(top.t, { weekday: "short" }) + " " + fTime(top.t) : "");
-  }
-  drawBars(s, now);
-  var mc = modelOK(s, now) ? modelCheck(s, now) : null;
-  $t("tvmodel").textContent = mc ? "NOAA model ±" + mc.p90.toFixed(2) + " ft vs measured" : "";
-  if (mc && s.res && s.res.length) $t("tvsub").textContent = "Last " + Math.min(OFFSET_RECENT_HIGHS, s.res.length) + " high tides";   // room for the bars
-
-  // Next 7 days
-  renderDays(s, now, off);
-  drawTideChart(s, now, off);
+  renderDays(s, now);
+  drawTideChart(s, now);
 }
 
-function renderDays(s, now, off) {
-  var st = s.st, el = $t("tdays"), h = "", nOver = 0, nMaybe = 0, adj = off != null && off >= OFFSET_NOTE_FT;
+function renderDays(s, now) {
+  var st = s.st, el = $t("tdays"), h = "";
   var useModel = modelOK(s, now), fcDays = 0;
-  if (!s.highs) { el.innerHTML = ""; $t("tcount").textContent = ""; return; }
+  if (!s.highs) { el.innerHTML = ""; return; }
   for (var d = 0; d < DAYS; d++) {
     var a = dayStart(now) + d * 86400000, b = a + 86400000;
     // Each high tide that day: the NOAA model forecast where it reaches, else the astronomical prediction
@@ -736,21 +737,17 @@ function renderDays(s, now, off) {
     var name = d === 0 ? "Today" : fmt(a, { weekday: "short" }) + " " + fmt(a, { day: "numeric" });
     if (!top) { h += '<div class="tday"><div class="dn">' + name + '</div><div class="dv">–</div></div>'; continue; }
     var over = top.v > st.mhhw, past = top.t < now - 60 * 60000;
-    var maybe = !over && !top.fc && adj && top.v + off > st.mhhw;
     var meas = past && s.res ? s.res.filter(function (r) { return r.t === top.pred.t; })[0] : null;
-    var cls = over ? "over" : maybe ? "maybe" : "under", dx;
+    var dx;
     if (past && meas) dx = '<span class="' + (meas.meas > st.mhhw ? "hi" : "") + '">measured<br>' + meas.meas.toFixed(2) + " ft</span>";
     else if (over) dx = sgn(top.v - st.mhhw) + " ft<br>over MHHW";
-    else if (maybe) dx = (top.v + off).toFixed(2) + " if Bay<br>stays high";
     else dx = "below MHHW";
-    if (over && !past) nOver++; if (maybe && !past) nMaybe++; if (top.fc) fcDays++;
-    h += '<div class="tday ' + cls + (past ? " past" : "") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) +
+    if (top.fc) fcDays++;
+    h += '<div class="tday ' + (over ? "over" : "under") + (past ? " past" : "") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) +
       '</div><div class="dt">' + fTime(top.t) + (top.fc ? ' <span class="fc">fcst</span>' : "") + '</div><div class="dx">' + dx + "</div></div>";
   }
   el.innerHTML = h;
-  $t("tsechint").textContent = fcDays ? "NOAA forecast, then predicted" : "highest predicted tide each day";
-  $t("tcount").innerHTML = nOver ? "<b style='color:var(--red)'>" + nOver + " of 7 days above MHHW</b>" + (nMaybe ? " · " + (nOver + nMaybe) + " if Bay stays high" : "")
-    : nMaybe ? "<b style='color:var(--amber)'>" + nMaybe + " day" + (nMaybe > 1 ? "s" : "") + " above MHHW if Bay stays high</b>" : "No tides above MHHW";
+  $t("tsechint").textContent = fcDays ? "highest tide each day · NOAA forecast, then predicted" : "highest predicted tide each day";
 }
 
 var nowLinePlugin = {
@@ -766,7 +763,7 @@ var nowLinePlugin = {
 var TC = { chart: null, bars: null };
 
 // 7-day graph lined up under the day cards: one card per day column, no side axes taking up width.
-function drawTideChart(s, now, off) {
+function drawTideChart(s, now) {
   if (!s.pred || typeof Chart === "undefined" || $t("tides").classList.contains("hide")) return;
   var start = dayStart(now), m = s.st.mhhw, ink = cssVar("--ink"), muted = cssVar("--muted"), line = cssVar("--line");
   var hrs = function (t) { return (t - start) / 3600000; }, end = start + DAYS * 86400000;
@@ -777,9 +774,7 @@ function drawTideChart(s, now, off) {
   var ob = (s.obs || []).filter(function (p) { return p.t >= start; }).map(function (p) { return { x: hrs(p.t), y: p.v }; });
   var useModel = modelOK(s, now), fcEnd = useModel ? modelEnd(s) : now;
   var fc = useModel ? s.ofs.filter(function (p) { return p.t >= now - 30 * 60000 && p.t <= end; }).map(function (p) { return { x: hrs(p.t), y: p.v }; }) : [];
-  // "If Bay stays high" only where the model forecast doesn't reach
-  var adj = off != null && off >= OFFSET_NOTE_FT ? pr.filter(function (p) { return p.t >= fcEnd; }).map(function (p) { return { x: hrs(p.t), y: p.v + off }; }) : [];
-  var ys = pts.concat(ob, adj, fc).map(function (p) { return p.y; }).concat([m]);
+  var ys = pts.concat(ob, fc).map(function (p) { return p.y; }).concat([m]);
   var yMin = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), yMax = 2 * Math.ceil((Math.max.apply(null, ys) + 0.3) / 2);
   var data = { datasets: [
     { data: mh, borderColor: "#e05c2a", borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false, order: 3 },
@@ -787,7 +782,6 @@ function drawTideChart(s, now, off) {
     { data: pts, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false, order: 2,
       segment: { borderColor: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? "#c0392b" : undefined; },
                  borderWidth: function (c) { return (c.p0.parsed.y > m && c.p1.parsed.y > m) ? 2.5 : undefined; } } },
-    { data: adj, borderColor: "#e69f00", borderWidth: 2, borderDash: [4, 3], pointRadius: 0, tension: 0.3, fill: false, order: 4 },
     { data: ob, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 1 },
     { data: fc, borderColor: cssVar("--fc"), borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 0 }
   ] };
@@ -807,33 +801,7 @@ function drawTideChart(s, now, off) {
   else TC.chart = new Chart($t("tchartc"), { type: "line", data: data, options: opts, plugins: [nowLinePlugin] });
   $t("tkey").innerHTML = "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span>" +
     (fc.length ? "<span><i style='border-top:2.5px solid var(--fc)'></i>NOAA forecast</span>" : "") + "<span><i style='border-top:1.5px solid var(--ink)'></i>Predicted</span>" +
-    (adj.length ? "<span><i style='border-top:2px dashed #e69f00'></i>If Bay stays high</span>" : "") +
-    "<span><i class='ab'></i>Above MHHW</span><span class='tap'>" + (fc.length ? "Tap ›" : "Tap for times ›") + "</span>";
-}
-
-// One bar per high tide: measured minus predicted (feet). Above zero = higher than predicted.
-function drawBars(s, now) {
-  var R = s.res || [];
-  if (typeof Chart === "undefined" || $t("tides").classList.contains("hide")) return;
-  var muted = cssVar("--muted"), line = cssVar("--line"), ink = cssVar("--ink");
-  var lo = Math.min(-0.5, Math.min.apply(null, R.map(function (r) { return r.d; }).concat([0])) - 0.1);
-  var hi = Math.max(0.5, Math.max.apply(null, R.map(function (r) { return r.d; }).concat([0])) + 0.1);
-  var seen = {};
-  var labels = R.map(function (r) { var k = dayStart(r.t); if (seen[k]) return ""; seen[k] = 1; return fmt(r.t, { weekday: "narrow" }); });
-  var data = { labels: labels, datasets: [{ data: R.map(function (r) { return r.d; }), borderWidth: 0, barPercentage: 0.8, categoryPercentage: 0.9,
-    backgroundColor: R.map(function (r) { return r.d >= OFFSET_HIGH_FT ? "#c0392b" : r.d >= OFFSET_NOTE_FT ? "#e69f00" : r.d <= -OFFSET_NOTE_FT ? "#56B4E9" : "#8a96a6"; }) }] };
-  var opts = {
-    responsive: true, maintainAspectRatio: false, animation: false, events: [], layout: { padding: { top: 2 } },
-    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-    scales: {
-      x: { ticks: { color: muted, font: { size: 10 }, maxRotation: 0, autoSkip: false, padding: 1 }, grid: { display: false }, border: { display: false } },
-      y: { min: Math.floor(lo * 2) / 2, max: Math.ceil(hi * 2) / 2, border: { display: false },
-        ticks: { stepSize: 0.5, color: muted, font: { size: 10 }, padding: 2, callback: function (v) { return v === 0 ? "0" : (v > 0 ? "+" : "−") + Math.abs(v); } },
-        grid: { drawTicks: false, color: function (c) { return c.tick && c.tick.value === 0 ? ink : line; } } }
-    }
-  };
-  if (TC.bars) { TC.bars.data = data; TC.bars.options = opts; TC.bars.update("none"); }
-  else TC.bars = new Chart($t("tbarsc"), { type: "bar", data: data, options: opts });
+    "<span><i class='ab'></i>Above MHHW</span>";
 }
 
 /* ---------- Loading tide data ---------- */
@@ -1087,18 +1055,27 @@ function showLookAhead() {
   openDetail(st.name + " – next " + DAYS + " days", html);
 }
 function showPast() {
-  var s = tideS(), R = (s.res || []).slice().reverse();
-  var html = R.length ? "<table><tr><th>High tide</th><th>Predicted</th><th>Measured</th><th>Difference</th></tr>" + R.map(function (r) {
+  var s = tideS(), R = (s.res || []).slice().reverse(), now = nowLocal(), off = s.offset, html = "";
+  var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null, pv = last ? predAt(s, last.t) : null;
+  if (last) html += "<p style='font-size:18px'>Now <b>" + last.v.toFixed(2) + " ft</b> at " + fTime(last.t) +
+    (pv != null ? " · predicted " + pv.toFixed(2) + " ft (" + sgn(last.v - pv) + " ft)" : "") + "</p>";
+  if (off != null) html += "<p><b>" + (Math.abs(off) < OFFSET_NOTE_FT ? "High tides about as predicted" :
+    "High tides running " + Math.abs(off).toFixed(2) + " ft " + (off > 0 ? "higher" : "lower") + " than predicted") +
+    "</b> (average of the last " + Math.min(OFFSET_RECENT_HIGHS, R.length) + ").</p>";
+  var mc = modelOK(s, now) ? modelCheck(s, now) : null;
+  if (mc) html += "<p>NOAA model forecast vs measured, last 24 hours: 90% of readings within " + mc.p90.toFixed(2) + " ft" +
+    (Math.abs(mc.mean) >= 0.05 ? "; measured averaged " + sgn(mc.mean) + " ft from the model" : "") + ".</p>";
+  html += R.length ? "<table><tr><th>High tide</th><th>Predicted</th><th>Measured</th><th>Difference</th></tr>" + R.map(function (r) {
     return "<tr><td><b>" + fDay(r.t) + "</b> " + fTime(r.t) + "</td><td>" + r.pred.toFixed(2) + " ft</td><td>" + r.meas.toFixed(2) + " ft</td><td" +
       (r.d >= OFFSET_HIGH_FT ? ' class="red"' : "") + "><b>" + sgn(r.d) + " ft</b></td></tr>";
   }).join("") + "</table>" : "<p>Not enough measurements yet.</p>";
   html += '<div id="dnote">Measured = the highest NOAA reading within 90 minutes of each predicted high tide (preliminary data). ' +
     "A positive difference means the Bay ran higher than the astronomical tide, usually from storms, wind, runoff or a seasonal rise. " +
     "Upcoming high tides are likely to run high too while this continues. All heights ft NAVD88; NOAA station " + s.st.id + ".</div>";
-  openDetail(s.st.name + " – measured vs predicted, past " + PAST_DAYS + " days", html);
+  openDetail(s.st.name + " – now and the past " + PAST_DAYS + " days", html);
 }
 $t("tright").addEventListener("click", showLookAhead);
-$t("tpast").addEventListener("click", showPast);
+$t("thead").addEventListener("click", function (e) { if (e.target.closest("#thnow")) showPast(); else showLookAhead(); });
 
 /* ---------- Tide season: San Mateo County EM "tide days of concern" (San Francisco gauge) ---------- */
 // Dates and labels only. The County's heights are ft MLLW at San Francisco (NOAA 9414290), not NAVD88 at
