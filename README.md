@@ -5,6 +5,7 @@ Code for OneShoreline's San Francisco Bay and creek monitoring displays:
 - **Widgets for the OneRain (Contrail) dashboard**: NWS alerts, tide forecasts, and tides above MHHW
 - **A Raspberry Pi kiosk** for the office and EOC: one screen with Bay tides, creeks, a sensor map and NWS alerts
 - **A creek page for phones**: stage, rainfall, tide and NWS alerts for Colma, San Bruno, Belmont and Atherton, with contact info
+- **A Bay tides page for phones** (Redwood City and Alameda), which also works as a single dashboard widget
 - **A sensor map** of every public OneRain site (phone and desktop page, plus a Map tab on the kiosk)
 - **A scheduled data job** that collects OneRain readings for the kiosk, phone page and map
 
@@ -44,20 +45,22 @@ Each one is added to the OneRain dashboard as an iFrame/web-page widget pointing
 | `Alameda_MHHWWindows.html` | Same as above for Alameda. |
 | `RWC_graph.html` | Redwood City graph: the past 48 hours of measured water level over the predicted tide, then the next 7 days of predictions. Tides above MHHW are shaded red, with a "Now" line. Works on phones. |
 | `Alameda_graph.html` | Same as above for Alameda. |
+| `Tides.html?embed=1` | *Optional all-in-one.* Both stations in one widget (measured vs predicted, next time above MHHW, 48-hour + 7-day graph, table of times above MHHW), without the phone page's header and bottom bar. Can replace the four MHHW/graph widgets above with one. |
 | `RWC_PeakOutlook.html`, `Alameda_PeakOutlook.html` | *Optional / older.* Large single number: highest predicted tide in the next 7 days. The MHHW widgets now include this, so these are only needed if still on the dashboard. |
 
 ### Raspberry Pi kiosk
 
 | File | Purpose |
 |------|---------|
-| `ShorelineKiosk.html` | The kiosk page, designed for a 7" 800×480 touchscreen (scales to any screen). Tabs: **Bay Tides** (both stations: measured vs predicted, next time above MHHW, 9-day graph), **Creeks** (an All creeks summary card for each creek, then per creek: each gauge's stage with flood thresholds, rainfall, and the Bay tide, all on one timeline), **Map** (every public OneRain site, colored by status; tap one for its readings), **About** (contact info and QR codes), and **Disclaimer**. An NWS alert bar stays on top of every tab, and a creek alert strip appears when any creek reaches Flood Monitoring / Watch / Warning level. |
+| `ShorelineKiosk.html` | The kiosk page, laid out at 800×480 for a 7" touchscreen and scaled sharply to fit any screen (e.g. 1024×600). Tabs: **Bay Tides** (both stations: measured vs predicted, next time above MHHW, 9-day graph), **Creeks** (an All creeks summary card for each creek, then per creek: each gauge's stage with flood thresholds, rainfall, and the Bay tide, all on one timeline), **Map** (every public OneRain site, colored by status; tap one for its readings), **About** (contact info and QR codes), and **Disclaimer**. An NWS alert bar stays on top of every tab, and a creek alert strip appears when any creek reaches Flood Monitoring / Watch / Warning level. To protect the screen from burn-in, the whole picture moves by 2 pixels every 10 minutes (too small to notice); KIOSK_SETUP.md also explains how to switch the screen off after hours. |
 | `KIOSK_SETUP.md` | Step-by-step Raspberry Pi setup, kiosk options, and all settings. |
 
 ### Phone page
 
 | File | Purpose |
 |------|---------|
-| `Creeks.html` | Creek page designed for phones, at `https://fews.oneshoreline.org/Creeks.html`. Opens on **All creeks**: a card per creek with its status, each gauge's level, rain and tide (tap a card for that creek). Four tiles at the top, one per creek, each showing that creek's current status (Normal, Monitoring, Watch, Warning, Rain trigger, Offline); tap one to switch (`#colma`, `#sanbruno`, `#belmont`, `#atherton` at the end of the URL opens one). **Creeks** tab: NWS alert banner (tap for full text), each stage gauge with its level and thresholds (or "Gauge may be offline" with the last report), rainfall, Belmont's rain triggers, the Bay tide measured vs predicted, and rain / stage / tide graphs on one timeline. The bottom bar (Home · Creeks · Map · About) is on both this page and the sensor map; tapping Creeks while viewing a creek returns to All creeks. **About** tab: what the page shows, "In an emergency, call 911", SMC Alert sign-up, contact buttons, and the disclaimer. Follows the phone's dark mode, refreshes automatically, and can be saved to the home screen. |
+| `Creeks.html` | Creek page designed for phones, at `https://fews.oneshoreline.org/Creeks.html`. Opens on **All creeks**: a card per creek with its status, each gauge's level, rain and tide (tap a card for that creek). Four tiles at the top, one per creek, each showing that creek's current status (Normal, Monitoring, Watch, Warning, Rain trigger, Offline); tap one to switch (`#colma`, `#sanbruno`, `#belmont`, `#atherton` at the end of the URL opens one). **Creeks** tab: NWS alert banner (tap for full text), each stage gauge with its level and thresholds (or "Gauge may be offline" with the last report), rainfall, Belmont's rain triggers, the Bay tide measured vs predicted, and rain / stage / tide graphs on one timeline. The bottom bar (Home · Creeks · Tides · Map · About) is on this page, the tides page and the sensor map; tapping Creeks while viewing a creek returns to All creeks. **About** tab: what the page shows, "In an emergency, call 911", SMC Alert sign-up, contact buttons, and the disclaimer. Follows the phone's dark mode, refreshes automatically, and can be saved to the home screen. |
+| `Tides.html` | Bay tides page for phones, at `https://fews.oneshoreline.org/Tides.html`. Redwood City and Alameda: measured water level (rising/falling, and how far above or below the prediction), the next predicted time above MHHW, a graph of the past 48 hours and next 7 days with tides above MHHW shaded red, and a table of every predicted time above MHHW this week. NWS alert banner on top; same bottom bar as the creek page (Home · Creeks · Tides · Map · About). Two columns on wider screens. Add `?embed=1` for a dashboard widget version. All levels in ft NAVD88. |
 | `SanBrunoCreekMobile.html` | Old address of the phone page; forwards to `Creeks.html#sanbruno` so existing links and home-screen shortcuts keep working. |
 | `SiteMap.html` | Map of every public OneRain site, for phones and computers, at `https://fews.oneshoreline.org/SiteMap.html`. Markers are colored by status (reporting, Flood Monitoring / Watch / Warning level, not reporting); square markers are rain-only gauges. Tap a site for its latest readings, how long ago they came in, a 24-hour graph, and a link to the full data on OneRain. **List** shows all sites grouped by status; **Rain 24 h** labels each site with its 24-hour rain total. `#site=41102` at the end of the URL opens that site (use the site number OneRain shows in parentheses). |
 
@@ -147,6 +150,9 @@ picks up changes the next time someone opens it (a pull-down refresh may be need
 - **OneShoreline Early Warning System (OneRain Contrail)**: creek stage, rainfall and all map sites
   (`oneshorelineearlywarning.onerain.com`)
 - **OpenStreetMap**: map background (`tile.openstreetmap.org`, © OpenStreetMap contributors)
+- **Libraries** (loaded from CDNs, each locked with a Subresource Integrity hash so a changed file is refused):
+  Chart.js 4.5.1 (cdnjs), Leaflet 1.9.4 (jsDelivr), qrcodejs 1.0.0 (cdnjs, kiosk About tab). To upgrade one,
+  update both the URL and its `integrity` hash in every page that loads it.
 
 ## Contact
 

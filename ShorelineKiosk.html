@@ -10,9 +10,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
   integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
-  integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+  crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   /* Designed at exactly 800x480 and scaled to fit whatever screen it's on. */
@@ -392,6 +394,8 @@ var CONTACT_URL = "https://www.oneshoreline.org/contact-oneshoreline";
 var ALERT_SIGNUP_URL = "https://www.smcgov.org/dem/smc-alert";
 var CREEK_RETURN_MIN = 5;          // a single creek returns to the "All creeks" summary after this long (0 = stay)
 var ABOUT_RETURN_SEC = 120;        // the About tab returns to Bay Tides on its own after this long
+var PIXEL_SHIFT_MIN = 10;          // screen-burn protection: nudge the picture this often (0 = off)
+var PIXEL_SHIFT_PX = 2;            // ...by up to this many pixels
 var ROTATE_SECONDS = 0;            // 0 = stay on the chosen tab; e.g. 30 = switch tabs every 30 seconds
 var TAB_RETURN_MIN = 0;            // 0 = stay; e.g. 10 = return to Bay Tides after 10 min on the creek tab
 
@@ -405,14 +409,40 @@ if (params.get("rotate")) ROTATE_SECONDS = Number(params.get("rotate")) || 0;
 /* ================================================== */
 
 /* ---------- Scale the 800x480 design to fit the screen ---------- */
+// Pixel shift: every few minutes the whole picture moves by a pixel or two, in a small loop, so nothing (title
+// bar, tab buttons, panel edges) sits on exactly the same screen pixels for days. Not noticeable to viewers.
+var SHIFT_STEPS = [[0, 0], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+var shiftIdx = 0, stageScale = 1;
+function placeStage() {
+  var s = stageScale, st = document.getElementById("stage"), d = SHIFT_STEPS[shiftIdx % SHIFT_STEPS.length];
+  var dx = PIXEL_SHIFT_PX * d[0], dy = PIXEL_SHIFT_PX * d[1];
+  // Whole-pixel positions: a fractional offset makes the browser smear text across pixels (blurry).
+  var left = Math.round(Math.max(0, (window.innerWidth - 800 * s) / 2) + dx);
+  var top = Math.round(Math.max(0, (window.innerHeight - 480 * s) / 2) + dy);
+  if (USE_ZOOM) {
+    // CSS zoom lays the page out again at the larger size, so text and lines are drawn sharp at the screen's
+    // own resolution (a transform scale enlarges an already-drawn picture, which softens it). Positions of a
+    // zoomed element are in its zoomed units, hence the division.
+    st.style.transform = "";
+    st.style.zoom = s;
+    st.style.left = left / s + "px";
+    st.style.top = top / s + "px";
+  } else {
+    st.style.transform = "scale(" + s + ")";
+    st.style.left = left + "px";
+    st.style.top = top + "px";
+  }
+}
+// CSS zoom has worked the same way in Chromium since version 128 (2024); older browsers use the scale.
+var USE_ZOOM = (function () {
+  var m = navigator.userAgent.match(/Chrom(?:e|ium)\/(\d+)/);
+  return !!m && +m[1] >= 128 && !/[?&]zoom=0\b/.test(location.search);
+})();
 function fit() {
   var s = Math.min(window.innerWidth / 800, window.innerHeight / 480);
-  var st = document.getElementById("stage");
-  st.style.transform = "scale(" + s + ")";
-  st.style.left = Math.max(0, (window.innerWidth - 800 * s) / 2) + "px";
-  st.style.top = Math.max(0, (window.innerHeight - 480 * s) / 2) + "px";
-  // The layout is enlarged with a CSS scale, which would stretch the graphs' pixels and blur them on big
-  // screens. Draw the graphs at the enlarged size instead so they stay sharp at any screen size.
+  stageScale = s;
+  placeStage();
+  // Graphs are canvases: draw them at the enlarged size so they stay sharp on bigger screens.
   if (typeof Chart !== "undefined") {
     var dpr = (window.devicePixelRatio || 1) * Math.max(1, s);
     Chart.defaults.devicePixelRatio = dpr;
@@ -1275,7 +1305,7 @@ function renderMap() {
   var alerts = all.filter(function (o) { return !o.st.off && o.st.level; }).sort(function (a, b) { return b.st.level - a.st.level; });
   h += '<div class="msec">At an alert level</div>';
   h += alerts.length ? alerts.slice(0, 4).map(function (o) {
-    return '<div class="mrow"><i class="mdot" style="background:' + o.st.color + '"></i><span class="nm">' + esc(o.site.name) + '</span><span class="v">' + o.st.label.replace("Flood ", "") + "</span></div>";
+    return '<div class="mrow"><i class="mdot" style="background:' + o.st.color + '"></i><span class="nm">' + esc(o.site.name) + '</span><span class="v">' + esc(o.st.label.replace("Flood ", "")) + "</span></div>";
   }).join("") : '<div class="mnone">✓ No sites at an alert level</div>';
   var rainy = all.filter(function (o) { return !o.st.off && o.st.rain >= 0.01; }).sort(function (a, b) { return b.st.rain - a.st.rain; });
   h += '<div class="msec">Most rain, past 24 hours</div>';
@@ -1293,7 +1323,7 @@ function siteDetail(site, st, now, sub) {
     var val = isRain(s) && s.rain24 != null ? s.rain24.toFixed(2) + "<small> in / 24 h</small>" : mNum(s.value, s.unit) + "<small> " + esc(s.unit) + "</small>";
     h += '<div class="msens"><div class="r"><span class="l">' + esc(s.name) + '</span><span class="val">' + val + "</span></div>" +
       '<div class="a' + (old ? " old" : "") + '">' + (t ? fTime(t) + " · " + agoText(now - t) : "no recent report") +
-      (s.thresholds ? " · " + s.thresholds.map(function (x) { return x.name.replace("Flood ", "") + " " + x.value; }).join(" / ") : "") + "</div>" +
+      (s.thresholds ? " · " + s.thresholds.map(function (x) { return esc(x.name.replace("Flood ", "")) + " " + x.value; }).join(" / ") : "") + "</div>" +
       (((s.points && s.points.length > 1) || (s.hourly && s.hourly.length)) ? '<canvas id="msp' + i + '"></canvas>' : "") + "</div>";
   });
   if (site.sensors.length > 3) h += '<div class="a" style="font-size:11.5px;color:var(--muted)">+ ' + (site.sensors.length - 3) + " more on OneRain</div>";
@@ -1303,7 +1333,7 @@ function siteDetail(site, st, now, sub) {
 function drawSparks(site, now) {
   site.sensors.slice(0, 3).forEach(function (s, i) {
     var c = document.getElementById("msp" + i); if (!c) return;
-    var scale = Chart.defaults.devicePixelRatio || window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+    var scale = (typeof Chart !== "undefined" && Chart.defaults.devicePixelRatio) || window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
     c.width = w * scale; c.height = h * scale;
     var g = c.getContext("2d"); g.scale(scale, scale);
     var t0 = now - 24 * 36e5, x = function (t) { return (t - t0) / (24 * 36e5) * (w - 2) + 1; };

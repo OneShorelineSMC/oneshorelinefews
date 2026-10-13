@@ -1,6 +1,6 @@
 # Shoreline Kiosk – Raspberry Pi setup
 
-Runs `ShorelineKiosk.html` full screen on a Raspberry Pi with a 7" 800×480 touchscreen.
+Runs `ShorelineKiosk.html` full screen on a Raspberry Pi with a 7" touchscreen (1024×600 or 800×480; the page fits either).
 The page lives on GitHub Pages like the dashboard widgets, so updating the kiosk is just a commit to the repo.
 
 Kiosk URL:
@@ -15,6 +15,7 @@ Options you can add to the end of the URL:
 |-------------|-----------------------------------------------------------|
 | `?theme=dark` | Dark background – easier on the eyes in a dim EOC        |
 | `?cursor=1`   | Show the mouse pointer (handy when previewing on a computer) |
+| `?zoom=0`     | Use the older picture scaling instead of CSS zoom (only if a screen looks wrong) |
 | `?tab=creek`  | Start on the Creeks tab (add `&creek=belmont` etc. to choose the creek) |
 | `?rotate=30`  | Switch between Bay Tides and Creeks every 30 seconds |
 | `?tab=map`    | Start on the Map tab                                      |
@@ -47,6 +48,28 @@ do those now and confirm touch works on the desktop.
 `Raspberry Pi menu → Preferences → Raspberry Pi Configuration → Display → Screen Blanking: Off`
 (or in a terminal: `sudo raspi-config` → Display Options → Screen Blanking → No). Reboot.
 
+## 2b. Make the picture sharp (run the Pi at the screen's own resolution)
+
+Every screen has a fixed number of pixels (its *native resolution*). Many 7" Hosyond screens are **1024 × 600**;
+some are 800 × 480. Check the label, box or product listing. If the Pi sends the screen any other resolution,
+the screen stretches or shrinks the picture and everything looks soft, no matter what the page does.
+
+1. `Raspberry Pi menu → Preferences → Screen Configuration`. Right-click the screen → **Resolution** →
+   choose the screen's native resolution (e.g. **1024x600**), then **Apply** and keep the change.
+2. If it isn't offered, set it at startup: `sudo nano /boot/firmware/cmdline.txt`, and at the end of the
+   **single existing line** add a space and `video=HDMI-A-1:1024x600M@60` (use your screen's numbers, and
+   `DSI-1` instead of `HDMI-A-1` if the screen connects by ribbon cable). Save and reboot.
+3. In the kiosk start line below, keep `--force-device-scale-factor=1` so Chromium doesn't enlarge the page on
+   its own.
+
+The kiosk is laid out at 800 × 480 and enlarged to fit the screen. On a 1024 × 600 screen it's drawn 1.25×
+larger (1000 × 600, with a thin 12-pixel border on each side), and text and graphs are drawn at the full
+1024 × 600 detail rather than stretched.
+
+The kiosk page also positions itself on whole pixels and, on current Chromium (version 128 or later),
+enlarges with CSS zoom rather than a picture scale, so text stays crisp on larger screens too. Add `?zoom=0`
+to the address to switch back to the older scaling if a screen ever looks wrong.
+
 ## 3. Start the kiosk automatically
 
 Open a terminal and run:
@@ -59,8 +82,10 @@ nano ~/.config/labwc/autostart
 Add this line (all on one line), then save with Ctrl+O, Enter, Ctrl+X:
 
 ```bash
-chromium --kiosk --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --incognito "https://fews.oneshoreline.org/ShorelineKiosk.html" &
+chromium --kiosk --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --force-device-scale-factor=1 --incognito "https://fews.oneshoreline.org/ShorelineKiosk.html" &
 ```
+
+(Until fews.oneshoreline.org is set up, use `https://oneshorelinesmc.github.io/oneshorelinefews/ShorelineKiosk.html`.)
 
 Reboot (`sudo reboot`). The kiosk should open full screen after the desktop loads.
 
@@ -85,6 +110,43 @@ Reboot (`sudo reboot`). The kiosk should open full screen after the desktop load
 - **Touch:** tap the alert bar for full NWS alert text, or a station for its full list of predicted
   times above MHHW. Detail screens return to the main view after 45 seconds. The buttons at the bottom
   switch between tabs.
+
+## Screen care: burn-in protection and turning the screen off after hours
+
+**Pixel shift (built in).** Every 10 minutes the whole picture moves by a pixel or two, in a small loop, so the
+parts that never change (title bar, alert bar, tab buttons, panel edges) don't sit on exactly the same pixels for
+days. It isn't noticeable. Settings: `PIXEL_SHIFT_MIN` (10; 0 turns it off) and `PIXEL_SHIFT_PX` (2).
+
+The 7" screen is an LCD, so permanent burn-in is unlikely; the risk is faint temporary "ghosting" after days of
+an unchanging picture, which pixel shift and switching the screen off overnight both prevent. Turning the
+brightness down a little (if the screen has a control) also helps.
+
+**Office kiosk: screen off after hours.** This is set on the Pi itself (the kiosk page keeps running, so it's
+current the moment the screen comes back on). Leave the **EOC kiosk on** during activations.
+
+1. Find the screen's name: open a terminal on the Pi and run `wlr-randr`. The first word of the output is the
+   name, usually `HDMI-A-1` (or `DSI-1` for a ribbon-cable screen).
+2. Run `crontab -e` (choose `nano` if asked) and add these two lines at the bottom, using that name. This turns
+   the screen off at 7 PM and on at 7 AM, Monday–Friday, and leaves it off all weekend:
+
+   ```
+   0 19 * * 1-5 WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/1000 wlr-randr --output HDMI-A-1 --off
+   0 7  * * 1-5 WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/1000 wlr-randr --output HDMI-A-1 --on
+   ```
+
+   Save with Ctrl+O, Enter, Ctrl+X. To change the hours, edit the first two numbers on each line
+   (minute, hour, 24-hour clock); `1-5` is Monday–Friday.
+3. Test it now: run the `--off` command (everything after `1-5 `) in the terminal, check the screen goes dark,
+   then run the `--on` one.
+
+Good to know:
+- **During an activation or a storm**, turn the screen on right away by running the `--on` command, or simply
+  reboot the Pi. To stop the schedule, run `crontab -e` and put `#` at the start of both lines.
+- **Touching the screen doesn't wake it** while it's off; use the `--on` command or a reboot.
+- Some small HDMI screens keep their backlight lit even with no picture. If yours glows when "off", plug the
+  screen (not the Pi) into an outlet timer or smart plug set to the same hours instead.
+- `1000` is the first user account on the Pi. If you created the kiosk under a different account, run `id -u`
+  as that user and use its number instead.
 
 ## Map tab
 
@@ -221,6 +283,8 @@ Near the top of the `<script>` section in `ShorelineKiosk.html`:
 | `SITES_URL`           | data branch file | Where the Map tab reads its data        |
 | `SITE_QUIET_HOURS`    | 24      | Silence after which a map site shows gray ("not reporting") |
 | `CREEK_RETURN_MIN`    | 5       | A single creek returns to the All creeks summary after this long (0 = stay) |
+| `PIXEL_SHIFT_MIN`     | 10      | How often the picture shifts slightly (burn-in protection; 0 = off) |
+| `PIXEL_SHIFT_PX`      | 2       | How far it shifts, in pixels                    |
 | `ROTATE_SECONDS`      | 0       | Switch tabs automatically (0 = off)             |
 | `TAB_RETURN_MIN`      | 0       | Return to Bay Tides after this long on the creek tab (0 = off) |
 | `CONTACT_URL`         | OneShoreline contact page | Where the "Contact OneShoreline" QR code points |

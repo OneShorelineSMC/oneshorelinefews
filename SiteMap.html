@@ -5,8 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#005085">
 <title>OneShoreline Sensor Map</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+  crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root {
     --bg: #f0f4f8; --card: #ffffff; --ink: #1a3a5c; --muted: #66768a; --line: #e3e8ee; --brand: #005085;
@@ -139,6 +143,7 @@
 <nav>
   <a href="index.html"><span class="i">🏠</span>Home</a>
   <a href="Creeks.html"><span class="i">🌊</span>Creeks</a>
+  <a href="Tides.html"><span class="i">〰️</span>Tides</a>
   <a href="SiteMap.html" class="on" aria-current="page"><span class="i">🗺️</span>Map</a>
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
@@ -192,7 +197,7 @@ function fWhen(ms) {
   if (day === today) return fClock(ms);
   return new Date(ms).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" }) + ", " + fClock(ms);
 }
-function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function num(v, unit) {
   if (v == null) return "–";
   var d = Math.abs(v) >= 100 ? 0 : (unit === "in" ? 2 : (Math.abs(v) >= 10 ? 1 : 2));
@@ -250,7 +255,7 @@ function draw() {
     var m = L.marker([site.lat, site.lon], { icon: markerIcon(site, st), title: site.name, riseOnHover: true,
       zIndexOffset: st.off ? -500 : st.level * 500 + (selected === site.site ? 2000 : 0) });
     m.on("click", function () { openSite(site.site, false); });
-    m.bindTooltip(site.name, { direction: "top", offset: [0, -10] });
+    m.bindTooltip(esc(site.name), { direction: "top", offset: [0, -10] });   // tooltips are HTML: escape the OneRain name
     m.addTo(map); markers[site.site] = m; bounds.push([site.lat, site.lon]);
   });
   if (firstFit && bounds.length) { map.fitBounds(bounds, { padding: [24, 24] }); firstFit = false; }
@@ -283,7 +288,7 @@ function renderSheet(id) {
   var now = nowLocal(), st = siteStatus(site, now);
   var h = '<div class="grab"></div><div class="shead"><div><div class="sname">' + esc(site.name) + '</div>' +
     '<div class="snum">Site ' + esc(site.number) + '</div></div><button class="x" aria-label="Close" onclick="closeSite()">✕</button></div>' +
-    '<span class="badge" style="background:' + st.color + '">' + st.label + '</span>';
+    '<span class="badge" style="background:' + st.color + '">' + esc(st.label) + '</span>';
   site.sensors.forEach(function (s, i) {
     var t = s.time ? parseLocal(s.time) : null, old = t && now - t > OLD_READING_HOURS * 36e5;
     var lvl = sensorLevel(s, now), rainish = s.kind === "increment" || s.kind === "accumulation";
@@ -376,7 +381,7 @@ function drawList(now) {
         if ((s.kind === "increment" || s.kind === "accumulation") && s.rain24 != null) return "Rain " + s.rain24.toFixed(2) + " in/24 h";
         return esc(s.name) + " " + num(s.value, s.unit) + " " + esc(s.unit);
       }).join(" · ");
-      h += '<div class="row" data-id="' + site.site + '"><i class="ld' + (o.st.rainOnly ? " sq" : "") + '" style="background:' + o.st.color + '"></i>' +
+      h += '<div class="row" data-id="' + esc(site.site) + '"><i class="ld' + (o.st.rainOnly ? " sq" : "") + '" style="background:' + o.st.color + '"></i>' +
         '<div class="rmain"><div class="rname">' + esc(site.name) + '</div><div class="rvals">' + vals + '</div></div>' +
         '<div class="rage">' + (o.st.newest ? ago(now - o.st.newest) : "–") + '</div></div>';
     });
