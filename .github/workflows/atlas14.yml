@@ -1,0 +1,20 @@
+name: Atlas 14 pull (one-off)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Atlas 14 pull (one-off) tables for all FEWS sites
+        run: python scripts/fetch_atlas14.py
+      - name: Save the CSV for download
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas14-csv
+          path: out/atlas14_fews_sites.csv

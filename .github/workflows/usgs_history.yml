@@ -1,0 +1,57 @@
+name: USGS history pull (one-off)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "Start date (YYYY-MM-DD)"
+        default: "2007-10-01"
+      end:
+        description: "End date (YYYY-MM-DD) — leave blank for now"
+        default: ""
+
+jobs:
+  # One job per site, all running at the same time, each with its own time limit.
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false        # one slow or failed site doesn't cancel the others
+      max-parallel: 5         # stay polite to USGS
+      matrix:
+        site: ["11164500", "11162500", "11162570", "11162619", "11162620",
+               "11162630", "111626182", "11162753", "11162750"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pull USGS data for ${{ matrix.site }}
+        env:
+          USGS_API_KEY: ${{ secrets.USGS_API_KEY }}
+        run: |
+          ARGS="--start ${{ inputs.start }} --sites ${{ matrix.site }}"
+          if [ -n "${{ inputs.end }}" ]; then ARGS="$ARGS --end ${{ inputs.end }}"; fi
+          python scripts/fetch_usgs.py $ARGS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: usgs-${{ matrix.site }}
+          path: out/usgs/
+          if-no-files-found: ignore
+
+  # Combine every site into one download.
+  combine:
+    needs: pull
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: usgs-*
+          path: out/usgs
+          merge-multiple: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: usgs-data
+          path: out/usgs/
