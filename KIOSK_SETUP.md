@@ -6,7 +6,7 @@ The page lives on GitHub Pages like the dashboard widgets, so updating the kiosk
 Kiosk URL:
 
 ```
-https://fews.oneshoreline.org/ShorelineKiosk.html
+https://oneshorelinesmc.github.io/oneshorelinefews/ShorelineKiosk.html
 ```
 
 Options you can add to the end of the URL:
@@ -82,10 +82,10 @@ nano ~/.config/labwc/autostart
 Add this line (all on one line), then save with Ctrl+O, Enter, Ctrl+X:
 
 ```bash
-chromium --kiosk --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --force-device-scale-factor=1 --incognito "https://fews.oneshoreline.org/ShorelineKiosk.html" &
+chromium --kiosk --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --force-device-scale-factor=1 --incognito "https://oneshorelinesmc.github.io/oneshorelinefews/ShorelineKiosk.html" &
 ```
 
-(Until fews.oneshoreline.org is set up, use `https://oneshorelinesmc.github.io/oneshorelinefews/ShorelineKiosk.html`.)
+(When the site moves to fews.oneshoreline.org, change this address to `https://fews.oneshoreline.org/ShorelineKiosk.html`.)
 
 Reboot (`sudo reboot`). The kiosk should open full screen after the desktop loads.
 
