@@ -106,6 +106,7 @@ the sensor map. Alameda's is blank because its OneRain tide site isn't public.
 | 911 lines | | |
 | Tide explanations (MHHW definition, NOAA forecast note, causes incl. El Niño) | | |
 | Creek status words | Pages use different words today (e.g. "Rain trigger" vs "Flooding likely (rain)", "Offline" vs "Gauge offline", "Delayed" vs "Data delayed"); decide whether to make them match | |
+| Creek status layer wording (plain-language pass, Oct 14) | Rain levels now Heavy / Very heavy / **Intense** (was Severe, an NWS word); "Light or none" when not raining hard; feet and ft/hr moved under "See the numbers"; "How to read this page" panel. **Open: the level names Flood Monitoring / Watch / Warning match NWS alert names; decide with DEM whether to rename them on public pages** | |
 | Contact details and links | | |
 
 ## 7. Gauge mapping — `creek_gauges.csv`
