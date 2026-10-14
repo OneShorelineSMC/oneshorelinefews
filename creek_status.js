@@ -61,10 +61,10 @@
     for (var i = 1; i <= 3; i++) b += "<i" + (i <= level ? ' class="on"' : "") + "></i>";
     return '<span class="cs-chip ' + k + '"><span class="cs-meter" aria-hidden="true">' + b + "</span>" + esc(rainWord(level)) + "</span>";
   }
-  function trendText(t) {
+  function trendText(t, short) {
     if (!t || !t.trend) return "";
     var w = T("trend_" + t.trend), arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[t.trend] || "";
-    return '<span aria-hidden="true">' + arrow + "</span> " + esc(w) + (t.ft_per_hr != null && t.trend !== "steady" ? ' <span class="cs-dim">(' + (t.ft_per_hr > 0 ? "+" : "") + t.ft_per_hr.toFixed(1) + " ft/hr)</span>" : "");
+    return '<span aria-hidden="true">' + arrow + "</span> " + esc(w) + (!short && t.ft_per_hr != null && t.trend !== "steady" ? ' <span class="cs-dim">(' + (t.ft_per_hr > 0 ? "+" : "") + t.ft_per_hr.toFixed(1) + " ft/hr)</span>" : "");
   }
   // Normal | Monitoring | Watch | Warning, only the active segment colored, marker at the current stage
   function band(g, e) {
@@ -121,19 +121,21 @@
 
   /* Top of page: one-line summary, red banner when flooding is likely, one evacuation button */
   function summary(data) {
-    var by = { likely: [], ready: [], alert: [], nodata: [] };
+    // When the data file is old, summarize the last statuses we have, and say so first (never "No creek alerts")
+    var by = { likely: [], ready: [], alert: [], nodata: [] }, late = false;
     allCreeks(data).forEach(function (c) {
-      var v = view(data, c);
-      if (by[v.key]) by[v.key].push(c.name);
-      else if (v.key === "offline" || v.key === "delayed") by.nodata.push(c.name);
+      var v = view(data, c), k = v.key;
+      if (k === "delayed") { late = true; k = (c.status || {}).key || "none"; }
+      if (by[k]) by[k].push(c.name);
+      else if (k === "offline") by.nodata.push(c.name);
     });
-    var m = [];
+    var m = late ? [T("status_delayed") + ": the last update was " + dated(data.generated) + ". At that time:"] : [];
     if (by.likely.length) m.push(T("summary_likely", { creeks: list(by.likely) }));
     if (by.ready.length) m.push(T("summary_ready", { creeks: list(by.ready) }));
     if (by.alert.length) m.push(by.alert.length <= 3 ? T("summary_alert", { creeks: list(by.alert) }) : T("summary_alert_many", { n: by.alert.length }));
-    if (!m.length) m.push(T("summary_none"));
+    if (m.length === (late ? 1 : 0)) m.push(T("summary_none"));
     var h = "";
-    if (by.likely.length) h += '<div class="cs-banner" role="alert">' + esc(T("banner_likely", { creeks: list(by.likely) })) + "</div>";
+    if (by.likely.length) h += '<div class="cs-banner" role="alert">' + (late ? esc("As of " + clock(data.generated) + ": ") : "") + esc(T("banner_likely", { creeks: list(by.likely) })) + "</div>";
     h += '<div class="cs-glance"><p class="cs-main">' + esc(m.join(" ")) + "</p>";
     if (by.likely.length || by.ready.length) {
       var u = T("url_evacuation");
@@ -190,7 +192,7 @@
     return '<div class="cs-tile cs-' + v.key + '"><div class="cs-tn">' + esc(c.name) + "</div>" +
       '<div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>" +
       (v.reasons[0] ? '<div class="cs-tr">' + esc(v.reasons[0]) + "</div>" : "") +
-      '<div class="cs-tm"><span class="cs-dim">Rain</span> ' + chip(r.level) + (st.trend ? ' &nbsp; <span class="cs-dim">Creek</span> ' + trendText(st.trend) : "") + "</div></div>";
+      '<div class="cs-tm"><span class="cs-dim">Rain</span> ' + chip(r.level) + (st.trend ? ' &nbsp; <span class="cs-dim">Creek</span> ' + trendText(st.trend, true) : "") + "</div></div>";
   }
 
   var css = [

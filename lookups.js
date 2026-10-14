@@ -93,7 +93,8 @@
     limited_rain: "Rain gauges may miss storms here",
     nws_separate: "This page shows creek conditions measured by OneShoreline. It is separate from National Weather Service alerts \u2014 follow whichever is more serious.",
     why_trigger: "Rain has reached this creek's flooding trigger.",
-    why_trigger_tide: "Rain and a high tide have reached this creek's flooding trigger."
+    why_trigger_tide: "Rain and a high tide have reached this creek's flooding trigger.",
+    why_gauge_offline: "The creek gauge isn't reporting, so this status comes from the rain."
   };
 
   var cur = { settings: {}, tides: {}, text: {} }, handlers = [], L;
