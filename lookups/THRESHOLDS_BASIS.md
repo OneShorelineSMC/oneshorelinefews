@@ -170,6 +170,14 @@ which makes those cards advisory rather than informational. Switch: `BE_READY_FR
 Flood levels always take priority; rain and rate of rise never lower a status. Run the layer **staff-only first**
 (silent mode for the first storms) before the public sees it.
 
+How it runs (Oct 14): the data job works out each creek's status every run and writes it into `creeks.json`
+with reason codes; the pages turn the codes into the words in `display_text.csv`. The job reads the NOAA tide
+itself (measured if within the hour, else predicted) for the rising-tide line and for rain + tide triggers. If the
+tide can't be read, a rain + tide trigger counts as not met and the staff view says so. Every status change is
+appended to `status_log.csv` on the data branch for review after each storm. A quiet creek reads **No alerts**
+(decided Oct 14). A rain gauge counts as "no recent data" only when it is silent for `RAIN_SILENT_MIN` while another
+gauge on the creek records Heavy rain or more.
+
 ## 11. Rapidly rising: calibration plan
 
 The current rule (§5) stays until there is data to replace it. Proposed per-gauge rule: a 30-minute fitted slope at
