@@ -347,7 +347,7 @@ def creek_status(c, sens, tide, now, S):
     elif level == 2:
         reasons.append({"code": "why_watch", "rising_fast": fast})
     elif level == 1:
-        reasons.append({"code": "why_monitoring", "rising": up in ("fast", "rising")})
+        reasons.append({"code": "why_monitoring", "rising": up in ("fast", "rising"), "rising_fast": fast})
     if trig3 or (trigger and level < 3):
         reasons.append({"code": "why_trigger_tide" if trigger.get("high_tide") else "why_trigger",
                         "minutes": trigger["minutes"], "inches": trigger["amount"]})
