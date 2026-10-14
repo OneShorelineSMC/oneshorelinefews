@@ -1,175 +1,177 @@
 """
-The creeks shown on the kiosk's Creeks tab, the phone page (Creeks.html) and the home page, and the alert
-levels drawn on the site map. FLOOD THRESHOLDS ARE IN thresholds.csv (top of the repo), not here. The pages
-read everything from the published data file, so changes here show up everywhere on the next data run
-(about 5 minutes after you commit).
+Reads the creek settings that staff check and update, all in the lookups/ folder (see lookups/README.md):
 
-Each creek has:
-  id      short code used in links, e.g. Creeks.html#atherton
-  name    shown on headings and the alert strip
-  short   shown on the creek buttons (keep it to one or two short words)
-  rain_windows   the rain totals shown, in minutes (60 = 1 hr, 1440 = 24 hr); match the creek's OneRain dashboard
-  rain_running   optional: a graph of the running rain total over "minutes", with a line at "line" inches
-  intro   one sentence under the creek's name
-  tide    NOAA station shown under the creek: "9414750" Alameda or "9414523" Redwood City
-  note    optional text shown with the graphs (e.g. what the threshold colors mean)
-  stages  creek water-level gauges, upstream first
-  rain    rain gauges, upper watershed first
-  (flood thresholds and rain triggers for every gauge are in thresholds.csv)
+  lookups/creeks.csv         the creeks: names, intro and note text, tide station, rain windows
+  lookups/creek_gauges.csv   each creek's stage and rain gauges and their OneRain sensor link details
+  lookups/thresholds.csv     flood thresholds for every stage gauge, and rain triggers
+  lookups/tide_stations.csv  NOAA tide stations: MHHW and the MLLW-to-NAVD88 difference
 
-Each gauge needs its OneRain sensor link details: open the sensor's page on OneRain (Sites > site > sensor)
-and copy site_id, site, device_id and device from the address bar.
+Nothing in this file needs editing for a normal change. The pages read everything from the published data
+file, so changes show up everywhere on the next data run (about 5 minutes after you commit).
 
+If a file has a mistake, the data job keeps using the last good settings (from the previous data file),
+keeps publishing creek readings, and marks the run as failed in the Actions tab with the row and problem.
 """
 
 import csv
 import os
+import re
 
 LEVEL_COLORS = {1: "#e6c200", 2: "#e07b00", 3: "#c62828", 4: "#9c27b0"}
-THRESHOLDS_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "thresholds.csv")
+LEVEL_NAMES = {1: "Flood Monitoring", 2: "Flood Watch", 3: "Flood Warning", 4: "Above Flood Warning"}
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+LOOKUPS = os.path.join(_HERE, "..", "lookups")
+CREEKS_CSV = os.path.join(LOOKUPS, "creeks.csv")
+GAUGES_CSV = os.path.join(LOOKUPS, "creek_gauges.csv")
+THRESHOLDS_CSV = os.path.join(LOOKUPS, "thresholds.csv")
+TIDE_CSV = os.path.join(LOOKUPS, "tide_stations.csv")
+
+_SLUG = re.compile(r"^[a-z0-9_]+$")
+_UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 
-CREEKS = [
-    {
-        "id": "sanbruno",
-        "name": "San Bruno Creek",
-        "short": "San Bruno",
-        "rain_windows": [15, 30, 60, 180, 1440],   # flashy creek: short windows too (Summer, Oct 13)
-        "intro": "Creek level at First Avenue in South San Francisco / San Bruno, rain in the upper and lower "
-                 "watershed, and the Bay tide at Alameda. The creek at First Avenue rises and falls with the tide.",
-        "tide": "9414750",
-        "note": "",
-        "stages": [
-            {"key": "stage", "label": "First Avenue", "site_name": "San Bruno Creek at First Avenue", "number": "41102",
-             "site_id": 11, "site": "fe06588c-e5e6-4016-8a8f-2ba1f040636e",
-             "device_id": 3, "device": "e481d107-65bb-4107-89ab-48484eb0e188",
-             "reports": "on change",   # reports only when the level changes, so silence isn't always an outage
-             "note": ""},
-        ],
-        "rain": [
-            {"key": "rain_mountain", "label": "San Bruno Mountain", "where": "upper watershed", "number": "41200",
-             "site_id": 3, "site": "e5d4db4f-0a98-4825-aa98-fa327ed9cfa8",
-             "device_id": 2, "device": "2a34c20c-eb4e-4337-801c-5341296fcb30"},
-            {"key": "rain_first_ave", "label": "First Avenue", "where": "lower watershed", "number": "41102",
-             "site_id": 11, "site": "fe06588c-e5e6-4016-8a8f-2ba1f040636e",
-             "device_id": 5, "device": "410fdb23-37d0-43aa-8a67-616e08323774"},
-        ],
-    },
-    {
-        "id": "atherton",
-        "name": "Atherton Channel",
-        "short": "Atherton",
-        "rain_windows": [30, 60, 1440],
-        "intro": "Channel levels at Alameda de las Pulgas and just upstream of the Caltrain crossing, rain at "
-                 "Caltrain, and the Bay tide at Redwood City. Thresholds are for the community downstream of "
-                 "the Caltrain crossing.",
-        "tide": "9414523",
-        "note": "Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; "
-                "Flood Warning = 100% (flooding likely).",
-        "stages": [
-            {"key": "ath_alameda", "label": "Alameda de las Pulgas", "site_name": "Atherton Channel at Alameda de las Pulgas",
-             "number": "41107", "site_id": 48, "site": "222db05c-ef0a-4720-b2c1-aaba882205f8",
-             "device_id": 5, "device": "24188afc-3ba7-498b-b865-c186ddd1f7f5",
-             "reports": "interval",
-             "note": ""},
-            {"key": "ath_caltrain", "label": "Upstream of Caltrain", "site_name": "Atherton Channel upstream of CalTrain",
-             "number": "41106", "site_id": 14, "site": "a63a9e54-703b-43b1-8286-6cabbaae7fa1",
-             "device_id": 4, "device": "b1b9cc5f-9ad6-498b-96cb-fc299b4eab79",
-             "reports": "on change",
-             "note": "The probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow."},
-        ],
-        "rain": [
-            {"key": "ath_rain", "label": "Caltrain", "where": "upstream of Caltrain", "number": "41106",
-             "site_id": 14, "site": "a63a9e54-703b-43b1-8286-6cabbaae7fa1",
-             "device_id": 3, "device": "d301732b-ca6b-44d6-a1d6-ffb421967266"},
-        ],
-    },
-]
-
-
-CREEKS.append({
-    "id": "belmont",
-    "name": "Belmont Creek",
-    "short": "Belmont",
-    "rain_windows": [30, 60, 240, 1440],
-    "rain_running": {"gauge": "bel_rain", "minutes": 240, "label": "4-hour rain (in)"},   # trigger line comes from thresholds.csv
-    "intro": "Creek level at Old County Road, rain at Old County Road, and the Bay tide at Redwood City. Thresholds "
-             "are for the Harbor Industrial Area community downstream of the Caltrain crossing. Flooding is likely "
-             "if 30-minute rain exceeds 0.20 inches, or if 4-hour rain exceeds 0.42 inches and the tide is high.",
-    "tide": "9414523",
-    "note": "Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; "
-            "Flood Warning = 100% (flooding likely).",
-    "stages": [
-        {"key": "bel_stage", "label": "Old County Road", "site_name": "Belmont Creek at Old County Rd", "number": "41104",
-         "site_id": 2, "site": "25fd9d56-e3ea-4ff9-a067-b3e99cc5c1fe",
-         "device_id": 1, "device": "5c101ccb-75e1-4c68-a983-4b8c78913c03",
-         "reports": "on change",
-         "note": ""},
-    ],
-    "rain": [
-        {"key": "bel_rain", "label": "Old County Road", "where": "lower watershed", "number": "41104",
-         "site_id": 2, "site": "25fd9d56-e3ea-4ff9-a067-b3e99cc5c1fe",
-         "device_id": 4, "device": "4002d654-cd0a-4e0f-a178-83ea5ea84566"},
-    ],
-})
-
-
-CREEKS.append({
-    "id": "colma",
-    "name": "Colma Creek",
-    "short": "Colma",
-    "rain_windows": [60, 360, 1440],
-    "intro": "Creek level and rain at Orange Memorial Park in South San Francisco, and the Bay tide at Alameda. "
-             "Thresholds are for the community downstream of Orange Memorial Park.",
-    "tide": "9414750",
-    "note": "Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; "
-            "Flood Warning = 100% (flooding likely).",
-    "stages": [
-        {"key": "col_stage", "label": "Orange Memorial Park", "site_name": "Colma Creek at Orange Memorial Park",
-         "number": "41101", "site_id": 12, "site": "32e8ebb1-4c9c-460a-a4cd-58903b96f347",
-         "device_id": 5, "device": "dbbbcf6d-6a38-44a5-a90b-7077db13c5c2",
-         "reports": "interval",
-         "note": ""},
-    ],
-    "rain": [
-        {"key": "col_rain", "label": "Orange Memorial Park", "where": "lower watershed", "number": "41101",
-         "site_id": 12, "site": "32e8ebb1-4c9c-460a-a4cd-58903b96f347",
-         "device_id": 4, "device": "cc7e3be8-a663-4bb9-9137-fe252166c71f"},
-    ],
-})
-
-# Order of the creek buttons: north to south
-_ORDER = ["colma", "sanbruno", "belmont", "atherton"]
-CREEKS.sort(key=lambda c: _ORDER.index(c["id"]) if c["id"] in _ORDER else len(_ORDER))
+def _rows(path, name):
+    """Rows of a CSV as dicts with trimmed, lower-case column names; (rows, error)."""
+    try:
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            rows = list(csv.DictReader(f))
+    except OSError as e:
+        return [], f"can't read {name}: {e}"
+    out = []
+    for n, r in enumerate(rows, start=2):   # row 1 is the header
+        r = {k.strip().lower(): (v or "").strip() for k, v in r.items() if k}
+        if any(r.values()):
+            r["_where"] = f"{name} row {n}"
+            out.append(r)
+    return out, None
 
 
 def _window(minutes):
     return f"{minutes}-minute" if minutes < 60 else f"{minutes // 60}-hour"
 
 
-def load_thresholds(path=THRESHOLDS_CSV):
-    """Read thresholds.csv into CREEKS. Returns a list of problems; if there are any, nothing is applied
+def load_tide_stations(path=TIDE_CSV):
+    """{station id: {"name", "mhhw", "mllw_to_navd88"}}, errors."""
+    rows, err = _rows(path, "tide_stations.csv")
+    if err:
+        return {}, [err]
+    out, errors = {}, []
+    for r in rows:
+        w, sid = r["_where"], r.get("station", "")
+        if not re.fullmatch(r"\d{7}", sid):
+            errors.append(f"{w}: station must be a 7-digit NOAA station number"); continue
+        try:
+            mhhw = float(r.get("mhhw_navd88_ft", ""))
+            assert -5 < mhhw < 20
+        except (ValueError, AssertionError):
+            errors.append(f"{w}: mhhw_navd88_ft must be a number in ft NAVD88"); continue
+        off = None
+        if r.get("mllw_to_navd88_ft"):
+            try:
+                off = float(r["mllw_to_navd88_ft"])
+                assert -10 < off < 10
+            except (ValueError, AssertionError):
+                errors.append(f"{w}: mllw_to_navd88_ft must be a number (ft) or blank"); continue
+        out[sid] = {"name": r.get("name") or sid, "mhhw": mhhw, "mllw_to_navd88": off}
+    return out, errors
+
+
+def load_creeks(tides):
+    """The creek list from creeks.csv and creek_gauges.csv; (creeks, errors)."""
+    crow, err = _rows(CREEKS_CSV, "creeks.csv")
+    grow, err2 = _rows(GAUGES_CSV, "creek_gauges.csv")
+    errors = [e for e in (err, err2) if e]
+    if errors:
+        return [], errors
+    creeks, order = {}, {}
+    for r in crow:
+        w, cid = r["_where"], r.get("creek", "")
+        if not _SLUG.match(cid):
+            errors.append(f"{w}: creek must be a short code of lower-case letters, digits or _ (e.g. sanbruno)"); continue
+        if cid in creeks:
+            errors.append(f"{w}: creek '{cid}' is listed twice"); continue
+        if not r.get("name") or not r.get("short_name"):
+            errors.append(f"{w}: name and short_name are required"); continue
+        if r.get("tide_station") not in tides:
+            errors.append(f"{w}: tide_station '{r.get('tide_station')}' is not in tide_stations.csv"); continue
+        try:
+            wins = sorted({int(x) for x in re.split(r"[\s,;]+", r.get("rain_windows_min", "")) if x})
+            assert wins and all(0 < x <= 10080 for x in wins)
+        except (ValueError, AssertionError):
+            errors.append(f"{w}: rain_windows_min must be minutes separated by spaces, e.g. 15 30 60 1440"); continue
+        try:
+            order[cid] = float(r.get("order") or 99)
+        except ValueError:
+            errors.append(f"{w}: order must be a number"); continue
+        c = {"id": cid, "name": r["name"], "short": r["short_name"], "rain_windows": wins,
+             "intro": r.get("intro", ""), "tide": r["tide_station"], "note": r.get("note", ""), "stages": [], "rain": []}
+        rg, rm, rl = r.get("running_rain_gauge", ""), r.get("running_rain_min", ""), r.get("running_rain_label", "")
+        if rg or rm:
+            try:
+                c["rain_running"] = {"gauge": rg, "minutes": int(rm), "label": rl or f"{_window(int(rm))} rain (in)"}
+            except ValueError:
+                errors.append(f"{w}: running_rain_min must be whole minutes, e.g. 240"); continue
+        creeks[cid] = c
+    keys = set()
+    for r in grow:
+        w, cid, key, typ = r["_where"], r.get("creek", ""), r.get("gauge", ""), r.get("type", "").lower()
+        if cid not in creeks:
+            errors.append(f"{w}: creek '{cid}' is not in creeks.csv"); continue
+        if not _SLUG.match(key) or key in keys:
+            errors.append(f"{w}: gauge must be a unique short code (lower-case letters, digits, _)"); continue
+        if typ not in ("stage", "rain"):
+            errors.append(f"{w}: type must be 'stage' or 'rain'"); continue
+        bad = [col for col, ok in (("label", r.get("label")), ("onerain_number", re.fullmatch(r"\d+", r.get("onerain_number", ""))),
+                                   ("site_id", re.fullmatch(r"\d+", r.get("site_id", ""))), ("site", _UUID.match(r.get("site", "").lower())),
+                                   ("device_id", re.fullmatch(r"\d+", r.get("device_id", ""))), ("device", _UUID.match(r.get("device", "").lower())))
+               if not ok]
+        if bad:
+            errors.append(f"{w}: missing or malformed {', '.join(bad)} (copy them from the sensor's OneRain page address)"); continue
+        g = {"key": key, "label": r["label"], "number": r["onerain_number"], "site_id": int(r["site_id"]), "site": r["site"].lower(),
+             "device_id": int(r["device_id"]), "device": r["device"].lower(), "note": r.get("note", "")}
+        if typ == "stage":
+            rep = r.get("reports", "").lower()
+            if rep not in ("on change", "interval"):
+                errors.append(f"{w}: reports must be 'on change' or 'interval' for a stage gauge"); continue
+            tid = r.get("tidal", "").lower()
+            if tid not in ("", "yes", "no"):
+                errors.append(f"{w}: tidal must be yes, no or blank"); continue
+            g.update({"site_name": r.get("site_name") or r["label"], "reports": rep, "tidal": tid == "yes"})
+            creeks[cid]["stages"].append(g)
+        else:
+            g["where"] = r.get("where", "")
+            creeks[cid]["rain"].append(g)
+        keys.add(key)
+    for c in creeks.values():
+        if not c["stages"]:
+            errors.append(f"creeks.csv: creek '{c['id']}' has no stage gauge in creek_gauges.csv")
+        rr = c.get("rain_running")
+        if rr and rr["gauge"] not in [g["key"] for g in c["rain"]]:
+            errors.append(f"creeks.csv: running_rain_gauge '{rr['gauge']}' for '{c['id']}' is not one of its rain gauges")
+    if errors:
+        return [], errors
+    return sorted(creeks.values(), key=lambda c: order[c["id"]]), []
+
+
+def load_thresholds(creeks, tides, path=THRESHOLDS_CSV):
+    """Read thresholds.csv into the creeks. Returns a list of problems; if there are any, nothing is applied
     (the data job then keeps the last good thresholds, so a typo can't blank or mis-color the screens)."""
     gauges = {}
-    for c in CREEKS:
+    for c in creeks:
         for g in c["stages"]:
             gauges[g["key"]] = (c, "stage", g)
         for g in c["rain"]:
             gauges[g["key"]] = (c, "rain", g)
+    rows, err = _rows(path, "thresholds.csv")
+    if err:
+        return [err]
     stage, triggers, errors = {}, {}, []
-    try:
-        with open(path, newline="", encoding="utf-8-sig") as f:
-            rows = list(csv.DictReader(f))
-    except OSError as e:
-        return [f"can't read thresholds.csv: {e}"]
-    for n, r in enumerate(rows, start=2):   # row 1 is the header
-        r = {k.strip().lower(): (v or "").strip() for k, v in r.items() if k}
-        if not any(r.values()):
-            continue
-        where = f"thresholds.csv row {n}"
+    for r in rows:
+        where = r["_where"]
         c_id, key, typ = r.get("creek", ""), r.get("gauge", ""), r.get("type", "").lower()
         if key not in gauges:
-            errors.append(f"{where}: unknown gauge '{key}' (see the gauge keys in scripts/creek_config.py)"); continue
+            errors.append(f"{where}: unknown gauge '{key}' (see the gauge column in lookups/creek_gauges.csv)"); continue
         creek, kind, _ = gauges[key]
         if c_id != creek["id"]:
             errors.append(f"{where}: gauge '{key}' belongs to creek '{creek['id']}', not '{c_id}'"); continue
@@ -181,7 +183,7 @@ def load_thresholds(path=THRESHOLDS_CSV):
             assert level in LEVEL_COLORS and value > 0
         except (ValueError, AssertionError):
             errors.append(f"{where}: level must be 1-4 and value a positive number"); continue
-        name = r.get("name") or {1: "Flood Monitoring", 2: "Flood Watch", 3: "Flood Warning", 4: "Above Flood Warning"}[level]
+        name = r.get("name") or LEVEL_NAMES[level]
         item = {"value": value, "name": name, "level": level, "color": LEVEL_COLORS[level]}
         if r.get("notes"):
             item["note"] = r["notes"]
@@ -205,7 +207,7 @@ def load_thresholds(path=THRESHOLDS_CSV):
         triggers.setdefault(creek["id"], []).append(item)
     if errors:
         return errors
-    for c in CREEKS:
+    for c in creeks:
         for g in c["stages"]:
             g["thresholds"] = sorted(stage.get(g["key"], []), key=lambda x: x["value"])
         c["rain_triggers"] = sorted(triggers.get(c["id"], []), key=lambda x: (x["minutes"], x["value"]))
@@ -217,7 +219,13 @@ def load_thresholds(path=THRESHOLDS_CSV):
     return []
 
 
-THRESHOLD_ERRORS = load_thresholds()
+TIDE_STATIONS, TIDE_ERRORS = load_tide_stations()
+if TIDE_ERRORS:
+    CREEKS, CONFIG_ERRORS = [], ["creeks not loaded until tide_stations.csv is fixed"]
+else:
+    CREEKS, CONFIG_ERRORS = load_creeks(TIDE_STATIONS)
+THRESHOLD_ERRORS = load_thresholds(CREEKS, TIDE_STATIONS) if CREEKS else []
+SETTINGS_ERRORS = TIDE_ERRORS + CONFIG_ERRORS + THRESHOLD_ERRORS   # everything to report in the Actions tab
 
 
 def map_thresholds():

@@ -23,12 +23,14 @@ import urllib.parse
 
 import os
 
-from creek_config import THRESHOLD_ERRORS, map_thresholds
+from creek_config import CREEKS, THRESHOLD_ERRORS, TIDE_STATIONS, map_thresholds
 from fetch_onerain import SITE, TZ, Session, parse_readings, sensor_page, to_time
 
 # OneRain's tide stations report in MLLW. The public pages show NAVD88 only, so tide readings are shifted by the
 # station's NOAA datum difference (NAVD88 minus MLLW). Redwood City 9414523: NAVD88 is 1.18 ft above MLLW.
-TIDE_MLLW_TO_NAVD88 = {"9414523": -1.18}
+# OneRain tide sites numbered like a NOAA station: their readings (ft MLLW) are shown in ft NAVD88 using the
+# MLLW-to-NAVD88 difference in lookups/tide_stations.csv
+TIDE_MLLW_TO_NAVD88 = {k: v["mllw_to_navd88"] for k, v in TIDE_STATIONS.items() if v["mllw_to_navd88"] is not None}
 
 HISTORY_HOURS = 24   # history kept per sensor for the small graphs and the 24-hour rain total
 MAX_POINTS = 96      # graph points kept per sensor (keeps the file small)
@@ -185,7 +187,7 @@ def main():
             print(f"sites.json is {age:.0f} min old (refreshes every {min_age:.0f}); skipping this run.")
             return
     old_sites = {s["site"]: s for s in previous.get("sites", [])}
-    if THRESHOLD_ERRORS:   # use the last good thresholds, which fetch_onerain.py kept in creeks.json
+    if THRESHOLD_ERRORS or not CREEKS:   # use the last good thresholds, which fetch_onerain.py kept in creeks.json
         try:
             with open(os.path.join(os.path.dirname(out_path) or ".", "creeks.json")) as f:
                 for c in json.load(f).get("creeks", []):

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Download recent creek stage and rain readings from OneRain and save them as JSON for the kiosk's Creeks
-tab, the phone page (Creeks.html) and the home page. The creeks and gauges are listed in creek_config.py.
+tab, the phone page (Creeks.html) and the home page. The creeks and gauges are listed in lookups/creeks.csv
+and lookups/creek_gauges.csv (read by creek_config.py).
 
 OneRain's data export needs a login, but each sensor's public page (the one you see as "Guest")
 lists its readings. This script reads those public pages. It runs in a GitHub Action every few
@@ -9,7 +10,9 @@ minutes and the result is published for the kiosk (see .github/workflows/onerain
 
 Usage:  python fetch_onerain.py OUTPUT.json      (the workflow uses creeks.json)
 If a sensor can't be read, its previous data in OUTPUT.json (if any) is kept and the error is
-recorded, so one bad download never blanks the screen.
+recorded, so one bad download never blanks the screen. If a lookups/ file has a mistake, the last good
+settings in OUTPUT.json are used, readings are still published, and the problems are written to
+settings_problems.txt next to OUTPUT.json (the workflow then marks the run as failed after publishing).
 """
 import datetime as dt
 import html as htmllib
@@ -32,15 +35,37 @@ HEADERS = {
 HOURS = 48          # how much history to keep in the file (the graphs show 36 hours)
 MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lists them in batches)
 
-from creek_config import CREEKS, THRESHOLD_ERRORS
+import os
 
-# Every gauge listed in creek_config.py, by key
+from creek_config import CREEKS, CONFIG_ERRORS, THRESHOLD_ERRORS, SETTINGS_ERRORS
+
 SENSORS = {}
-for _c in CREEKS:
-    for _g in _c["stages"]:
-        SENSORS[_g["key"]] = dict(_g, name=f"{_g['site_name']} ({_g['number']}) – Stage", kind="stage", unit="ft")
-    for _g in _c["rain"]:
-        SENSORS[_g["key"]] = dict(_g, name=f"{_g['label']} ({_g['number']}) – Rain", kind="rain_increment", unit="in")
+
+
+def set_sensors(creeks):
+    """Every gauge in the creek list, by key."""
+    SENSORS.clear()
+    for c in creeks:
+        for g in c["stages"]:
+            SENSORS[g["key"]] = dict(g, name=f"{g['site_name']} ({g['number']}) – Stage", kind="stage", unit="ft")
+        for g in c["rain"]:
+            SENSORS[g["key"]] = dict(g, name=f"{g['label']} ({g['number']}) – Rain", kind="rain_increment", unit="in")
+
+
+def creeks_from_previous(previous_file):
+    """The last good creek list, rebuilt from the previous data file (each gauge's link holds its OneRain ids)."""
+    out = []
+    for c in previous_file.get("creeks", []):
+        c = json.loads(json.dumps(c))
+        for g in c.get("stages", []) + c.get("rain", []):
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(g.get("url", "")).query)
+            g.update({"site_id": int(q["site_id"][0]), "site": q["site"][0], "device_id": int(q["device_id"][0]), "device": q["device"][0]})
+            g.pop("url", None)
+        out.append(c)
+    return out
+
+
+set_sensors(CREEKS)
 
 STAMP = r"(\d{4}-\d\d-\d\d \d\d:\d\d(?::\d\d)?)"
 NUMBER = r"(-?\d+(?:\.\d+)?)"
@@ -159,10 +184,23 @@ def main():
         previous_file = {}
     previous = previous_file.get("sensors", {})
 
+    for e in SETTINGS_ERRORS:   # shown as errors in the Actions tab
+        print(f"::error title=lookups::{e}", file=sys.stderr)
+    problems_path = os.path.join(os.path.dirname(out_path) or ".", "settings_problems.txt")
+    with open(problems_path, "w") as f:
+        f.write("".join(e + "\n" for e in SETTINGS_ERRORS))
+    if not CREEKS:   # creeks.csv / creek_gauges.csv / tide_stations.csv problem: keep the whole last good creek list
+        try:
+            CREEKS[:] = creeks_from_previous(previous_file)
+        except (KeyError, ValueError, IndexError) as e:
+            print(f"Previous creek list unusable ({e}).", file=sys.stderr)
+        if not CREEKS:
+            print("No usable creek settings and no previous data file; nothing to publish.", file=sys.stderr)
+            sys.exit(1)
+        set_sensors(CREEKS)
+        print("lookups/ has problems (above); kept the previous creek list and thresholds.", file=sys.stderr)
     creeks_out = public_config()
-    if THRESHOLD_ERRORS:   # a mistake in thresholds.csv: keep the last good thresholds and flag it
-        for e in THRESHOLD_ERRORS:
-            print(f"::error title=thresholds.csv::{e}", file=sys.stderr)
+    if THRESHOLD_ERRORS and not CONFIG_ERRORS:   # a mistake in thresholds.csv: keep the last good thresholds
         old = {c["id"]: c for c in previous_file.get("creeks", [])}
         for c in creeks_out:
             o = old.get(c["id"])
@@ -202,8 +240,9 @@ def main():
 
     with open(out_path, "w") as f:
         json.dump(result, f, separators=(",", ":"))
-    # Fail the job only if nothing at all could be read, so problems show up in the Actions tab.
-    sys.exit(1 if failures == len(SENSORS) or THRESHOLD_ERRORS else 0)
+    # Fail the job only if nothing at all could be read (then nothing is published, and the pages show the data as
+    # delayed). Settings problems are reported by the workflow after publishing, from settings_problems.txt.
+    sys.exit(1 if failures == len(SENSORS) else 0)
 
 
 if __name__ == "__main__":
