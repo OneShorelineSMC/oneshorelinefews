@@ -25,7 +25,9 @@
     GAUGE_QUIET_HOURS: [12, 0.5, 168], GAUGE_QUIET_HOURS_INTERVAL: [3, 0.25, 168], CREEK_DATA_LATE_MIN: [30, 5, 1440],
     SITE_QUIET_HOURS: [24, 1, 336], SITE_OLD_READING_HOURS: [3, 0.25, 168], SITE_DATA_LATE_MIN: [45, 5, 1440],
     MODEL_MAX_AGE_HOURS: [12, 1, 72], MODEL_MIN_AHEAD_HOURS: [6, 0, 72],
-    OFFSET_RECENT_HIGHS: [4, 1, 14], OFFSET_NOTE_FT: [0.2, 0.01, 5], OFFSET_HIGH_FT: [0.5, 0.01, 10]
+    OFFSET_RECENT_HIGHS: [4, 1, 14], OFFSET_NOTE_FT: [0.2, 0.01, 5], OFFSET_HIGH_FT: [0.5, 0.01, 10],
+    // creek status layer (the data job uses the same ranges, scripts/creek_signals.py)
+    RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1]
   };
   var TIDES = {
     "9414523": { id: "9414523", name: "Redwood City", mhhw: 7.02 },
@@ -51,7 +53,47 @@
     contact_phone: "(650) 844-8310", contact_email: "info@oneshoreline.org", contact_website: "oneshoreline.org",
     contact_address_1: "1700 S. El Camino Real, Suite 502", contact_address_2: "San Mateo, CA 94402",
     url_website: "https://www.oneshoreline.org", url_contact: "https://www.oneshoreline.org/contact-oneshoreline",
-    url_smc_alert: "https://www.smcgov.org/dem/smc-alert"
+    url_smc_alert: "https://www.smcgov.org/dem/smc-alert",
+    // Creek status layer (staff preview; THRESHOLDS_BASIS.md §10). {words} are filled in by the pages.
+    verdict_likely: "Flooding likely",
+    verdict_likely_todo: "Move away from the creek and low areas now. Follow instructions from local officials.",
+    verdict_ready: "Be ready",
+    verdict_ready_todo: "Stay away from the creek. Be ready to move to higher ground if you are told to.",
+    verdict_alert: "Stay alert",
+    verdict_alert_todo: "Avoid creek banks, low spots and flooded streets. Check back often.",
+    verdict_none: "No alerts",
+    verdict_none_todo: "Nothing unusual right now. Conditions can change quickly during storms.",
+    verdict_nodata_todo: "Check local conditions and official alerts.",
+    why_warning: "The creek is at its Flood Warning level.",
+    why_watch: "The creek is at its Flood Watch level.",
+    why_monitoring: "The creek is higher than usual.",
+    why_normal_rain: "The creek is still at a normal level, but {rain} rain upstream may make it rise.",
+    why_rising_fast: "The creek is rising fast.",
+    why_rain: "{Rain} rain in the hills above.",
+    why_stale: "Our rain gauge for this creek hasn\u2019t reported since {time}.",
+    why_sanmateo: "Crystal Springs Reservoir holds back much of this water.",
+    tide_rising_line: "Rising tide: water near the Bay drains slowly until about {time}.",
+    rain_heavy: "Heavy",
+    rain_vheavy: "Very heavy",
+    rain_severe: "Severe",
+    trend_fast: "Rising fast",
+    trend_rising: "Rising",
+    trend_steady: "Steady",
+    trend_falling: "Falling",
+    summary_likely: "Flooding likely at {creeks}.",
+    summary_ready: "Be ready near {creeks}.",
+    summary_alert: "Stay alert near {creeks}.",
+    summary_alert_many: "Stay alert near {n} other creeks.",
+    summary_none: "No creek alerts right now.",
+    summary_none_area: "No creek alerts near {area} right now.",
+    banner_likely: "Flooding is likely at {creeks}. If you are in danger, call 911.",
+    evac_button: "See if your area has an evacuation order",
+    url_evacuation: "https://protect.genasys.com/",
+    no_flood_level: "No flood level set for this creek yet",
+    limited_rain: "Rain gauges may miss storms here",
+    nws_separate: "This page shows creek conditions measured by OneShoreline. It is separate from National Weather Service alerts \u2014 follow whichever is more serious.",
+    why_trigger: "Rain has reached this creek's flooding trigger.",
+    why_trigger_tide: "Rain and a high tide have reached this creek's flooding trigger."
   };
 
   var cur = { settings: {}, tides: {}, text: {} }, handlers = [], L;
