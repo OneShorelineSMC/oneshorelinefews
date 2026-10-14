@@ -112,7 +112,10 @@
     eoc_action_ready: "",
     eoc_action_alert: "",
     changed_title: "Changed in the last hour",
-    staff_legend: "Rain levels: Heavy = at least a 1-year storm for some duration at that gauge, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14). Storm size and chance in any year are for the heaviest window. Supporting = a hillside gauge that counts toward the creek's rain level but isn't in its rain tables. Trigger = a rain (and tide) rule in thresholds.csv."
+    staff_legend: "Rain levels: Heavy = at least a 1-year storm for some duration at that gauge, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14). Storm size and chance in any year are for the heaviest window. Supporting = a hillside gauge that counts toward the creek's rain level but isn't in its rain tables. Trigger = a rain (and tide) rule in thresholds.csv.",
+    creek_level_at: "Creek level at {place}",
+    creek_level_word: "Creek level",
+    rain_row: "Rain"
   };
 
   var cur = { settings: {}, tides: {}, text: {} }, handlers = [], L;

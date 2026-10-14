@@ -33,6 +33,11 @@
   function allCreeks(data) { return (data.creeks || []).concat(data.creeks_preview || []); }
   function list(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
   function rainWord(l) { return l >= 3 ? T("rain_severe") : l === 2 ? T("rain_vheavy") : l === 1 ? T("rain_heavy") : ""; }
+  // "Creek level at Old County Road" / "Creek level below Stone Dam"
+  function levelLabel(g) {
+    var l = String(g.label || ""), m = /^(below|above|upstream of|downstream of|near)\b\s*/i.exec(l);
+    return m ? T("creek_level_word") + " " + l.charAt(0).toLowerCase() + l.slice(1) : T("creek_level_at", { place: l });
+  }
   function winLabel(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
 
   /* One creek's status as shown: the data job's answer, or Data delayed when the data file is old */
@@ -76,9 +81,9 @@
     var p = e && e.points && e.points.length ? e.points[e.points.length - 1] : null;
     if (e && e.latest && e.latest[0] && (!p || e.latest[0] > p[0])) p = e.latest;
     var sig = e && e.signals || {};
-    if (!p || !sig.trend) return '<div class="cs-row"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-val cs-dim">' + esc(T("verdict_offline")) + (p ? " · " + esc(dated(p[0])) : "") + "</span></div>";
+    if (!p || !sig.trend) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val cs-dim">' + esc(T("verdict_offline")) + (p ? " · " + esc(dated(p[0])) : "") + "</span></div>";
     var v = p[1];
-    if (th.length < 3) return '<div class="cs-row"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-val">' + trendText(sig, true) + "</span></div>";
+    if (th.length < 3) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val">' + trendText(sig, true) + "</span></div>";
     var cut = [th[0].value, th[1].value, th[2].value], top = cut[2] + Math.max(0.5, (cut[2] - cut[1]));
     var seg = [[0, cut[0], 35, "Normal"], [cut[0], cut[1], 20, th[0].name.replace("Flood ", "")], [cut[1], cut[2], 20, th[1].name.replace("Flood ", "")], [cut[2], top, 25, th[2].name.replace("Flood ", "")]];
     var act = v >= cut[2] ? 3 : v >= cut[1] ? 2 : v >= cut[0] ? 1 : 0, pos = 0, acc = 0;
@@ -87,7 +92,7 @@
       acc += s[2];
     });
     var name = act ? th[act - 1].name : T("status_normal");
-    return '<div class="cs-band"><div class="cs-bt"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-now">' + esc(name) + " · " + trendText(sig, true) + "</span></div>" +
+    return '<div class="cs-band"><div class="cs-bt"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-now">' + esc(name) + " · " + trendText(sig, true) + "</span></div>" +
       '<div class="cs-track" role="img" aria-label="' + esc(g.label + ": " + name) + '">' + seg.map(function (s, i) {
         return '<span class="cs-s" style="flex:' + s[2] + (i === act ? ";background:" + LEVEL_COL[i] : "") + '"></span>'; }).join("") +
       '<span class="cs-mark" style="left:' + pos.toFixed(1) + '%"></span></div>' +
@@ -101,18 +106,19 @@
     var v = view(data, c), st = v.st, h = "";
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
     h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + (c.preview_only ? '<span class="cs-sm">New creek, preview only</span>' : "") + "</div>";
-    h += '<div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>";
+    h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>";
     if (v.since) h += '<p class="cs-since">' + esc(v.since) + "</p>";
     v.reasons.forEach(function (r) { h += '<p class="cs-why">' + esc(r) + "</p>"; });
+    h += "</div>";
     h += '<div class="cs-body">' + (v.key === "likely" ? '<p class="cs-danger">' + esc(T("e911")) + "</p>" : "") +
       '<p class="cs-todo"><b>What to do:</b> ' + esc(v.todo) + "</p></div>";
     if (!opts.compact) {
-      h += '<div class="cs-details">';
+      h += '<div class="cs-details cs-stages">';
       (c.stages || []).forEach(function (g) { h += band(g, data.sensors[g.key]); });
       var r = st.rain || {};
-      h += '<div class="cs-row"><span class="cs-lbl">Rain</span><span class="cs-val">' + chip(r.level) + "</span></div>";
-      h += "</div>" + numbers(data, c, opts.numbersOpen);
-    }
+      h += '</div><div class="cs-details cs-rainrow"><div class="cs-row"><span class="cs-lbl">' + esc(T("rain_row")) + '</span><span class="cs-val">' + chip(r.level) + "</span></div></div>";
+      h += numbers(data, c, opts.numbersOpen);
+    } else h += "<div></div><div></div><div></div>";
     h += '<div class="cs-foot"><span>As of ' + esc(dated(data.generated)) + (st.has_levels === false ? " · " + esc(T("no_flood_level")) : "") + "</span>" +
       (opts.link ? '<a href="' + esc(opts.link) + '">Details ›</a>' : "") + "</div>";
     return h + "</article>";
@@ -255,7 +261,9 @@
     ".cs-why{margin:8px 14px 0;font-size:14.5px;line-height:1.45;color:var(--text,var(--ink))}",
     ".cs-body{padding:8px 14px 10px}.cs-body p{margin:0 0 4px;font-size:15px;line-height:1.45}",
     ".cs-danger{font-weight:700;color:#c62828}",
-    ".cs-details{margin:0 14px 10px;border-top:1px solid var(--line,#eceff3)}",
+    ".cs-details{margin:0 14px;border-top:1px solid var(--line,#eceff3)}.cs-rainrow{margin-bottom:6px}.cs-stages .cs-band:last-child,.cs-stages .cs-row:last-child{border-bottom:0}",
+    // Cards side by side line up section by section: status, What to do, creek level, rain, numbers, footer
+    "@supports (grid-template-rows:subgrid){.cs-grid>.cs-card{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0}.cs-grid>.cs-card>.cs-stages{align-self:start}}",
     ".cs-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line,#eceff3);font-size:14px}",
     ".cs-row:last-child{border-bottom:0}.cs-lbl{color:var(--muted,#556274)}.cs-val{font-weight:600;text-align:right}",
     ".cs-dim{color:var(--muted,#556274);font-weight:400}.cs-sm{display:block;font-size:12px;color:var(--muted,#556274)}",
