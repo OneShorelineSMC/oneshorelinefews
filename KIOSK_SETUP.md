@@ -17,7 +17,7 @@ Options you can add to the end of the URL:
 | `?cursor=1`   | Always show the mouse pointer. (Without it the pointer is hidden for the touchscreen, but appears whenever a mouse moves and hides after 3 seconds.) |
 | `?zoom=0`     | Use the older picture scaling instead of CSS zoom (only if a screen looks wrong) |
 | `?tab=creek`  | Start on the Creeks tab (add `&creek=belmont` etc. to choose the creek) |
-| `?preview=1`  | Creek status layer (staff preview): the Dashboard Creeks view shows one status tile per creek. Used on the EOC kiosk during the first storms; combine with other options using `&`, e.g. `?tab=creek&preview=1` |
+| `?preview=1`  | Creek status layer (staff preview): the Dashboard Creeks view shows a status tile for each dashboard creek, plus any preview-only creek that has a status (up to 6 tiles; quiet ones listed underneath). Used on the EOC kiosk during the first storms; combine with other options using `&`, e.g. `?tab=creek&preview=1` |
 | `?rotate=30`  | Switch between Bay Tides and Creeks every 30 seconds |
 | `?tab=map`    | Start on the Map tab                                      |
 | `?tab=about`  | Start on the About tab                                    |

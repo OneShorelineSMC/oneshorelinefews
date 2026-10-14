@@ -29,6 +29,8 @@
   function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
   function clock(s) { return s ? fmt(parse(s), { hour: "numeric", minute: "2-digit" }) : ""; }
   function dated(s) { return s ? fmt(parse(s), { weekday: "short", month: "short", day: "numeric" }) + ", " + clock(s) : ""; }
+  // Public creeks and staff-preview creeks (preview_only = yes in creeks.csv; only this preview shows them)
+  function allCreeks(data) { return (data.creeks || []).concat(data.creeks_preview || []); }
   function list(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
   function rainWord(l) { return l >= 3 ? T("rain_severe") : l === 2 ? T("rain_vheavy") : l === 1 ? T("rain_heavy") : ""; }
   function winLabel(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
@@ -94,7 +96,7 @@
     opts = opts || {};
     var v = view(data, c), st = v.st, h = "";
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
-    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3></div>";
+    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + (c.preview_only ? '<span class="cs-sm">New creek, preview only</span>' : "") + "</div>";
     h += '<div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>";
     v.reasons.forEach(function (r) { h += '<p class="cs-why">' + esc(r) + "</p>"; });
     h += '<div class="cs-body">' + (v.key === "likely" ? '<p class="cs-danger">' + esc(T("e911")) + "</p>" : "") +
@@ -120,7 +122,7 @@
   /* Top of page: one-line summary, red banner when flooding is likely, one evacuation button */
   function summary(data) {
     var by = { likely: [], ready: [], alert: [], nodata: [] };
-    (data.creeks || []).forEach(function (c) {
+    allCreeks(data).forEach(function (c) {
       var v = view(data, c);
       if (by[v.key]) by[v.key].push(c.name);
       else if (v.key === "offline" || v.key === "delayed") by.nodata.push(c.name);
@@ -144,14 +146,15 @@
   /* All creeks for a page: summary, cards for creeks with a status, the rest folded away */
   function page(data, linkFor, opts) {
     opts = opts || {};
-    var rows = (data.creeks || []).map(function (c) { return { c: c, v: view(data, c) }; });
+    var rows = allCreeks(data).map(function (c) { return { c: c, v: view(data, c) }; });
     rows.sort(function (a, b) { return b.v.rank - a.v.rank; });
+    var link = function (c) { return c.preview_only || !linkFor ? null : linkFor(c); };   // preview creeks have no detail page yet
     var active = rows.filter(function (x) { return x.v.key !== "none"; }), quiet = rows.filter(function (x) { return x.v.key === "none"; });
-    var h = badge() + summary(data) + '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, { link: linkFor && linkFor(x.c) }); }).join("") + "</div>";
+    var h = badge() + summary(data) + '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, { link: link(x.c) }); }).join("") + "</div>";
     if (quiet.length) {
       h += '<details class="cs-quiet"' + (active.length ? "" : " open") + "><summary>" + quiet.length + " creek" + (quiet.length > 1 ? "s" : "") +
         " with no alerts — " + esc(list(quiet.map(function (x) { return x.c.short || x.c.name; }))) + '</summary><div class="cs-grid">' +
-        quiet.map(function (x) { return card(data, x.c, { link: linkFor && linkFor(x.c) }); }).join("") + "</div></details>";
+        quiet.map(function (x) { return card(data, x.c, { link: link(x.c) }); }).join("") + "</div></details>";
     }
     return h + (opts.staff === false ? "" : staffTable(data));
   }
@@ -161,7 +164,7 @@
 
   /* Staff table: everything behind each status */
   function staffTable(data) {
-    var rows = (data.creeks || []).map(function (c) {
+    var rows = allCreeks(data).map(function (c) {
       var v = view(data, c), st = v.st, r = st.rain || {}, d = r.driver, t = st.tide;
       var lvl = v.key === "offline" ? esc(T("status_offline")) : st.level ? esc(st.level_name || "Level " + st.level) : st.has_levels === false ? '<span class="cs-dim">No flood levels</span>' : esc(T("status_normal"));
       var heavy = d ? esc(winLabel(d.minutes)) + ": " + d.inches.toFixed(2) + " in at " + esc(d.label) +
@@ -169,7 +172,7 @@
         : '<span class="cs-dim">—</span>';
       var notes = (st.staff_notes || []).concat((r.silent || []).map(function (s) { return s.label + " silent since " + (s.since ? dated(s.since) : "?"); }));
       if (st.trigger) notes.unshift("Trigger: " + st.trigger.label + " " + st.trigger.amount + " of " + st.trigger.value + " in");
-      return "<tr><td><b>" + esc(c.name) + "</b></td><td><span class=\"cs-tag\"><i style=\"background:" + v.color + "\"></i>" + esc(v.word) + "</span></td>" +
+      return "<tr><td><b>" + esc(c.name) + "</b>" + (c.preview_only ? '<span class="cs-sm">preview only</span>' : "") + "</td><td><span class=\"cs-tag\"><i style=\"background:" + v.color + "\"></i>" + esc(v.word) + "</span></td>" +
         "<td>" + lvl + '<span class="cs-sm">' + trendText(st.trend) + "</span></td><td>" + chip(r.level) + "</td><td>" + heavy + "</td>" +
         "<td>" + (r.working || 0) + " of " + (r.of || 0) + '<span class="cs-sm">' + (r.elevated || 0) + " at very heavy+</span></td>" +
         "<td>" + (st.tidal ? (t && t.ft != null ? t.ft.toFixed(2) + " ft · " + (t.rising ? "rising" : "falling") + (t.next_high ? '<span class="cs-sm">high ' + esc(dated(t.next_high)) + " (" + t.next_high_ft + " ft)</span>" : "") : '<span class="cs-dim">no tide data</span>') : '<span class="cs-dim">not tidal</span>') + "</td>" +
@@ -243,5 +246,17 @@
   ].join("\n");
   var styleEl = document.createElement("style"); styleEl.textContent = css; document.head.appendChild(styleEl);
 
-  window.CREEK_STATUS = { preview: PREVIEW, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge };
+  /* Kiosk: the dashboard creeks always, plus any preview creek that isn't quiet (worst first), up to `max` tiles */
+  function kiosk(data, max) {
+    var dash = (data.creeks || []).map(function (c) { return { c: c, v: view(data, c) }; });
+    var extra = (data.creeks_preview || []).map(function (c) { return { c: c, v: view(data, c) }; })
+      .filter(function (x) { return x.v.key !== "none"; }).sort(function (a, b) { return b.v.rank - a.v.rank; });
+    var show = dash.concat(extra).slice(0, max), hidden = dash.concat(extra).length - show.length;
+    var quiet = (data.creeks_preview || []).filter(function (c) { return view(data, c).key === "none"; });
+    return { tiles: show.map(function (x) { return tile(data, x.c); }),
+      note: [hidden ? "+" + hidden + " more with a status (see the Creeks page)" : "",
+        quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.short || c.name; })) : ""].filter(Boolean).join(" · ") };
+  }
+
+  window.CREEK_STATUS = { preview: PREVIEW, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge };
 })();

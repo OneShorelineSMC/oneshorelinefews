@@ -1375,9 +1375,13 @@ function creekStatus(st) {
 }
 function renderAllCreeks(states, now) {
   if (window.CREEK_STATUS && CREEK_STATUS.preview) {   // ?preview=1: creek status tiles (staff preview), nothing to tap but the tile itself
-    document.getElementById("call").innerHTML = states.map(function (st) {
-      return '<div data-creek="' + esc(st.c.id) + '" style="display:flex;min-height:0">' + CREEK_STATUS.tile(C.data, st.c).replace('class="cs-tile', 'style="flex:1" class="cs-tile') + "</div>";
-    }).join("");
+    var K = CREEK_STATUS.kiosk(C.data, 6), el = document.getElementById("call"), n = K.tiles.length;
+    el.style.gridTemplateColumns = n > 4 ? "1fr 1fr 1fr" : "";
+    el.style.gridTemplateRows = "1fr 1fr" + (K.note ? " auto" : "");
+    el.innerHTML = K.tiles.map(function (t, i) {
+      var id = i < (C.data.creeks || []).length ? C.data.creeks[i].id : "";   // dashboard creeks open their graphs; preview creeks have none yet
+      return '<div' + (id ? ' data-creek="' + esc(id) + '"' : "") + ' style="display:flex;min-height:0">' + t.replace('class="cs-tile', 'style="flex:1" class="cs-tile') + "</div>";
+    }).join("") + (K.note ? '<div style="grid-column:1/-1;font-size:13px;color:var(--muted)">' + esc(K.note) + "</div>" : "");
     return;
   }
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
