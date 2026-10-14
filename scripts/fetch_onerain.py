@@ -32,12 +32,18 @@ HEADERS = {
     "Accept": "text/html,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }
-HOURS = 48          # how much history to keep in the file (the graphs show 36 hours)
+HOURS = 50          # history kept in the file (graphs show 36 hours; 48-hour rain totals need a little more)
 MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lists them in batches)
 
 import os
 
 from creek_config import CREEKS, CONFIG_ERRORS, THRESHOLD_ERRORS, SETTINGS_ERRORS
+from creek_signals import load_settings, load_rain_frequency, rain_signals, stage_signals, _series
+
+# Creek status layer (in development): rain levels and creek trends, written into creeks.json for the staff preview
+SIGNAL_SETTINGS, _sp = load_settings()
+RAIN_FREQ, _fp = load_rain_frequency()
+SETTINGS_ERRORS = SETTINGS_ERRORS + _sp + _fp
 
 SENSORS = {}
 
@@ -48,7 +54,7 @@ def set_sensors(creeks):
     for c in creeks:
         for g in c["stages"]:
             SENSORS[g["key"]] = dict(g, name=f"{g['site_name']} ({g['number']}) – Stage", kind="stage", unit="ft")
-        for g in c["rain"]:
+        for g in c["rain"] + c.get("rain_support", []):
             SENSORS[g["key"]] = dict(g, name=f"{g['label']} ({g['number']}) – Rain", kind="rain_increment", unit="in")
 
 
@@ -57,7 +63,7 @@ def creeks_from_previous(previous_file):
     out = []
     for c in previous_file.get("creeks", []):
         c = json.loads(json.dumps(c))
-        for g in c.get("stages", []) + c.get("rain", []):
+        for g in c.get("stages", []) + c.get("rain", []) + c.get("rain_support", []):
             q = urllib.parse.parse_qs(urllib.parse.urlparse(g.get("url", "")).query)
             g.update({"site_id": int(q["site_id"][0]), "site": q["site"][0], "device_id": int(q["device_id"][0]), "device": q["device"][0]})
             g.pop("url", None)
@@ -172,7 +178,42 @@ def public_config():
         out["url"] = (f"{SITE}/sensor/?site_id={g['site_id']}&site={g['site']}"
                       f"&device_id={g['device_id']}&device={g['device']}")
         return out
-    return [dict(c, stages=[gauge(g) for g in c["stages"]], rain=[gauge(g) for g in c["rain"]]) for c in CREEKS]
+    return [dict(c, stages=[gauge(g) for g in c["stages"]], rain=[gauge(g) for g in c["rain"]],
+                 rain_support=[gauge(g) for g in c.get("rain_support", [])]) for c in CREEKS]
+
+
+def _freq_from_json(f):
+    """A gauge's Atlas 14 entry as stored in creeks.json (string keys) back to numbers."""
+    if not f:
+        return None
+    return {"minutes": {int(m): {float(a): d for a, d in v.items()} for m, v in f.get("minutes", {}).items()},
+            "levels": {int(m): v for m, v in f.get("levels", {}).items()}}
+
+
+def add_signals(result, previous, now):
+    """Rain level for every rain gauge and trend for every stage gauge (creek status layer; staff preview only).
+    If rain_frequency.csv has a mistake, each gauge keeps the Atlas 14 values from the previous data file."""
+    sens = result["sensors"]
+    for c in result["creeks"]:
+        rain_keys = [g["key"] for g in c["rain"] + c.get("rain_support", [])]
+        for g in c["rain"] + c.get("rain_support", []):
+            e = sens.get(g["key"])
+            if not e:
+                continue
+            if RAIN_FREQ is not None:
+                freq = RAIN_FREQ.get(g["number"])
+            else:
+                freq = _freq_from_json(previous.get(g["key"], {}).get("signals", {}).get("freq"))
+            sig = rain_signals(e["points"], e.get("latest"), freq, now, SIGNAL_SETTINGS["GAUGE_QUIET_HOURS"])
+            if freq:
+                sig["freq"] = {"minutes": {str(m): {str(a): d for a, d in v.items()} for m, v in freq["minutes"].items()},
+                               "levels": {str(m): v for m, v in freq["levels"].items()}}
+            e["signals"] = sig
+        rain_series = [_series(sens[k]["points"], sens[k].get("latest")) for k in rain_keys if k in sens]
+        for g in c["stages"]:
+            e = sens.get(g["key"])
+            if e:
+                e["signals"] = stage_signals(e["points"], e.get("latest"), g, now, SIGNAL_SETTINGS, rain_series)
 
 
 def main():
@@ -237,6 +278,7 @@ def main():
             entry["error"] = f"{type(e).__name__}: {e}"[:300]
             print(f"{key}: FAILED ({entry['error']}); kept {len(entry['points'])} old readings", file=sys.stderr)
         result["sensors"][key] = entry
+    add_signals(result, previous, now)
 
     with open(out_path, "w") as f:
         json.dump(result, f, separators=(",", ":"))

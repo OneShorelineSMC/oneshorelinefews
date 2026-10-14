@@ -105,7 +105,8 @@ def load_creeks(tides):
         except ValueError:
             errors.append(f"{w}: order must be a number"); continue
         c = {"id": cid, "name": r["name"], "short": r["short_name"], "rain_windows": wins,
-             "intro": r.get("intro", ""), "tide": r["tide_station"], "note": r.get("note", ""), "stages": [], "rain": []}
+             "intro": r.get("intro", ""), "tide": r["tide_station"], "note": r.get("note", ""), "stages": [], "rain": [],
+             "rain_support": []}
         rg, rm, rl = r.get("running_rain_gauge", ""), r.get("running_rain_min", ""), r.get("running_rain_label", "")
         if rg or rm:
             try:
@@ -122,7 +123,7 @@ def load_creeks(tides):
             errors.append(f"{w}: gauge must be a unique short code (lower-case letters, digits, _)"); continue
         if typ not in ("stage", "rain"):
             errors.append(f"{w}: type must be 'stage' or 'rain'"); continue
-        bad = [col for col, ok in (("label", r.get("label")), ("onerain_number", re.fullmatch(r"\d+", r.get("onerain_number", ""))),
+        bad = [col for col, ok in (("label", r.get("label")), ("onerain_number", re.fullmatch(r"[A-Za-z0-9]+", r.get("onerain_number", ""))),
                                    ("site_id", re.fullmatch(r"\d+", r.get("site_id", ""))), ("site", _UUID.match(r.get("site", "").lower())),
                                    ("device_id", re.fullmatch(r"\d+", r.get("device_id", ""))), ("device", _UUID.match(r.get("device", "").lower())))
                if not ok]
@@ -130,6 +131,7 @@ def load_creeks(tides):
             errors.append(f"{w}: missing or malformed {', '.join(bad)} (copy them from the sensor's OneRain page address)"); continue
         g = {"key": key, "label": r["label"], "number": r["onerain_number"], "site_id": int(r["site_id"]), "site": r["site"].lower(),
              "device_id": int(r["device_id"]), "device": r["device"].lower(), "note": r.get("note", "")}
+        role = r.get("role", "").lower()
         if typ == "stage":
             rep = r.get("reports", "").lower()
             if rep not in ("on change", "interval"):
@@ -140,8 +142,12 @@ def load_creeks(tides):
             g.update({"site_name": r.get("site_name") or r["label"], "reports": rep, "tidal": tid == "yes"})
             creeks[cid]["stages"].append(g)
         else:
+            # role: blank/primary = shown on the pages; supporting = counts toward the creek's rain level only
+            # (creek status layer, staff preview), not in the rain tables or graphs
+            if role not in ("", "primary", "supporting"):
+                errors.append(f"{w}: role must be primary, supporting or blank for a rain gauge"); continue
             g["where"] = r.get("where", "")
-            creeks[cid]["rain"].append(g)
+            creeks[cid]["rain_support" if role == "supporting" else "rain"].append(g)
         keys.add(key)
     for c in creeks.values():
         if not c["stages"]:
@@ -161,7 +167,7 @@ def load_thresholds(creeks, tides, path=THRESHOLDS_CSV):
     for c in creeks:
         for g in c["stages"]:
             gauges[g["key"]] = (c, "stage", g)
-        for g in c["rain"]:
+        for g in c["rain"] + c.get("rain_support", []):
             gauges[g["key"]] = (c, "rain", g)
     rows, err = _rows(path, "thresholds.csv")
     if err:
