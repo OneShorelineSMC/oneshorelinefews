@@ -351,7 +351,9 @@ def creek_status(c, sens, tide, now, S):
     if trig3 or (trigger and level < 3):
         reasons.append({"code": "why_trigger_tide" if trigger.get("high_tide") else "why_trigger",
                         "minutes": trigger["minutes"], "inches": trigger["amount"]})
-    if has_levels and level == 0 and key in ("ready", "alert") and (rain >= 2 or fast):
+    if working_stages == 0 and c["stages"] and key in ("likely", "ready", "alert"):
+        reasons.append({"code": "why_gauge_offline"})   # status from rain (or a trigger) alone
+    if has_levels and level == 0 and working_stages and key in ("ready", "alert") and (rain >= 2 or fast):
         if rain >= 2:
             reasons.append({"code": "why_normal_rain", "rain": rain})
         if fast:
