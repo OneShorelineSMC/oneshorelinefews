@@ -1,6 +1,7 @@
 # Reads creek readings from OneRain's public sensor pages every 5 minutes, and every public
 # OneRain site every 15 minutes, and publishes them for the kiosk, the phone pages and the site maps.
 #   creeks.json   - creek stage and rain for the creeks in lookups/creeks.csv and lookups/creek_gauges.csv (kiosk Creeks tab, Creeks.html, home page)
+#   status_log.csv - creek status changes (creek status layer, staff review), newest last
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #
 # The data goes to a separate branch called "data", replaced on every run, so this
@@ -40,6 +41,7 @@ jobs:
             git show FETCH_HEAD:creeks.json > out/creeks.json 2>/dev/null \
               || git show FETCH_HEAD:sanbruno.json > out/creeks.json 2>/dev/null || true
             git show FETCH_HEAD:sites.json > out/sites.json 2>/dev/null || true
+            git show FETCH_HEAD:status_log.csv > out/status_log.csv 2>/dev/null || true
           fi
 
       - name: Set up Python
@@ -62,7 +64,7 @@ jobs:
           git checkout -q -b data
           [ -s sites.json ] || rm -f sites.json
           cp creeks.json sanbruno.json   # older name, kept so pages not yet updated keep working
-          git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json )
+          git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit -q -m "OneRain data $(date -u +%Y-%m-%dT%H:%MZ)"
