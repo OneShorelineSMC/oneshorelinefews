@@ -31,8 +31,11 @@ complete OneRain details stops the data job. So:
 `../settings.csv`; `lookups.js` and the data job know them. Colma's San Bruno Mountain gauge is live as a supporting
 rain gauge.
 
-**Ready in code (Oct 14):** letter-and-digit OneRain numbers (PUL, A0835678 …) and `role = supporting` rain gauges.
-Rain levels and creek trends are computed by the data job and written into `creeks.json`; no page shows them yet.
+**Ready in code (Oct 14):** letter-and-digit OneRain numbers (PUL, A0835678 …), `role = supporting` rain gauges,
+USGS stream gauges (`source = usgs` + `usgs_site`, read live by the data job), and `preview_only = yes` creeks
+(staff preview only). Status, rain levels and trends show on pages opened with `?preview=1`.
 
-USGS gauges (`source = usgs`) need a small addition to the data job before they can go live; the history pull
-`scripts/fetch_usgs.py` shows how to read them.
+**Moved to the live files as preview-only creeks (Oct 14):** San Francisquito, San Mateo, Green Hills, Pilarcitos,
+San Gregorio, Pescadero, with the gauges that can be read now. What's left here: Redwood, Bear, Los Trancos and
+Butano (stage gauges not public on OneRain, or backup sensors only), gauges that aren't public or have no public
+rain sensor, and the hillside gauges for Belmont and Atherton (waiting for the watershed-map check).
