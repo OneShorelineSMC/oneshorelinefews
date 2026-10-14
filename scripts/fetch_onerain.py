@@ -38,7 +38,7 @@ MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lis
 import os
 
 from creek_config import CREEKS, CONFIG_ERRORS, THRESHOLD_ERRORS, SETTINGS_ERRORS
-from creek_signals import load_settings, load_rain_frequency, rain_signals, stage_signals, _series
+from creek_signals import load_settings, load_rain_frequency, rain_signals, stage_signals, _series, tide_state, creek_status
 
 # Creek status layer (in development): rain levels and creek trends, written into creeks.json for the staff preview
 SIGNAL_SETTINGS, _sp = load_settings()
@@ -190,6 +190,77 @@ def _freq_from_json(f):
             "levels": {int(m): v for m, v in f.get("levels", {}).items()}}
 
 
+NOAA = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
+
+
+def noaa_tide(station, now):
+    """Predicted (6-min and high/low) and measured tide at a NOAA station, ft NAVD88, Pacific clock time.
+    Any part that can't be downloaded comes back empty; the status then skips the tide."""
+    def get(product, begin, end, **extra):
+        q = dict(product=product, station=station, begin_date=begin.strftime("%Y%m%d %H:%M"), end_date=end.strftime("%Y%m%d %H:%M"),
+                 datum="NAVD", time_zone="lst_ldt", units="english", format="json", application="OneShorelineFEWS", **extra)
+        req = urllib.request.Request(NOAA + "?" + urllib.parse.urlencode(q), headers={"User-Agent": HEADERS["User-Agent"]})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                j = json.load(resp)
+        except Exception as e:   # noqa: BLE001 - a tide problem must never stop the creek data
+            print(f"NOAA {product} {station}: {type(e).__name__}: {e}", file=sys.stderr)
+            return []
+        return j.get("predictions") or j.get("data") or []
+
+    def pts(rows):
+        out = []
+        for x in rows:
+            try:
+                out.append((dt.datetime.strptime(x["t"], "%Y-%m-%d %H:%M"), float(x["v"]), x.get("type")))
+            except (KeyError, ValueError, TypeError):
+                pass
+        return out
+    pred = [(t, v) for t, v, _ in pts(get("predictions", now - dt.timedelta(hours=2), now + dt.timedelta(hours=2)))]
+    hilo = pts(get("predictions", now - dt.timedelta(hours=1), now + dt.timedelta(hours=26), interval="hilo"))
+    obs = [(t, v) for t, v, _ in pts(get("water_level", now - dt.timedelta(hours=3), now))]
+    return pred, hilo, obs
+
+
+STATUS_LOG_MAX = 5000   # rows kept in status_log.csv (newest last)
+
+
+def log_status_changes(result, previous_file, out_path):
+    """Append a row to status_log.csv (next to OUTPUT.json) whenever a creek's status changes, for staff review."""
+    old = {c["id"]: (c.get("status") or {}).get("key") for c in previous_file.get("creeks", [])}
+    path = os.path.join(os.path.dirname(out_path) or ".", "status_log.csv")
+    try:
+        with open(path) as f:
+            lines = f.read().splitlines()
+    except OSError:
+        lines = []
+    head = "time,creek,from,to,level,rain_level,trend,reasons"
+    if not lines or lines[0] != head:
+        lines = [head]
+    for c in result["creeks"]:
+        st = c.get("status") or {}
+        if st.get("key") != old.get(c["id"]):
+            codes = " ".join(x["code"] for x in st.get("reasons", []))
+            lines.append(",".join([result["generated"], c["id"], old.get(c["id"]) or "", st.get("key") or "",
+                                   str(st.get("level", "")), str((st.get("rain") or {}).get("level", "")),
+                                   str((st.get("trend") or {}).get("trend") or ""), codes]))
+    lines = [lines[0]] + lines[1:][-STATUS_LOG_MAX:]
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def add_status(result, now):
+    """One status per creek (creek status layer; staff preview only)."""
+    tides = {}
+    for c in result["creeks"]:
+        st = c.get("tide")
+        if st and st not in tides:
+            pred, hilo, obs = noaa_tide(st, now)
+            tides[st] = tide_state(pred, hilo, obs, now, SIGNAL_SETTINGS["TIDE_RISING_LOOKAHEAD_HOURS"])
+        c["status"] = creek_status(c, result["sensors"], tides.get(st, {}), now, SIGNAL_SETTINGS)
+        print(f"{c['id']}: status {c['status']['key']} · " + ", ".join(x["code"] for x in c["status"]["reasons"]))
+
+
 def add_signals(result, previous, now):
     """Rain level for every rain gauge and trend for every stage gauge (creek status layer; staff preview only).
     If rain_frequency.csv has a mistake, each gauge keeps the Atlas 14 values from the previous data file."""
@@ -279,6 +350,8 @@ def main():
             print(f"{key}: FAILED ({entry['error']}); kept {len(entry['points'])} old readings", file=sys.stderr)
         result["sensors"][key] = entry
     add_signals(result, previous, now)
+    add_status(result, now)
+    log_status_changes(result, previous_file, out_path)
 
     with open(out_path, "w") as f:
         json.dump(result, f, separators=(",", ":"))

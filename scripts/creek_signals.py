@@ -8,6 +8,9 @@ Nothing on the public pages reads these yet; they are written into creeks.json f
   Stage gauges: trend (rising fast / rising / steady / falling) and the rapidly-rising check, using the
                 same rule as the home page (RISE_* in lookups/settings.csv).
 
+  Creeks:       one status (creek_status): Flooding likely / Be ready / Stay alert / Offline / No alerts, with
+                reason codes the pages turn into words from display_text.csv (THRESHOLDS_BASIS.md §10).
+
 Times are Pacific clock times as naive datetimes, like the rest of the data job.
 See lookups/THRESHOLDS_BASIS.md §8-11.
 """
@@ -28,6 +31,8 @@ SETTINGS = {
     "RISE_TIDAL_RAIN_IN": (0.10, 0, 5), "RISE_TIDAL_RAIN_HOURS": (3, 0.25, 48),
     "GAUGE_QUIET_HOURS": (12, 0.5, 168), "GAUGE_QUIET_HOURS_INTERVAL": (3, 0.25, 168),
     "TREND_WINDOW_MIN": (30, 5, 240), "TREND_MAX_WINDOW_MIN": (120, 15, 360), "TREND_STEADY_FT_PER_HR": (0.1, 0.01, 2),
+    "RAIN_SEVERE_CONFIRM_GAUGES": (2, 1, 5), "RAIN_SILENT_MIN": (60, 15, 720), "TIDE_RISING_LOOKAHEAD_HOURS": (3, 0.5, 12),
+    "BE_READY_FROM_RAIN": (1, 0, 1),
 }
 
 
@@ -190,7 +195,7 @@ def stage_signals(points, latest, gauge, now, S, creek_rain_series):
         start = now - dt.timedelta(minutes=W)
         a = value_at(start)
         pts = ([(start, a[1])] if a else []) + [x for x in p if x[0] > start] + [(now, last_v)]
-        window = W
+        window = int(W)
     else:
         pts = [x for x in p if x[0] >= last_t - dt.timedelta(minutes=W)]
         if len(pts) < 2:
@@ -225,3 +230,148 @@ def stage_signals(points, latest, gauge, now, S, creek_rain_series):
         word = "rising" if slope >= S["TREND_STEADY_FT_PER_HR"] else "falling" if slope <= -S["TREND_STEADY_FT_PER_HR"] else "steady"
     return {"trend": word, "ft_per_hr": None if slope is None else round(slope, 2), "window_min": window,
             "points": len(pts), "rising_fast": fast}
+
+
+# ---------------------------------------------------------------- tide (NOAA, ft NAVD88) and creek status
+
+def tide_state(pred, hilo, obs, now, lookahead_h):
+    """Tide now at a NOAA station: measured if within the hour, else predicted; whether it is rising; next high tide.
+    pred/obs: [(datetime, ft)], hilo: [(datetime, ft, "H"/"L")]. Any of them may be empty (download failed)."""
+    out = {"ft": None, "source": None, "rising": None, "next_high": None, "next_high_ft": None, "high_soon": False}
+    if obs and now - obs[-1][0] <= dt.timedelta(hours=1):
+        out["ft"], out["source"] = round(obs[-1][1], 2), "measured"
+    elif pred:
+        best = min(pred, key=lambda x: abs(x[0] - now))
+        if abs(best[0] - now) <= dt.timedelta(hours=1):
+            out["ft"], out["source"] = round(best[1], 2), "predicted"
+    nxt = [h for h in hilo if h[0] > now]
+    if nxt:
+        out["rising"] = nxt[0][2] == "H"
+        hi = [h for h in nxt if h[2] == "H"]
+        if hi:
+            out["next_high"], out["next_high_ft"] = hi[0][0].strftime("%Y-%m-%d %H:%M"), round(hi[0][1], 2)
+            out["high_soon"] = bool(out["rising"] and hi[0][0] - now <= dt.timedelta(hours=lookahead_h))
+    return out
+
+
+STATUS_RANK = {"likely": 4, "ready": 3, "alert": 2, "offline": 1, "none": 0}
+
+
+def creek_status(c, sens, tide, now, S):
+    """One status for a creek from its gauges' signals (already in sens[key]["signals"]), its thresholds and
+    rain triggers, and the tide at its station. Rules: THRESHOLDS_BASIS.md §10. Flood levels always come first;
+    rain and rate of rise never lower a status. Returns a dict for creeks.json; words come from display_text.csv."""
+    reasons, staff = [], []
+    # Official level: highest threshold passed by any working stage gauge
+    level, level_name, working_stages, stage_rows = 0, None, 0, []
+    has_levels = any(g.get("thresholds") for g in c["stages"])
+    for g in c["stages"]:
+        e = sens.get(g["key"], {})
+        sig = e.get("signals", {})
+        p = _series(e.get("points"), e.get("latest"))
+        if sig.get("trend") is None or not p:
+            continue
+        working_stages += 1
+        v = p[-1][1]
+        lv = [t for t in g.get("thresholds", []) if v >= t["value"]]
+        if lv and lv[-1]["level"] > level:
+            level, level_name = lv[-1]["level"], lv[-1]["name"]
+        stage_rows.append((g, sig, v))
+    # Rain triggers in thresholds.csv (e.g. Belmont): rain over the window, plus a high tide if the trigger needs one
+    trigger = None
+    for tr in c.get("rain_triggers", []):
+        e = sens.get(tr["gauge"], {})
+        amt = rain_total(_series(e.get("points"), e.get("latest")), now - dt.timedelta(minutes=tr["minutes"]), now)
+        ok = amt >= tr["value"]
+        if ok and tr.get("high_tide"):
+            need = tr.get("tide_min")
+            ok = tide.get("ft") is not None and need is not None and tide["ft"] >= need
+            if tide.get("ft") is None:
+                staff.append("tide unknown: rain + tide trigger can't be checked")
+        if ok and (not trigger or tr["level"] > trigger["level"]):
+            trigger = dict(tr, amount=round(amt, 2))
+    # Rain level: highest across working rain gauges (shown and supporting); Severe needs confirmation
+    rain_gauges = c["rain"] + c.get("rain_support", [])
+    working, elevated, best = [], 0, None
+    for g in rain_gauges:
+        sig = sens.get(g["key"], {}).get("signals", {})
+        if not sig.get("fresh") or sig.get("level") is None:
+            continue
+        working.append((g, sig))
+        if sig["level"] >= 2:
+            elevated += 1
+        if sig["level"] and (not best or sig["level"] > best[1]["level"]):
+            best = (g, sig)
+    rain = best[1]["level"] if best else 0
+    need = min(int(S["RAIN_SEVERE_CONFIRM_GAUGES"]), max(1, len(working)))
+    if rain == 3 and elevated < need:
+        rain = 2
+        staff.append(f"severe rain at one gauge only; treated as very heavy ({elevated} of {len(working)} gauges at very heavy or above)")
+    if len(working) == 1 and rain_gauges:
+        staff.append("only one working rain gauge")
+    # A rain gauge silent while another on the creek records Heavy rain or more (a gauge only reports when its bucket
+    # tips, so light rain at one gauge and none at another is normal; heavy rain with no tips is not)
+    silent = []
+    win = dt.timedelta(minutes=S["RAIN_SILENT_MIN"])
+    raining = [g["key"] for g, sig in working if sig["level"] >= 1]
+    if raining:
+        for g in rain_gauges:
+            sig = sens.get(g["key"], {}).get("signals", {})
+            last = sig.get("last_report")
+            if g["key"] not in raining and (not last or now - _t(last) > win):
+                silent.append({"gauge": g["key"], "label": g["label"], "since": last})
+    # Creek trend: the most significant among working stage gauges
+    order = {"fast": 4, "rising": 3, "falling": 2, "steady": 1}
+    trend = max((sig for g, sig, v in stage_rows), key=lambda x: order.get(x.get("trend"), 0), default=None)
+    fast = bool(trend and trend.get("trend") == "fast")
+    tidal = any(g.get("tidal") for g in c["stages"])
+    tide_line = bool(tidal and tide.get("high_soon"))
+
+    # Status, worst first
+    trig3 = bool(trigger and trigger["level"] >= 3)
+    if level >= 3 or trig3:
+        key = "likely"
+    elif level == 2 or (not has_levels and (fast or rain == 3) and S["BE_READY_FROM_RAIN"] >= 1):
+        key = "ready"
+    elif level == 1 or rain >= 2 or fast or (trigger and trigger["level"] >= 1) or (rain == 1 and tide_line):
+        key = "alert"
+    elif working_stages == 0 and c["stages"]:
+        key = "offline"
+    else:
+        key = "none"
+
+    # Reasons (codes for display_text.csv), most important first
+    up = trend.get("trend") if trend else None
+    if level >= 3:
+        reasons.append({"code": "why_warning"})
+    elif level == 2:
+        reasons.append({"code": "why_watch", "rising_fast": fast})
+    elif level == 1:
+        reasons.append({"code": "why_monitoring", "rising": up in ("fast", "rising")})
+    if trig3 or (trigger and level < 3):
+        reasons.append({"code": "why_trigger_tide" if trigger.get("high_tide") else "why_trigger",
+                        "minutes": trigger["minutes"], "inches": trigger["amount"]})
+    if has_levels and level == 0 and key in ("ready", "alert") and (rain >= 2 or fast):
+        if rain >= 2:
+            reasons.append({"code": "why_normal_rain", "rain": rain})
+        if fast:
+            reasons.append({"code": "why_rising_fast"})
+    elif not has_levels and fast:
+        reasons.append({"code": "why_rising_fast"})
+    if rain >= 1 and key != "none" and not any(r["code"] == "why_normal_rain" for r in reasons):
+        reasons.append({"code": "why_rain", "rain": rain})
+    for sg in silent:
+        reasons.append({"code": "why_stale", "time": sg["since"], "gauge": sg["label"]})
+    if tide_line and STATUS_RANK[key] >= 2:
+        reasons.append({"code": "tide_rising_line", "time": tide.get("next_high")})
+
+    drv = None
+    if best and best[1].get("driver"):
+        d = best[1]["driver"]
+        drv = dict(d, gauge=best[0]["key"], label=best[0]["label"])
+    return {"key": key, "level": level, "level_name": level_name, "has_levels": has_levels,
+            "trigger": trigger and {k: trigger[k] for k in ("label", "minutes", "value", "amount", "level", "name") if k in trigger},
+            "rain": {"level": rain, "driver": drv, "working": len(working), "of": len(rain_gauges), "elevated": elevated,
+                     "silent": silent},
+            "trend": trend and {k: trend.get(k) for k in ("trend", "ft_per_hr", "window_min")},
+            "tidal": tidal, "tide": tide if tidal else None, "reasons": reasons, "staff_notes": staff}
