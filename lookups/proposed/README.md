@@ -7,8 +7,6 @@ These tables extend the live lookups to more creeks and add a plain-language sta
 |---|---|---|
 | `creeks.csv` | `../creeks.csv` | 10 more creeks (Redwood, Bear, San Francisquito, Los Trancos, San Mateo, Green Hills, Pilarcitos, San Gregorio, Pescadero, Butano), order 5–14 |
 | `creek_gauges.csv` | `../creek_gauges.csv` + `source`, `usgs_site`, `role`, `distance_mi`, `confidence`, `open_items` | Stage and rain gauges for those creeks, plus extra hillside rain gauges for the four dashboard creeks |
-| `display_text.csv` | `../display_text.csv` | Status words, "What to do", reason lines, summary and banner wording |
-| `settings.csv` | `../settings.csv` | Numbers for the status logic, including one **policy switch** (`BE_READY_FROM_RAIN`) |
 
 The rain frequency table itself is already in the live folder (`../rain_frequency.csv`) because nothing reads it yet.
 
@@ -26,6 +24,12 @@ complete OneRain details stops the data job. So:
    (`source`, `usgs_site`, `distance_mi`, `confidence`, `open_items`). Keep `role`: hillside rain gauges for the four
    dashboard creeks go in as `supporting` (so they count toward the rain level without changing the rain tables).
 3. Delete it here.
+
+**Moved to the live files (Oct 14):** the status wording (`verdict_*`, `why_*`, `rain_*`, `trend_*`, `summary_*`,
+`banner_likely`, `evac_button`, `url_evacuation`, …) is now in `../display_text.csv` and the status numbers
+(`RAIN_SEVERE_CONFIRM_GAUGES`, `RAIN_SILENT_MIN`, `TREND_*`, `TIDE_RISING_LOOKAHEAD_HOURS`, `BE_READY_FROM_RAIN`) in
+`../settings.csv`; `lookups.js` and the data job know them. Colma's San Bruno Mountain gauge is live as a supporting
+rain gauge.
 
 **Ready in code (Oct 14):** letter-and-digit OneRain numbers (PUL, A0835678 …) and `role = supporting` rain gauges.
 Rain levels and creek trends are computed by the data job and written into `creeks.json`; no page shows them yet.
