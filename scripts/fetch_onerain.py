@@ -281,8 +281,9 @@ def log_status_changes(result, previous_file, out_path):
         f.write("\n".join(lines) + "\n")
 
 
-def add_status(result, now):
-    """One status per creek (creek status layer; staff preview only)."""
+def add_status(result, now, previous_file=None):
+    """One status per creek (creek status layer; staff preview only), with when it started and what it was before."""
+    old = {c["id"]: c.get("status") or {} for c in all_creeks(previous_file or {})}
     tides = {}
     for c in all_creeks(result):
         st = c.get("tide")
@@ -290,6 +291,11 @@ def add_status(result, now):
             pred, hilo, obs = noaa_tide(st, now)
             tides[st] = tide_state(pred, hilo, obs, now, SIGNAL_SETTINGS["TIDE_RISING_LOOKAHEAD_HOURS"])
         c["status"] = creek_status(c, result["sensors"], tides.get(st, {}), now, SIGNAL_SETTINGS)
+        o = old.get(c["id"], {})
+        if o.get("key") == c["status"]["key"] and o.get("since"):
+            c["status"]["since"], c["status"]["prev"] = o["since"], o.get("prev")
+        else:
+            c["status"]["since"], c["status"]["prev"] = result["generated"][:16], o.get("key")
         print(f"{c['id']}: status {c['status']['key']} · " + ", ".join(x["code"] for x in c["status"]["reasons"]))
 
 
@@ -383,7 +389,7 @@ def main():
             print(f"{key}: FAILED ({entry['error']}); kept {len(entry['points'])} old readings", file=sys.stderr)
         result["sensors"][key] = entry
     add_signals(result, previous, now)
-    add_status(result, now)
+    add_status(result, now, previous_file)
     log_status_changes(result, previous_file, out_path)
 
     with open(out_path, "w") as f:
