@@ -93,7 +93,11 @@ def load_creeks(tides):
             errors.append(f"{w}: creek '{cid}' is listed twice"); continue
         if not r.get("name") or not r.get("short_name"):
             errors.append(f"{w}: name and short_name are required"); continue
-        if r.get("tide_station") not in tides:
+        pv = r.get("preview_only", "").lower()
+        if pv not in ("", "yes", "no"):
+            errors.append(f"{w}: preview_only must be yes, no or blank"); continue
+        # preview_only = yes: staff preview only (creek status layer); kept out of the public pages
+        if r.get("tide_station") not in tides and not (pv == "yes" and not r.get("tide_station")):
             errors.append(f"{w}: tide_station '{r.get('tide_station')}' is not in tide_stations.csv"); continue
         try:
             wins = sorted({int(x) for x in re.split(r"[\s,;]+", r.get("rain_windows_min", "")) if x})
@@ -105,8 +109,8 @@ def load_creeks(tides):
         except ValueError:
             errors.append(f"{w}: order must be a number"); continue
         c = {"id": cid, "name": r["name"], "short": r["short_name"], "rain_windows": wins,
-             "intro": r.get("intro", ""), "tide": r["tide_station"], "note": r.get("note", ""), "stages": [], "rain": [],
-             "rain_support": []}
+             "intro": r.get("intro", ""), "tide": r.get("tide_station") or None, "note": r.get("note", ""), "stages": [], "rain": [],
+             "rain_support": [], "preview_only": pv == "yes"}
         rg, rm, rl = r.get("running_rain_gauge", ""), r.get("running_rain_min", ""), r.get("running_rain_label", "")
         if rg or rm:
             try:
@@ -123,6 +127,20 @@ def load_creeks(tides):
             errors.append(f"{w}: gauge must be a unique short code (lower-case letters, digits, _)"); continue
         if typ not in ("stage", "rain"):
             errors.append(f"{w}: type must be 'stage' or 'rain'"); continue
+        src = r.get("source", "").lower() or "onerain"
+        if src not in ("onerain", "usgs"):
+            errors.append(f"{w}: source must be onerain, usgs or blank"); continue
+        if src == "usgs":   # a USGS stream gauge, read from USGS (gage height, ft)
+            if typ != "stage" or not re.fullmatch(r"\d{8,15}", r.get("usgs_site", "")) or not r.get("label"):
+                errors.append(f"{w}: a USGS gauge needs type stage, a label and usgs_site (the 8-15 digit USGS number)"); continue
+            tid = r.get("tidal", "").lower()
+            if tid not in ("", "yes", "no"):
+                errors.append(f"{w}: tidal must be yes, no or blank"); continue
+            g = {"key": key, "label": r["label"], "number": "USGS " + r["usgs_site"], "source": "usgs", "usgs_site": r["usgs_site"],
+                 "note": r.get("note", ""), "site_name": r.get("site_name") or r["label"], "reports": "interval", "tidal": tid == "yes"}
+            creeks[cid]["stages"].append(g)
+            keys.add(key)
+            continue
         bad = [col for col, ok in (("label", r.get("label")), ("onerain_number", re.fullmatch(r"[A-Za-z0-9]+", r.get("onerain_number", ""))),
                                    ("site_id", re.fullmatch(r"\d+", r.get("site_id", ""))), ("site", _UUID.match(r.get("site", "").lower())),
                                    ("device_id", re.fullmatch(r"\d+", r.get("device_id", ""))), ("device", _UUID.match(r.get("device", "").lower())))

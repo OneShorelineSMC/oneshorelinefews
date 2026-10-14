@@ -61,12 +61,16 @@ OGC = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/continuous/items"
 LEGACY = "https://waterservices.usgs.gov/nwis/iv/"
 
 
-def get(url, headers=None, tries=4):
+TRIES, TIMEOUT = 4, 120   # the live data job (fetch_onerain.py) lowers these so a slow USGS never holds up a run
+
+
+def get(url, headers=None, tries=None):
+    tries = tries or TRIES
     h = dict(UA)
     h.update(headers or {})
     for i in range(tries):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=120) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=TIMEOUT) as r:
                 return r.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as e:
             if e.code == 404:

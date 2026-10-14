@@ -46,6 +46,12 @@ RAIN_FREQ, _fp = load_rain_frequency()
 SETTINGS_ERRORS = SETTINGS_ERRORS + _sp + _fp
 
 SENSORS = {}
+USGS_PAGE = "https://waterdata.usgs.gov/monitoring-location/USGS-{}/"
+
+
+def all_creeks(result):
+    """Public creeks and staff-preview creeks (preview_only = yes in creeks.csv)."""
+    return result.get("creeks", []) + result.get("creeks_preview", [])
 
 
 def set_sensors(creeks):
@@ -61,9 +67,12 @@ def set_sensors(creeks):
 def creeks_from_previous(previous_file):
     """The last good creek list, rebuilt from the previous data file (each gauge's link holds its OneRain ids)."""
     out = []
-    for c in previous_file.get("creeks", []):
+    for c in all_creeks(previous_file):
         c = json.loads(json.dumps(c))
         for g in c.get("stages", []) + c.get("rain", []) + c.get("rain_support", []):
+            if g.get("source") == "usgs":
+                g.pop("url", None)
+                continue
             q = urllib.parse.parse_qs(urllib.parse.urlparse(g.get("url", "")).query)
             g.update({"site_id": int(q["site_id"][0]), "site": q["site"][0], "device_id": int(q["device_id"][0]), "device": q["device"][0]})
             g.pop("url", None)
@@ -175,11 +184,34 @@ def public_config():
     """The creek list for the pages, with a link to each gauge's OneRain page."""
     def gauge(g):
         out = {k: v for k, v in g.items() if k not in ("site_id", "site", "device_id", "device")}
-        out["url"] = (f"{SITE}/sensor/?site_id={g['site_id']}&site={g['site']}"
-                      f"&device_id={g['device_id']}&device={g['device']}")
+        out["url"] = (USGS_PAGE.format(g["usgs_site"]) if g.get("source") == "usgs" else
+                      f"{SITE}/sensor/?site_id={g['site_id']}&site={g['site']}&device_id={g['device_id']}&device={g['device']}")
         return out
-    return [dict(c, stages=[gauge(g) for g in c["stages"]], rain=[gauge(g) for g in c["rain"]],
-                 rain_support=[gauge(g) for g in c.get("rain_support", [])]) for c in CREEKS]
+    out = [dict(c, stages=[gauge(g) for g in c["stages"]], rain=[gauge(g) for g in c["rain"]],
+                rain_support=[gauge(g) for g in c.get("rain_support", [])]) for c in CREEKS]
+    # Staff-preview creeks go in a separate list, so the public pages never see them
+    return [c for c in out if not c.get("preview_only")], [c for c in out if c.get("preview_only")]
+
+
+def fetch_usgs_gauge(s, start, end):
+    """Gage height (ft) at a USGS stream gauge, as [[Pacific time, ft], ...], from the USGS Water Data API
+    (or the older WaterServices if that fails). Same reader as the history pull (scripts/fetch_usgs.py)."""
+    import fetch_usgs as U
+    U.TRIES, U.TIMEOUT = 1, 25
+    t0, t1 = (t.replace(tzinfo=TZ).astimezone(dt.timezone.utc) for t in (start, end))
+    data = None
+    try:
+        data = U.pull_ogc(s["usgs_site"], t0, t1)
+    except Exception as e:   # noqa: BLE001
+        print(f"  USGS Water Data API {s['usgs_site']}: {type(e).__name__}: {e}", file=sys.stderr)
+    if not data or "00065" not in data:
+        data = U.pull_legacy(s["usgs_site"], t0, t1)
+    pts = {}
+    for utc, v, *_ in (data or {}).get("00065", []):
+        t = dt.datetime.fromisoformat(utc.replace("Z", "+00:00")).astimezone(TZ).replace(tzinfo=None)
+        pts[t.strftime("%Y-%m-%d %H:%M")] = round(float(v), 3)
+    points = [[t, v] for t, v in sorted(pts.items())]
+    return points, (points[-1] if points else None), 1
 
 
 def _freq_from_json(f):
@@ -227,7 +259,7 @@ STATUS_LOG_MAX = 5000   # rows kept in status_log.csv (newest last)
 
 def log_status_changes(result, previous_file, out_path):
     """Append a row to status_log.csv (next to OUTPUT.json) whenever a creek's status changes, for staff review."""
-    old = {c["id"]: (c.get("status") or {}).get("key") for c in previous_file.get("creeks", [])}
+    old = {c["id"]: (c.get("status") or {}).get("key") for c in all_creeks(previous_file)}
     path = os.path.join(os.path.dirname(out_path) or ".", "status_log.csv")
     try:
         with open(path) as f:
@@ -237,7 +269,7 @@ def log_status_changes(result, previous_file, out_path):
     head = "time,creek,from,to,level,rain_level,trend,reasons"
     if not lines or lines[0] != head:
         lines = [head]
-    for c in result["creeks"]:
+    for c in all_creeks(result):
         st = c.get("status") or {}
         if st.get("key") != old.get(c["id"]):
             codes = " ".join(x["code"] for x in st.get("reasons", []))
@@ -252,7 +284,7 @@ def log_status_changes(result, previous_file, out_path):
 def add_status(result, now):
     """One status per creek (creek status layer; staff preview only)."""
     tides = {}
-    for c in result["creeks"]:
+    for c in all_creeks(result):
         st = c.get("tide")
         if st and st not in tides:
             pred, hilo, obs = noaa_tide(st, now)
@@ -265,7 +297,7 @@ def add_signals(result, previous, now):
     """Rain level for every rain gauge and trend for every stage gauge (creek status layer; staff preview only).
     If rain_frequency.csv has a mistake, each gauge keeps the Atlas 14 values from the previous data file."""
     sens = result["sensors"]
-    for c in result["creeks"]:
+    for c in all_creeks(result):
         rain_keys = [g["key"] for g in c["rain"] + c.get("rain_support", [])]
         for g in c["rain"] + c.get("rain_support", []):
             e = sens.get(g["key"])
@@ -311,10 +343,10 @@ def main():
             sys.exit(1)
         set_sensors(CREEKS)
         print("lookups/ has problems (above); kept the previous creek list and thresholds.", file=sys.stderr)
-    creeks_out = public_config()
+    creeks_out, creeks_preview = public_config()
     if THRESHOLD_ERRORS and not CONFIG_ERRORS:   # a mistake in thresholds.csv: keep the last good thresholds
-        old = {c["id"]: c for c in previous_file.get("creeks", [])}
-        for c in creeks_out:
+        old = {c["id"]: c for c in all_creeks(previous_file)}
+        for c in creeks_out + creeks_preview:
             o = old.get(c["id"])
             if o:
                 byk = {g["key"]: g for g in o.get("stages", [])}
@@ -328,14 +360,15 @@ def main():
     now = dt.datetime.now(TZ).replace(tzinfo=None, microsecond=0)
     start = now - dt.timedelta(hours=HOURS)
     result = {"generated": now.strftime("%Y-%m-%d %H:%M:%S"), "timezone": "America/Los_Angeles",
-              "hours": HOURS, "creeks": creeks_out, "sensors": {}}
+              "hours": HOURS, "creeks": creeks_out, "creeks_preview": creeks_preview, "sensors": {}}
     failures = 0
     session = Session()
     for key, s in SENSORS.items():
         entry = {k: s[k] for k in ("name", "kind", "unit")}
         try:
             s_start = now - dt.timedelta(hours=s.get("hours", HOURS))
-            entry["points"], entry["latest"], pages = fetch_sensor(session, s, s_start, now + dt.timedelta(minutes=5))
+            read = fetch_usgs_gauge if s.get("source") == "usgs" else (lambda s_, a, b: fetch_sensor(session, s_, a, b))
+            entry["points"], entry["latest"], pages = read(s, s_start, now + dt.timedelta(minutes=5))
             entry["fetched"] = result["generated"]
             entry["error"] = None
             print(f"{key}: {len(entry['points'])} readings in the last {HOURS} h "
