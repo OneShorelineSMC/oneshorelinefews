@@ -1,7 +1,8 @@
 key,value,unit,used_on,what_it_does,checked_by,checked_on
-RAIN_SEVERE_CONFIRM_GAUGES,2,gauges,creek cards,Severe rain counts only if at least this many of the creek's rain gauges are at Very heavy or above (1 = no confirmation),,
-RAIN_FREQ_FRESH_MIN,30,minutes,creek cards,A rain gauge counts toward the rain level only if its newest reading is younger than this,,
-TREND_WINDOW_MIN,30,minutes,"creek cards, kiosk",Creek level trend (rising / steady / falling) is the fitted slope over this many minutes,,
+RAIN_SEVERE_CONFIRM_GAUGES,2,gauges,creek cards,Severe rain counts only if at least this many of the creek's working rain gauges are at Very heavy or above (1 = no confirmation). A creek with fewer working rain gauges needs all of them.,,
+RAIN_SILENT_MIN,60,minutes,creek cards,"A rain gauge counts as 'no recent data' if it has reported nothing for this long while another rain gauge on the same creek recorded rain. (Replaces RAIN_FREQ_FRESH_MIN: gauges report only every 1-12 h when dry, so a plain age limit would flag them all; otherwise a rain gauge counts as working if it reported within GAUGE_QUIET_HOURS.)",,
+TREND_WINDOW_MIN,30,minutes,"creek cards, kiosk",Creek level trend (rising / steady / falling) is the fitted slope over this many minutes. Gauges that report only when the level changes hold their last value; gauges that report on a schedule less often than this use their last two readings (see TREND_MAX_WINDOW_MIN).,,
+TREND_MAX_WINDOW_MIN,120,minutes,"creek cards, kiosk",Longest window for the trend on gauges that report less often than TREND_WINDOW_MIN (e.g. hourly); older readings give no trend,,
 TREND_STEADY_FT_PER_HR,0.1,ft/hr,"creek cards, kiosk",A slope smaller than this either way counts as Steady,,
 TIDE_RISING_LOOKAHEAD_HOURS,3,hours,creek cards (tidal creeks),The rising-tide line shows when the next high tide is within this many hours,,
 BE_READY_FROM_RAIN,1,1 = yes / 0 = no,creek cards,"POLICY: whether severe rain or rising fast can make a creek without flood levels ""Be ready"" (1) or only ""Stay alert"" (0)",,

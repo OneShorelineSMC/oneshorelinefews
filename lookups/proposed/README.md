@@ -19,10 +19,16 @@ Only after the page and data-job code supports it. The pages flag any key they d
 complete OneRain details stops the data job. So:
 
 1. Fill in every `open_items` item for the row (OneRain `site_id` / `site` / `device_id` / `device` from the
-   sensor's page, `reports`, `tidal`), and `checked_by` / `checked_on`.
+   sensor's page, `reports`, `tidal`), and `checked_by` / `checked_on`. For OneRain sites that are public, the ids
+   were pre-filled on Oct 14 from OneRain's public site list: open the sensor link to check them. Sites marked
+   NOT PUBLIC can't be read until OneRain makes them public.
 2. When the code is ready, copy the row into the live file, leaving out the extra columns
-   (`source` … `open_items`).
+   (`source`, `usgs_site`, `distance_mi`, `confidence`, `open_items`). Keep `role`: hillside rain gauges for the four
+   dashboard creeks go in as `supporting` (so they count toward the rain level without changing the rain tables).
 3. Delete it here.
+
+**Ready in code (Oct 14):** letter-and-digit OneRain numbers (PUL, A0835678 …) and `role = supporting` rain gauges.
+Rain levels and creek trends are computed by the data job and written into `creeks.json`; no page shows them yet.
 
 USGS gauges (`source = usgs`) need a small addition to the data job before they can go live; the history pull
 `scripts/fetch_usgs.py` shows how to read them.
