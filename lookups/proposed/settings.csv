@@ -1,0 +1,7 @@
+key,value,unit,used_on,what_it_does,checked_by,checked_on
+RAIN_SEVERE_CONFIRM_GAUGES,2,gauges,creek cards,Severe rain counts only if at least this many of the creek's rain gauges are at Very heavy or above (1 = no confirmation),,
+RAIN_FREQ_FRESH_MIN,30,minutes,creek cards,A rain gauge counts toward the rain level only if its newest reading is younger than this,,
+TREND_WINDOW_MIN,30,minutes,"creek cards, kiosk",Creek level trend (rising / steady / falling) is the fitted slope over this many minutes,,
+TREND_STEADY_FT_PER_HR,0.1,ft/hr,"creek cards, kiosk",A slope smaller than this either way counts as Steady,,
+TIDE_RISING_LOOKAHEAD_HOURS,3,hours,creek cards (tidal creeks),The rising-tide line shows when the next high tide is within this many hours,,
+BE_READY_FROM_RAIN,1,1 = yes / 0 = no,creek cards,"POLICY: whether severe rain or rising fast can make a creek without flood levels ""Be ready"" (1) or only ""Stay alert"" (0)",,
