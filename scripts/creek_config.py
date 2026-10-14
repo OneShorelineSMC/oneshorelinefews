@@ -34,7 +34,7 @@ CREEKS = [
         "id": "sanbruno",
         "name": "San Bruno Creek",
         "short": "San Bruno",
-        "rain_windows": [60, 1440],
+        "rain_windows": [15, 30, 60, 180, 1440],   # flashy creek: short windows too (Summer, Oct 13)
         "intro": "Creek level at First Avenue in South San Francisco / San Bruno, rain in the upper and lower "
                  "watershed, and the Bay tide at Alameda. The creek at First Avenue rises and falls with the tide.",
         "tide": "9414750",
