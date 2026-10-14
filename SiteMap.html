@@ -153,14 +153,18 @@
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
 
+<script src="lookups.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)
 var SITES_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/sites.json";
 var REFRESH_MIN = 5;              // how often the page checks for new data
-var NOT_REPORTING_HOURS = 24;     // a site is "not reporting" when no sensor has reported for this long
-var OLD_READING_HOURS = 3;        // readings older than this are shown in orange
-var DATA_LATE_MIN = 45;           // warn when the published file itself is older than this
+// From lookups/settings.csv (through lookups.js): SITE_QUIET_HOURS = a site is "not reporting" when no sensor has
+// reported for this long; SITE_OLD_READING_HOURS = readings older than this are orange; SITE_DATA_LATE_MIN = warn
+// when the published file itself is older than this.
+var LK = window.LOOKUPS, NOT_REPORTING_HOURS, OLD_READING_HOURS, DATA_LATE_MIN;
+function applyLookups() { NOT_REPORTING_HOURS = LK.num("SITE_QUIET_HOURS"); OLD_READING_HOURS = LK.num("SITE_OLD_READING_HOURS"); DATA_LATE_MIN = LK.num("SITE_DATA_LATE_MIN"); }
+applyLookups();
 var CREEK_PAGE = "Creeks.html";
 var DISCLAIMER_URL = "Creeks.html#about";
 /* ================================================== */
@@ -317,8 +321,8 @@ function renderSheet(id) {
     h += '</div>';
   });
   h += '<a class="olink" href="' + esc(site.url) + '" target="_blank" rel="noopener">Full data on OneRain ↗</a>' +
-    '<div class="fine">For informational purposes only; data are provisional and thresholds are approximate. ' +
-    '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · In an emergency, call 911.</div>';
+    '<div class="fine">' + esc(LK.text("disclaimer_short_map")) + ' ' +
+    '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · ' + esc(LK.text("e911")) + '</div>';
   var sh = document.getElementById("sheet");
   sh.innerHTML = h;
   site.sensors.forEach(function (s, i) { var c = document.getElementById("sp" + i); if (c) spark(c, s, now); });
@@ -392,8 +396,8 @@ function drawList(now) {
     });
   });
   h += '<div id="listfoot">Data from the OneShoreline Early Warning System (OneRain), refreshed about every 15 minutes. ' +
-    'For informational purposes only; data are provisional and thresholds are approximate. ' +
-    '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · <a href="' + CREEK_PAGE + '">Creek conditions</a> · In an emergency, call 911.</div>';
+    esc(LK.text("disclaimer_short_map")) + ' ' +
+    '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · <a href="' + CREEK_PAGE + '">Creek conditions</a> · ' + esc(LK.text("e911")) + '</div>';
   var el = document.getElementById("list");
   el.innerHTML = h;
   Array.prototype.forEach.call(el.querySelectorAll(".row"), function (r) {
@@ -448,6 +452,7 @@ function load() {
     });
 }
 load();
+LK.onChange(function () { applyLookups(); if (DATA) draw(); });   // edited lookups/ files
 setInterval(load, REFRESH_MIN * 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
 setInterval(function () { if (DATA) draw(); }, 60000);   // keep "x min ago" current

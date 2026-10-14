@@ -163,7 +163,7 @@ own map:
   **Back to all sites**. Pinch or use + / − to zoom.
 - The data comes from `sites.json`, published every 15 minutes by the same GitHub job as the creek data
   (see below), so the map can lag OneRain by up to about 20 minutes.
-- **Alert levels** on the map come from the creek gauges and thresholds in `scripts/creek_config.py`.
+- **Alert levels** on the map come from the creek gauges and thresholds in `lookups/creek_gauges.csv` and `lookups/thresholds.csv`.
 
 ## Bay Tides tab
 
@@ -178,8 +178,9 @@ the week next, details behind a tap.
   a placeholder threshold until OneShoreline sets tide levels tied to known impacts. On the right: "Now 6.69 ft
   rising · +0.45 vs predicted"; tap it for the measured-vs-predicted table for the past week, the "running higher
   than predicted" summary and the model's accuracy over the last 24 hours. Tap the rest of the band for the times.
-- **Next 7 days:** one card per day with that day's highest tide and time; red above MHHW. Cards marked "fcst" use the
-  NOAA model forecast; later days use the prediction. The graph under the cards lines up with them and has three
+- **Next 7 days:** one card per day with that day's highest tide (ft) and time; red with "+0.21 ft over MHHW" when above
+  MHHW. Other days carry no "below MHHW" label: past the ~2-day model forecast the heights are only the astronomical
+  prediction and can't rule a high tide out. Cards marked "fcst" use the NOAA model forecast; later days use the prediction. The graph under the cards lines up with them and has three
   lines: measured (blue), NOAA forecast (teal) and predicted (dark), heights in ft NAVD88 on the left, and a "Now" tag on the current time. Tap for the forecast and predicted times above
   MHHW and the "if the Bay stays high" scenario for the days after the forecast ends.
 - **NOAA model forecast:** NOAA's San Francisco Bay Operational Forecast System publishes a water-level forecast for
@@ -224,7 +225,7 @@ The **Creeks** tab opens on **Dashboard Creeks**: one card per creek (Colma, San
 bordered all the way around in its status color, with each gauge's stage (an offline gauge shows "Offline · since
 Jun 3", never an old number), accumulated rain over the creek's own windows (a window that has reached a trigger is
 red), and the Bay tide in ft NAVD88 with how far it is below or above MHHW and whether it is rising or falling.
-Rain-trigger progress (Belmont, Atherton) appears only once it rains; when a trigger is met the card just says
+Rain-trigger progress (Belmont, the only creek with rain triggers in `lookups/thresholds.csv`) appears only once it rains; when a trigger is met the card just says
 "Trigger met ⚠ 4 hr rain + high tide" (the amounts are on the rain and tide rows). Tap a card, or a creek
 button across the top, for that creek's graphs. Each button turns yellow, orange or red when that creek is at a
 flood level. A single creek goes back to All creeks after 5 minutes (`CREEK_RETURN_MIN`). The NWS alert bar
@@ -269,10 +270,11 @@ If a gauge hasn't reported for a while (12 hours for gauges that report when the
 gauges that report on a schedule), it shows **"Gauge may be offline"** with the last report time instead of
 presenting an old reading as current.
 
-**Changing a threshold:** edit `thresholds.csv` at the top of the repo (one row per threshold). **Adding a creek
-or gauge:** edit `scripts/creek_config.py`. The kiosk, the phone page, the home page and the map all pick up the
-change on the next data run (about 5 minutes after you commit). A mistake in `thresholds.csv` never changes the
-screens: the job keeps the last good thresholds and shows the problem row in the Actions tab.
+**Changing a threshold, creek, gauge, MHHW, a setting or wording:** edit the table in the `lookups/` folder (see
+`lookups/README.md`). Creek, gauge and threshold changes reach the kiosk, phone pages, home page and map on the next
+data run (about 5 minutes after you commit); MHHW, settings and wording within about 10 minutes (the kiosk re-reads
+them every 30 minutes). A mistake never blanks the screens: the job keeps the last good settings and shows the
+problem row in the Actions tab, and the kiosk shows "⚠ Settings file problem" in its bottom bar.
 
 ### How the creek data gets to the kiosk (one-time setup)
 
@@ -280,7 +282,7 @@ OneRain doesn't let web pages on other sites read its data, and its data export 
 scheduled job in this repo reads the readings from each sensor's **public** OneRain page (the same page
 anyone can see without logging in):
 
-- `scripts/fetch_onerain.py` reads the last 48 hours for every creek gauge in `scripts/creek_config.py` from their public pages, plus
+- `scripts/fetch_onerain.py` reads the last 48 hours for every creek gauge in `lookups/creek_gauges.csv` from their public pages, plus
   each sensor's most recent reading (so an offline gauge shows when it last reported).
 - `.github/workflows/onerain.yml` runs that script about every 5 minutes and publishes the result to a
   separate branch named **`data`** (replaced each time, so it doesn't add commits to your main branch).
@@ -291,8 +293,8 @@ anyone can see without logging in):
 
 To turn it on:
 
-1. Upload the files to the repo **with their folders**: `scripts/creek_config.py`, `scripts/fetch_onerain.py`,
-   `scripts/fetch_sites.py` and `.github/workflows/onerain.yml`. (On GitHub: Add file → Create new file, and type the full path,
+1. Upload the files to the repo **with their folders**: the `lookups/` folder, `scripts/creek_config.py`,
+   `scripts/fetch_onerain.py`, `scripts/fetch_sites.py` and `.github/workflows/onerain.yml`. (On GitHub: Add file → Create new file, and type the full path,
    e.g. `.github/workflows/onerain.yml`, then paste the contents.)
 2. Go to the repo's **Actions** tab. If GitHub asks, click to enable workflows.
 3. Click **Fetch OneRain data** → **Run workflow** to run it once now.
@@ -311,23 +313,20 @@ Things to know:
   as red marks in the Actions tab.
 - **If OneRain redesigns its sensor pages,** the script may stop finding readings. The Actions log shows
   how many readings it found for each sensor on every run.
-- **Creeks, gauges and flood thresholds** are all in `scripts/creek_config.py`.
+- **Creeks, gauges and flood thresholds** are all in the `lookups/` folder (`creeks.csv`, `creek_gauges.csv`, `thresholds.csv`).
 
 ## Changing settings
 
-Near the top of the `<script>` section in `ShorelineKiosk.html`:
+**MHHW, the NOAA forecast rules, "higher than predicted" call-outs, gauge-offline timing, the QR code links and all
+wording** are in the `lookups/` folder (`tide_stations.csv`, `settings.csv`, `display_text.csv`; see
+`lookups/README.md`), shared with the phone pages. Kiosk display settings are near the top of the `<script>` section
+in `ShorelineKiosk.html`:
 
 | Setting               | Default | Meaning                                        |
 |-----------------------|---------|------------------------------------------------|
-| `STATIONS`            | Redwood City, Alameda | NOAA station IDs, names, and MHHW (ft NAVD88). Alameda is used only by the Creeks tab |
 | `TIDE_STATION`        | 9414523 | The station on the Bay Tides tab (Redwood City) |
 | `PAST_DAYS`           | 7       | Days of measured water level compared with predictions |
-| `OFFSET_RECENT_HIGHS` | 4       | "Running higher than predicted" averages this many recent high tides (about 2 days) |
-| `OFFSET_NOTE_FT`      | 0.2     | A difference this big is called out, and the look-ahead shows "if Bay stays high" |
-| `OFFSET_HIGH_FT`      | 0.5     | ...and this big is shown in red                 |
 | `MODEL_EVERY_MIN`     | 60      | How often the NOAA model forecast is downloaded |
-| `MODEL_MAX_AGE_HOURS` | 12      | Ignore a model download older than this         |
-| `MODEL_MIN_AHEAD_HOURS` | 6     | Ignore a model run that doesn't reach this far ahead |
 | `NWS_OFFICE`          | MTR     | NWS office whose forecast discussion is checked for tide notes |
 | `AFD_EVERY_MIN`       | 30      | How often the forecast discussion is checked    |
 | `TIDE_DAYS_URL`       | data/tide_days_lookup_2026-27.json | County King Tide dates for the King Tides line |
@@ -339,15 +338,11 @@ Near the top of the `<script>` section in `ShorelineKiosk.html`:
 | `CREEK_DATA_URL`      | data branch file | Where the creek tab reads its data      |
 | `CREEK_PAST_HOURS`    | 36      | Hours of history on the creek tab graphs        |
 | `CREEK_AHEAD_HOURS`   | 12      | Hours of predicted tide after "now"             |
-| `GAUGE_QUIET_HOURS`   | 12      | Silence after which the creek gauge "may be offline" |
 | `CREEK_AUTO_SWITCH_AT_WARNING` | true | Switch to the creek tab when the creek reaches Flood Warning |
 | `SITES_URL`           | data branch file | Where the Map tab reads its data        |
-| `SITE_QUIET_HOURS`    | 24      | Silence after which a map site shows gray ("not reporting") |
 | `CREEK_RETURN_MIN`    | 5       | A single creek returns to the All creeks summary after this long (0 = stay) |
 | `PIXEL_SHIFT_MIN`     | 10      | How often the picture shifts slightly (burn-in protection; 0 = off) |
 | `PIXEL_SHIFT_PX`      | 2       | How far it shifts, in pixels                    |
 | `ROTATE_SECONDS`      | 0       | Switch tabs automatically (0 = off)             |
 | `TAB_RETURN_MIN`      | 0       | Return to Bay Tides after this long on the creek tab (0 = off) |
-| `CONTACT_URL`         | OneShoreline contact page | Where the "Contact OneShoreline" QR code points |
-| `ALERT_SIGNUP_URL`    | SMC Alert page | Where the "Get alerts" QR code points       |
 | `ABOUT_RETURN_SEC`    | 120     | About tab returns to Bay Tides after this long  |

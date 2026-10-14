@@ -158,13 +158,14 @@
   .sec b { color: var(--ink); font-size: 14px; }
   /* 7 days: a list on phones, 7 columns on wide screens */
   .days { display: grid; gap: 0; border-top: 1px solid var(--line); }
-  .day { display: grid; grid-template-columns: 4.2em 3.2em minmax(0, 1fr) auto; align-items: baseline; gap: 6px; padding: 6px 4px;
+  .day { display: grid; grid-template-columns: 4.2em 4.4em minmax(0, 1fr) auto; align-items: baseline; gap: 6px; padding: 6px 4px;
     border-bottom: 1px solid var(--line); font-size: 14px; }
   .day .dn { font-weight: 700; color: var(--ink); }
-  .day .dv { font-size: 18px; font-weight: 700; color: var(--ink); }
-  .day .dt { color: var(--muted); font-size: 12.5px; line-height: 1.25; }
+  .day .dv { font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .day .dv .du { font-size: 12px; font-weight: 400; }
+  .day .dt { color: var(--muted); font-size: 12.5px; line-height: 1.25; white-space: nowrap; }
   .day .dt .tag { display: block; }   /* "fcst" / "measured" under the time on phones */
-  .day .dx { font-size: 13px; text-align: right; white-space: nowrap; color: var(--green); }
+  .day .dx { font-size: 13px; text-align: right; color: var(--green); max-width: 7.5em; line-height: 1.2; }
   .day.over { background: rgba(192,57,43,.08); }
   .day.over .dv, .day.over .dx { color: var(--red); font-weight: 700; }
   .tag { font-size: 11.5px; font-weight: 700; }
@@ -266,14 +267,12 @@
     <p class="lbl" id="calsrc" style="margin:10px 0 0;line-height:1.4"></p>
   </div>
   <div class="card explain">
-    <p><b>MHHW</b> (Mean Higher High Water) is the average height of the highest tide each day. Tides above it reach farther
-      up shorelines, marshes and low-lying areas than usual.</p>
+    <p data-text="mhhw_definition"></p>
     <p><b>Heights</b> come from one series: measured for what has already happened, then NOAA's model forecast for about 2 days, then
       the predicted (astronomical) tide. Each value is labeled <b>measured</b>, <b>fcst</b> or (no label) predicted.</p>
-    <p><b>NOAA forecast</b> is model guidance from NOAA's San Francisco Bay Operational Forecast System: the water level at this gauge
-      including wind, air pressure and river flow, about 2 days ahead, updated 4 times a day. It is not an official forecast; NWS advisories take precedence.</p>
-    <p class="lbl">Predicted tides come from NOAA and don't include storm surge. All heights are in feet, NAVD88.
-      For informational purposes only. <a href="Creeks.html#about">Disclaimer</a> · In an emergency, call 911.</p>
+    <p data-text="noaa_forecast_note"></p>
+    <p class="lbl"><span data-text="predicted_tide_note"></span> All heights are in feet, NAVD88.
+      <span data-text="disclaimer_short"></span> <a href="Creeks.html#about">Disclaimer</a> · <span data-text="e911"></span></p>
   </div>
   <div class="note" id="updated">Loading…</div>
 <div class="owner">
@@ -291,6 +290,7 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
+<script src="lookups.js"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -376,16 +376,21 @@ $("alert").addEventListener("click", function () {
 
 
 /* ===================== CONFIG ===================== */
-var STATIONS = [
-  { id: "9414523", name: "Redwood City", mhhw: 7.02 }    // MHHW in ft NAVD88 (Redwood City only)
-];
+// MHHW, the settings marked (lookups) and the wording come from the lookups/ folder through lookups.js (lookups/README.md)
+var LK = window.LOOKUPS;
+var STATIONS = [LK.station("9414523")];   // Redwood City only; MHHW (ft NAVD88) from lookups/tide_stations.csv
 var COUNTY_SAME = "006081";        // San Mateo County, for NWS alerts
 var PAST_DAYS = 7;                 // days of measured water level loaded (past-week comparison)
 var DAYS = 7;                      // days of predictions
-var OFFSET_RECENT_HIGHS = 4, OFFSET_NOTE_FT = 0.2;   // "running higher than predicted": average of the last 4 high tides
+var OFFSET_RECENT_HIGHS, OFFSET_NOTE_FT;   // (lookups) "running higher than predicted": average of the last few high tides
 var NWS_OFFICE = "MTR", AFD_MAX_AGE_HOURS = 24;      // NWS Bay Area forecast discussion, for tide notes
 // NOAA model forecast (SFBOFS water level guidance at the gauge, ft NAVD88, ~2 days ahead)
-var MODEL_MAX_AGE_HOURS = 12, MODEL_MIN_AHEAD_HOURS = 6;
+var MODEL_MAX_AGE_HOURS, MODEL_MIN_AHEAD_HOURS;   // (lookups)
+function applyLookups() {
+  OFFSET_RECENT_HIGHS = LK.num("OFFSET_RECENT_HIGHS"); OFFSET_NOTE_FT = LK.num("OFFSET_NOTE_FT");
+  MODEL_MAX_AGE_HOURS = LK.num("MODEL_MAX_AGE_HOURS"); MODEL_MIN_AHEAD_HOURS = LK.num("MODEL_MIN_AHEAD_HOURS");
+}
+applyLookups();
 var TIDE_DAYS_URL = "data/tide_days_lookup_2026-27.json";   // County tide days of concern (dates and labels only)
 var EMBED = /[?&]embed=1\b/.test(location.search);   // ?embed=1: no title bar, alert banner or bottom bar (for dashboards)
 /* ================================================== */
@@ -598,9 +603,9 @@ function render() {
       var name = dd === 0 ? "Today" : fmt(a0, { weekday: "short" }) + " " + fmt(a0, { day: "numeric" });
       if (!top) { h += '<div class="day"><span class="dn">' + name + '</span><span class="dv">–</span></div>'; continue; }
       var over = top.v > st.mhhw; if (top.src === "fcst") fcDays++;
-      h += '<div class="day' + (over ? " over" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + top.v.toFixed(2) + '</span>' +
+      h += '<div class="day' + (over ? " over" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span></span>' +
         '<span class="dt">' + fTime(top.t) + (top.src === "fcst" ? ' <span class="tag fc">fcst</span>' : top.src === "measured" ? ' <span class="tag ms">measured</span>' : "") + '</span>' +
-        '<span class="dx">' + (over ? sgn(top.v - st.mhhw) + " over MHHW" : "below MHHW") + "</span></div>";
+        '<span class="dx">' + (over ? sgn(top.v - st.mhhw) + " ft over MHHW" : "") + "</span></div>";
     }
     q(".days").innerHTML = h;
     q(".hint").textContent = fcDays ? "highest tide each day · measured, NOAA forecast, then predicted" : "highest predicted tide each day";
@@ -760,9 +765,6 @@ function loadTideSeason(after) {
     .catch(function () { /* keep the last good copy; the line hides if there is none */ })
     .then(function () { if (after) after(); });
 }
-var TS_SOURCE = "King Tide dates from San Mateo County Emergency Management, \u201cTide days of concern, Oct 2026 to Apr 2027.\u201d " +
-  "They are astronomical tide predictions for NOAA\u2019s San Francisco gauge (9414290) and don\u2019t include weather. " +
-  "Redwood City tides usually run higher than San Francisco, and storms, wind and runoff can add more, so check the Redwood City predictions and NWS alerts for the actual forecast.";
 
 function renderSeason() {
   var st = tideSeason(), el = $("season"), inSeason = tsInSeason(tsToday());
@@ -802,7 +804,7 @@ function renderCalendar() {
     return "<li><b>King Tide window " + esc(tsRange(w.start, w.end)) + "</b> · King Tide " + esc(tsDates(w.king_tide_dates)) +
       (w.end < today ? ' <span class="lbl">(past)</span>' : "") + "</li>";
   }).join("");
-  $("calsrc").textContent = TS_SOURCE + " Elevated tide days are the County's next level down (lower than King Tides). Heights in the County sheet are at San Francisco (MLLW) and aren't shown here; the station cards above use NAVD88.";
+  $("calsrc").textContent = LK.text("king_tide_source") + " Elevated tide days are the County's next level down (lower than King Tides). Heights in the County sheet are at San Francisco (MLLW) and aren't shown here; the station cards above use NAVD88.";
   $("calsel").textContent = "";
 }
 $("months").addEventListener("click", function (e) {
@@ -823,6 +825,11 @@ Array.prototype.forEach.call(document.querySelectorAll("nav button[data-href]"),
 
 /* ---------- refresh schedule (also refresh when the phone comes back to this page) ---------- */
 function refreshTides() { S.forEach(function (s) { loadObserved(s); }); }
+LK.onChange(function () {   // edited lookups/ files: new MHHW or settings
+  applyLookups();
+  S.forEach(function (s) { s.st.mhhw = LK.mhhw(s.st.id); s.st.name = LK.station(s.st.id).name; if (s.pred) { s.wins = findWindows(s.pred, s.st.mhhw); applyOfficialPeaks(s.wins, s.highs); } });
+  render(); renderSeason();
+});
 function refreshAll() { if (!EMBED) loadAlerts(); S.forEach(function (s) { loadPredictions(s).then(function () { loadObserved(s); }); }); }
 refreshAll();
 S.forEach(loadModel);

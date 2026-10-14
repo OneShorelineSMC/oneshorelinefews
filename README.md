@@ -75,10 +75,11 @@ Each one is added to the OneRain dashboard as an iFrame/web-page widget pointing
 | File | Purpose |
 |------|---------|
 | `data/tide_days_lookup_2026-27.json` | **Tide days of concern, Oct 2026 – Apr 2027**, from San Mateo County Emergency Management's sheet (San Francisco gauge, NOAA 9414290): one row per day with its category (King Tide · Elevated · none) and King Tide window, plus the three windows (Nov 21–28, Dec 20–27, Jan 17–24). The kiosk's Bay Tides tab and `Tides.html` read it for the King Tides line (shown only from 7 days before each King Tide window to its end) and the calendar, showing **dates and labels only**: the County's heights are ft MLLW at San Francisco, while the pages use ft NAVD88 at Redwood City and Alameda. Today is the Pacific-time date; both pages hide the line after the season's end date (Apr 30, 2027). For next season, add a new file in the same format and change `TIDE_DAYS_URL` in both pages. |
-| `thresholds.csv` | **All flood thresholds**, one row per threshold: creek, gauge key, type (`stage` or `rain`), minutes (rain only), level (1 Monitoring · 2 Watch · 3 Warning · 4 beyond Warning), name, value (ft or in), `tide_at_least_navd88` (rain only, when the tide must also be high: the creek's NOAA tide in ft NAVD88; e.g. Belmont's 6.32 ft, which is OneRain's 7.5 ft MLLW alarm level converted to NAVD88), source and notes. Edit it on GitHub like a table (pencil icon). Changes reach every page on the next data run (within ~5 minutes). If a row has a mistake, the job keeps the last good thresholds and shows a red ✗ with the row number in the Actions tab. Rain rows count toward the creek's status, like Belmont's flooding-likely triggers. |
-| `scripts/creek_config.py` | Creeks and gauges (OneRain sensor IDs), plus each creek's button name, which rain totals it shows (to match its OneRain dashboard), and Belmont's 4-hour rain graph. (Thresholds are in `thresholds.csv`.) The kiosk, phone page, home page and map all read them from the published data. |
-| `scripts/fetch_onerain.py` | Reads the last 48 hours of every creek gauge in `creek_config.py` from OneRain's **public** sensor pages (OneRain's data export requires a login; the public pages don't). |
-| `scripts/fetch_sites.py` | Reads every **public** site from OneRain's Sites list: its location, each sensor's latest reading, and the last 24 hours for the small graphs and rain totals. Battery/voltage/signal sensors are left out, and sites with no other sensors (e.g. radio repeaters) don't appear. Alert levels for the map are set in `THRESHOLDS` at the top. |
+| `lookups/` | **Everything staff check and update, as plain tables** (see `lookups/README.md`): `creeks.csv` (creek names, intro/note text, tide station, rain totals shown), `creek_gauges.csv` (each creek's stage and rain gauges mapped to their OneRain sensors, how each reports, which are tidal), `thresholds.csv` (all flood thresholds and rain triggers), `tide_stations.csv` (MHHW and MLLW-to-NAVD88 per NOAA station), `settings.csv` (rapidly-rising rule, offline/delayed timing, NOAA forecast rules, "higher than predicted" call-outs) and `display_text.csv` (disclaimer, 911 and SMC Alert wording, tide explanations, creek status words, contact details and links). `lookups/THRESHOLDS_BASIS.md` records where each value came from and who signed off. Each row has `checked_by` / `checked_on` columns. If a file has a mistake, nothing goes blank: the data job keeps the last good settings and marks its run failed in the Actions tab with the row, and the pages keep built-in values and flag it (home page System status; kiosk bottom bar). |
+| `lookups.js` | Shared by every page: reads `settings.csv`, `tide_stations.csv` and `display_text.csv` (re-read every 30 min), checks each value, and fills in the marked text on the page. Holds the built-in fallback values. |
+| `scripts/creek_config.py` | Reads and checks `lookups/creeks.csv`, `creek_gauges.csv`, `thresholds.csv` and `tide_stations.csv` for the data job. Nothing to edit here for normal changes. |
+| `scripts/fetch_onerain.py` | Reads the last 48 hours of every creek gauge in `lookups/creek_gauges.csv` from OneRain's **public** sensor pages (OneRain's data export requires a login; the public pages don't). |
+| `scripts/fetch_sites.py` | Reads every **public** site from OneRain's Sites list: its location, each sensor's latest reading, and the last 24 hours for the small graphs and rain totals. Battery/voltage/signal sensors are left out, and sites with no other sensors (e.g. radio repeaters) don't appear. Alert levels for the map come from `lookups/thresholds.csv`; OneRain's Redwood City tide is shown in NAVD88 using `lookups/tide_stations.csv`. |
 | `.github/workflows/onerain.yml` | GitHub Action that runs both scripts and publishes the results to the **`data`** branch as `creeks.json` (every run, about every 5 minutes; also copied to `sanbruno.json`, its old name) and `sites.json` (about every 15 minutes), replacing them each time (so it doesn't add commits to `main`). |
 
 The kiosk, the phone page and the home page read `https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json`;
@@ -88,7 +89,7 @@ the map and the kiosk's Map tab read `.../data/sites.json`.
 
 ## Stations, sensors and thresholds
 
-(Current values; `thresholds.csv` is the source.)
+(Current values; `lookups/thresholds.csv` is the source.)
 
 | What | Source | ID | Notes |
 |------|--------|----|-------|
@@ -101,7 +102,7 @@ the map and the kiosk's Map tab read `.../data/sites.json`.
 | Atherton Channel at Alameda de las Pulgas – stage | OneRain | 41107 | Monitoring 3.18 · Watch 4.60 · Warning 5.65 · Roadway Flooded 10.40 ft · tide: Redwood City |
 | Atherton Channel upstream of CalTrain – stage / rain | OneRain | 41106 | Monitoring 2.80 · Watch 4.10 · Warning 5.50 ft (probe 0.37 ft above channel bottom) |
 | NWS alerts | api.weather.gov | San Mateo County (FIPS 006081) | |
-| All other OneRain sites (map) | OneRain | every site on the public Sites list | Alert colors for the creek gauges above (from `scripts/creek_config.py`) |
+| All other OneRain sites (map) | OneRain | every site on the public Sites list | Alert colors for the creek gauges above (from `lookups/thresholds.csv`) |
 
 All water levels are in feet, NAVD88. Tide predictions come from NOAA and do **not** include storm surge,
 wind or runoff; the measured water level shows those effects.

@@ -88,6 +88,7 @@
   .tday:last-child { border-right: 0; }
   .tday .dn { font-size: 13px; font-weight: bold; white-space: nowrap; }
   .tday .dv { font-size: 21px; font-weight: bold; line-height: 1.15; }
+  .tday .dv .du { font-size: 12px; font-weight: normal; }
   .tday .dt { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
   .tday .dx { font-size: 11.5px; font-weight: bold; margin-top: 2px; line-height: 1.2; min-height: 14px; }
   .tday.over { border-top-color: #c0392b; background: rgba(192,57,43,.09); }
@@ -380,18 +381,18 @@
         line shows the dates (astronomical predictions for San Francisco, without weather).</p>
       <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline. Tap the creek buttons to switch creeks, and "thresholds &amp; notes" for what each level means.</p>
       <p><b>Running higher than predicted</b> means storms, wind or runoff are pushing water higher than the tide
-        alone. Upcoming high tides will likely run higher too; the dashed orange line shows the forecast tide if that continues.</p>
-      <p class="emerg">In an emergency, call 911.</p>
+        alone. Upcoming high tides will likely run higher too.</p>
+      <p class="emerg" data-text="e911"></p>
       <p class="src">Data: NOAA Tides &amp; Currents, National Weather Service, and the OneShoreline Early Warning
         System (OneRain). Predicted tides do not include storm surge. Data refreshes automatically.</p>
     </div>
     <div id="aboutContact">
       <div class="org"><img class="lt" src="img/oneshoreline-logo.png" alt="OneShoreline" width="183" height="42"><img class="dk" src="img/oneshoreline-logo-white.png" alt="OneShoreline" width="183" height="42"></div>
-      <div class="orgsub">San Mateo County Flood and Sea Level Rise Resiliency District</div>
-      <div class="line big">(650) 844-8310</div>
-      <div class="line">info@oneshoreline.org</div>
-      <div class="line">oneshoreline.org</div>
-      <div class="line addr" style="font-size:13px;color:var(--muted)">1700 S. El Camino Real, Suite 502<br>San Mateo, CA 94402</div>
+      <div class="orgsub" data-text="contact_district"></div>
+      <div class="line big" data-text="contact_phone"></div>
+      <div class="line" data-text="contact_email"></div>
+      <div class="line" data-text="contact_website"></div>
+      <div class="line addr" style="font-size:13px;color:var(--muted)"><span data-text="contact_address_1"></span><br><span data-text="contact_address_2"></span></div>
       <div class="qrs">
         <div class="qr"><div class="code" id="qrContact"></div>Contact OneShoreline</div>
         <div class="qr"><div class="code" id="qrAlert"></div>Get alerts: SMC Alert</div>
@@ -401,8 +402,8 @@
 
   <div id="disclaimer">
     <h3>Disclaimer</h3>
-    <p>Data provided for informational purposes only; OneShoreline is not liable for data errors or mis-interpretation of data by users of this site. Thresholds shown are approximate and will be updated as more information about the hydrologic response of the watershed is gleaned from the monitoring data. Actual flood conditions may vary based on channel blockages, sensor errors, or other complications.</p>
-    <p class="emerg">In an emergency, call 911.</p>
+    <p data-text="disclaimer"></p>
+    <p class="emerg" data-text="e911"></p>
   </div>
 
   <div id="maptab">
@@ -428,24 +429,25 @@
   </div>
 </div>
 
+<script src="lookups.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
-var STATIONS = [
-  { id: "9414523", name: "Redwood City", mhhw: 7.02 },   // MHHW in ft NAVD88
-  { id: "9414750", name: "Alameda",      mhhw: 6.37 }    // used only by the Creeks tab (San Bruno, Colma)
-];
+// Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
+// files, not this page (see lookups/README.md). The rest below are kiosk display settings.
+var LK = window.LOOKUPS;
+var STATIONS = [LK.station("9414523"),   // MHHW in ft NAVD88 from lookups/tide_stations.csv
+                LK.station("9414750")];  // Alameda: used only by the Creeks tab (San Bruno, Colma)
 var TIDE_STATION = "9414523";      // the Bay Tides tab shows this station only (Redwood City)
 var COUNTY_SAME = "006081";        // San Mateo County
 var DAYS = 7;
 var PAST_DAYS = 7;                 // days of measured water level loaded, to compare with predictions
-var OFFSET_RECENT_HIGHS = 4;       // "running higher than predicted" = average of the last 4 high tides (about 2 days)
-var OFFSET_NOTE_FT = 0.2;          // a difference this big (ft) is called out (tap screens), incl. "if Bay stays high" after the forecast
-var OFFSET_HIGH_FT = 0.5;          // ...and this big is shown in red
+// (lookups) OFFSET_RECENT_HIGHS: "running higher than predicted" = average of the last few high tides;
+// OFFSET_NOTE_FT: a difference this big (ft) is called out; OFFSET_HIGH_FT: ...and this big is shown in red
+var OFFSET_RECENT_HIGHS, OFFSET_NOTE_FT, OFFSET_HIGH_FT;
 // NOAA model forecast (SFBOFS water level guidance at the Redwood City gauge, ft NAVD88, ~2 days ahead).
 // Used for the graph and the day cards while it lasts; days after it use the astronomical prediction.
 var MODEL_EVERY_MIN = 60;          // the model runs 4 times a day; check hourly
-var MODEL_MAX_AGE_HOURS = 12;      // ignore a model download older than this
-var MODEL_MIN_AHEAD_HOURS = 6;     // ...or one that doesn't reach at least this far ahead
+var MODEL_MAX_AGE_HOURS, MODEL_MIN_AHEAD_HOURS;   // (lookups) ignore a model download older than this, or one that doesn't reach this far ahead
 var NWS_OFFICE = "MTR";            // NWS San Francisco Bay Area: its forecast discussion is checked for tide/coastal flood notes
 var AFD_EVERY_MIN = 30;
 var AFD_MAX_AGE_HOURS = 24;        // ignore a forecast discussion older than this
@@ -465,18 +467,21 @@ var CREEK_DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshore
 var CREEK_EVERY_MIN = 3;           // how often the kiosk checks for new creek data
 var CREEK_PAST_HOURS = 36;         // creek tab graphs: hours shown before "now"
 var CREEK_AHEAD_HOURS = 12;        // ...and hours of predicted tide after "now"
-// The creeks, their gauges and flood thresholds are set in scripts/creek_config.py (one place for every page).
+// The creeks, their gauges and flood thresholds are set in lookups/creeks.csv, creek_gauges.csv and thresholds.csv.
 var CREEK_AUTO_SWITCH_AT_WARNING = true;   // jump to a creek when it first reaches Flood Warning level
-var GAUGE_QUIET_HOURS = 12;        // gauges that report when the level changes: longer silence = may be offline
-var GAUGE_QUIET_HOURS_INTERVAL = 3; // gauges that report on a schedule (e.g. every 15 min)
-var CREEK_DATA_LATE_MIN = 30;      // warn if the published creek data is older than this
+var GAUGE_QUIET_HOURS, GAUGE_QUIET_HOURS_INTERVAL, CREEK_DATA_LATE_MIN;   // (lookups) gauge offline / data delayed timing
 // Map tab: every public OneRain site, published every 15 minutes by the same GitHub Action (scripts/fetch_sites.py)
 var SITES_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/sites.json";
 var SITES_EVERY_MIN = 5;           // how often the kiosk checks for new site data
-var SITE_QUIET_HOURS = 24;         // a site is "not reporting" when none of its sensors has reported for this long
-// About tab: QR codes people can scan with their phones
-var CONTACT_URL = "https://www.oneshoreline.org/contact-oneshoreline";
-var ALERT_SIGNUP_URL = "https://www.smcgov.org/dem/smc-alert";
+var SITE_QUIET_HOURS;              // (lookups) a site is "not reporting" when none of its sensors has reported for this long
+// About tab QR codes: url_contact and url_smc_alert in lookups/display_text.csv
+function applyLookups() {
+  OFFSET_RECENT_HIGHS = LK.num("OFFSET_RECENT_HIGHS"); OFFSET_NOTE_FT = LK.num("OFFSET_NOTE_FT"); OFFSET_HIGH_FT = LK.num("OFFSET_HIGH_FT");
+  MODEL_MAX_AGE_HOURS = LK.num("MODEL_MAX_AGE_HOURS"); MODEL_MIN_AHEAD_HOURS = LK.num("MODEL_MIN_AHEAD_HOURS");
+  GAUGE_QUIET_HOURS = LK.num("GAUGE_QUIET_HOURS"); GAUGE_QUIET_HOURS_INTERVAL = LK.num("GAUGE_QUIET_HOURS_INTERVAL");
+  CREEK_DATA_LATE_MIN = LK.num("CREEK_DATA_LATE_MIN"); SITE_QUIET_HOURS = LK.num("SITE_QUIET_HOURS");
+}
+applyLookups();
 var CREEK_RETURN_MIN = 5;          // a single creek returns to the "All creeks" summary after this long (0 = stay)
 var ABOUT_RETURN_SEC = 120;        // the About tab returns to Bay Tides on its own after this long
 var PIXEL_SHIFT_MIN = 10;          // screen-burn protection: nudge the picture this often (0 = off)
@@ -766,8 +771,8 @@ function renderDays(s, now) {
     var over = top.v > st.mhhw;
     var tag = top.src === "fcst" ? ' <span class="fc">fcst</span>' : top.src === "measured" ? ' <span class="ms">measured</span>' : "";
     if (top.src === "fcst") fcDays++;
-    h += '<div class="tday ' + (over ? "over" : "under") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) +
-      '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (over ? sgn(top.v - st.mhhw) + " ft<br>over MHHW" : "below MHHW") + "</div></div>";
+    h += '<div class="tday ' + (over ? "over" : "under") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span>' +
+      '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (over ? sgn(top.v - st.mhhw) + " ft<br>over MHHW" : "") + "</div></div>";
   }
   el.innerHTML = h;
   $t("tsechint").textContent = fcDays ? "highest tide each day · measured, NOAA forecast, then predicted" : "highest predicted tide each day";
@@ -1079,10 +1084,8 @@ function showLookAhead() {
       extra.map(function (h) { return fDay(h.t) + " " + fTime(h.t) + " (" + (h.v + off).toFixed(2) + " ft)"; }).join("; ") + "."
       : "no other high tides would go above MHHW.") + "</p>";
   }
-  html += '<div id="dnote">MHHW (Mean Higher High Water) = ' + st.mhhw.toFixed(2) + " ft NAVD88, the average height of the highest tide each day. " +
-    "Predicted tides do not include storm surge, wind, or runoff. The NOAA forecast is model guidance from NOAA's San Francisco Bay " +
-    "Operational Forecast System (water level at this gauge including wind, air pressure and river flow, about 2 days ahead, updated " +
-    "4 times a day); it is not an official forecast, and NWS advisories take precedence. All heights ft NAVD88. NOAA station " + st.id + ".</div>";
+  html += '<div id="dnote">MHHW = ' + st.mhhw.toFixed(2) + " ft NAVD88. " + esc(LK.text("mhhw_definition")) + " " + esc(LK.text("predicted_tide_note")) + " " +
+    esc(LK.text("noaa_forecast_note")) + " All heights ft NAVD88. NOAA station " + esc(st.id) + ".</div>";
   openDetail(st.name + " – next " + DAYS + " days", html);
 }
 function showPast() {
@@ -1167,9 +1170,6 @@ function loadTideSeason(after) {
     .catch(function () { /* keep the last good copy; the line hides if there is none */ })
     .then(function () { if (after) after(); });
 }
-var TS_SOURCE = "King Tide dates from San Mateo County Emergency Management, \u201cTide days of concern, Oct 2026 to Apr 2027.\u201d " +
-  "They are astronomical tide predictions for NOAA\u2019s San Francisco gauge (9414290) and don\u2019t include weather. " +
-  "Redwood City tides usually run higher than San Francisco, and storms, wind and runoff can add more, so check the Redwood City predictions and NWS alerts for the actual forecast.";
 
 function renderSeason() {
   var el = $t("tseason"), st = tideSeason();
@@ -1185,7 +1185,7 @@ $t("tseason").addEventListener("click", function () {
   var html = "<p style='font-size:18px'><b>" + esc(st.main) + "</b>" + (st.sub ? " · " + esc(st.sub) : "") + "</p>";
   if (wins.length) html += "<table><tr><th>King Tide windows</th><th>King Tide days</th></tr>" + wins.map(function (w) {
     return "<tr><td><b>" + esc(tsRange(w.start, w.end)) + "</b></td><td>" + esc(tsDates(w.king_tide_dates)) + "</td></tr>"; }).join("") + "</table>";
-  html += '<div id="dnote">' + esc(TS_SOURCE) + "</div>";
+  html += '<div id="dnote">' + esc(LK.text("king_tide_source")) + "</div>";
   openDetail("King Tide season", html);
 });
 
@@ -1276,7 +1276,7 @@ function creekTide(c, now, short) {   // short: leave out the vs-predicted note 
   var dm = tl.v - T.st.mhhw, pv = predAt(T, tl.t), dp = pv == null ? null : tl.v - pv;
   return { name: T.st.name, v: tl.v, html: "<b>" + tl.v.toFixed(2) + " ft</b> <span class='m'>· " +
     (dm >= 0 ? "<b style='color:var(--red)'>" + dm.toFixed(2) + " above MHHW</b>" : Math.abs(dm).toFixed(2) + " below MHHW") +
-    (trend ? ", " + trend : "") + (!short && dp != null && Math.abs(dp) >= 0.2 ? " · " + (dp > 0 ? "+" : "−") + Math.abs(dp).toFixed(2) + " vs predicted" : "") + "</span>" };
+    (trend ? ", " + trend : "") + (!short && dp != null && Math.abs(dp) >= OFFSET_NOTE_FT ? " · " + (dp > 0 ? "+" : "−") + Math.abs(dp).toFixed(2) + " vs predicted" : "") + "</span>" };
 }
 // Rain trigger progress, e.g. "4-hr rain 0.30 of 0.42 in + tide 6.10 of 6.32 ft"; null when it is dry and nothing is met
 function triggerLines(st, always) {
@@ -1335,7 +1335,7 @@ function renderCreek() {
     var g = s.g, col = s.quiet ? "#6b7a8c" : s.lvl ? s.lvl.color : "#2e7d32";
     var sub = !s.last ? "No recent readings" : s.quiet
       ? "<b style='color:var(--amber)'>Gauge may be offline</b> · last report " + fDay(s.last.t).replace(/^\w+, /, "") + " " + fTime(s.last.t)
-      : "<b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" + (s.lvl ? esc(s.lvl.name) : "Normal") + "</b> · " +
+      : "<b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" + (s.lvl ? esc(s.lvl.name) : esc(LK.text("status_normal"))) + "</b> · " +
         (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) : "highest level") + " · " + fTime(s.last.t);
     h += '<div class="cbox sbox' + (two ? " two" : "") + '" data-info="1" style="border-left-color:' + col + '">' +
       '<div class="clbl">' + esc(g.label) + " · stage</div>" +
@@ -1367,16 +1367,16 @@ function renderCreek() {
 
 /* "All creeks" summary: one card per creek with each gauge's level, rain and tide */
 function creekStatus(st) {
-  if (st.top) return { w: st.topTrigger ? "Flooding likely (rain)" : st.top.name, col: st.top.color, ink: inkOn(st.top) };
-  if (st.late) return { w: "Data delayed", col: "#6b7a8c", ink: "#fff" };
-  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: "Gauge offline", col: "#6b7a8c", ink: "#fff" };
-  return { w: "Normal", col: "#2e7d32", ink: "#fff" };
+  if (st.top) return { w: st.topTrigger ? LK.text("status_rain_trigger_long") : st.top.name, col: st.top.color, ink: inkOn(st.top) };
+  if (st.late) return { w: LK.text("status_delayed"), col: "#6b7a8c", ink: "#fff" };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline_long"), col: "#6b7a8c", ink: "#fff" };
+  return { w: LK.text("status_normal"), col: "#2e7d32", ink: "#fff", ok: true };
 }
 function renderAllCreeks(states, now) {
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
   document.getElementById("call").innerHTML = states.map(function (st) {
     var c = st.c, s0 = creekStatus(st), h = "";
-    var tint = s0.w === "Normal" ? "" : ";background:color-mix(in srgb," + s0.col + " 8%,var(--panel))";
+    var tint = s0.ok ? "" : ";background:color-mix(in srgb," + s0.col + " 8%,var(--panel))";
     h += '<div class="ccard" data-creek="' + esc(c.id) + '" style="border-color:' + s0.col + tint + '">' +
       '<div class="cch"><span class="ccn">' + esc(c.name) + '</span><span class="ccs" style="background:' + s0.col + ";color:" + s0.ink + '">' + esc(s0.w) + "</span></div>";
     // each gauge: stage, its level and distance to the next one (an offline gauge shows no old number)
@@ -1384,7 +1384,7 @@ function renderAllCreeks(states, now) {
       var row = !s.last ? "<span class='m'>no data</span>" : s.quiet
         ? "<span style='color:var(--amber);font-weight:bold'>Offline</span> <span class='m'>· since " + fDay(s.last.t).replace(/^\w+, /, "") + "</span>"
         : "<span class='ccv'>" + s.last.v.toFixed(2) + s.arrow + " ft</span><b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" +
-          (s.lvl ? esc(s.lvl.name.replace("Flood ", "")) : "Normal") + "</b>" +
+          (s.lvl ? esc(s.lvl.name.replace("Flood ", "")) : esc(LK.text("status_normal"))) + "</b>" +
           (s.next ? " <span class='m'>· " + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) + "</span>" : "");
       h += '<div class="ccg"><div class="ccl">' + esc(s.g.label) + ' · stage</div><div class="ccr wrap">' + row + "</div></div>";
     });
@@ -1518,7 +1518,7 @@ function drawCreekCharts(st, now) {
   var ink = css.getPropertyValue("--ink").trim(), muted = css.getPropertyValue("--muted").trim(), line = css.getPropertyValue("--line").trim();
   var x0 = now - CREEK_PAST_HOURS * 3600000, x1 = now + CREEK_AHEAD_HOURS * 3600000;
   var H = function (t) { return (t - now) / 3600000; };         // hours relative to now
-  var Y_W = 34;
+  var Y_W = 38;
   function xScale(show) {
     return { type: "linear", min: H(x0), max: H(x1),
       offset: false,          // bar charts pad their ends by default; turn that off so the graphs line up
@@ -1607,6 +1607,7 @@ function drawCreekCharts(st, now) {
     var sopt = base(false);
     if (dry && i === 0) { sopt.plugins.nowLine.label = true; sopt.layout.padding.top = 2; }   // the top graph carries the "Now" tag
     sopt.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);
+    sopt.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };
     var sets = shown.map(function (t) {
       return { data: [{ x: H(x0), y: t.value }, { x: H(x1), y: t.value }], borderColor: t.color, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, fill: false };
     });
@@ -1625,6 +1626,7 @@ function drawCreekCharts(st, now) {
   var tys = tp.concat(to, tf).map(function (p) { return p.y; }).concat([tS.st.mhhw]);
   var topt = base(true);
   topt.scales.y = yScale(2 * Math.floor((Math.min.apply(null, tys) - 0.3) / 2), 2 * Math.ceil((Math.max.apply(null, tys) + 0.3) / 2), 2);
+  topt.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };   // feet on the tide axis
   put("chTide", { data: { datasets: [
       { data: [{ x: H(x0), y: tS.st.mhhw }, { x: H(x1), y: tS.st.mhhw }], borderColor: cssVar("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
       { data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false },
@@ -1682,7 +1684,8 @@ setInterval(function () {
 var qrDrawn = false;
 function drawQRs() {
   if (qrDrawn || typeof QRCode === "undefined") return;
-  [["qrContact", CONTACT_URL], ["qrAlert", ALERT_SIGNUP_URL]].forEach(function (q) {
+  [["qrContact", LK.text("url_contact")], ["qrAlert", LK.text("url_smc_alert")]].forEach(function (q) {
+    document.getElementById(q[0]).innerHTML = "";
     new QRCode(document.getElementById(q[0]), { text: q[1], width: 224, height: 224,
       colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
   });
@@ -1841,7 +1844,7 @@ function tick() {
   var oldest = Math.min(A.t || 0, S[0].tPred || 0, S[1].tPred || 0);
   var ageMin = oldest ? (Date.now() - oldest) / 60000 : Infinity;
   var loading = (Date.now() - startedAt) < 60000;
-  document.getElementById("stale").textContent = (!loading && ageMin > STALE_AFTER_MIN) ? "⚠ Data out of date" : "";
+  document.getElementById("stale").textContent = (!loading && ageMin > STALE_AFTER_MIN) ? "⚠ Data out of date" : LK.problems.length ? "⚠ Settings file problem" : "";
   var newest = Math.max(A.t || 0, S[0].tObs || 0, S[1].tObs || 0, S[0].tPred || 0, S[1].tPred || 0);
   document.getElementById("updated").textContent = newest ? "Updated " + new Date(newest).toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" }) + " " + tzAbbr() : "Loading…";
   // Daily reload in the early morning
@@ -1862,6 +1865,12 @@ S.forEach(function (_, i) {
 // Redraw panels each minute so "now" markers and "Today/Tomorrow" stay current
 setInterval(function () { renderTides(); renderSeason(); }, 60000);   // also rolls the Tide season line over at midnight
 tick(); setInterval(tick, 15000);
+LK.onChange(function () {   // edited lookups/ files: new MHHW, settings or wording
+  applyLookups();
+  S.forEach(function (s) { s.st.mhhw = LK.mhhw(s.st.id); s.st.name = LK.station(s.st.id).name; if (s.pred) { s.wins = findWindows(s.pred, s.st.mhhw); applyOfficialPeaks(s.wins, s.highs); } });
+  if (qrDrawn) { qrDrawn = false; drawQRs(); }
+  renderTides(); renderSeason(); if (currentTab === "creek" && C.data) renderCreek(); tick();
+});
 </script>
 </body>
 </html>

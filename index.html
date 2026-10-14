@@ -149,7 +149,7 @@
       <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
   </div>
 </header>
-<div class="e911"><div class="wrap"><b>In an emergency, call <a href="tel:911">911</a>.</b> This site shows conditions; no one is watching it to send help.</div></div>
+<div class="e911"><div class="wrap"><b><a href="tel:911" data-text="e911">In an emergency, call 911.</a></b> <span data-text="e911_note"></span></div></div>
 
 <main class="wrap">
   <h2 class="sec">National Weather Service · San Mateo County <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">NWS forecast ↗</a></h2>
@@ -175,10 +175,9 @@
 
   <h2 class="sec">Get alerts</h2>
   <div class="box smc">
-    <p>Sign up for <b>SMC Alert</b> to get emergency alerts for San Mateo County by text, email or phone.
-      <span class="not"><b>This site does not send alerts.</b> SMC Alert messages are sent by San Mateo County officials and are not set off
-        by the creek, rain or tide readings shown here, so a high reading on this site does not mean an alert has gone out.</span></p>
-    <a class="btn" href="https://www.smcgov.org/dem/smc-alert" target="_blank" rel="noopener">Sign up for SMC Alert</a>
+    <p><span data-text="smc_alert_intro"></span>
+      <span class="not" data-text="smc_alert_note" data-lead></span></p>
+    <a class="btn" href="https://www.smcgov.org/dem/smc-alert" data-href="url_smc_alert" target="_blank" rel="noopener">Sign up for SMC Alert</a>
   </div>
 
   <h2 class="sec">System status</h2>
@@ -186,6 +185,7 @@
     <div class="row"><span class="dot" id="dCreek"></span><span class="k">Creek data</span><span class="v" id="vCreek">checking…</span></div>
     <div class="row"><span class="dot" id="dGauges"></span><span class="k">Creek gauges</span><span class="v" id="vGauges">checking…</span></div>
     <div class="row"><span class="dot" id="dSites"></span><span class="k">Monitoring network</span><span class="v"><span id="vSites">checking…</span> · <a href="SiteMap.html">map ›</a></span></div>
+    <div class="row" id="rLook" hidden><span class="dot amber"></span><span class="k">Settings files</span><span class="v" id="vLook"></span></div>
   </div>
   <div class="grid" style="margin-top:12px">
     <a class="card" href="https://oneshorelineearlywarning.onerain.com/" target="_blank" rel="noopener">
@@ -196,9 +196,9 @@
 
   <h2 class="sec">Contact</h2>
   <div class="contact">
-    <b>OneShoreline</b> · 1700 S. El Camino Real, Suite 502, San Mateo, CA 94402<br>
-    <a href="tel:+16508448310">(650) 844-8310</a> · <a href="mailto:info@oneshoreline.org">info@oneshoreline.org</a> ·
-    <a href="https://www.oneshoreline.org" target="_blank" rel="noopener">oneshoreline.org</a>
+    <b data-text="contact_org"></b> · <span data-text="contact_address_1"></span>, <span data-text="contact_address_2"></span><br>
+    <a href="tel:+16508448310" data-tel data-text="contact_phone"></a> · <a href="mailto:info@oneshoreline.org" data-mailto data-text="contact_email"></a> ·
+    <a href="https://www.oneshoreline.org" data-href="url_website" data-text="contact_website" target="_blank" rel="noopener"></a>
   </div>
 
   <footer>
@@ -207,28 +207,35 @@
       <div>Operated by OneShoreline, the San Mateo County Flood and Sea Level Rise Resiliency District ·
         <a href="https://www.oneshoreline.org" target="_blank" rel="noopener">oneshoreline.org</a></div>
     </div>
-    <p class="fine"><b>Disclaimer:</b> Data provided for informational purposes only; OneShoreline is not liable for data errors or mis-interpretation of data by users of this site. Thresholds shown are approximate and will be updated as more information about the hydrologic response of the watershed is gleaned from the monitoring data. Actual flood conditions may vary based on channel blockages, sensor errors, or other complications.</p>
+    <p class="fine"><b>Disclaimer:</b> <span data-text="disclaimer"></span></p>
     <p class="fine">Data: OneShoreline Early Warning System (OneRain), National Weather Service, NOAA Tides &amp; Currents.
       <a href="ShorelineKiosk.html" style="color:inherit">Office display</a></p>
   </footer>
 </main>
 
+<script src="lookups.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
+// Numbers, tide levels and wording that staff check live in the lookups/ folder (settings.csv, tide_stations.csv,
+// display_text.csv; see lookups/README.md). They are read by lookups.js into the variables below.
 var DATA = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
 var COUNTY_SAME = "006081";
-var CREEK_DATA_LATE_MIN = 30;        // creek data older than this = "delayed" (same as the creek page)
-var GAUGE_QUIET_HOURS = 12;          // gauges that report when the level changes
-var GAUGE_QUIET_HOURS_INTERVAL = 3;  // gauges that report on a schedule
-var SITE_QUIET_HOURS = 24;
+var LK = window.LOOKUPS;
+var CREEK_DATA_LATE_MIN, GAUGE_QUIET_HOURS, GAUGE_QUIET_HOURS_INTERVAL, SITE_QUIET_HOURS, MODEL_MIN_AHEAD_HOURS, OFFSET_NOTE_FT;
 // "Rapidly rising" (PROVISIONAL, logic to be confirmed): a gauge counts when its level rose at least RISE_FT
 // in the last RISE_MINUTES, its newest reading is under RISE_FRESH_MIN old, and the creek data is current.
-// Tidal gauges (they rise with every high tide) count only if the creek's rain gauges had at least
-// RISE_TIDAL_RAIN_IN in the last RISE_TIDAL_RAIN_HOURS.
-var RISE_FT = 0.5, RISE_MINUTES = 60, RISE_FRESH_MIN = 90;
-var RISE_TIDAL = ["stage"];          // gauge keys that rise and fall with the tide (San Bruno Creek at First Avenue)
-var RISE_TIDAL_RAIN_IN = 0.10, RISE_TIDAL_RAIN_HOURS = 3;
-var RISE_ETA_HOURS = 3;              // say when the next flood level would be reached, if within this many hours
+// Tidal gauges (tidal = yes in lookups/creek_gauges.csv; they rise with every high tide) count only if the
+// creek's rain gauges had at least RISE_TIDAL_RAIN_IN in the last RISE_TIDAL_RAIN_HOURS. RISE_ETA_HOURS: say
+// when the next flood level would be reached, if within this many hours.
+var RISE_FT, RISE_MINUTES, RISE_FRESH_MIN, RISE_TIDAL_RAIN_IN, RISE_TIDAL_RAIN_HOURS, RISE_ETA_HOURS;
+function applyLookups() {
+  CREEK_DATA_LATE_MIN = LK.num("CREEK_DATA_LATE_MIN"); GAUGE_QUIET_HOURS = LK.num("GAUGE_QUIET_HOURS");
+  GAUGE_QUIET_HOURS_INTERVAL = LK.num("GAUGE_QUIET_HOURS_INTERVAL"); SITE_QUIET_HOURS = LK.num("SITE_QUIET_HOURS");
+  MODEL_MIN_AHEAD_HOURS = LK.num("MODEL_MIN_AHEAD_HOURS"); OFFSET_NOTE_FT = LK.num("OFFSET_NOTE_FT");
+  RISE_FT = LK.num("RISE_FT"); RISE_MINUTES = LK.num("RISE_MINUTES"); RISE_FRESH_MIN = LK.num("RISE_FRESH_MIN");
+  RISE_TIDAL_RAIN_IN = LK.num("RISE_TIDAL_RAIN_IN"); RISE_TIDAL_RAIN_HOURS = LK.num("RISE_TIDAL_RAIN_HOURS"); RISE_ETA_HOURS = LK.num("RISE_ETA_HOURS");
+}
+applyLookups();
 var MAX_ALERTS_OPEN = 3;             // NWS alerts shown in full; any more are listed with a tap to open
 /* ================================================== */
 
@@ -315,7 +322,6 @@ function tideNowFor(id, now) {   // measured if recent, else predicted (needed o
   var best = null; (T.pred || []).forEach(function (x) { if (!best || Math.abs(x.t - now) < Math.abs(best.t - now)) best = x; });
   return best && Math.abs(best.t - now) < 3600000 ? best.v : null;
 }
-var TIDE_MHHW = { "9414523": 7.02, "9414750": 6.37 };
 function creekState(c, now) {
   var gen = C.data.generated ? parseLocal(C.data.generated) : null;
   var late = !gen || now - gen > CREEK_DATA_LATE_MIN * 60000;
@@ -338,7 +344,7 @@ function creekState(c, now) {
     if (!late && last && !quiet && now - last.t <= RISE_FRESH_MIN * 60000) {
       var ref = valueAt(p, last.t - RISE_MINUTES * 60000);
       var rise = ref ? last.v - ref.v : null;
-      var tidalOk = RISE_TIDAL.indexOf(g.key) < 0 || rainP.some(function (rp) { return rainSum(rp, now - RISE_TIDAL_RAIN_HOURS * 3600000, now) >= RISE_TIDAL_RAIN_IN; });
+      var tidalOk = !g.tidal || rainP.some(function (rp) { return rainSum(rp, now - RISE_TIDAL_RAIN_HOURS * 3600000, now) >= RISE_TIDAL_RAIN_IN; });
       if (rise != null && rise >= RISE_FT && tidalOk) {
         var eta = s.next ? (s.next.value - last.v) / (rise / (RISE_MINUTES / 60)) : null;
         st.rising.push({ s: s, rise: rise, eta: eta != null && eta <= RISE_ETA_HOURS ? eta : null });
@@ -355,7 +361,7 @@ function creekState(c, now) {
   (c.rain_triggers || []).forEach(function (tr) {
     var amt = rainSum(pts(tr.gauge), now - tr.minutes * 60000, now), ok = amt >= tr.value;
     if (ok && tr.high_tide) {
-      var tv = tideNowFor(c.tide, now), need = tr.tide_min != null ? tr.tide_min : TIDE_MHHW[c.tide];
+      var tv = tideNowFor(c.tide, now), need = tr.tide_min != null ? tr.tide_min : LK.mhhw(c.tide);
       ok = tv != null && need != null && tv >= need;
     }
     if (ok && !late && (!st.top || tr.level > st.top.level)) st.top = tr;
@@ -363,11 +369,11 @@ function creekState(c, now) {
   return st;
 }
 function statusOf(st) {
-  if (st.top) return { w: st.top.minutes ? "Rain trigger" : st.top.name.replace("Flood ", ""), color: hex(st.top.color, "#c62828"),
+  if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace("Flood ", ""), color: hex(st.top.color, "#c62828"),
     ink: st.top.level === 1 ? "#1a1a1a" : "#fff", lvl: st.top.level };
-  if (st.late) return { w: "Data delayed", color: "#8a96a3", ink: "#fff", lvl: 0 };
-  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: "Offline", color: "#8a96a3", ink: "#fff", lvl: 0 };
-  return { w: "Normal", color: "#2e7d32", ink: "#fff", lvl: 0, ok: true };
+  if (st.late) return { w: LK.text("status_delayed"), color: "#8a96a3", ink: "#fff", lvl: 0 };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline"), color: "#8a96a3", ink: "#fff", lvl: 0 };
+  return { w: LK.text("status_normal"), color: "#2e7d32", ink: "#fff", lvl: 0, ok: true };
 }
 function renderCreeks() {
   var now = nowLocal(), states = (C.data.creeks || []).map(function (c) { return creekState(c, now); });
@@ -414,6 +420,11 @@ function renderCreeks() {
   sys("dGauges", "vGauges", off.length ? "amber" : "ok", (all.length - off.length) + " of " + all.length + " reporting" + (off.length ? " · not reporting: " + off.map(function (o) {
     return (o.st.c.short || o.st.c.name) + (o.st.c.stages.length > 1 ? " (" + o.x.g.label + ")" : "") + (o.x.last ? " since " + fmt(o.x.last.t, { month: "short", day: "numeric" }) : "");
   }).join(", ") : ""));
+}
+// Only shown when a lookups/ file couldn't be read or has a mistake (the page then uses its built-in values)
+function lookStatus() {
+  $("rLook").hidden = !LK.problems.length;
+  $("vLook").textContent = LK.problems.length ? "using built-in values: " + LK.problems.join("; ") : "";
 }
 function sys(dot, val, cls, text) { $(dot).className = "dot " + (cls || ""); $(val).textContent = text; }
 
@@ -475,11 +486,11 @@ function loadTide() {
 }
 function sgn(v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
 function renderTide() {
-  var el = $("tide"), now = nowLocal(), m = TIDE_MHHW[TIDE_STATION];
+  var el = $("tide"), now = nowLocal(), m = LK.mhhw(TIDE_STATION);
   if (!TD.pred || !TD.pred.length) { el.className = "box tide gray"; el.innerHTML = '<span class="th">Bay tide data unavailable right now</span><span class="go">Tide details ›</span>'; return; }
   var ser = [], tail = -Infinity, fe = null;
   (TD.obs || []).forEach(function (o) { ser.push({ t: o.t, v: o.v, src: "measured" }); tail = o.t; });
-  if (TD.ofs && TD.ofs[TD.ofs.length - 1].t >= now + 6 * 36e5) { fe = TD.ofs[TD.ofs.length - 1].t; TD.ofs.forEach(function (o) { if (o.t > tail) ser.push({ t: o.t, v: o.v, src: "forecast" }); }); tail = Math.max(tail, fe); }
+  if (TD.ofs && TD.ofs[TD.ofs.length - 1].t >= now + MODEL_MIN_AHEAD_HOURS * 36e5) { fe = TD.ofs[TD.ofs.length - 1].t; TD.ofs.forEach(function (o) { if (o.t > tail) ser.push({ t: o.t, v: o.v, src: "forecast" }); }); tail = Math.max(tail, fe); }
   TD.pred.forEach(function (p) { if (p.t > tail) ser.push({ t: p.t, v: p.v, src: "predicted" }); });
   ser = ser.filter(function (p) { return p.t >= now - 12 * 36e5 && p.t <= dayStart(now) + TIDE_DAYS * 864e5; });
   var ups = findWindows(ser, m).filter(function (w) { return w.end > now; });
@@ -508,15 +519,13 @@ function renderTide() {
   var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
   if (last && now - last.t < 36e5) {
     var pv = null; TD.pred.forEach(function (p) { if (Math.abs(p.t - last.t) <= 3e5) pv = p.v; });
-    if (pv != null) nowTxt = Math.abs(last.v - pv) < 0.2 ? "Right now the Bay is about where the tide tables predict."
+    if (pv != null) nowTxt = Math.abs(last.v - pv) < OFFSET_NOTE_FT ? "Right now the Bay is about where the tide tables predict."
       : "Right now the Bay is " + feet(Math.abs(last.v - pv)) + " " + (last.v > pv ? "higher" : "lower") + " than the tide tables predict" +
-        (last.v > pv ? ". Storms, onshore wind, heavy runoff and El Niño conditions can all raise the Bay above the predicted tide." : ".");
+        (last.v > pv ? ". " + LK.text("tide_causes") : ".");
   }
   el.innerHTML = '<span class="th">' + esc(head) + "</span>" + (sub ? '<span class="tn">' + esc(sub) + "</span>" : "") +
     (nowTxt ? '<span class="tn">' + esc(nowTxt) + "</span>" : "") +
-    '<span class="ts">\u201cAverage high tide\u201d is Mean Higher High Water (MHHW): the average of each day\u2019s highest tide at the NOAA tide gauge in ' +
-    "Redwood City, " + m.toFixed(2) + " ft NAVD88. Tides above it reach farther onto low shorelines, marshes and trails. " +
-    "Based on NOAA tide measurements, NOAA\u2019s model forecast and the predicted (astronomical) tide.</span>" +
+    '<span class="ts">' + esc(LK.text("mhhw_definition_home", { station: LK.station(TIDE_STATION).name, mhhw: m.toFixed(2) })) + "</span>" +
     '<span class="go">Tide details ›</span>';
 }
 
@@ -541,6 +550,7 @@ function sites() {
 }
 
 function all() { nws(); creeks(); sites(); loadTide(); }
+LK.onChange(function () { applyLookups(); lookStatus(); if (C.data) renderCreeks(); if (TD.pred) renderTide(); });   // edited lookups/ files
 all();
 setInterval(all, 5 * 60000);
 setInterval(function () { if (C.data) renderCreeks(); if (TD.pred) renderTide(); }, 60000);
