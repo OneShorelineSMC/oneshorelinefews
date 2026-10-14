@@ -114,6 +114,65 @@ Each gauge's OneRain ids were copied from its OneRain sensor page in October 202
 the intended sensor (open the link from the creek page's "thresholds & notes" or the sensor map) and that
 `reports` (on change / interval) matches how the gauge logs. Checked by / on: ______
 
+## 8. Rain frequency (creek status layer, in development) — `rain_frequency.csv`
+
+Answers the open item in §2: rain levels for every creek, not just Belmont's triggers.
+
+- **Source:** NOAA Atlas 14, Volume 6, Version 2, point precipitation frequency estimates, depth in inches,
+  **partial-duration series**, at each rain gauge's coordinates. Pulled 2026-10-13 with `scripts/fetch_atlas14.py`.
+- **Why at the gauge:** Atlas 14 values are point estimates, so a gauge's rain compares like-for-like with the
+  estimate at that same point.
+- **Durations:** 15, 30, 60 min; 2, 3, 6, 12, 24, 48 hr. Rolling totals are checked at every duration; the most
+  extreme sets the level.
+- **Levels:** Heavy ≥ 1-year storm (≈63% chance in any year) · Very heavy ≥ 2-year (≈39%) · Severe ≥ 5-year (≈18%).
+  Chance in any year = annual exceedance probability, 1 − e^(−1/ARI).
+- **Confirmation:** Severe needs a second linked gauge at Very heavy or above (`RAIN_SEVERE_CONFIRM_GAUGES`).
+- **Status:** From source, not yet signed off. **Provisional** cutoffs until backtested against past storms.
+- **Spot-checked:** Atherton 41107 1-hr 2-year 0.58 in, 24-hr 100-year 5.99 in, matching NOAA's site.
+- **Limits:** rainfall frequency isn't flood frequency (wet ground, tides and blockages change the response);
+  Atlas 14 doesn't reflect recent climate trends (replace with Atlas 15 when it's published for California);
+  NOAA's 90% confidence bounds aren't included.
+
+## 9. More creeks and gauge pairings (in development) — `proposed/creeks.csv`, `proposed/creek_gauges.csv`
+
+- 10 more creeks, using the stream gauges they already have (OneRain and USGS) and nearby rain gauges.
+- Rain gauges were paired from coordinates (straight-line distance and direction), favoring gauges **upslope in
+  the creek's own watershed**. They haven't been checked against watershed boundaries.
+- `role`: primary / supporting; `confidence`: good / fair / weak; open questions are in `open_items`.
+- **Tidal creeks (per staff):** Colma, San Bruno, Green Hills (drains to Highline Canal), San Mateo,
+  San Francisquito, Redwood. Whether each *gauge* reads the tide still needs confirming (`tidal = confirm`).
+- **Coverage gaps:** San Bruno and Green Hills have no upslope rain gauge; lower Pilarcitos has none; Pescadero's
+  hillside gauges are 5–8 miles away; Butano has none in its upper watershed.
+- **San Mateo Creek:** below Crystal Springs, flow is mostly reservoir releases (SFPUC). USGS 11162753 measures flow
+  below the dam (and picks up I-280 runoff); USGS 11162750 is reservoir level; the reservoir spills at 294.6 ft.
+
+## 10. Creek status (in development) — `proposed/display_text.csv`, `proposed/settings.csv`
+
+One plain status per card, worst first:
+
+| Status | When |
+|---|---|
+| Flooding likely | Flood Warning (level 3+) or a level-3 rain trigger |
+| Be ready | Flood Watch; or, on a creek without flood levels, rising fast or severe rain* |
+| Stay alert | Flood Monitoring; very heavy rain; severe rain or rising fast on a creek still at Normal; heavy rain + rising tide on a tidal creek |
+| Offline / Data delayed | as today (`status_offline`, `status_delayed`) |
+| No alerts | otherwise |
+
+\* **Policy decision:** this lets rain and rate of rise alone put a creek without flood levels at "Be ready",
+which makes those cards advisory rather than informational. Switch: `BE_READY_FROM_RAIN` (1 = yes, 0 = Stay alert only).
+
+Flood levels always take priority; rain and rate of rise never lower a status. Run the layer **staff-only first**
+(silent mode for the first storms) before the public sees it.
+
+## 11. Rapidly rising: calibration plan
+
+The current rule (§5) stays until there is data to replace it. Proposed per-gauge rule: a 30-minute fitted slope at
+or above that gauge's 99th-percentile wet-season rise (never below 0.5 ft/hr), **or** time to the next flood level
+of 2 hours or less. It counts only above a minimum stage, must hold for two readings, has a spike filter, and clears
+only after the rate drops to half for 30 minutes. On tidal gauges the predicted tide's rate is subtracted first.
+Data: USGS history since 2007 (`scripts/fetch_usgs.py`, workflow **USGS history pull**) and OneRain exports.
+Results stay out of the repo (`out/` is not committed).
+
 ## Data sources
 
 | Data | Source | How the pages get it | Refresh |
@@ -126,6 +185,24 @@ the intended sensor (open the link from the creek page's "thresholds & notes" or
 | NWS forecast notes on tides | api.weather.gov Area Forecast Discussion, office MTR (San Francisco Bay Area) | kiosk and Tides page | 30 min |
 | King Tide dates | San Mateo County Emergency Management, "Tide days of concern, Oct 2026 to Apr 2027" (San Francisco gauge, astronomical) → `data/tide_days_lookup_2026-27.json` | kiosk and Tides page | as published |
 | Tide datums | NOAA Tides & Currents datums pages for each station | entered in `tide_stations.csv` | when NOAA updates the epoch |
+| Rain frequency | NOAA HDSC Precipitation Frequency Data Server, Atlas 14 Vol. 6 v2 (hdsc.nws.noaa.gov/pfds) | `scripts/fetch_atlas14.py` → `rain_frequency.csv` | once; again when Atlas 15 is published |
+| USGS stream gauges (proposed creeks) | USGS Water Data API (`api.waterdata.usgs.gov`) and WaterServices (`waterservices.usgs.gov`, retiring late 2026/early 2027) | history: `scripts/fetch_usgs.py`; live: not yet | 15 min |
+| Crystal Springs releases | SFPUC Peninsula Reservoir Wet Weather Operations (sfpuc.gov/PeninsulaReservoirWetWeather) | reference | as published |
+| Evacuation orders | Genasys Protect (protect.genasys.com), per San Mateo County DEM | link only (proposed) | live |
+
+## Sign-off checklist for the creek status layer (§8–11)
+
+- [ ] Confirm each assumed rain gauge has a working rain sensor (`open_items`: 41101–41107, 41201, 41200, 41151–41153)
+- [ ] Review pairings against watershed maps, especially whether Pulgas is in the Belmont Creek watershed
+- [ ] Confirm which proposed stage gauges read the tide (`tidal = confirm`)
+- [ ] Accept or plan for the coverage gaps (§9)
+- [ ] Spot-check two or three gauges in `rain_frequency.csv` against NOAA's site
+- [ ] Confirm the 1/2/5-year cutoffs after backtesting past storms
+- [ ] Decide the policy switch `BE_READY_FROM_RAIN`
+- [ ] Set per-gauge rapidly-rising values once historical data is analyzed
+- [ ] Communications and DEM approve `proposed/display_text.csv`; order translations
+- [ ] Get a Genasys Protect link centered on San Mateo County
+- [ ] Run staff-only through the first storms before going public
 
 ## Sign-off log
 

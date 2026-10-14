@@ -11,6 +11,8 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 | `tide_stations.csv` | NOAA tide stations: MHHW (ft NAVD88) and the MLLW-to-NAVD88 difference | pages directly, and the data job | pages: within about 10 min |
 | `settings.csv` | Numbers behind the page logic: the rapidly-rising rule, when a gauge counts as offline or data as delayed, when the NOAA forecast is used, when "higher than predicted" is called out | pages directly | within about 10 min (the kiosk re-reads every 30 min) |
 | `display_text.csv` | Wording: disclaimer, 911 line, SMC Alert note, tide explanations, status words on the creek cards, contact details and links | pages directly | within about 10 min (kiosk: 30 min) |
+| `rain_frequency.csv` | Rain depths (in) for the 1-, 2- and 5-year storms at each rain gauge and duration (15 min – 48 hr), from NOAA Atlas 14, with the level they set (1 Heavy · 2 Very heavy · 3 Severe) and 10/25/100-year values for reference | **not read yet** (creek status layer, in development) | — |
+| `proposed/` | Drafts for the creek status layer: 10 more creeks, their gauges, status wording and settings. See `proposed/README.md` | **not read** | — |
 
 Where each number came from, and who has signed off, is in **[THRESHOLDS_BASIS.md](THRESHOLDS_BASIS.md)**.
 
@@ -71,6 +73,12 @@ show OneRain's Redwood City tide in NAVD88 on the sensor map) · `used_for` · `
 `lookups.js`); a value outside it is ignored and reported.
 
 **display_text.csv** — `key` · `text` · `shown_on` · `notes`.
+
+**rain_frequency.csv** — `onerain_number` (rain gauge) · `gauge` (its code in `creek_gauges.csv`, if it's already live) ·
+`site_name` · `minutes` (duration) · `ari_years` (the storm: 1-, 2-, 5-, 10-, 25-, 100-year) · `aep_pct` (chance in any year)
+· `level` (1 Heavy, 2 Very heavy, 3 Severe; blank = reference only; **edit this column to change the cutoffs**) · `name` ·
+`value_in` · `lat` / `lon` (where NOAA's estimate is for) · `source` · `notes`. Regenerate the depths with the
+**Atlas 14 pull** workflow (`scripts/fetch_atlas14.py`) rather than editing them by hand.
 
 ## Not in these files (still in page code)
 
