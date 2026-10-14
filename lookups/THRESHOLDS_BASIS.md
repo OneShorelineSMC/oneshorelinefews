@@ -151,6 +151,12 @@ Answers the open item in §2: rain levels for every creek, not just Belmont's tr
   hillside gauges are 5–8 miles away; Butano has none in its upper watershed.
 - **San Mateo Creek:** below Crystal Springs, flow is mostly reservoir releases (SFPUC). USGS 11162753 measures flow
   below the dam (and picks up I-280 runoff); USGS 11162750 is reservoir level; the reservoir spills at 294.6 ft.
+- **In preview (Oct 14):** San Francisquito, San Mateo, Green Hills, Pilarcitos, San Gregorio and Pescadero are in the
+  live files with `preview_only = yes` (staff preview only), using the gauges that can be read now. Their OneRain ids were
+  pre-filled from OneRain's public site list and their gauge notes say what to check. Redwood, Bear, Los Trancos and
+  Butano stay in `proposed/` until their stage gauges are public on OneRain (Butano: backup sensors only).
+- **Rising fast on these creeks** uses the provisional rule (0.5 ft in an hour). Gauges below dams (Pilarcitos, San
+  Mateo below Crystal Springs) can rise that fast from a release; see §11 before trusting "Be ready" there.
 
 ## 10. Creek status (in development) — `proposed/display_text.csv`, `proposed/settings.csv`
 

@@ -49,7 +49,9 @@ The built-in values are in `lookups.js` (top of the repo). They are only a fallb
 `name` · `short_name` (buttons) · `tide_station` (NOAA number, must be in `tide_stations.csv`) · `rain_windows_min`
 (rain totals shown, in minutes, separated by spaces: `15 30 60 180 1440`) · `running_rain_gauge` /
 `running_rain_min` / `running_rain_label` (optional running-total graph; its line is that gauge's rain trigger for
-the same minutes) · `intro` (sentence under the creek name) · `note` (what the level colors mean).
+the same minutes) · `intro` (sentence under the creek name) · `note` (what the level colors mean) · `preview_only`
+(`yes` = staff preview only: the creek appears only on pages opened with `?preview=1`, never on the public pages;
+`tide_station` may be blank for these).
 
 **creek_gauges.csv** — `creek` · `gauge` code (used in `thresholds.csv`; don't change it once data exists) ·
 `type` (`stage` or `rain`) · `label` (short name on the pages) · `site_name` (stage: full OneRain site name) ·
@@ -59,7 +61,8 @@ reading when the level changes, `interval` if on a schedule; sets how long a sil
 (stage: `yes` if the level rises and falls with the tide; such gauges count as "rapidly rising" only after rain) ·
 `note` (shown with the gauge's thresholds) · `role` (optional; rain: blank or `primary` = shown on the pages,
 `supporting` = a hillside gauge that only counts toward the creek's rain level in the creek status layer; OneRain
-`onerain_number` can be letters and digits, e.g. `PUL`).
+`onerain_number` can be letters and digits, e.g. `PUL`) · `source` (blank/`onerain`, or `usgs` for a USGS stream
+gauge: then fill `usgs_site` with the USGS number and leave the OneRain columns blank; its gage height is read from USGS).
 
 **thresholds.csv** — `creek` · `gauge` · `gauge_name` (for people; not used) · `type` (`stage` or `rain`) ·
 `minutes` (rain only) · `level` (1 Flood Monitoring, 2 Flood Watch, 3 Flood Warning, 4 above Flood Warning; sets
