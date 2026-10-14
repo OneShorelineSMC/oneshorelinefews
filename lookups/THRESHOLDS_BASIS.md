@@ -126,7 +126,13 @@ Answers the open item in §2: rain levels for every creek, not just Belmont's tr
   extreme sets the level.
 - **Levels:** Heavy ≥ 1-year storm (≈63% chance in any year) · Very heavy ≥ 2-year (≈39%) · Severe ≥ 5-year (≈18%).
   Chance in any year = annual exceedance probability, 1 − e^(−1/ARI).
-- **Confirmation:** Severe needs a second linked gauge at Very heavy or above (`RAIN_SEVERE_CONFIRM_GAUGES`).
+- **Confirmation:** Severe needs a second linked gauge at Very heavy or above (`RAIN_SEVERE_CONFIRM_GAUGES`). A creek
+  with only one working rain gauge can reach Severe on that gauge alone; the staff view says so (decided Oct 14).
+- **Which readings count:** rain gauges report every 1–12 hours in dry weather and on each tip when it rains, so a
+  gauge counts as working if it has reported within `GAUGE_QUIET_HOURS` (12 h, as for creek gauges). A gauge that is
+  silent while others on the same creek record rain will be flagged separately (`RAIN_SILENT_MIN`, proposed).
+- **Hillside gauges:** `role = supporting` in `creek_gauges.csv` counts a rain gauge toward the creek's rain level
+  only; it doesn't appear in the rain tables or graphs. Pairings go live after staff check them against watershed maps.
 - **Status:** From source, not yet signed off. **Provisional** cutoffs until backtested against past storms.
 - **Spot-checked:** Atherton 41107 1-hr 2-year 0.58 in, 24-hr 100-year 5.99 in, matching NOAA's site.
 - **Limits:** rainfall frequency isn't flood frequency (wet ground, tides and blockages change the response);

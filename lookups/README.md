@@ -57,7 +57,9 @@ the same minutes) · `intro` (sentence under the creek name) · `note` (what the
 sensor's OneRain page address: Sites › site › sensor) · `reports` (stage: `on change` if OneRain only stores a
 reading when the level changes, `interval` if on a schedule; sets how long a silence means "offline") · `tidal`
 (stage: `yes` if the level rises and falls with the tide; such gauges count as "rapidly rising" only after rain) ·
-`note` (shown with the gauge's thresholds).
+`note` (shown with the gauge's thresholds) · `role` (optional; rain: blank or `primary` = shown on the pages,
+`supporting` = a hillside gauge that only counts toward the creek's rain level in the creek status layer; OneRain
+`onerain_number` can be letters and digits, e.g. `PUL`).
 
 **thresholds.csv** — `creek` · `gauge` · `gauge_name` (for people; not used) · `type` (`stage` or `rain`) ·
 `minutes` (rain only) · `level` (1 Flood Monitoring, 2 Flood Watch, 3 Flood Warning, 4 above Flood Warning; sets
