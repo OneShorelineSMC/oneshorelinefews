@@ -155,7 +155,8 @@
   <h2 class="sec">National Weather Service · San Mateo County <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">NWS forecast ↗</a></h2>
   <div class="alerts" id="alerts" aria-live="polite"><div class="box al none gray"><span>Checking NWS alerts…</span></div></div>
 
-  <h2 class="sec">Creeks <a href="Creeks.html">All creek details ›</a></h2>
+  <h2 class="sec">Creeks <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
+  <div id="csPreview"></div>
   <div class="creeks" id="creeks" aria-live="polite">
     <div class="box ck gray"><span class="nm">Loading…</span></div>
   </div>
@@ -214,6 +215,7 @@
 </main>
 
 <script src="lookups.js"></script>
+<script src="creek_status.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Numbers, tide levels and wording that staff check live in the lookups/ folder (settings.csv, tide_stations.csv,
@@ -409,6 +411,12 @@ function renderCreeks() {
       "<p>Up " + r.rise.toFixed(2) + " ft in the last " + (RISE_MINUTES === 60 ? "hour" : RISE_MINUTES + " min") + ", now " + x.last.v.toFixed(2) + " ft (" + esc(fTime(x.last.t)) + ")." + eta + "</p></span></a>";
   }).join("");
   var anyLate = states.some(function (s) { return s.late; });
+  var CS = window.CREEK_STATUS;
+  if (CS && CS.preview) {   // ?preview=1: creek status layer (staff preview) in place of the creek cards and rapid-rise cards
+    $("csPreview").innerHTML = CS.page(C.data, function (c) { return "Creeks.html?preview=1#" + encodeURIComponent(c.id); }, { staff: false });
+    $("creeks").style.display = $("rising").style.display = $("calm").style.display = "none";
+    $("creeksLink").href = "Creeks.html?preview=1";
+  }
   $("calm").textContent = rising.length ? "" : anyLate ? "Rapid-rise check paused: creek data is delayed." :
     "No creek gauges rising rapidly (" + RISE_FT.toFixed(1) + " ft or more in the last hour).";
 

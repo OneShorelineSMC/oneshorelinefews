@@ -430,6 +430,7 @@
 </div>
 
 <script src="lookups.js"></script>
+<script src="creek_status.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1324,7 +1325,7 @@ function renderCreek() {
     return '<span class="cbtn' + (on ? " on" : "") + '" data-creek="' + esc(x.c.id) + '"' +
       (col ? ' style="background:' + col + ";border-color:" + col + ";color:" + inkOn(x.top) + '"' : "") + ">" +
       (col ? "▲ " : "") + esc(shortName(x.c)) + "</span>";
-  }).join("") + (all ? '<span class="cinfo">tap a creek for graphs</span>' : '<span class="cinfo" data-info="1">ⓘ thresholds &amp; notes</span>');
+  }).join("") + (all ? '<span class="cinfo">' + (window.CREEK_STATUS && CREEK_STATUS.preview ? "preview · " : "") + 'tap a creek for graphs</span>' : '<span class="cinfo" data-info="1">ⓘ thresholds &amp; notes</span>');
   el("call").style.display = all ? "" : "none";
   el("cbody").style.display = all ? "none" : "";
   if (all) { destroyCreekCharts(); renderAllCreeks(states, now); return; }
@@ -1373,6 +1374,12 @@ function creekStatus(st) {
   return { w: LK.text("status_normal"), col: "#2e7d32", ink: "#fff", ok: true };
 }
 function renderAllCreeks(states, now) {
+  if (window.CREEK_STATUS && CREEK_STATUS.preview) {   // ?preview=1: creek status tiles (staff preview), nothing to tap but the tile itself
+    document.getElementById("call").innerHTML = states.map(function (st) {
+      return '<div data-creek="' + esc(st.c.id) + '" style="display:flex;min-height:0">' + CREEK_STATUS.tile(C.data, st.c).replace('class="cs-tile', 'style="flex:1" class="cs-tile') + "</div>";
+    }).join("");
+    return;
+  }
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
   document.getElementById("call").innerHTML = states.map(function (st) {
     var c = st.c, s0 = creekStatus(st), h = "";

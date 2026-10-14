@@ -170,6 +170,7 @@
     <div id="one">
     <a class="back" href="#all" id="backAll">‹ All creeks</a>
     <div class="intro" id="intro"></div>
+    <div id="csOne"></div>
     <div id="stages"></div>
     <div class="two" id="rainBox">
       <div class="card"><div class="lbl" id="rainLbl">Rainfall (inches)</div><div id="rainTable"></div></div>
@@ -240,6 +241,7 @@
 </nav>
 
 <script src="lookups.js"></script>
+<script src="creek_status.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -462,8 +464,10 @@ function render() {
   var st = c ? states.filter(function (x) { return x.c === c; })[0] : null;
 
   // creek tiles: short name plus current status, with a bar in the status color
+  var CS = window.CREEK_STATUS, PV = CS && CS.preview;   // ?preview=1: creek status layer (staff preview)
   $("pick").innerHTML = states.map(function (x) {
     var s = statusWord(x);
+    if (PV) { var pv = CS.view(D.creek, x.c); s = { w: pv.word, bar: pv.color, col: pv.key === "alert" ? "#8a6d00" : pv.key === "none" ? "var(--muted)" : pv.color }; }
     return '<button data-creek="' + esc(x.c.id) + '" class="' + (x.c === c ? "on" : "") + '" style="border-top-color:' + s.bar + '"' +
       ' aria-label="' + esc(x.c.name) + ": " + esc(s.w) + '"><span class="nm">' + esc(x.c.short || x.c.name.replace(/ (Creek|Channel)$/, "")) + '</span><span class="stt" style="color:' + s.col + '">' + esc(s.w) + "</span></button>";
   }).join("");
@@ -474,13 +478,15 @@ function render() {
   $("one").style.display = c ? "" : "none";
   if (!c) {
     document.title = "Creek Conditions – OneShoreline";
-    renderAll(states, now);
+    if (PV) $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); });
+    else renderAll(states, now);
     var gen0 = states.length && states[0].gen;
     $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
     return;
   }
   document.title = c.name + " – OneShoreline";
   $("intro").textContent = c.intro;
+  $("csOne").innerHTML = PV ? CS.badge() + CS.card(D.creek, c) : "";
 
   // each gauge's level
   $("stages").innerHTML = st.stages.map(function (s) {
