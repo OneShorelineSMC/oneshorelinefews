@@ -40,11 +40,15 @@
     var st = c.status || {}, key = st.key || "none";
     var late = !data.generated || nowLocal() - parse(data.generated) > LK.num("CREEK_DATA_LATE_MIN") * 60000;
     if (late) key = "delayed";
-    var word = key === "offline" ? T("status_offline") : key === "delayed" ? T("status_delayed") : T("verdict_" + key);
+    var word = key === "delayed" ? T("verdict_delayed", { time: clock(data.generated) }) : T("verdict_" + key);
     var todo = key === "offline" || key === "delayed" ? T("verdict_nodata_todo") : T("verdict_" + key + "_todo");
     var reasons = (st.reasons || []).map(reason).filter(Boolean);
     if (late && st.key && st.key !== "none") reasons.unshift(T("verdict_" + st.key) + " at " + clock(data.generated) + ", the last update.");
-    return { key: key, word: word, todo: todo, reasons: reasons, st: st, rank: RANK[key], color: COL[key] };
+    // "Since 1:40 PM · before that: Stay alert" (the data job keeps when each status started)
+    var since = key !== "delayed" && key !== "none" && st.since ? T("since_line", { time: clock(st.since) }) +
+      (st.prev && st.prev !== st.key ? " · " + T("was_line", { status: T("verdict_" + st.prev) }) : "") : "";
+    return { key: key, word: word, todo: todo, reasons: reasons, st: st, rank: RANK[key], color: COL[key], since: since,
+      eoc: key === "delayed" || key === "none" ? "" : T("eoc_action_" + key) };
   }
   function reason(r) {
     var s = T(r.code, { rain: rainWord(r.rain).toLowerCase(), Rain: rainWord(r.rain), time: clock(r.time) });
@@ -56,7 +60,7 @@
 
   /* Pieces */
   function chip(level) {
-    if (!level) return '<span class="cs-norain">' + esc(T("status_normal")) + "</span>";
+    if (!level) return '<span class="cs-norain">' + esc(T("rain_none")) + "</span>";
     var k = level >= 3 ? "severe" : level === 2 ? "vheavy" : "heavy", b = "";
     for (var i = 1; i <= 3; i++) b += "<i" + (i <= level ? ' class="on"' : "") + "></i>";
     return '<span class="cs-chip ' + k + '"><span class="cs-meter" aria-hidden="true">' + b + "</span>" + esc(rainWord(level)) + "</span>";
@@ -72,9 +76,9 @@
     var p = e && e.points && e.points.length ? e.points[e.points.length - 1] : null;
     if (e && e.latest && e.latest[0] && (!p || e.latest[0] > p[0])) p = e.latest;
     var sig = e && e.signals || {};
-    if (!p || !sig.trend) return '<div class="cs-row"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-val cs-dim">' + esc(T("status_offline")) + (p ? " · " + esc(dated(p[0])) : "") + "</span></div>";
+    if (!p || !sig.trend) return '<div class="cs-row"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-val cs-dim">' + esc(T("verdict_offline")) + (p ? " · " + esc(dated(p[0])) : "") + "</span></div>";
     var v = p[1];
-    if (th.length < 3) return '<div class="cs-row"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-val">' + v.toFixed(2) + " ft · " + trendText(sig) + "</span></div>";
+    if (th.length < 3) return '<div class="cs-row"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-val">' + trendText(sig, true) + "</span></div>";
     var cut = [th[0].value, th[1].value, th[2].value], top = cut[2] + Math.max(0.5, (cut[2] - cut[1]));
     var seg = [[0, cut[0], 35, "Normal"], [cut[0], cut[1], 20, th[0].name.replace("Flood ", "")], [cut[1], cut[2], 20, th[1].name.replace("Flood ", "")], [cut[2], top, 25, th[2].name.replace("Flood ", "")]];
     var act = v >= cut[2] ? 3 : v >= cut[1] ? 2 : v >= cut[0] ? 1 : 0, pos = 0, acc = 0;
@@ -83,7 +87,7 @@
       acc += s[2];
     });
     var name = act ? th[act - 1].name : T("status_normal");
-    return '<div class="cs-band"><div class="cs-bt"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-now">' + v.toFixed(2) + " ft · " + esc(name) + " · " + trendText(sig) + "</span></div>" +
+    return '<div class="cs-band"><div class="cs-bt"><span class="cs-lbl">' + esc(g.label) + '</span><span class="cs-now">' + esc(name) + " · " + trendText(sig, true) + "</span></div>" +
       '<div class="cs-track" role="img" aria-label="' + esc(g.label + ": " + name) + '">' + seg.map(function (s, i) {
         return '<span class="cs-s" style="flex:' + s[2] + (i === act ? ";background:" + LEVEL_COL[i] : "") + '"></span>'; }).join("") +
       '<span class="cs-mark" style="left:' + pos.toFixed(1) + '%"></span></div>' +
@@ -98,6 +102,7 @@
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
     h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + (c.preview_only ? '<span class="cs-sm">New creek, preview only</span>' : "") + "</div>";
     h += '<div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>";
+    if (v.since) h += '<p class="cs-since">' + esc(v.since) + "</p>";
     v.reasons.forEach(function (r) { h += '<p class="cs-why">' + esc(r) + "</p>"; });
     h += '<div class="cs-body">' + (v.key === "likely" ? '<p class="cs-danger">' + esc(T("e911")) + "</p>" : "") +
       '<p class="cs-todo"><b>What to do:</b> ' + esc(v.todo) + "</p></div>";
@@ -106,17 +111,41 @@
       (c.stages || []).forEach(function (g) { h += band(g, data.sensors[g.key]); });
       var r = st.rain || {};
       h += '<div class="cs-row"><span class="cs-lbl">Rain</span><span class="cs-val">' + chip(r.level) + "</span></div>";
-      if (st.trigger) h += '<div class="cs-row"><span class="cs-lbl">Flooding trigger</span><span class="cs-val">' + esc(st.trigger.label) + ": " +
-        st.trigger.amount.toFixed(2) + " of " + st.trigger.value.toFixed(2) + " in · met</span></div>";
-      if (st.tidal && st.tide && st.tide.ft != null) {
-        h += '<div class="cs-row"><span class="cs-lbl">Bay tide</span><span class="cs-val">' + st.tide.ft.toFixed(2) + " ft · " +
-          (st.tide.rising ? "rising" : "falling") + (st.tide.next_high ? ' <span class="cs-dim">· high ' + esc(clock(st.tide.next_high)) + "</span>" : "") + "</span></div>";
-      }
-      h += "</div>";
+      h += "</div>" + numbers(data, c, opts.numbersOpen);
     }
     h += '<div class="cs-foot"><span>As of ' + esc(dated(data.generated)) + (st.has_levels === false ? " · " + esc(T("no_flood_level")) : "") + "</span>" +
       (opts.link ? '<a href="' + esc(opts.link) + '">Details ›</a>' : "") + "</div>";
     return h + "</article>";
+  }
+
+  /* "See the numbers": readings, rates and times behind the card (closed on the public card) */
+  function numbers(data, c, open) {
+    var st = c.status || {}, rows = "";
+    function row(l, v) { rows += '<div class="cs-row"><span class="cs-lbl">' + esc(l) + '</span><span class="cs-val">' + v + "</span></div>"; }
+    (c.stages || []).forEach(function (g) {
+      var e = data.sensors[g.key] || {}, s = e.signals || {}, p = e.points && e.points.length ? e.points[e.points.length - 1] : null;
+      if (e.latest && e.latest[0] && (!p || e.latest[0] > p[0])) p = e.latest;
+      row(g.label + " (gauge reading)", p ? p[1].toFixed(2) + " ft" + (s.ft_per_hr != null && s.trend && s.trend !== "steady" ? " · " + (s.ft_per_hr > 0 ? "+" : "") + s.ft_per_hr.toFixed(1) + " ft/hr" : "") +
+        '<span class="cs-sm">reading at ' + esc(dated(p[0])) + "</span>" : "—");
+    });
+    (c.rain || []).concat(c.rain_support || []).forEach(function (g) {
+      var s = (data.sensors[g.key] || {}).signals || {};
+      row(g.label + " rain gauge", (s.level ? esc(rainWord(s.level)) : esc(T("rain_none"))) + (s.driver ? " · " + s.driver.inches.toFixed(2) + " in in " + esc(winLabel(s.driver.minutes)) : "") +
+        '<span class="cs-sm">' + (s.last_report ? "last report " + esc(dated(s.last_report)) : "no recent report") + "</span>");
+    });
+    if (st.trigger) row("Flooding trigger", esc(st.trigger.label) + ": " + st.trigger.amount.toFixed(2) + " of " + st.trigger.value.toFixed(2) + " in · met");
+    if (st.tidal && st.tide && st.tide.ft != null) row("Bay tide (ft NAVD88)", st.tide.ft.toFixed(2) + " ft · " + (st.tide.rising ? "rising" : "falling") +
+      (st.tide.next_high ? '<span class="cs-sm">next high ' + esc(clock(st.tide.next_high)) + " (" + st.tide.next_high_ft + " ft)</span>" : ""));
+    return '<details class="cs-num"' + (open ? " open" : "") + "><summary>" + esc(T("numbers_title")) + '</summary><div class="cs-numb">' + rows +
+      '<p class="cs-sm">Gauge readings are heights at the gauge, not water depth.</p></div></details>';
+  }
+
+  /* "How to read this page" */
+  function howTo() {
+    return '<details class="cs-how"><summary>' + esc(T("howto_title")) + '</summary><div class="cs-howb"><ul>' +
+      ["likely", "ready", "alert", "none"].map(function (k) {
+        return '<li><span class="cs-ic cs-ic-' + k + '" aria-hidden="true"></span>' + esc(T("howto_" + k)) + "</li>"; }).join("") +
+      "</ul><p>" + esc(T("howto_band")) + "</p><p>" + esc(T("howto_rain")) + "</p><p>" + esc(T("nws_separate")) + "</p></div></details>";
   }
 
   /* Top of page: one-line summary, red banner when flooding is likely, one evacuation button */
@@ -129,14 +158,14 @@
       if (by[k]) by[k].push(c.name);
       else if (k === "offline") by.nodata.push(c.name);
     });
-    var m = late ? [T("status_delayed") + ": the last update was " + dated(data.generated) + ". At that time:"] : [];
+    var m = late ? [T("verdict_delayed", { time: dated(data.generated) }) + ". At that time:"] : [];
     if (by.likely.length) m.push(T("summary_likely", { creeks: list(by.likely) }));
     if (by.ready.length) m.push(T("summary_ready", { creeks: list(by.ready) }));
     if (by.alert.length) m.push(by.alert.length <= 3 ? T("summary_alert", { creeks: list(by.alert) }) : T("summary_alert_many", { n: by.alert.length }));
     if (m.length === (late ? 1 : 0)) m.push(T("summary_none"));
     var h = "";
     if (by.likely.length) h += '<div class="cs-banner" role="alert">' + (late ? esc("As of " + clock(data.generated) + ": ") : "") + esc(T("banner_likely", { creeks: list(by.likely) })) + "</div>";
-    h += '<div class="cs-glance"><p class="cs-main">' + esc(m.join(" ")) + "</p>";
+    h += '<div class="cs-glance">' + m.map(function (x, i) { return '<p class="cs-main' + (late && i === 0 ? " cs-late" : "") + '">' + esc(x) + "</p>"; }).join("");
     if (by.likely.length || by.ready.length) {
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
@@ -152,7 +181,7 @@
     rows.sort(function (a, b) { return b.v.rank - a.v.rank; });
     var link = function (c) { return c.preview_only || !linkFor ? null : linkFor(c); };   // preview creeks have no detail page yet
     var active = rows.filter(function (x) { return x.v.key !== "none"; }), quiet = rows.filter(function (x) { return x.v.key === "none"; });
-    var h = badge() + summary(data) + '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, { link: link(x.c) }); }).join("") + "</div>";
+    var h = badge() + summary(data) + howTo() + '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, { link: link(x.c) }); }).join("") + "</div>";
     if (quiet.length) {
       h += '<details class="cs-quiet"' + (active.length ? "" : " open") + "><summary>" + quiet.length + " creek" + (quiet.length > 1 ? "s" : "") +
         " with no alerts — " + esc(list(quiet.map(function (x) { return x.c.short || x.c.name; }))) + '</summary><div class="cs-grid">' +
@@ -170,20 +199,28 @@
       var v = view(data, c), st = v.st, r = st.rain || {}, d = r.driver, t = st.tide;
       var lvl = v.key === "offline" ? esc(T("status_offline")) : st.level ? esc(st.level_name || "Level " + st.level) : st.has_levels === false ? '<span class="cs-dim">No flood levels</span>' : esc(T("status_normal"));
       var heavy = d ? esc(winLabel(d.minutes)) + ": " + d.inches.toFixed(2) + " in at " + esc(d.label) +
-        (d.storm_years ? '<span class="cs-sm">about a ' + (d.storm_years >= 100 ? "100+" : d.storm_years) + "-year storm (" + Math.round(100 * (1 - Math.exp(-1 / d.storm_years))) + "% chance in any year)</span>" : "")
+        (d.storm_years ? '<span class="cs-sm">about a ' + (d.storm_years >= 100 ? "100+" : d.storm_years >= 10 ? Math.round(d.storm_years) : d.storm_years) + "-year storm (" + Math.round(100 * (1 - Math.exp(-1 / d.storm_years))) + "% chance in any year)</span>" : "")
         : '<span class="cs-dim">—</span>';
       var notes = (st.staff_notes || []).concat((r.silent || []).map(function (s) { return s.label + " silent since " + (s.since ? dated(s.since) : "?"); }));
       if (st.trigger) notes.unshift("Trigger: " + st.trigger.label + " " + st.trigger.amount + " of " + st.trigger.value + " in");
-      return "<tr><td><b>" + esc(c.name) + "</b>" + (c.preview_only ? '<span class="cs-sm">preview only</span>' : "") + "</td><td><span class=\"cs-tag\"><i style=\"background:" + v.color + "\"></i>" + esc(v.word) + "</span></td>" +
+      return "<tr><td><b>" + esc(c.name) + "</b>" + (c.preview_only ? '<span class="cs-sm">preview only</span>' : "") + "</td><td><span class=\"cs-tag\"><i style=\"background:" + v.color + "\"></i>" + esc(v.word) + "</span>" +
+        (st.since ? '<span class="cs-sm">since ' + esc(dated(st.since)) + (st.prev && st.prev !== st.key ? "; was " + esc(T("verdict_" + st.prev)) : "") + "</span>" : "") +
+        (v.eoc ? '<span class="cs-sm"><b>EOC:</b> ' + esc(v.eoc) + "</span>" : "") + "</td>" +
         "<td>" + lvl + '<span class="cs-sm">' + trendText(st.trend) + "</span></td><td>" + chip(r.level) + "</td><td>" + heavy + "</td>" +
         "<td>" + (r.working || 0) + " of " + (r.of || 0) + '<span class="cs-sm">' + (r.elevated || 0) + " at very heavy+</span></td>" +
         "<td>" + (st.tidal ? (t && t.ft != null ? t.ft.toFixed(2) + " ft · " + (t.rising ? "rising" : "falling") + (t.next_high ? '<span class="cs-sm">high ' + esc(dated(t.next_high)) + " (" + t.next_high_ft + " ft)</span>" : "") : '<span class="cs-dim">no tide data</span>') : '<span class="cs-dim">not tidal</span>') + "</td>" +
         "<td>" + esc(notes.join("; ")) + "</td></tr>";
     });
-    return '<details class="cs-staff"><summary>Staff table: what is behind each status</summary><div class="cs-tw"><table class="cs-tbl"><thead><tr>' +
+    // Status changes in the hour before this update (from each creek's "since")
+    var gen = parse(data.generated), changed = allCreeks(data).filter(function (c) {
+      var st = c.status || {}; return st.since && st.prev !== undefined && gen - parse(st.since) <= 3600000 && st.prev !== null;
+    }).map(function (c) { var st = c.status; return esc(c.name) + ": " + esc(T("verdict_" + (st.prev || "none"))) + " → <b>" + esc(T("verdict_" + st.key)) + "</b> at " + esc(clock(st.since)); });
+    return '<details class="cs-staff"><summary>Staff table: what is behind each status</summary>' +
+      '<p class="cs-changed"><b>' + esc(T("changed_title")) + ":</b> " + (changed.length ? changed.join(" · ") : "no changes") + "</p>" +
+      '<div class="cs-tw"><table class="cs-tbl"><thead><tr>' +
       "<th>Creek</th><th>Status</th><th>Creek level · trend</th><th>Rain</th><th>Heaviest rain</th><th>Rain gauges</th><th>Tide</th><th>Notes</th>" +
       "</tr></thead><tbody>" + rows.join("") + "</tbody></table></div><p class=\"cs-sm\">Data as of " + esc(dated(data.generated)) +
-      ". Status changes are logged in status_log.csv on the data branch.</p></details>";
+      ". Status changes are logged in status_log.csv on the data branch.</p><p class=\"cs-sm\">" + esc(T("staff_legend")) + "</p></details>";
   }
 
   /* Kiosk: large tiles, nothing to tap */
@@ -191,6 +228,7 @@
     var v = view(data, c), st = v.st, r = st.rain || {};
     return '<div class="cs-tile cs-' + v.key + '"><div class="cs-tn">' + esc(c.name) + "</div>" +
       '<div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>" +
+      (v.since ? '<div class="cs-ts">' + esc(v.since) + "</div>" : "") +
       (v.reasons[0] ? '<div class="cs-tr">' + esc(v.reasons[0]) + "</div>" : "") +
       '<div class="cs-tm"><span class="cs-dim">Rain</span> ' + chip(r.level) + (st.trend ? ' &nbsp; <span class="cs-dim">Creek</span> ' + trendText(st.trend, true) : "") + "</div></div>";
   }
@@ -244,7 +282,16 @@
     ".cs-tile.cs-likely{border-color:#c62828}.cs-tile.cs-ready{border-color:#e07b00}.cs-tile.cs-alert{border-color:#e6c200}.cs-tile.cs-none{border-color:rgba(138,150,163,.5)}",
     ".cs-tile.cs-offline,.cs-tile.cs-delayed{border-style:dashed}",
     ".cs-tn{font-size:17px;font-weight:700;color:var(--ink,#16202b)}.cs-tile .cs-verdict{margin:0;font-size:20px;padding:4px 10px}.cs-tile .cs-chip{padding:0 7px}",
-    ".cs-tr{font-size:13px;line-height:1.3;color:var(--ink,#16202b)}.cs-tm{font-size:13px;margin-top:auto}"
+    ".cs-tr{font-size:14.5px;line-height:1.3;color:var(--ink,#16202b)}.cs-tm{font-size:13px;margin-top:auto}",
+    ".cs-ts{font-size:12.5px;color:var(--muted,#556274)}",
+    ".cs-since{margin:6px 14px 0;font-size:13px;color:var(--muted,#556274)}",
+    ".cs-glance .cs-main+.cs-main{margin-top:4px}.cs-late{color:var(--muted,#556274)!important;font-size:15px!important}",
+    ".cs-num{margin:0 14px 10px}.cs-num>summary,.cs-how>summary{cursor:pointer;font-weight:600;font-size:14px;min-height:36px;display:flex;align-items:center;color:var(--ink,#16202b)}",
+    ".cs-how{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:10px;padding:2px 14px;margin:0 0 12px}",
+    ".cs-howb ul{list-style:none;margin:4px 0 8px;padding:0}.cs-howb li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font-size:14.5px}",
+    ".cs-howb li .cs-ic{margin-top:3px}.cs-ic-likely{background:#c62828}.cs-ic-ready{background:#e07b00}.cs-ic-alert{background:#e6c200}.cs-ic-none{background:#8a96a3}",
+    ".cs-howb p{font-size:14px;line-height:1.45;margin:0 0 8px;color:var(--text,var(--ink))}",
+    ".cs-changed{font-size:13.5px;margin:6px 0 8px}"
   ].join("\n");
   var styleEl = document.createElement("style"); styleEl.textContent = css; document.head.appendChild(styleEl);
 

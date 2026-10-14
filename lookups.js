@@ -58,7 +58,7 @@
     verdict_likely: "Flooding likely",
     verdict_likely_todo: "Move away from the creek and low areas now. Follow instructions from local officials.",
     verdict_ready: "Be ready",
-    verdict_ready_todo: "Stay away from the creek. Be ready to move to higher ground if you are told to.",
+    verdict_ready_todo: "Stay away from the creek. Be ready to move to higher ground if local officials tell you to.",
     verdict_alert: "Stay alert",
     verdict_alert_todo: "Avoid creek banks, low spots and flooded streets. Check back often.",
     verdict_none: "No alerts",
@@ -67,15 +67,15 @@
     why_warning: "The creek is at its Flood Warning level.",
     why_watch: "The creek is at its Flood Watch level.",
     why_monitoring: "The creek is higher than usual.",
-    why_normal_rain: "The creek is still at a normal level, but {rain} rain upstream may make it rise.",
+    why_normal_rain: "The creek is normal now, but {rain} rain could make it rise quickly.",
     why_rising_fast: "The creek is rising fast.",
-    why_rain: "{Rain} rain in the hills above.",
+    why_rain: "{Rain} rain in this creek's area.",
     why_stale: "Our rain gauge for this creek hasn\u2019t reported since {time}.",
     why_sanmateo: "Crystal Springs Reservoir holds back much of this water.",
     tide_rising_line: "Rising tide: water near the Bay drains slowly until about {time}.",
     rain_heavy: "Heavy",
     rain_vheavy: "Very heavy",
-    rain_severe: "Severe",
+    rain_severe: "Intense",
     trend_fast: "Rising fast",
     trend_rising: "Rising",
     trend_steady: "Steady",
@@ -89,12 +89,30 @@
     banner_likely: "Flooding is likely at {creeks}. If you are in danger, call 911.",
     evac_button: "See if your area has an evacuation order",
     url_evacuation: "https://protect.genasys.com/",
-    no_flood_level: "No flood level set for this creek yet",
+    no_flood_level: "This creek's status is based on rain and how fast the water is rising.",
     limited_rain: "Rain gauges may miss storms here",
     nws_separate: "This page shows creek conditions measured by OneShoreline. It is separate from National Weather Service alerts \u2014 follow whichever is more serious.",
     why_trigger: "Rain has reached this creek's flooding trigger.",
     why_trigger_tide: "Rain and a high tide have reached this creek's flooding trigger.",
-    why_gauge_offline: "The creek gauge isn't reporting, so this status comes from the rain."
+    why_gauge_offline: "The creek gauge isn't reporting, so this status comes from the rain.",
+    rain_none: "Light or none",
+    verdict_offline: "Not reporting",
+    verdict_delayed: "Not updated since {time}",
+    since_line: "Since {time}",
+    was_line: "before that: {status}",
+    numbers_title: "See the numbers",
+    howto_title: "How to read this page",
+    howto_likely: "Flooding likely: move away from the creek and low areas now.",
+    howto_ready: "Be ready: the creek could flood. Be ready to move to higher ground.",
+    howto_alert: "Stay alert: conditions are getting worse. Avoid creek banks and check back often.",
+    howto_none: "No alerts: nothing unusual right now. Conditions can change quickly in a storm.",
+    howto_band: "The bar shows where the creek is between its normal level and its flood level, measured at a creek gauge. The marker is the latest reading.",
+    howto_rain: "Rain is compared with how often that much rain falls at the same gauge: Heavy (about once a year), Very heavy (about once every two years), Intense (about once every five years).",
+    eoc_action_likely: "",
+    eoc_action_ready: "",
+    eoc_action_alert: "",
+    changed_title: "Changed in the last hour",
+    staff_legend: "Rain levels: Heavy = at least a 1-year storm for some duration at that gauge, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14). Storm size and chance in any year are for the heaviest window. Supporting = a hillside gauge that counts toward the creek's rain level but isn't in its rain tables. Trigger = a rain (and tide) rule in thresholds.csv."
   };
 
   var cur = { settings: {}, tides: {}, text: {} }, handlers = [], L;
@@ -143,7 +161,7 @@
     if (files.text) files.text.forEach(function (r) {
       var k = r.key;
       if (!(k in TEXT)) { if (k) problems.push("display_text.csv row " + r._row + ": unknown key " + k); return; }
-      if (!r.text) { problems.push("display_text.csv row " + r._row + ": " + k + " is empty"); return; }
+      if (!r.text && !/^eoc_action_/.test(k)) { problems.push("display_text.csv row " + r._row + ": " + k + " is empty"); return; }   // EOC steps may be blank
       if (/^url_/.test(k) && !safeURL(r.text)) { problems.push("display_text.csv row " + r._row + ": " + k + " must start with https://"); return; }
       cur.text[k] = r.text;
     });
