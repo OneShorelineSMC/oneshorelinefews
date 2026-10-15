@@ -112,7 +112,7 @@ def _t(s):
 
 def _series(points, latest):
     """[(datetime, value)] sorted, with the sensor's 'latest' reading added if it is newer than the points."""
-    p = [(_t(t), v) for t, v in points or []]
+    p = [(_t(x[0]), x[1]) for x in points or []]   # [Pacific time, value, UTC, (USGS codes)]: first two used
     if latest and latest[0] and latest[1] is not None:
         lt = _t(latest[0])
         if not p or lt > p[-1][0]:

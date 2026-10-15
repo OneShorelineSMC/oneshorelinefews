@@ -32,6 +32,7 @@ HEADERS = {
     "Accept": "text/html,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }
+HISTORY_DAYS = 7    # creeks_7day.json: rolling 7 days of every creek sensor's points, for the data archive
 HOURS = 50          # history kept in the file (graphs show 36 hours; 48-hour rain totals need a little more)
 MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lists them in batches)
 
@@ -104,6 +105,24 @@ class Session:
             raise
 
 
+def utc_str(t):
+    """Aware datetime -> "YYYY-MM-DDTHH:MMZ" (the third element of every point)."""
+    return t.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+
+
+def to_utc(local, prev, descending=True):
+    """Pacific wall-clock time -> aware UTC time. In the repeated hour when daylight saving ends (1-2 AM on the first
+    Sunday of November) a wall-clock time happens twice; pick the one that keeps the readings in page order
+    (newest first: the latest one not after the previous reading; oldest first: the earliest not before it)."""
+    # Compare in UTC: Python compares two Pacific times by wall clock and ignores which 1:30 AM they are
+    a, b = (local.replace(tzinfo=TZ, fold=f).astimezone(dt.timezone.utc) for f in (0, 1))
+    if a == b:   # not ambiguous
+        return a
+    if descending:
+        return b if b <= prev else a
+    return a if a >= prev else b
+
+
 def to_time(stamp):
     return dt.datetime.strptime(stamp, "%Y-%m-%d %H:%M:%S" if len(stamp) > 16 else "%Y-%m-%d %H:%M")
 
@@ -164,6 +183,7 @@ def next_page(page):
 
 def fetch_sensor(session, s, start, end):
     url, pages, readings, latest, seen = sensor_page(s, start, end), 0, {}, None, set()
+    prev = None   # UTC time of the previous reading in page order (for the repeated hour in November)
     while url and pages < MAX_PAGES and url not in seen:
         seen.add(url)
         page = session.get(url)
@@ -171,12 +191,18 @@ def fetch_sensor(session, s, start, end):
         if latest is None:
             latest = parse_latest(page)
         batch = parse_readings(page)
+        if prev is None:   # page order, from the first page (OneRain lists newest first; later pages are older)
+            desc = len(batch) < 2 or batch[0][0] >= batch[-1][0]
+            # "previous reading" before the first one: the end of the range (newest first) or its start (oldest first)
+            prev = (end if desc else start).replace(tzinfo=TZ, fold=1 if desc else 0).astimezone(dt.timezone.utc)
         for t, v in batch:
-            readings[t] = v
+            u = to_utc(t, prev, desc)
+            prev = u
+            readings[u] = (t, v)   # keyed by UTC: both 1:30 AMs on the November change are kept
         if not batch or min(t for t, _ in batch) < start:
             break
         url = next_page(page)
-    points = [[t.strftime("%Y-%m-%d %H:%M"), round(v, 4)] for t, v in sorted(readings.items()) if t >= start]
+    points = [[t.strftime("%Y-%m-%d %H:%M"), round(v, 4), utc_str(u)] for u, (t, v) in sorted(readings.items()) if t >= start]
     return points, latest, pages
 
 
@@ -207,11 +233,25 @@ def fetch_usgs_gauge(s, start, end):
     if not data or "00065" not in data:
         data = U.pull_legacy(s["usgs_site"], t0, t1)
     pts = {}
-    for utc, v, *_ in (data or {}).get("00065", []):
-        t = dt.datetime.fromisoformat(utc.replace("Z", "+00:00")).astimezone(TZ).replace(tzinfo=None)
-        pts[t.strftime("%Y-%m-%d %H:%M")] = round(float(v), 3)
-    points = [[t, v] for t, v in sorted(pts.items())]
-    return points, (points[-1] if points else None), 1
+    for utc, v, _unit, approval, quals in (data or {}).get("00065", []):
+        u = dt.datetime.fromisoformat(utc.replace("Z", "+00:00"))
+        t = u.astimezone(TZ).replace(tzinfo=None)
+        pts[utc_str(u)] = [t.strftime("%Y-%m-%d %H:%M"), round(float(v), 3), utc_str(u), usgs_codes(approval, quals)]
+    points = [pts[k] for k in sorted(pts)]
+    return points, (points[-1][:2] if points else None), 1
+
+
+def usgs_codes(approval, quals):
+    """USGS qualifier codes for a reading, e.g. "P" (provisional), "A" (approved), "P e" (estimated), "P Eqp"
+    (equipment malfunction). WaterServices gives the codes as they are; the Water Data API gives the approval status
+    in words, so it is turned into P / A and any qualifiers follow."""
+    quals = " ".join(str(quals or "").split())
+    codes = quals.split()
+    if "A" in codes or "P" in codes:          # already USGS codes (WaterServices)
+        return quals
+    a = str(approval or "").lower()
+    first = "A" if a.startswith("approved") else "P" if a.startswith("provisional") else ""
+    return " ".join(x for x in (first, quals) if x)
 
 
 def _freq_from_json(f):
@@ -325,6 +365,44 @@ def add_signals(result, previous, now):
                 e["signals"] = stage_signals(e["points"], e.get("latest"), g, now, SIGNAL_SETTINGS, rain_series)
 
 
+def point_utc(p):
+    """UTC key for a point: its third element, or (older points without one) its Pacific time read the usual way."""
+    if len(p) > 2 and p[2]:
+        return p[2]
+    return utc_str(to_time(p[0]).replace(tzinfo=TZ))
+
+
+def with_utc(points):
+    """Points from before the UTC change (kept when a download fails) get their UTC time added."""
+    return [p if len(p) > 2 else [p[0], p[1], point_utc(p)] for p in points or []]
+
+
+def write_history(result, path, days=HISTORY_DAYS, now=None):
+    """creeks_7day.json: every creek sensor's points for the last `days` days, built up run by run from creeks.json's
+    50 hours (no extra downloads), so the data archive loses nothing if it can't run for a few days.
+    Newer runs replace a point with the same UTC time (USGS can revise values). Same point format as creeks.json."""
+    try:
+        with open(path) as f:
+            old = json.load(f).get("sensors", {})
+    except (OSError, ValueError):
+        old = {}
+    cutoff = utc_str((now or dt.datetime.now(dt.timezone.utc)) - dt.timedelta(days=days))
+    sensors = {}
+    for key in set(old) | set(result["sensors"]):
+        new = result["sensors"].get(key)
+        pts = {p[2]: p for p in with_utc((old.get(key) or {}).get("points"))}
+        if new:
+            pts.update({p[2]: p for p in with_utc(new.get("points"))})
+        keep = [pts[u] for u in sorted(pts) if u >= cutoff]
+        if keep:
+            meta = new or old[key]
+            sensors[key] = {k: meta.get(k) for k in ("name", "kind", "unit")}
+            sensors[key]["points"] = keep
+    with open(path, "w") as f:
+        json.dump({"generated": result["generated"], "generated_utc": result["generated_utc"], "days": days,
+                   "timezone": "America/Los_Angeles", "sensors": sensors}, f, separators=(",", ":"))
+
+
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "creeks.json"
     try:
@@ -365,7 +443,8 @@ def main():
 
     now = dt.datetime.now(TZ).replace(tzinfo=None, microsecond=0)
     start = now - dt.timedelta(hours=HOURS)
-    result = {"generated": now.strftime("%Y-%m-%d %H:%M:%S"), "timezone": "America/Los_Angeles",
+    result = {"generated": now.strftime("%Y-%m-%d %H:%M:%S"),
+              "generated_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "timezone": "America/Los_Angeles",
               "hours": HOURS, "creeks": creeks_out, "creeks_preview": creeks_preview, "sensors": {}}
     failures = 0
     session = Session()
@@ -382,7 +461,7 @@ def main():
         except Exception as e:  # keep the last good data rather than blanking the screen
             failures += 1
             old = previous.get(key, {})
-            entry["points"] = old.get("points", [])
+            entry["points"] = with_utc(old.get("points", []))
             entry["latest"] = old.get("latest")
             entry["fetched"] = old.get("fetched")
             entry["error"] = f"{type(e).__name__}: {e}"[:300]
@@ -394,6 +473,10 @@ def main():
 
     with open(out_path, "w") as f:
         json.dump(result, f, separators=(",", ":"))
+    try:
+        write_history(result, os.path.join(os.path.dirname(out_path) or ".", "creeks_7day.json"))
+    except Exception as e:  # noqa: BLE001 - never stops creeks.json
+        print(f"creeks_7day.json not updated ({type(e).__name__}: {e})", file=sys.stderr)
     # Fail the job only if nothing at all could be read (then nothing is published, and the pages show the data as
     # delayed). Settings problems are reported by the workflow after publishing, from settings_problems.txt.
     sys.exit(1 if failures == len(SENSORS) else 0)
