@@ -114,12 +114,16 @@
       '<p class="cs-todo"><b>What to do:</b> ' + esc(v.todo) + "</p></div>";
     if (!opts.compact) {
       h += '<div class="cs-details cs-stages">';
+      // Creeks without flood levels: say so where the level bar would be, then each gauge's trend below it
+      var noLevels = (c.stages || []).length && (c.stages || []).every(function (g) {
+        return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; });
+      if (noLevels) h += '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + "</b> " + esc(T("no_flood_level")) + "</div>";
       (c.stages || []).forEach(function (g) { h += band(g, data.sensors[g.key]); });
       var r = st.rain || {};
       h += '</div><div class="cs-details cs-rainrow"><div class="cs-row"><span class="cs-lbl">' + esc(T("rain_row")) + '</span><span class="cs-val">' + chip(r.level) + "</span></div></div>";
       h += numbers(data, c, opts.numbersOpen);
     } else h += "<div></div><div></div><div></div>";
-    h += '<div class="cs-foot"><span>As of ' + esc(dated(data.generated)) + (st.has_levels === false ? " · " + esc(T("no_flood_level")) : "") + "</span>" +
+    h += '<div class="cs-foot"><span>As of ' + esc(dated(data.generated)) + (opts.compact && st.has_levels === false ? " · " + esc(T("no_flood_level_title")) : "") + "</span>" +
       (opts.link ? '<a href="' + esc(opts.link) + '">Details ›</a>' : "") + "</div>";
     return h + "</article>";
   }
@@ -265,6 +269,8 @@
     // Cards side by side line up section by section: status, What to do, creek level, rain, numbers, footer
     "@supports (grid-template-rows:subgrid){.cs-grid>.cs-card{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0}.cs-grid>.cs-card>.cs-stages{align-self:start}}",
     ".cs-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line,#eceff3);font-size:14px}",
+    ".cs-nolvl{margin:8px 0 2px;padding:8px 10px;border:1px dashed var(--muted,#8a96a3);border-radius:8px;font-size:13.5px;line-height:1.4;color:var(--text,#22303f);" +
+    "background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(138,150,163,.10) 6px 12px)}.cs-nolvl b{display:block;color:var(--ink,#003B5C)}",
     ".cs-row:last-child{border-bottom:0}.cs-lbl{color:var(--muted,#556274)}.cs-val{font-weight:600;text-align:right}",
     ".cs-dim{color:var(--muted,#556274);font-weight:400}.cs-sm{display:block;font-size:12px;color:var(--muted,#556274)}",
     ".cs-band{padding:8px 0 9px;border-bottom:1px solid var(--line,#eceff3)}",
