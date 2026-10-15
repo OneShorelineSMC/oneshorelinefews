@@ -112,7 +112,7 @@
   .rage { font-size: 12px; color: var(--muted); text-align: right; flex: none; }
   #msg { position: absolute; z-index: 1300; left: 50%; top: 40%; transform: translate(-50%, -50%); background: var(--card);
     padding: 12px 16px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.2); font-size: 14px; text-align: center; max-width: 85%; }
-  /* flood reports (staff-approved, from reports.json) */
+  /* flood reports (staff-approved, from community_flood_reports.json) */
   .rp { width: 16px; height: 16px; background: #8A3B12; border: 2.5px solid #fff; border-radius: 3px; transform: rotate(45deg);
     box-shadow: 0 1px 4px rgba(0,0,0,.45); margin: 2px; }
   .rp.sel { outline: 3px solid var(--brand); outline-offset: 2px; }
@@ -179,7 +179,7 @@ var LK = window.LOOKUPS, NOT_REPORTING_HOURS, OLD_READING_HOURS, DATA_LATE_MIN;
 function applyLookups() { NOT_REPORTING_HOURS = LK.num("SITE_QUIET_HOURS"); OLD_READING_HOURS = LK.num("SITE_OLD_READING_HOURS"); DATA_LATE_MIN = LK.num("SITE_DATA_LATE_MIN"); }
 applyLookups();
 var CREEK_PAGE = "Creeks.html";
-// Flood reports approved by staff (scripts/fetch_reports.py): shown when REPORTS_PUBLIC = 1, or in the staff preview
+// Flood reports approved by staff (scripts/fetch_community_flood_reports.py): shown when REPORTS_PUBLIC = 1, or in the staff preview
 var REPORTS_BASE = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
 var PREVIEW = /[?&]preview=1\b/.test(location.search);
 var DISCLAIMER_URL = "Creeks.html#about";
@@ -450,7 +450,7 @@ var R_TYPES = ["street", "building", "road_closed", "creek", "shoreline", "other
 function reportsEnabled() { return PREVIEW || LK.num("REPORTS_PUBLIC") === 1; }
 function loadReports() {
   if (!reportsEnabled()) return Promise.resolve();
-  return fetch(REPORTS_BASE + "reports.json?t=" + Date.now(), { cache: "no-store" })
+  return fetch(REPORTS_BASE + "community_flood_reports.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (d) {
       REPORTS = (d.reports || []).filter(function (r) {   // only well-formed reports
@@ -472,7 +472,7 @@ function drawReports() {
   note.classList.toggle("show", !!on);
   if (on) {
     note.textContent = (REPORTS.length ? LK.text("report_map_note") : LK.text("report_none", { days: LK.num("REPORTS_MAX_AGE_DAYS") })) + " ";
-    var a = document.createElement("a"); a.href = "Report.html" + (PREVIEW ? "?preview=1" : ""); a.textContent = LK.text("report_title") + " ›";
+    var a = document.createElement("a"); a.href = "CommunityFloodReports.html" + (PREVIEW ? "?preview=1" : ""); a.textContent = LK.text("report_title") + " ›";
     note.appendChild(a);
   }
   if (!on) return;
@@ -490,7 +490,7 @@ function openReport(r) {
   document.getElementById("sheet").classList.add("show");
   map.panTo([r.lat, r.lon]);
 }
-// Built from DOM nodes and textContent only: nothing in reports.json is treated as HTML
+// Built from DOM nodes and textContent only: nothing in community_flood_reports.json is treated as HTML
 function renderReport(r) {
   var sh = document.getElementById("sheet"), el = function (tag, cls, text) {
     var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -504,10 +504,10 @@ function renderReport(r) {
   head.appendChild(x); sh.appendChild(head);
   if (r.summary) sh.appendChild(el("div", "rsum", String(r.summary).slice(0, 300)));
   if (typeof r.photo === "string" && /^[0-9a-f]{24}\.jpg$/.test(r.photo)) {
-    var img = el("img", "rphoto"); img.src = REPORTS_BASE + "reports/" + r.photo; img.alt = "Photo of the flooding, approved by staff";
+    var img = el("img", "rphoto"); img.src = REPORTS_BASE + "community_flood_reports/" + r.photo; img.alt = "Photo of the flooding, approved by staff";
     img.loading = "lazy"; img.referrerPolicy = "no-referrer"; sh.appendChild(img);
   }
-  var a = el("a", "olink", LK.text("report_title")); a.href = "Report.html" + (PREVIEW ? "?preview=1" : ""); sh.appendChild(a);
+  var a = el("a", "olink", LK.text("report_title")); a.href = "CommunityFloodReports.html" + (PREVIEW ? "?preview=1" : ""); sh.appendChild(a);
   var f = el("div", "fine", LK.text("report_map_note") + " " + LK.text("report_timing"));
   sh.appendChild(f);
 }
@@ -547,8 +547,8 @@ load();
 // Report tab in the bottom bar: staff preview, or everyone once REPORTS_PUBLIC = 1 (lookups/settings.csv)
 function reportNav() {
   var nv = document.querySelector("nav"), pv = /[?&]preview=1\b/.test(location.search), on = pv || LK.num("REPORTS_PUBLIC") === 1;
-  if (!nv || !on || nv.querySelector('a[href^="Report.html"]')) return;
-  var a = document.createElement("a"); a.href = "Report.html" + (pv ? "?preview=1" : "");
+  if (!nv || !on || nv.querySelector('a[href^="CommunityFloodReports.html"]')) return;
+  var a = document.createElement("a"); a.href = "CommunityFloodReports.html" + (pv ? "?preview=1" : "");
   a.innerHTML = '<span class="i" aria-hidden="true">📍</span>Report';
   nv.insertBefore(a, nv.querySelector('a[href^="Creeks.html#about"]'));
 }

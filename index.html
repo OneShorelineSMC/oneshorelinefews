@@ -583,8 +583,8 @@ document.addEventListener("visibilitychange", function () { if (!document.hidden
 // Report tab in the bottom bar: staff preview, or everyone once REPORTS_PUBLIC = 1 (lookups/settings.csv)
 function reportNav() {
   var nv = document.querySelector("nav"), pv = /[?&]preview=1\b/.test(location.search), on = pv || LK.num("REPORTS_PUBLIC") === 1;
-  if (!nv || !on || nv.querySelector('a[href^="Report.html"]')) return;
-  var a = document.createElement("a"); a.href = "Report.html" + (pv ? "?preview=1" : "");
+  if (!nv || !on || nv.querySelector('a[href^="CommunityFloodReports.html"]')) return;
+  var a = document.createElement("a"); a.href = "CommunityFloodReports.html" + (pv ? "?preview=1" : "");
   a.innerHTML = '<span class="i" aria-hidden="true">📍</span>Report';
   nv.insertBefore(a, nv.querySelector('a[href^="Creeks.html#about"]'));
 }

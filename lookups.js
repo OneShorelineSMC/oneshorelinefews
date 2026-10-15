@@ -28,7 +28,7 @@
     OFFSET_RECENT_HIGHS: [4, 1, 14], OFFSET_NOTE_FT: [0.2, 0.01, 5], OFFSET_HIGH_FT: [0.5, 0.01, 10],
     // creek status layer (the data job uses the same ranges, scripts/creek_signals.py)
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
-    // flood reports (scripts/fetch_reports.py, Report.html, SiteMap.html)
+    // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
     REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
   };
   var TIDES = {
@@ -118,7 +118,7 @@
     creek_level_at: "Creek level at {place}",
     creek_level_word: "Creek level",
     rain_row: "Rain",
-    // Flood reports (Report.html, SiteMap.html). url_report_form blank = reporting not open yet.
+    // Flood reports (CommunityFloodReports.html, SiteMap.html). url_report_form blank = reporting not open yet.
     report_title: "Report flooding",
     report_911: "If anyone is in danger, or water is coming into a home, call 911. This form doesn't send help.",
     report_intro: "Tell OneShoreline where you see flooding: water over a street or path, a creek or the Bay over its banks, or a road closed by water. Staff use reports to learn where and when flooding happens.",
