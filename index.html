@@ -23,7 +23,7 @@
   body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }   /* room for the bottom bar */
   nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
     border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 5; }
-  nav a { flex: 1; font-size: 13px; color: var(--muted); text-decoration: none;
+  nav a { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); text-decoration: none;
     padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav a .i { font-size: 21px; line-height: 1.1; }
   nav a.on { color: var(--ink); font-weight: bold; }
@@ -580,6 +580,15 @@ all();
 setInterval(all, 5 * 60000);
 setInterval(function () { if (C.data) renderCreeks(); if (TD.pred) renderTide(); }, 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) all(); });
+// Report tab in the bottom bar: staff preview, or everyone once REPORTS_PUBLIC = 1 (lookups/settings.csv)
+function reportNav() {
+  var nv = document.querySelector("nav"), pv = /[?&]preview=1\b/.test(location.search), on = pv || LK.num("REPORTS_PUBLIC") === 1;
+  if (!nv || !on || nv.querySelector('a[href^="Report.html"]')) return;
+  var a = document.createElement("a"); a.href = "Report.html" + (pv ? "?preview=1" : "");
+  a.innerHTML = '<span class="i" aria-hidden="true">📍</span>Report';
+  nv.insertBefore(a, nv.querySelector('a[href^="Creeks.html#about"]'));
+}
+reportNav(); LK.onChange(reportNav);
 </script>
 </body>
 </html>

@@ -35,7 +35,7 @@
   /* Bottom nav (same as the creek page) */
   nav { flex: none; display: flex; background: var(--card); border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom); z-index: 1500; }
-  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px;
+  nav a { flex: 1; min-width: 0; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px;
     display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav a .i { font-size: 21px; line-height: 1.1; }
   nav a.on { color: var(--ink); font-weight: bold; }
@@ -112,6 +112,16 @@
   .rage { font-size: 12px; color: var(--muted); text-align: right; flex: none; }
   #msg { position: absolute; z-index: 1300; left: 50%; top: 40%; transform: translate(-50%, -50%); background: var(--card);
     padding: 12px 16px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.2); font-size: 14px; text-align: center; max-width: 85%; }
+  /* flood reports (staff-approved, from reports.json) */
+  .rp { width: 16px; height: 16px; background: #8A3B12; border: 2.5px solid #fff; border-radius: 3px; transform: rotate(45deg);
+    box-shadow: 0 1px 4px rgba(0,0,0,.45); margin: 2px; }
+  .rp.sel { outline: 3px solid var(--brand); outline-offset: 2px; }
+  .ld.rpd { border-radius: 2px; transform: rotate(45deg) scale(.85); background: #8A3B12; }
+  .mapbtn button.rpon { background: #8A3B12; color: #fff; }
+  #legend #rpnote { display: none; flex-basis: 100%; white-space: normal; }
+  #legend #rpnote.show { display: block; }
+  .rphoto { display: block; width: 100%; max-height: 260px; object-fit: cover; border-radius: 10px; margin-top: 10px; background: var(--line); }
+  .rsum { font-size: 15px; margin-top: 10px; line-height: 1.45; }
   #listfoot { font-size: 12px; color: var(--muted); margin: 18px 4px 0; line-height: 1.45; }
   #listfoot a { color: inherit; }
 </style>
@@ -133,11 +143,14 @@
   <span><i class="ld" style="background:var(--l3)"></i>Warning</span>
   <span><i class="ld" style="background:var(--off)"></i>Not reporting</span>
   <span><i class="ld sq" style="background:#888"></i>Rain gauge only</span>
+  <span id="rplegend" hidden><i class="ld rpd"></i>Flood report</span>
+  <span id="rpnote"></span>
 </div>
 <div id="main">
   <div id="map"></div>
   <div class="mapbtn" id="mapbtns">
     <button id="rainBtn" title="Show 24-hour rain totals">Rain 24 h</button>
+    <button id="rpBtn" title="Show flood reports reviewed by OneShoreline staff" hidden>Flood reports</button>
     <button id="allBtn" title="Zoom to all sites">All sites</button>
   </div>
   <div id="list"></div>
@@ -166,11 +179,15 @@ var LK = window.LOOKUPS, NOT_REPORTING_HOURS, OLD_READING_HOURS, DATA_LATE_MIN;
 function applyLookups() { NOT_REPORTING_HOURS = LK.num("SITE_QUIET_HOURS"); OLD_READING_HOURS = LK.num("SITE_OLD_READING_HOURS"); DATA_LATE_MIN = LK.num("SITE_DATA_LATE_MIN"); }
 applyLookups();
 var CREEK_PAGE = "Creeks.html";
+// Flood reports approved by staff (scripts/fetch_reports.py): shown when REPORTS_PUBLIC = 1, or in the staff preview
+var REPORTS_BASE = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
+var PREVIEW = /[?&]preview=1\b/.test(location.search);
 var DISCLAIMER_URL = "Creeks.html#about";
 /* ================================================== */
 
 var params = new URLSearchParams(location.search);
-if (params.get("data")) SITES_URL = params.get("data");
+// ?data= (testing only) may name a file on this site, never another website: a shared link can't show fake readings
+if (/^[\w-]+(\/[\w-]+)*\.json$/.test(params.get("data") || "")) SITES_URL = params.get("data");
 var LEVEL_COLORS = ["var(--ok)", "var(--l1)", "var(--l2)", "var(--l3)"];
 var LEVEL_HEX = ["#2e7d32", "#e6c200", "#e07b00", "#c62828", "#9c27b0"];
 var LEVEL_NAMES = ["Normal", "Flood Monitoring", "Flood Watch", "Flood Warning", "Above Flood Warning"];
@@ -268,14 +285,16 @@ function draw() {
     m.addTo(map); markers[site.site] = m; bounds.push([site.lat, site.lon]);
   });
   if (firstFit && bounds.length) { map.fitBounds(bounds, { padding: [24, 24] }); firstFit = false; }
+  drawReports();
   drawList(now);
   if (selected) renderSheet(selected);
+  else if (selectedReport) renderReport(selectedReport);
 }
 function rank(site, now) { var st = siteStatus(site, now); return st.off ? -1 : st.level; }
 
 /* ---------- site card ---------- */
 function openSite(id, fly) {
-  selected = id;
+  selected = id; selectedReport = null;
   var site = DATA.sites.find(function (s) { return s.site === id; });
   if (!site) return;
   setView("map");
@@ -286,7 +305,7 @@ function openSite(id, fly) {
   history.replaceState(null, "", "#site=" + encodeURIComponent(site.number || site.site_id));
 }
 function closeSite() {
-  selected = null;
+  selected = null; selectedReport = null;
   document.getElementById("sheet").classList.remove("show");
   history.replaceState(null, "", location.pathname + location.search);
   draw();
@@ -423,7 +442,80 @@ document.getElementById("allBtn").addEventListener("click", function () {
   if (!DATA) return;
   map.fitBounds(DATA.sites.map(function (s) { return [s.lat, s.lon]; }), { padding: [24, 24] });
 });
-map.on("click", function () { if (selected) closeSite(); });
+map.on("click", function () { if (selected || selectedReport) closeSite(); });
+
+/* ---------- flood reports ---------- */
+var REPORTS = null, showReports = false, reportMarkers = [], selectedReport = null;
+var R_TYPES = ["street", "building", "road_closed", "creek", "shoreline", "other"], R_DEPTHS = ["shallow", "ankle_knee", "above_knee", "unknown"];
+function reportsEnabled() { return PREVIEW || LK.num("REPORTS_PUBLIC") === 1; }
+function loadReports() {
+  if (!reportsEnabled()) return Promise.resolve();
+  return fetch(REPORTS_BASE + "reports.json?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (d) {
+      REPORTS = (d.reports || []).filter(function (r) {   // only well-formed reports
+        return typeof r.lat === "number" && typeof r.lon === "number" && /^\d{4}-\d\d-\d\d \d\d:\d\d$/.test(r.observed || "") &&
+          typeof r.id === "string" && /^[0-9a-f]{6,64}$/.test(r.id);
+      });
+      document.getElementById("rpBtn").hidden = false;
+      drawReports();
+    })
+    .catch(function () { if (REPORTS === null) document.getElementById("rpBtn").hidden = true; });
+}
+function rText(kind, code, list) { return LK.text("report_" + kind + "_" + (list.indexOf(code) >= 0 ? code : list[list.length - 1])); }
+function drawReports() {
+  reportMarkers.forEach(function (m) { map.removeLayer(m); });
+  reportMarkers = [];
+  var on = showReports && REPORTS;
+  document.getElementById("rplegend").hidden = !on;
+  var note = document.getElementById("rpnote");
+  note.classList.toggle("show", !!on);
+  if (on) {
+    note.textContent = (REPORTS.length ? LK.text("report_map_note") : LK.text("report_none", { days: LK.num("REPORTS_MAX_AGE_DAYS") })) + " ";
+    var a = document.createElement("a"); a.href = "Report.html" + (PREVIEW ? "?preview=1" : ""); a.textContent = LK.text("report_title") + " ›";
+    note.appendChild(a);
+  }
+  if (!on) return;
+  REPORTS.forEach(function (r) {
+    var sel = selectedReport && selectedReport.id === r.id;
+    var m = L.marker([r.lat, r.lon], { icon: L.divIcon({ className: "", iconSize: [22, 22], iconAnchor: [11, 11],
+      html: '<div class="rp' + (sel ? " sel" : "") + '"></div>' }), title: rText("type", r.type, R_TYPES), zIndexOffset: sel ? 3000 : 1000 });
+    m.on("click", function () { openReport(r); });
+    m.addTo(map); reportMarkers.push(m);
+  });
+}
+function openReport(r) {
+  selected = null; selectedReport = r;
+  setView("map"); draw();
+  document.getElementById("sheet").classList.add("show");
+  map.panTo([r.lat, r.lon]);
+}
+// Built from DOM nodes and textContent only: nothing in reports.json is treated as HTML
+function renderReport(r) {
+  var sh = document.getElementById("sheet"), el = function (tag, cls, text) {
+    var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  sh.innerHTML = "";
+  sh.appendChild(el("div", "grab"));
+  var head = el("div", "shead"), t = el("div");
+  t.appendChild(el("div", "sname", rText("type", r.type, R_TYPES)));
+  t.appendChild(el("div", "snum", LK.text("report_seen", { time: fWhen(parseLocal(r.observed)) }) + " · " + rText("depth", r.depth, R_DEPTHS)));
+  head.appendChild(t);
+  var x = el("button", "x", "✕"); x.setAttribute("aria-label", "Close"); x.addEventListener("click", closeSite);
+  head.appendChild(x); sh.appendChild(head);
+  if (r.summary) sh.appendChild(el("div", "rsum", String(r.summary).slice(0, 300)));
+  if (typeof r.photo === "string" && /^[0-9a-f]{24}\.jpg$/.test(r.photo)) {
+    var img = el("img", "rphoto"); img.src = REPORTS_BASE + "reports/" + r.photo; img.alt = "Photo of the flooding, approved by staff";
+    img.loading = "lazy"; img.referrerPolicy = "no-referrer"; sh.appendChild(img);
+  }
+  var a = el("a", "olink", LK.text("report_title")); a.href = "Report.html" + (PREVIEW ? "?preview=1" : ""); sh.appendChild(a);
+  var f = el("div", "fine", LK.text("report_map_note") + " " + LK.text("report_timing"));
+  sh.appendChild(f);
+}
+document.getElementById("rpBtn").addEventListener("click", function () {
+  showReports = !showReports; this.classList.toggle("rpon", showReports);
+  if (!showReports && selectedReport) closeSite(); else draw();
+  if (showReports && REPORTS && REPORTS.length) map.fitBounds(REPORTS.map(function (r) { return [r.lat, r.lon]; }), { padding: [40, 40], maxZoom: 14 });
+});
 
 /* ---------- data ---------- */
 function load() {
@@ -452,8 +544,18 @@ function load() {
     });
 }
 load();
-LK.onChange(function () { applyLookups(); if (DATA) draw(); });   // edited lookups/ files
-setInterval(load, REFRESH_MIN * 60000);
+// Report tab in the bottom bar: staff preview, or everyone once REPORTS_PUBLIC = 1 (lookups/settings.csv)
+function reportNav() {
+  var nv = document.querySelector("nav"), pv = /[?&]preview=1\b/.test(location.search), on = pv || LK.num("REPORTS_PUBLIC") === 1;
+  if (!nv || !on || nv.querySelector('a[href^="Report.html"]')) return;
+  var a = document.createElement("a"); a.href = "Report.html" + (pv ? "?preview=1" : "");
+  a.innerHTML = '<span class="i" aria-hidden="true">📍</span>Report';
+  nv.insertBefore(a, nv.querySelector('a[href^="Creeks.html#about"]'));
+}
+reportNav(); LK.onChange(reportNav);
+loadReports();
+LK.onChange(function () { applyLookups(); if (REPORTS === null) loadReports(); if (DATA) draw(); });   // edited lookups/ files
+setInterval(function () { load(); loadReports(); }, REFRESH_MIN * 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
 setInterval(function () { if (DATA) draw(); }, 60000);   // keep "x min ago" current
 </script>

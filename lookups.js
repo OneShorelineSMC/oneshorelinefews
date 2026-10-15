@@ -27,7 +27,9 @@
     MODEL_MAX_AGE_HOURS: [12, 1, 72], MODEL_MIN_AHEAD_HOURS: [6, 0, 72],
     OFFSET_RECENT_HIGHS: [4, 1, 14], OFFSET_NOTE_FT: [0.2, 0.01, 5], OFFSET_HIGH_FT: [0.5, 0.01, 10],
     // creek status layer (the data job uses the same ranges, scripts/creek_signals.py)
-    RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1]
+    RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
+    // flood reports (scripts/fetch_reports.py, Report.html, SiteMap.html)
+    REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
   };
   var TIDES = {
     "9414523": { id: "9414523", name: "Redwood City", mhhw: 7.02 },
@@ -115,7 +117,31 @@
     staff_legend: "Rain levels: Heavy = at least a 1-year storm for some duration at that gauge, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14). Storm size and chance in any year are for the heaviest window. Supporting = a hillside gauge that counts toward the creek's rain level but isn't in its rain tables. Trigger = a rain (and tide) rule in thresholds.csv.",
     creek_level_at: "Creek level at {place}",
     creek_level_word: "Creek level",
-    rain_row: "Rain"
+    rain_row: "Rain",
+    // Flood reports (Report.html, SiteMap.html). url_report_form blank = reporting not open yet.
+    report_title: "Report flooding",
+    report_911: "If anyone is in danger, or water is coming into a home, call 911. This form doesn't send help.",
+    report_intro: "Tell OneShoreline where you see flooding: water over a street or path, a creek or the Bay over its banks, or a road closed by water. Staff use reports to learn where and when flooding happens.",
+    report_what_happens: "OneShoreline staff read every report. They may add it to the flood reports map with a short description and an approximate location (about a block). Your name, contact details and your own words are never shown on the map. A photo is shown only if staff choose to.",
+    report_timing: "Staff review reports during working hours, so a report may take a day or more to appear on the map.",
+    report_records: "Reports, including photos, are kept by OneShoreline and may be public records under the California Public Records Act. Leave out anything you don't want shared, such as faces, license plates or house numbers.",
+    report_safety: "Don't walk or drive into floodwater to report it or take a photo.",
+    report_not_open: "Flood reporting isn't open yet. In an emergency, call 911.",
+    report_open_tab: "Open the form in a new tab",
+    url_report_form: "",
+    report_map_note: "Reports from the public, reviewed by OneShoreline staff. Locations are approximate (about a block). Reports aren't monitored; in an emergency, call 911.",
+    report_none: "No reviewed flood reports in the past {days} days.",
+    report_seen: "Seen {time}",
+    report_type_street: "Water on a street or path",
+    report_type_building: "Water in or against a building",
+    report_type_road_closed: "Road closed by water",
+    report_type_creek: "Creek over its banks",
+    report_type_shoreline: "Bay or ocean over the shoreline",
+    report_type_other: "Other flooding",
+    report_depth_shallow: "Less than ankle-deep",
+    report_depth_ankle_knee: "Ankle- to knee-deep",
+    report_depth_above_knee: "Above the knee",
+    report_depth_unknown: "Depth not given"
   };
 
   var cur = { settings: {}, tides: {}, text: {} }, handlers = [], L;
@@ -164,8 +190,8 @@
     if (files.text) files.text.forEach(function (r) {
       var k = r.key;
       if (!(k in TEXT)) { if (k) problems.push("display_text.csv row " + r._row + ": unknown key " + k); return; }
-      if (!r.text && !/^eoc_action_/.test(k)) { problems.push("display_text.csv row " + r._row + ": " + k + " is empty"); return; }   // EOC steps may be blank
-      if (/^url_/.test(k) && !safeURL(r.text)) { problems.push("display_text.csv row " + r._row + ": " + k + " must start with https://"); return; }
+      if (!r.text && !/^eoc_action_|^url_report_form$/.test(k)) { problems.push("display_text.csv row " + r._row + ": " + k + " is empty"); return; }   // EOC steps and the report form link may be blank
+      if (/^url_/.test(k) && r.text && !safeURL(r.text)) { problems.push("display_text.csv row " + r._row + ": " + k + " must start with https://"); return; }
       cur.text[k] = r.text;
     });
     L.problems = problems;
