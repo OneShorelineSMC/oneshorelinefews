@@ -91,6 +91,12 @@
   .ag .gv { font-size: 15px; } .ag .gv b.v { font-size: 19px; color: var(--ink); margin-right: 4px; }
   .ar { font-size: 13.5px; color: var(--muted); margin-top: 5px; } .ar b { color: var(--text); }
   .ago { font-size: 13px; color: var(--muted); text-align: right; margin-top: 4px; }
+  /* More creeks: readings only (no flood levels set yet) */
+  .moreh { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 22px 2px 4px; }
+  .morei { font-size: 13.5px; color: var(--muted); margin: 0 2px 10px; line-height: 1.45; }
+  .acard.ro, .scard.ro { border-left-color: #8a96a3; }
+  .ac.ro { background: var(--soft); color: var(--muted); }
+  .src { font-size: 12.5px; margin-top: 6px; }
   table.rain.one th, table.rain.one td { text-align: center !important; }
   table.rain th { white-space: nowrap; padding-left: 8px !important; }
   table.rain td + td { padding-left: 8px; }
@@ -221,6 +227,7 @@
     <div class="card">
       <h2>Data sources</h2>
       <p style="font-size:13.5px;color:var(--muted)">OneShoreline Early Warning System (OneRain) for creek stage and rainfall ·
+        USGS stream gauges for some of the "more creeks" ·
         NOAA Tides &amp; Currents stations 9414750 (Alameda) and 9414523 (Redwood City) for tides · National Weather Service for alerts.
         Predicted tides do not include storm surge. This page refreshes automatically.</p>
     </div>
@@ -304,7 +311,7 @@ function noaa(station, product, begin, end) {
 // The tide stations the current view needs (both of them on All creeks)
 function loadTides(force) {
   var c = creek(), ids = c ? [c.tide] : creeks().map(function (x) { return x.tide; });
-  ids.filter(function (id, i) { return ids.indexOf(id) === i; }).forEach(function (id) {
+  ids.filter(function (id, i) { return id && ids.indexOf(id) === i; }).forEach(function (id) {
     if (force && D.tides[id]) D.tides[id].at = 0;
     loadTide(id);
   });
@@ -379,9 +386,16 @@ $("alert").addEventListener("click", function () {
 
 /* ---------- creeks ---------- */
 function creeks() { return (D.creek && D.creek.creeks) || []; }
+// "More creeks": creeks without flood levels yet (preview_only in creeks.csv), shown as readings only, with no status.
+// Everyone sees them when MORE_CREEKS_PUBLIC = 1 (lookups/settings.csv); the staff preview always has them.
+function moreCreeks() {
+  var pv = window.CREEK_STATUS && window.CREEK_STATUS.preview;
+  return D.creek && (pv || LK.num("MORE_CREEKS_PUBLIC") === 1) ? (D.creek.creeks_preview || []) : [];
+}
+function readingsOnly(c) { return moreCreeks().indexOf(c) >= 0; }
 function creek() {   // the creek being shown, or null on All creeks
   if (D.sel === "all") return null;
-  var l = creeks(); return l.filter(function (c) { return c.id === D.sel; })[0] || null;
+  var l = creeks().concat(moreCreeks()); return l.filter(function (c) { return c.id === D.sel; })[0] || null;
 }
 function pts(key) {
   var s = D.creek && D.creek.sensors && D.creek.sensors[key];
@@ -416,7 +430,8 @@ function creekState(c, now) {
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null });
     if (lvl && !late && (!st.top || lvl.level > st.top.level)) st.top = lvl;
   });
-  c.rain.forEach(function (g) { var p = pts(g.key); st.rains.push({ g: g, p: p, w: rainWindows(c).map(function (m) { return rainSum(p, now - m * 60000, now); }) }); });
+  // readings-only creeks also list their supporting (hillside / nearby) rain gauges: they may have no other
+  (readingsOnly(c) ? c.rain.concat(c.rain_support || []) : c.rain).forEach(function (g) { var p = pts(g.key); st.rains.push({ g: g, p: p, w: rainWindows(c).map(function (m) { return rainSum(p, now - m * 60000, now); }) }); });
   var T = D.tides[c.tide], tn = tideNow(T, now), tv = tn ? tn.v : predAt(T, now);
   st.tideHigh = tv != null && T && T.st.mhhw != null && tv >= T.st.mhhw;
   (c.rain_triggers || []).forEach(function (tr) {
@@ -461,7 +476,7 @@ function render() {
   }
   var c = creek();
   var states = creeks().map(function (x) { return creekState(x, now); });
-  var st = c ? states.filter(function (x) { return x.c === c; })[0] : null;
+  var st = c ? states.filter(function (x) { return x.c === c; })[0] || creekState(c, now) : null, ro = c && readingsOnly(c);
 
   // creek tiles: short name plus current status, with a bar in the status color
   var CS = window.CREEK_STATUS, PV = CS && CS.preview;   // ?preview=1: creek status layer (staff preview)
@@ -480,6 +495,7 @@ function render() {
     document.title = "Creek Conditions – OneShoreline";
     if (PV) $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); });
     else renderAll(states, now);
+    if (!PV) renderMore(now);
     var gen0 = states.length && states[0].gen;
     $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
     return;
@@ -491,6 +507,14 @@ function render() {
   // each gauge's level
   $("stages").innerHTML = st.stages.map(function (s) {
     var g = s.g, col = s.quiet ? "#6b7a8c" : s.lvl ? s.lvl.color : "#2e7d32", badge, sub;
+    if (ro) {   // readings only: the level, trend and time, no flood-level badge
+      var src = /^https:\/\/[^\s"'<>]+$/.test(g.url || "") ? '<div class="src"><a href="' + esc(g.url) + '" target="_blank" rel="noopener">' +
+        (g.source === "usgs" ? "Data from USGS ↗" : "Full data on OneRain ↗") + "</a></div>" : "";
+      return '<div class="card scard ro"><div class="lbl">' + esc(g.site_name) + " · creek level</div>" +
+        '<div class="big">' + (s.last ? s.last.v.toFixed(2) + s.arrow : "–") + "<small> ft</small></div>" +
+        '<div class="ssub">' + (!s.last ? "No recent readings" : s.quiet ? '<span class="warn">Gauge may be offline</span> · last report ' + fDate(s.last.t) + ", " + fTime(s.last.t)
+          : fTime(s.last.t) + " · " + esc(LK.text("more_creeks_badge"))) + "</div>" + src + "</div>";
+    }
     if (!s.last) { badge = "NO DATA"; sub = "No recent readings"; }
     else if (s.quiet) { badge = "LAST READING " + agoText(now - s.last.t).toUpperCase(); sub = '<span class="warn">Gauge may be offline</span> · last report ' + fDate(s.last.t) + ", " + fTime(s.last.t); }
     else { badge = s.lvl ? s.lvl.name.toUpperCase() + " LEVEL" : "NORMAL"; sub = (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name) : "Above " + esc(s.lvl.name)) + " · " + fTime(s.last.t); }
@@ -518,7 +542,9 @@ function render() {
         (x.tr.high_tide ? " + high tide" : "") + " · <b>" + (x.met ? "MET" : "not met") + "</b>" +
         (x.tr.high_tide && !x.met ? " (tide " + x.tide.txt + ")" : "") + "</div>"; }).join("");
 
-  // tide now
+  // tide now (some creeks have no Bay tide station: no tide card or graph)
+  $("rainBox").lastElementChild.style.display = c.tide ? "" : "none";
+  $("rainBox").style.gridTemplateColumns = c.tide ? "" : "1fr";
   var T = D.tides[c.tide], tl = tideNow(T, now);
   $("tideLbl").textContent = (T ? T.st.name : "Bay") + " tide (measured)";
   if (tl) {
@@ -565,6 +591,30 @@ function renderAll(states, now) {
     }).join("");
 }
 
+/* More creeks: readings only, no status (flood levels not set yet) */
+function renderMore(now) {
+  var more = moreCreeks();
+  if (!more.length) return;
+  function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
+  var h = '<h2 class="moreh">' + esc(LK.text("more_creeks_title")) + '</h2><p class="morei">' + esc(LK.text("more_creeks_intro")) + "</p>";
+  more.forEach(function (c) {
+    var st = creekState(c, now);
+    h += '<div class="card acard ro" data-creek="' + esc(c.id) + '"><div class="ah"><span class="an">' + esc(c.name) +
+      '</span><span class="ac ro">' + esc(LK.text("more_creeks_badge")) + "</span></div>";
+    st.stages.forEach(function (g) {
+      var lv = !g.last ? "no data" : g.quiet ? '<span class="warn">offline</span> · last report ' + fDate(g.last.t)
+        : '<span class="lbl">' + agoText(now - g.last.t) + "</span>";
+      h += '<div class="ag"><div class="gl">' + esc(g.g.label) + '</div><div class="gv"><b class="v">' + (g.last ? g.last.v.toFixed(2) + g.arrow + " ft" : "–") + "</b> " + lv + "</div></div>";
+    });
+    var wins = rainWindows(c);
+    if (st.rains.length) h += '<div class="ar">Rain ' + st.rains.map(function (r) {
+      return (st.rains.length > 1 ? esc(r.g.label) + ": " : "") + wins.map(function (m, i) { return winLabel(m) + " <b>" + inch(r.w[i]) + "</b>"; }).join(" · ");
+    }).join("<br>") + " in</div>";
+    h += '<div class="ago">Graphs ›</div></div>';
+  });
+  $("allView").insertAdjacentHTML("beforeend", h);
+}
+
 function showCreek(id) {
   D.sel = id || "all";
   try { history.replaceState(null, "", "#" + D.sel); } catch (x) {}
@@ -605,8 +655,8 @@ function drawCharts(st, now) {
       h += '<div class="gtitle"><span>' + esc(s.g.label) + " · stage (ft)</span><span></span></div>" +
         '<div class="gbox" style="height:' + (st.stages.length > 1 ? 150 : 170) + 'px"><canvas id="chStage' + i + '"></canvas></div>';
     });
-    h += '<div class="gtitle"><span id="tideTitle">Tide (ft NAVD88)</span><span></span></div><div class="gbox" style="height:150px"><canvas id="chTide"></canvas></div>' +
-      '<div id="key"></div><div class="cnote" id="cnote"></div>';
+    if (c.tide) h += '<div class="gtitle"><span id="tideTitle">Tide (ft NAVD88)</span><span></span></div><div class="gbox" style="height:150px"><canvas id="chTide"></canvas></div>';
+    h += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = h;
     D.built = c.id;
   }
@@ -672,14 +722,14 @@ function drawCharts(st, now) {
     var shown = ths.filter(function (t) { return t.level <= 3 || vmax > t.value * 0.75; });
     var smax = Math.max(shown.length ? shown[shown.length - 1].value + 0.4 : 1, vmax + 0.3);
     var stp = smax <= 6 ? 1 : smax <= 14 ? 2 : 5;
-    var so = base(false); so.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);
+    var so = base(!c.tide && i === st.stages.length - 1); so.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);
     so.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };
     var sets = shown.map(function (t) { return { label: t.name, data: [{ x: H(x0), y: t.value }, { x: H(x1), y: t.value }], borderColor: t.color, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, pointHoverRadius: 0 }; });
     sets.push({ label: "Stage (ft)", data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.12)", borderWidth: 2, pointRadius: 0, fill: "origin" });
     put("chStage" + i, { data: { datasets: sets }, options: so });
   });
   // tide: measured + predicted
-  if (T) {
+  if (T && c.tide) {
     $("tideTitle").textContent = T.st.name + " tide (ft NAVD88)";
     var tp = (T.pred || []).filter(function (p) { return p.t >= x0 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
     var to = (T.obs || []).filter(function (p) { return p.t >= x0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
@@ -698,11 +748,12 @@ function drawCharts(st, now) {
   var seen = {}, key = "";
   c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
     key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
-  $("key").innerHTML = key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
+  $("key").innerHTML = !c.tide ? key : key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
     (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px solid var(--fcline)'></i>NOAA forecast</span>" : "") + "<span><i style='border-top:2px solid " + ink + "'></i>Predicted</span>" +
     (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "");
   var notes = [];
-  if (c.note) notes.push(esc(c.note));
+  if (readingsOnly(c)) notes.push(esc(LK.text("more_creeks_note")));   // creeks.csv notes are for staff
+  else if (c.note) notes.push(esc(c.note));
   (c.rain_triggers || []).forEach(function (tr) { notes.push("<b>Flooding likely:</b> " + esc(tr.label.toLowerCase()) + " of " + tr.value.toFixed(2) + " in or more" + (tr.high_tide ? (tr.tide_min != null ? " while the " + esc(T ? T.st.name : "Bay") + " tide is at or above " + tr.tide_min.toFixed(2) + " ft NAVD88" : " while the tide is at or above MHHW") : "")); });
   $("cnote").innerHTML = notes.join("<br>");
 }

@@ -29,6 +29,7 @@
     // creek status layer (the data job uses the same ranges, scripts/creek_signals.py)
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
+    MORE_CREEKS_PUBLIC: [1, 0, 1],
     REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
   };
   var TIDES = {
@@ -91,6 +92,10 @@
     banner_likely: "Flooding is likely at {creeks}. If you are in danger, call 911.",
     evac_button: "See if your area has an evacuation order",
     url_evacuation: "https://protect.genasys.com/",
+    more_creeks_title: "More creeks · readings only",
+    more_creeks_intro: "Readings from gauges on other San Mateo County creeks. Flood levels for these creeks haven't been set yet, so no status is shown. Tap a creek for its graphs.",
+    more_creeks_badge: "Readings only",
+    more_creeks_note: "Flood levels for this creek haven't been set yet, so these are readings only, with no status. A higher or rising level doesn't by itself mean flooding. In an emergency, call 911.",
     no_flood_level_title: "Flood levels not set yet",
     no_flood_level: "OneShoreline is still setting flood levels for this creek. Until then, its status is based on rain in the hills above and how fast the creek is rising, shown below.",
     limited_rain: "Rain gauges may miss storms here",
