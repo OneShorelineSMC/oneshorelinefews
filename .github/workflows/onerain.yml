@@ -3,8 +3,8 @@
 #   creeks.json   - creek stage and rain for the creeks in lookups/creeks.csv and lookups/creek_gauges.csv (kiosk Creeks tab, Creeks.html, home page)
 #   status_log.csv - creek status changes (creek status layer, staff review), newest last
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
-#   reports.json + reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
-#                   only once set up (FLOOD_REPORTS_SETUP.md: ARCGIS_API_KEY secret, REPORTS_* variables)
+#   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
+#                   only once set up (COMMUNITY_FLOOD_REPORTS_SETUP.md: ARCGIS_API_KEY secret, REPORTS_* variables)
 #
 # The data goes to a separate branch called "data", replaced on every run, so this
 # job doesn't fill your main branch with commits. The kiosk reads:
@@ -44,8 +44,8 @@ jobs:
               || git show FETCH_HEAD:sanbruno.json > out/creeks.json 2>/dev/null || true
             git show FETCH_HEAD:sites.json > out/sites.json 2>/dev/null || true
             git show FETCH_HEAD:status_log.csv > out/status_log.csv 2>/dev/null || true
-            git show FETCH_HEAD:reports.json > out/reports.json 2>/dev/null || rm -f out/reports.json
-            git archive FETCH_HEAD reports 2>/dev/null | tar -x -C out 2>/dev/null || true
+            git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
+            git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
 
       - name: Set up Python
@@ -70,7 +70,7 @@ jobs:
           REPORTS_STAFF_EDITORS: ${{ vars.REPORTS_STAFF_EDITORS }}
         run: |
           if [ -n "$ARCGIS_API_KEY" ] && [ -n "$REPORTS_LAYER_URL" ]; then pip install --quiet pillow==11.0.0; fi
-          python scripts/fetch_reports.py out --min-age 14
+          python scripts/fetch_community_flood_reports.py out --min-age 14
 
       - name: Publish to the data branch
         run: |
@@ -80,7 +80,7 @@ jobs:
           [ -s sites.json ] || rm -f sites.json
           cp creeks.json sanbruno.json   # older name, kept so pages not yet updated keep working
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) \
-            $( [ -s reports.json ] && echo reports.json ) $( [ -d reports ] && [ -n "$(ls -A reports)" ] && echo reports )
+            $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit -q -m "OneRain data $(date -u +%Y-%m-%dT%H:%MZ)"
