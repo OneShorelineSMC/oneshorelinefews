@@ -1,6 +1,8 @@
 # Reads creek readings from OneRain's public sensor pages every 5 minutes, and every public
 # OneRain site every 15 minutes, and publishes them for the kiosk, the phone pages and the site maps.
 #   creeks.json   - creek stage and rain for the creeks in lookups/creeks.csv and lookups/creek_gauges.csv (kiosk Creeks tab, Creeks.html, home page)
+#   creeks_7day.json - every creek sensor's readings for the last 7 days, built up run by run (for the data archive,
+#                   OneShorelineSMC/fews-data-archive); points are [Pacific time, value, UTC time, (USGS codes)]
 #   status_log.csv - creek status changes (creek status layer, staff review), newest last
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
@@ -44,6 +46,7 @@ jobs:
               || git show FETCH_HEAD:sanbruno.json > out/creeks.json 2>/dev/null || true
             git show FETCH_HEAD:sites.json > out/sites.json 2>/dev/null || true
             git show FETCH_HEAD:status_log.csv > out/status_log.csv 2>/dev/null || true
+            git show FETCH_HEAD:creeks_7day.json > out/creeks_7day.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -79,7 +82,7 @@ jobs:
           git checkout -q -b data
           [ -s sites.json ] || rm -f sites.json
           cp creeks.json sanbruno.json   # older name, kept so pages not yet updated keep working
-          git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) \
+          git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
