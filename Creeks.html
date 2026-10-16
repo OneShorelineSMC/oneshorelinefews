@@ -203,7 +203,8 @@
         not National Weather Service alerts. Use the buttons at the top to switch creeks.</p>
       <p><b>Rainfall</b> at the creek's rain gauges and the <b>Bay tide</b> nearby. Creeks near the Bay rise and fall with the tide,
         so a rise can come from rain, a high tide, or both.</p>
-      <p><b>Measured above predicted</b> tide means storms, wind or runoff are pushing the Bay higher than the tide
+      <p data-text="tide_words" data-lead></p>
+      <p><b>Measured above the tide table</b> means storms, wind or runoff are pushing the Bay higher than the tide
         alone. Upcoming high tides will likely run higher too.</p>
       <p class="emerg" data-text="e911"></p>
       <a class="btn primary" href="https://www.smcgov.org/dem/smc-alert" data-href="url_smc_alert" target="_blank" rel="noopener">
@@ -229,7 +230,7 @@
       <p style="font-size:13.5px;color:var(--muted)">OneShoreline Early Warning System (OneRain) for creek stage and rainfall ·
         USGS stream gauges for some of the "more creeks" ·
         NOAA Tides &amp; Currents stations 9414750 (Alameda) and 9414523 (Redwood City) for tides · National Weather Service for alerts.
-        Predicted tides do not include storm surge. This page refreshes automatically.</p>
+        The tide table does not include storm surge. This page refreshes automatically.</p>
     </div>
   </div>
 <div class="owner">
@@ -550,8 +551,8 @@ function render() {
   if (tl) {
     $("tide").textContent = tl.v.toFixed(2);
     var pv = predAt(T, tl.t), d = pv == null ? null : tl.v - pv;
-    $("tideSub").innerHTML = fTime(tl.t) + (d == null ? "" : "<br>" + (Math.abs(d) < 0.05 ? "as predicted" :
-      "<span style='color:" + (d >= OFFSET_HIGH_FT ? "var(--red);font-weight:bold" : "inherit") + "'>" + Math.abs(d).toFixed(2) + " ft " + (d > 0 ? "above" : "below") + " predicted</span>"));
+    $("tideSub").innerHTML = fTime(tl.t) + (d == null ? "" : "<br>" + (Math.abs(d) < 0.05 ? "matches tide table" :
+      "<span style='color:" + (d >= OFFSET_HIGH_FT ? "var(--red);font-weight:bold" : "inherit") + "'>" + Math.abs(d).toFixed(2) + " ft " + (d > 0 ? "above" : "below") + " tide table</span>"));
   } else { $("tide").textContent = "–"; $("tideSub").textContent = T && T.at ? "No recent reading" : "Loading…"; }
 
   drawCharts(st, now);
@@ -585,7 +586,7 @@ function renderAll(states, now) {
       if (tl) {
         var pv = predAt(T, tl.t), d = pv == null ? null : tl.v - pv;
         h += '<div class="ar">' + esc(T.st.name) + " tide <b>" + tl.v.toFixed(2) + "</b> ft NAVD88" + (d == null || Math.abs(d) < 0.05 ? "" :
-          " · <span style='color:" + (d >= OFFSET_HIGH_FT ? "var(--red);font-weight:bold" : "inherit") + "'>" + Math.abs(d).toFixed(2) + " ft " + (d > 0 ? "above" : "below") + " predicted</span>") + "</div>";
+          " · <span style='color:" + (d >= OFFSET_HIGH_FT ? "var(--red);font-weight:bold" : "inherit") + "'>" + Math.abs(d).toFixed(2) + " ft " + (d > 0 ? "above" : "below") + " tide table</span>") + "</div>";
       }
       return h + '<div class="ago">Details ›</div></div>';
     }).join("");
@@ -741,15 +742,15 @@ function drawCharts(st, now) {
     tO.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };   // feet on the tide axis
     put("chTide", { data: { datasets: [
       { label: "MHHW", data: [{ x: H(x0), y: T.st.mhhw }, { x: H(x1), y: T.st.mhhw }], borderColor: css("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
-      { label: "Predicted (ft)", data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+      { label: LK.text("lbl_tide_table") + " (ft)", data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
       { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-      { label: "NOAA forecast (ft)", data: tf, borderColor: css("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] }, options: tO });
+      { label: LK.text("lbl_expected") + " (ft)", data: tf, borderColor: css("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] }, options: tO });
   }
   var seen = {}, key = "";
   c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
     key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
   $("key").innerHTML = !c.tide ? key : key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
-    (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px solid var(--fcline)'></i>NOAA forecast</span>" : "") + "<span><i style='border-top:2px solid " + ink + "'></i>Predicted</span>" +
+    (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px solid var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:2px solid " + ink + "'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
     (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "");
   var notes = [];
   if (readingsOnly(c)) notes.push(esc(LK.text("more_creeks_note")));   // creeks.csv notes are for staff

@@ -544,8 +544,8 @@ function renderTide() {
   var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
   if (last && now - last.t < 36e5) {
     var pv = null; TD.pred.forEach(function (p) { if (Math.abs(p.t - last.t) <= 3e5) pv = p.v; });
-    if (pv != null) nowTxt = Math.abs(last.v - pv) < OFFSET_NOTE_FT ? "Right now the Bay is about where the tide tables predict."
-      : "Right now the Bay is " + feet(Math.abs(last.v - pv)) + " " + (last.v > pv ? "higher" : "lower") + " than the tide tables predict" +
+    if (pv != null) nowTxt = Math.abs(last.v - pv) < OFFSET_NOTE_FT ? "Right now the Bay is about where the tide table says."
+      : "Right now the Bay is " + feet(Math.abs(last.v - pv)) + " " + (last.v > pv ? "higher" : "lower") + " than the tide table" +
         (last.v > pv ? ". " + LK.text("tide_causes") : ".");
   }
   el.innerHTML = '<span class="th">' + esc(head) + "</span>" + (sub ? '<span class="tn">' + esc(sub) + "</span>" : "") +
