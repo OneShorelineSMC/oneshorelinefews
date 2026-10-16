@@ -193,7 +193,7 @@ def main():
                         f"Without confirmation (RISE_CONFIRM_MIN = 0) there would be {e0['episodes']} alerts "
                           f"({abs(e0['episodes'] - e['episodes'])} {'more' if e0['episodes'] >= e['episodes'] else 'fewer'}), warning first of {e0['warned']} of {e0['crossings']} "
                         f"big-storm crossings (median lead {e0['lead_med']} min).\n")
-            out.append(dict(gauge=key, name=name, rule_ft=th, chosen=th == chosen, years=round(span_y, 1),
+            out.append(dict(gauge=key, name=name, rule_ft=th, chosen=th == chosen, years=round(span_y, 2),
                             big_storm_level_ft=round(big, 2), **e))
         if note:
             md.append(note)
