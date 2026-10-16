@@ -194,13 +194,13 @@ the week next, details behind a tap.
   screen), or says there's nothing. If the top bar is showing a different, higher-priority alert, a Coastal Flood /
   Storm Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
 
-- **King Tides line** (under the NWS row): San Mateo County Emergency Management's King Tide dates for
-  Oct 2026 – Apr 2027 (`data/tide_days_lookup_2026-27.json`). It appears only around King Tides: "King Tide window
-  starts Sat Nov 21 · in 5 days" (up to 7 days ahead), "King Tide window now", "King Tide today". The rest of the time
-  it is hidden, so it never says "no concern" next to a red day card or an NWS advisory. The County's dates are
-  astronomical predictions for the San Francisco gauge, without weather; Redwood City runs higher and NWS adds surge,
-  so the day cards and NWS row stay the actual forecast. Dates and labels only (the County's heights are MLLW at San
-  Francisco). "Today" is the Pacific-time date; nothing shows after Apr 30, 2027. Tap it for the three windows.
+- **King Tide / high water line** (under the NWS row, `tide_season.js`): from NOAA's Redwood City tide table and the
+  height expected with the weather (about 2 days ahead). It shows, first, a high tide in the next 7 days that reaches the
+  flood level (`TIDE_RED_FT_RWC`, 8.5 ft NAVD88, provisional): "HIGH WATER · Tomorrow 9:40 AM: expected 8.6 ft with the
+  weather, high enough to flood low areas near the Bay". Otherwise the next King Tide within 7 days (the highest tide of
+  the month in Nov, Dec, Jan): "KING TIDE · King Tide Sat Nov 14: highest tide of the month, 8.1 ft around 9:40 AM",
+  with "weather may push it about 0.4 ft higher" when NOAA's model differs. Hidden the rest of the time. Tap for the
+  next 2 days and the coming King Tides.
 
 ## Title bar
 
@@ -330,7 +330,6 @@ in `ShorelineKiosk.html`:
 | `MODEL_EVERY_MIN`     | 60      | How often the NOAA model forecast is downloaded |
 | `NWS_OFFICE`          | MTR     | NWS office whose forecast discussion is checked for tide notes |
 | `AFD_EVERY_MIN`       | 30      | How often the forecast discussion is checked    |
-| `TIDE_DAYS_URL`       | data/tide_days_lookup_2026-27.json | County King Tide dates for the King Tides line |
 | `TIDE_DAYS_EVERY_HOURS` | 6     | How often that file is re-read                  |
 | `DAYS`                | 7       | Days of predicted tides                        |
 | `STALE_AFTER_MIN`     | 90      | When the "out of date" warning appears         |

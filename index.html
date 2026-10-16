@@ -532,7 +532,9 @@ function renderTide() {
   var head, sub = "";
   if (!ups.length) { el.className = "box tide ok"; head = "No tides higher than an average high tide expected in the next " + TIDE_DAYS + " days."; }
   else {
-    el.className = "box tide red";
+    // amber above MHHW; red at the Redwood City flood level (TIDE_RED_FT_RWC, provisional)
+    var redLvl = TIDE_STATION === "9414523" ? LK.num("TIDE_RED_FT_RWC") : Infinity;
+    el.className = "box tide " + (ups.some(function (w) { return w.peak >= redLvl; }) ? "red" : "amber");
     var on = ups[0].start <= now, list = on ? ups.slice(1) : ups;
     if (on) head = "The tide is higher than an average high tide right now, until about " + clock(ups[0].end) + "." +
       (list.length ? " Next: " + dayWord(list[0].start) + " about " + span(list[0]) + "." : "");
@@ -540,6 +542,7 @@ function renderTide() {
       (list.length > 2 ? ", and " + (list.length - 2) + " more time" + (list.length > 3 ? "s" : "") + " this week" : "") + ".";
     var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
     sub = (top.peakT <= now ? "It reached " : "At its highest, ") + feet(top.peak - m) + " above an average high tide (" + dayWord(top.peakT) + " around " + clock(top.peakT) + ").";
+    if (top.peak >= redLvl) sub += " " + LK.text("tide_red_home", { ft: redLvl.toFixed(1) });
   }
   var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
   if (last && now - last.t < 36e5) {
