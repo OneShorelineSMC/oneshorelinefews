@@ -87,9 +87,9 @@ the sensor map. Alameda's is blank because its OneRain tide site isn't public.
 
 | Setting | Value | Basis | Status | Checked by / on |
 |---|---|---|---|---|
-| Rapidly rising: rise | 0.5 ft in 60 min, newest reading < 90 min old | Working rule set Oct 2026 to flag fast rises on the home page | **Provisional** — logic TBD | |
-| Rapidly rising: tidal gauges | only after ≥ 0.10 in rain in 3 hr (San Bruno at First Avenue, `tidal = yes`) | Stops every high tide from counting as a rapid rise | **Provisional** | |
-| Rapidly rising: time to next level | shown if within 3 hr | Working choice | Provisional | |
+| Rapidly rising: rise | 0.5 ft in 60 min by default; per gauge in `creek_gauges.csv` `rise_ft` (0.25–1.0 ft, or off); on UTC times; confirmed by the previous reading rising at least half as much (on-change gauges after a quiet spell: by the next report; hourly readings can't be confirmed); comparison reading no more than 15 min late (12 h for on-change gauges); holds 30 min; newest reading < 90 min old | Tested against USGS 2007–2026 and OneRain Oct 2019–2026: [RISING_FAST_BASIS.md](RISING_FAST_BASIS.md) | **Calibrated, not yet signed off** (Pilarcitos above Stone Dam, Pescadero 41151: provisional; Colma, Atherton Alameda, Green Hills: default, not enough record yet) | |
+| Rapidly rising: tidal gauges | only after ≥ 0.10 in rain in 3 hr (San Bruno at First Avenue, `tidal = yes`) | Stops every high tide from counting as a rapid rise; storm backwater not yet measured (RISING_FAST_BASIS.md §7) | **Provisional** | |
+| Rapidly rising: time to next level | shown if within 3 hr; not shown while the alert is only being held (the rise may have stopped) | Working choice | Provisional | |
 | Gauge offline | 12 hr silent (gauges that report on change), 3 hr (scheduled gauges) | On-change gauges can be silent for hours when the level is steady; set to avoid false "offline" | Working choice, review | |
 | Creek data delayed | 30 min | Data job runs every 5 min; 30 min = several missed runs | Working choice | |
 | Map site not reporting / old reading / data late | 24 hr / 3 hr / 45 min | Map data refreshes every 15 min | Working choice | |
@@ -158,8 +158,9 @@ Answers the open item in §2: rain levels for every creek, not just Belmont's tr
   live files with `preview_only = yes` (staff preview only), using the gauges that can be read now. Their OneRain ids were
   pre-filled from OneRain's public site list and their gauge notes say what to check. Redwood, Bear, Los Trancos and
   Butano stay in `proposed/` until their stage gauges are public on OneRain (Butano: backup sensors only).
-- **Rising fast on these creeks** uses the provisional rule (0.5 ft in an hour). Gauges below dams (Pilarcitos, San
-  Mateo below Crystal Springs) can rise that fast from a release; see §11 before trusting "Be ready" there.
+- **Rising fast on these creeks** uses per-gauge values from the USGS record ([RISING_FAST_BASIS.md](RISING_FAST_BASIS.md)).
+  Below dams (Pilarcitos below Stone Dam and the spillway, San Mateo below Crystal Springs) a fast rise is a release
+  or spill: "happening now", with little or no lead time. It is off below Stone Dam.
 
 ## 10. Creek status (in development) — `proposed/display_text.csv`, `proposed/settings.csv`
 
@@ -187,14 +188,11 @@ appended to `status_log.csv` on the data branch for review after each storm. A q
 (decided Oct 14). A rain gauge counts as "no recent data" only when it is silent for `RAIN_SILENT_MIN` while another
 gauge on the creek records Heavy rain or more.
 
-## 11. Rapidly rising: calibration plan
+## 11. Rapidly rising: calibration
 
-The current rule (§5) stays until there is data to replace it. Proposed per-gauge rule: a 30-minute fitted slope at
-or above that gauge's 99th-percentile wet-season rise (never below 0.5 ft/hr), **or** time to the next flood level
-of 2 hours or less. It counts only above a minimum stage, must hold for two readings, has a spike filter, and clears
-only after the rate drops to half for 30 minutes. On tidal gauges the predicted tide's rate is subtracted first.
-Data: USGS history since 2007 (`scripts/fetch_usgs.py`, workflow **USGS history pull**) and OneRain exports.
-Results stay out of the repo (`out/` is not committed).
+Done Oct 15, 2026; see [RISING_FAST_BASIS.md](RISING_FAST_BASIS.md) for the rule, the data, the per-gauge results
+and the choices made. It also records which parts of the earlier plan (fitted slope, 99th-percentile threshold,
+minimum stage, tide subtraction) were not used, and why. Rerun `scripts/evaluate_rising_fast.py` after each winter.
 
 ## Data sources
 
@@ -209,7 +207,8 @@ Results stay out of the repo (`out/` is not committed).
 | King Tide days, high tide calendar | NOAA Tides & Currents tide table (high/low predictions) at Redwood City 9414523, 6 months ahead, ft NAVD88; and the model's expected height (`ofs_water_level`) | `tide_season.js`, read by the kiosk and Tides page | twice a day / hourly |
 | Tide datums | NOAA Tides & Currents datums pages for each station | entered in `tide_stations.csv` | when NOAA updates the epoch |
 | Rain frequency | NOAA HDSC Precipitation Frequency Data Server, Atlas 14 Vol. 6 v2 (hdsc.nws.noaa.gov/pfds) | `scripts/fetch_atlas14.py` → `rain_frequency.csv` | once; again when Atlas 15 is published |
-| USGS stream gauges (proposed creeks) | USGS Water Data API (`api.waterdata.usgs.gov`) and WaterServices (`waterservices.usgs.gov`, retiring late 2026/early 2027) | history: `scripts/fetch_usgs.py`; live: not yet | 15 min |
+| USGS stream gauges | USGS Water Data API (`api.waterdata.usgs.gov`) and WaterServices (`waterservices.usgs.gov`, retiring late 2026/early 2027) | live: data job; history: `scripts/fetch_usgs.py` (workflow **USGS history pull**) | 15 min |
+| OneRain history (calibration) | OneRain public sensor pages, custom date range | archive repo workflow **OneRain history pull** (`scripts/pull_onerain_history.py`) | on demand |
 | Crystal Springs releases | SFPUC Peninsula Reservoir Wet Weather Operations (sfpuc.gov/PeninsulaReservoirWetWeather) | reference | as published |
 | Evacuation orders | Genasys Protect (protect.genasys.com), per San Mateo County DEM | link only (proposed) | live |
 
@@ -222,7 +221,7 @@ Results stay out of the repo (`out/` is not committed).
 - [ ] Spot-check two or three gauges in `rain_frequency.csv` against NOAA's site
 - [ ] Confirm the 1/2/5-year cutoffs after backtesting past storms
 - [ ] Decide the policy switch `BE_READY_FROM_RAIN`
-- [ ] Set per-gauge rapidly-rising values once historical data is analyzed
+- [ ] Review the per-gauge rapidly-rising values and rule in RISING_FAST_BASIS.md (proposed Oct 15) and sign off
 - [ ] Communications and DEM approve `proposed/display_text.csv`; order translations
 - [ ] Get a Genasys Protect link centered on San Mateo County
 - [ ] Run staff-only through the first storms before going public

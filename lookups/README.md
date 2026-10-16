@@ -15,6 +15,7 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 | `proposed/` | Drafts for the creek status layer: 10 more creeks and their gauges. See `proposed/README.md` | **not read** | — |
 
 Where each number came from, and who has signed off, is in **[THRESHOLDS_BASIS.md](THRESHOLDS_BASIS.md)**.
+The "rapidly rising" rule and each gauge's setting are explained in **[RISING_FAST_BASIS.md](RISING_FAST_BASIS.md)**.
 
 ## Editing
 
@@ -59,6 +60,8 @@ the same minutes) · `intro` (sentence under the creek name) · `note` (what the
 sensor's OneRain page address: Sites › site › sensor) · `reports` (stage: `on change` if OneRain only stores a
 reading when the level changes, `interval` if on a schedule; sets how long a silence means "offline") · `tidal`
 (stage: `yes` if the level rises and falls with the tide; such gauges count as "rapidly rising" only after rain) ·
+`rise_ft` (stage: how much the level must rise in an hour to count as "rapidly rising" at this gauge, in ft from
+0.05 to 10; `off` = not used here; blank = `RISE_FT` in settings.csv; basis in `RISING_FAST_BASIS.md`) ·
 `note` (shown with the gauge's thresholds) · `role` (optional; rain: blank or `primary` = shown on the pages,
 `supporting` = a hillside gauge that only counts toward the creek's rain level in the creek status layer; OneRain
 `onerain_number` can be letters and digits, e.g. `PUL`) · `source` (blank/`onerain`, or `usgs` for a USGS stream
