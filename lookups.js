@@ -118,6 +118,7 @@
     tide_weather_higher: "NOAA projects about {diff} ft higher than the tide table",
     tide_weather_lower: "NOAA projects about {diff} ft lower than the tide table",
     tide_cal_title: "High tides and King Tides",
+    tide_cal_tap: "Tap any day to see its highest tide and time.",
     tide_cal_day: "highest tide {ft} at {time} (tide table)",
     tide_cal_source: "Heights at NOAA’s Redwood City tide gauge (9414523), ft NAVD88: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Amber = above MHHW ({mhhw} ft), the average high tide. Red = {red} ft or more, OneShoreline’s provisional level for flooding of low areas near the Bay.",
     more_creeks_title: "More creeks · readings only",

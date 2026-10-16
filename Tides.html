@@ -239,11 +239,17 @@
   .mgrid .d.r:not(.past) { background: #c62828; color: #fff; }
   .mgrid .d.r::after, .mgrid .d.k::after { position: absolute; top: -1px; right: 1px; font-size: 9px; font-weight: 700; line-height: 1; }
   .mgrid .d.r::after { content: "!"; } .mgrid .d.k::after { content: "★"; }
-  .mgrid .d:focus-visible, #season:focus-visible, #alert:focus-visible { outline: 3px solid #e69f00; outline-offset: 2px; }
+  .mgrid .d:focus-visible, #season:focus-visible, #alert:focus-visible, #calselx:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .ckey .sym { font-size: 10px; font-weight: 700; color: #fff; text-align: center; line-height: 13px; }
   .mgrid .d.today { outline: 2px solid var(--ink); outline-offset: 1px; }
-  .mgrid .d.sel { outline: 2px solid #e69f00; outline-offset: 1px; }
-  #calsel { min-height: 20px; font-size: 14px; margin-top: 10px; color: var(--ink); }
+  .mgrid .d.sel { outline: 3px solid var(--fc); outline-offset: 1px; }
+  .caltap { margin: 10px 0 8px; font-size: 14px; font-weight: 700; color: var(--ink); }
+  /* The tapped day's summary: shown right under the row of months that holds the day */
+  #calsel { grid-column: 1 / -1; display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.4; color: var(--ink);
+    background: var(--soft); border-left: 4px solid var(--fc); border-radius: 6px; padding: 8px 6px 8px 10px; }
+  #calsel.hide { display: none; } #calseltx { flex: 1; }
+  #calselx { flex: none; border: 0; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 4px; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .wlist { font-size: 14px; margin: 10px 0 0; padding: 0; list-style: none; }
   .wlist li { padding: 5px 0; border-top: 1px solid var(--line); }
   .wlist b { color: var(--kingtx); }
@@ -275,15 +281,17 @@
   <div style="height:12px"></div>
   <div class="card hide" id="calcard">
     <h2 data-text="tide_cal_title">High tides and King Tides</h2>
-    <div class="lbl"><span data-text="king_tide_intro"></span> Tap a day.</div>
+    <div class="lbl"><span data-text="king_tide_intro"></span></div>
     <div class="ckey"><span><i style="background:var(--ambbg)"></i><span data-text="tide_day_amber"></span></span>
       <span><i class="sym" style="background:#c62828">!</i><span data-text="tide_day_red"></span></span>
       <span><i class="sym" style="background:var(--king)">★</i><span data-text="tide_day_king"></span></span>
       <span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>
       <span id="fckey" class="hide"><i style="box-shadow:inset 0 0 0 2px var(--amb)"></i><span data-text="tide_day_expected"></span></span></div>
     <div id="calfc" class="hide"></div>
+    <p class="caltap" data-text="tide_cal_tap"></p>
     <div class="months" id="months"></div>
-    <div id="calsel"></div>
+    <div id="calsel" class="hide"><span id="calseltx"></span><button type="button" id="calselx" aria-label="Close">×</button></div>
+    <div id="calsay" class="vh" aria-live="polite"></div>
     <ul class="wlist" id="wlist"></ul>
     <p class="lbl" id="calsrc" style="margin:10px 0 0;line-height:1.4"></p>
   </div>
@@ -312,8 +320,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261015c"></script>
-<script src="tide_season.js?v=20261015c"></script>
+<script src="lookups.js?v=20261015d"></script>
+<script src="tide_season.js?v=20261015d"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -777,6 +785,7 @@ function renderCalendar() {
     (xs.length ? '<div class="lbl" style="margin-top:4px">' + esc(LK.text("noaa_forecast_note")) + "</div>" : "");
   var months = [], m0 = new Date(S0.from);
   for (var k = 0; k <= TSN.months; k++) months.push(new Date(Date.UTC(m0.getUTCFullYear(), m0.getUTCMonth() + k, 1)).toISOString().slice(0, 10));
+  closeDay(false);   // take the summary box out before the months are rebuilt
   $("months").innerHTML = months.map(function (mm) {
     var first = new Date(mm + "T12:00:00Z"), pad = first.getUTCDay(), h = "";
     h += '<div class="mon"><h3>' + esc(tsFmt(mm, { month: "long", year: "numeric" })) + '</h3><div class="mgrid">' +
@@ -801,7 +810,6 @@ function renderCalendar() {
       (d < today ? ' <span class="lbl">(past)</span>' : "") + "</li>";
   }).join("");
   $("calsrc").textContent = LK.text("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2) });
-  $("calsel").textContent = "";
 }
 // Keyboard: Enter or Space acts like a tap on anything marked role="button" (calendar days, the King Tide card, the alert bar)
 document.addEventListener("keydown", function (e) {
@@ -809,12 +817,34 @@ document.addEventListener("keydown", function (e) {
     e.preventDefault(); e.target.click();
   }
 });
+// Tap a day: its summary opens right under that row of months (not at the bottom of the calendar), and is read out by screen readers
+var selDay = null;
+function closeDay(refocus) {
+  var box = $("calsel");
+  box.classList.add("hide"); $("calsay").textContent = "";
+  if (box.parentNode !== $("calcard")) $("calcard").insertBefore(box, $("wlist"));   // park it (the months are rebuilt)
+  Array.prototype.forEach.call(document.querySelectorAll(".mgrid .d.sel"), function (s) { s.classList.remove("sel"); });
+  if (refocus && selDay) { var d = document.querySelector('.mgrid .d[data-d="' + selDay + '"]'); if (d) d.focus(); }
+  selDay = null;
+}
 $("months").addEventListener("click", function (e) {
   var c = e.target.closest(".d"); if (!c) return;
+  if (selDay === c.dataset.d && !$("calsel").classList.contains("hide")) { closeDay(true); return; }   // tap again to close
   Array.prototype.forEach.call(document.querySelectorAll(".mgrid .d.sel"), function (s) { s.classList.remove("sel"); });
-  c.classList.add("sel");
-  $("calsel").textContent = dayWords(c.dataset.d);
+  c.classList.add("sel"); selDay = c.dataset.d;
+  // after the last month on the same row as the tapped one
+  var mon = c.closest(".mon"), after = mon, top = mon.offsetTop;
+  for (var n = mon.nextElementSibling; n; n = n.nextElementSibling) { if (n.classList.contains("mon") && n.offsetTop === top) after = n; }
+  var box = $("calsel"), text = dayWords(selDay);
+  $("calseltx").textContent = text;
+  after.parentNode.insertBefore(box, after.nextSibling);
+  box.classList.remove("hide");
+  $("calsay").textContent = text;
+  var r = box.getBoundingClientRect();
+  if (r.bottom > window.innerHeight - 70) box.scrollIntoView({ behavior: "smooth", block: "nearest" });   // keep it above the tab bar
 });
+$("calselx").addEventListener("click", function () { closeDay(true); });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && selDay) closeDay(true); });
 $("season").addEventListener("click", function () { if (!EMBED) $("calcard").scrollIntoView({ behavior: "smooth", block: "start" }); });
 
 /* ---------- bottom bar ---------- */
