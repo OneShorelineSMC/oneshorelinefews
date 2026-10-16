@@ -1,0 +1,41 @@
+name: Rebuild creek fact sheets
+
+# Rebuilds lookups/factsheets/ (one page per creek) whenever a lookup table or the builder changes, so the fact
+# sheets always match the tables the site uses. Commits only if a fact sheet actually changed. Can also be run by
+# hand from the Actions tab.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lookups/*.csv"
+      - "scripts/build_creek_factsheets.py"
+      - "scripts/fetch_atlas14.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: factsheets
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: python scripts/build_creek_factsheets.py
+      - name: Commit if anything changed
+        run: |
+          git config user.name  "fews-factsheets-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lookups/factsheets
+          if git diff --cached --quiet; then echo "Fact sheets already up to date."; exit 0; fi
+          git commit -q -m "Rebuild creek fact sheets"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
