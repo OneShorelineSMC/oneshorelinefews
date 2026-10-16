@@ -4,7 +4,7 @@ Reads the creek settings that staff check and update, all in the lookups/ folder
   lookups/creeks.csv         the creeks: names, intro and note text, tide station, rain windows
   lookups/creek_gauges.csv   each creek's stage and rain gauges and their OneRain sensor link details
   lookups/thresholds.csv     flood thresholds for every stage gauge, and rain triggers
-  lookups/tide_stations.csv  NOAA tide stations: MHHW (ft MLLW, NOAA's datum for the gauge)
+  lookups/tide_stations.csv  NOAA tide stations: MHHW and the MLLW-to-NAVD88 difference
 
 Nothing in this file needs editing for a normal change. The pages read everything from the published data
 file, so changes show up everywhere on the next data run (about 5 minutes after you commit).
@@ -68,7 +68,7 @@ def _window(minutes):
 
 
 def load_tide_stations(path=TIDE_CSV):
-    """{station id: {"name", "mhhw" (ft MLLW), "navd88_above_mllw" (reference only)}}, errors."""
+    """{station id: {"name", "mhhw", "mllw_to_navd88"}}, errors."""
     rows, err = _rows(path, "tide_stations.csv")
     if err:
         return {}, [err]
@@ -78,18 +78,18 @@ def load_tide_stations(path=TIDE_CSV):
         if not re.fullmatch(r"\d{7}", sid):
             errors.append(f"{w}: station must be a 7-digit NOAA station number"); continue
         try:
-            mhhw = float(r.get("mhhw_mllw_ft", ""))
-            assert 0 < mhhw < 20
+            mhhw = float(r.get("mhhw_navd88_ft", ""))
+            assert -5 < mhhw < 20
         except (ValueError, AssertionError):
-            errors.append(f"{w}: mhhw_mllw_ft must be a number in ft MLLW"); continue
+            errors.append(f"{w}: mhhw_navd88_ft must be a number in ft NAVD88"); continue
         off = None
-        if r.get("navd88_above_mllw_ft"):
+        if r.get("mllw_to_navd88_ft"):
             try:
-                off = float(r["navd88_above_mllw_ft"])
+                off = float(r["mllw_to_navd88_ft"])
                 assert -10 < off < 10
             except (ValueError, AssertionError):
-                errors.append(f"{w}: navd88_above_mllw_ft must be a number (ft) or blank"); continue
-        out[sid] = {"name": r.get("name") or sid, "mhhw": mhhw, "navd88_above_mllw": off}
+                errors.append(f"{w}: mllw_to_navd88_ft must be a number (ft) or blank"); continue
+        out[sid] = {"name": r.get("name") or sid, "mhhw": mhhw, "mllw_to_navd88": off}
     return out, errors
 
 
@@ -243,15 +243,15 @@ def load_thresholds(creeks, tides, path=THRESHOLDS_CSV):
             assert minutes > 0
         except (ValueError, AssertionError):
             errors.append(f"{where}: rain thresholds need 'minutes' (e.g. 30 or 240)"); continue
-        tide_txt = r.get("tide_at_least_mllw", "")
+        tide_txt = r.get("tide_at_least_navd88", "")
         high_tide = bool(tide_txt) or r.get("high_tide", "").lower() in ("yes", "y", "true", "1")
         item.update({"gauge": key, "minutes": minutes, "high_tide": high_tide,
                      "label": _window(minutes) + " rain" + (" + high tide" if high_tide else "")})
-        if tide_txt:   # high tide = the creek's NOAA tide station at or above this level, in ft MLLW
+        if tide_txt:   # high tide = the creek's NOAA tide station at or above this level, in ft NAVD88
             try:
                 item["tide_min"] = float(tide_txt)
             except ValueError:
-                errors.append(f"{where}: tide_at_least_mllw must be a number (ft MLLW)"); continue
+                errors.append(f"{where}: tide_at_least_navd88 must be a number (ft NAVD88)"); continue
         triggers.setdefault(creek["id"], []).append(item)
     if errors:
         return errors
