@@ -168,7 +168,7 @@ own map:
 
 ## Bay Tides tab
 
-Redwood City only (NOAA 9414523, ft MLLW). Built for a responder walking in at shift change: one sentence first,
+Redwood City only (NOAA 9414523, ft NAVD88). Built for a responder walking in at shift change: one sentence first,
 the week next, details behind a tap.
 
 - **Headline band** (top, the color goes around the whole box): red with "Tides above MHHW: Today 12:55–3:25 PM
@@ -182,11 +182,11 @@ the week next, details behind a tap.
 - **Next 7 days:** one card per day with that day's highest tide (ft) and time; red with "+0.21 ft over MHHW" when above
   MHHW. Other days carry no "below MHHW" label: past the ~2-day model forecast the heights are only the astronomical
   prediction and can't rule a high tide out. Cards marked "fcst" use the NOAA model forecast; later days use the prediction. The graph under the cards lines up with them and has three
-  lines: measured (blue), NOAA forecast (teal) and predicted (dark), heights in ft MLLW on the left, and a "Now" tag on the current time. Tap for the forecast and predicted times above
+  lines: measured (blue), NOAA forecast (teal) and predicted (dark), heights in ft NAVD88 on the left, and a "Now" tag on the current time. Tap for the forecast and predicted times above
   MHHW and the "if the Bay stays high" scenario for the days after the forecast ends.
 - **NOAA model forecast:** NOAA's San Francisco Bay Operational Forecast System publishes a water-level forecast for
   the Redwood City gauge that includes wind, air pressure and river flow (Tides & Currents product
-  `ofs_water_level`, requested in ft MLLW, updated 4 times a day, about 2 days ahead). It is model guidance, not an
+  `ofs_water_level`, requested in ft NAVD88, updated 4 times a day, about 2 days ahead). It is model guidance, not an
   official forecast; NWS advisories take precedence. If it is missing, older than 12 hours or doesn't reach 6 hours
   ahead, the tab uses the predictions alone.
 - **NWS row** (bottom): never repeats the alert already in the top alert bar. It shows "NWS forecasters on tides:" the lines about tides or coastal flooding from the NWS San Francisco Bay Area office's latest
@@ -196,9 +196,9 @@ the week next, details behind a tap.
 
 - **King Tide / high water line** (under the NWS row, `tide_season.js`): from NOAA's Redwood City tide table and the
   NOAA projection (about 2 days ahead). It shows, first, a high tide in the next 7 days that reaches the
-  flood level (`TIDE_RED_FT_RWC`, 9.68 ft MLLW, provisional): "HIGH WATER · Tomorrow 9:40 AM: NOAA projects 9.8 ft,
-  high enough to flood low areas near the Bay". Otherwise the next King Tide within 7 days (the highest tide of
-  the month in Nov, Dec, Jan): "KING TIDE · King Tide Sat Nov 14: highest tide of the month, 8.1 ft around 9:40 AM",
+  flood level (`TIDE_RED_FT_RWC`, 8.5 ft NAVD88, provisional): "HIGH WATER · Tomorrow 9:40 AM: NOAA projects 8.6 ft,
+  high enough to flood low areas near the Bay". Otherwise the next King Tide within 7 days (a day when the tide table
+  reaches the 1-year tide, `KING_TIDE_FT_RWC`, 8.3 ft NAVD88): "KING TIDE · King Tide Wed Nov 25: 8.4 ft around 11:46 AM, reaching the 1-year tide",
   with "NOAA projects about 0.4 ft higher than the tide table" when NOAA's model differs. Hidden the rest of the time. Tap for the
   next 2 days and the coming King Tides.
 
@@ -225,7 +225,7 @@ on its own after 2 minutes and isn't part of the automatic tab rotation.
 The **Creeks** tab opens on **Dashboard Creeks**: one card per creek (Colma, San Bruno, Belmont, Atherton),
 bordered all the way around in its status color, with each gauge's stage (an offline gauge shows "Offline · since
 Jun 3", never an old number), accumulated rain over the creek's own windows (a window that has reached a trigger is
-red), and the Bay tide in ft MLLW with how far it is below or above MHHW and whether it is rising or falling.
+red), and the Bay tide in ft NAVD88 with how far it is below or above MHHW and whether it is rising or falling.
 Rain-trigger progress (Belmont, the only creek with rain triggers in `lookups/thresholds.csv`) appears only once it rains; when a trigger is met the card just says
 "Trigger met ⚠ 4 hr rain + high tide" (the amounts are on the rain and tide rows). Tap a card, or a creek
 button across the top, for that creek's graphs. Each button turns yellow, orange or red when that creek is at a
@@ -252,7 +252,7 @@ For the chosen creek, all on one time axis (last 36 hours plus the next 12 hours
   A "Now" tag on the top graph (rain, or the first stage graph when dry) marks the line that runs through all of them. MHHW is drawn in slate gray so orange
   only ever means Flood Watch; Belmont's 4-hour rain trigger line uses its own level color (Flood Warning red).
 - **Belmont Creek's rain triggers**: flooding is likely if 30-minute rain exceeds 0.20 in, or 4-hour rain
-  exceeds 0.42 in while the tide is high (7.50 ft MLLW at Redwood City). When dry the left column lists what
+  exceeds 0.42 in while the tide is high (6.32 ft NAVD88 at Redwood City). When dry the left column lists what
   sets each trigger off; once it rains it shows the running amounts ("4 hr rain 0.30 of 0.42 in + tide 6.10 of
   6.32 ft"), red when met.
 

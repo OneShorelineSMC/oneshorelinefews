@@ -1,20 +1,20 @@
 /* High tides at Redwood City for the King Tide line (kiosk), the Tides page card and its calendar.
  *
- * Everything comes from NOAA at the Redwood City tide gauge (9414523), ft MLLW, so nothing needs a yearly update:
+ * Everything comes from NOAA at the Redwood City tide gauge (9414523), ft NAVD88, so nothing needs a yearly update:
  *   - the tide table (predicted high tides) from the start of this month through the next 6 months
  *   - the NOAA projection (NOAA's San Francisco Bay model, ofs_water_level: storms, wind, runoff, ocean conditions such as El Niño), about 2 days ahead
  *
  * Levels (the colors) come from the water height, never from the name "King Tide":
  *   below MHHW (tide_stations.csv)            normal
  *   MHHW up to TIDE_RED_FT_RWC (settings.csv)  level 1 (shown blue, information): higher than an average high tide
- *   TIDE_RED_FT_RWC or more (9.68 ft MLLW, provisional) red: high enough to flood low areas near the Bay
- * "King Tide" is only a label: the day with the highest tide-table high tide of the month in KING_MONTHS.
+ *   TIDE_RED_FT_RWC or more (8.5, provisional) red: high enough to flood low areas near the Bay
+ * "King Tide" is only a label (the star): a day whose tide-table high tide reaches KING_TIDE_FT_RWC (settings.csv), the 1-year tide
+ * (8.3 ft NAVD88, SF Bay Tidal Datums and Extreme Tides Study, 2016). Any month; mostly Nov-Jan.
  * Times: Pacific wall clock as UTC milliseconds, like the pages. Wording: lookups/display_text.csv (tide_*, king_tide_*).
  */
 (function () {
   "use strict";
   var LK = window.LOOKUPS, STATION = "9414523", MATCH_MIN = 90, MONTHS_AHEAD = 6;
-  var KING_MONTHS = [11, 12, 1];   // November, December, January
   var S = { highs: null, tHighs: 0, ofs: null, tOfs: 0, from: null };
 
   function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -29,7 +29,7 @@
   function monthStart(y, m) { return Date.UTC(y, m, 1); }   // m: 0-11 (rolls over the year)
   function url(product, begin, end, extra) {
     return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product + "&station=" + STATION +
-      "&begin_date=" + begin + "&end_date=" + end + "&datum=MLLW&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS" + (extra || "");
+      "&begin_date=" + begin + "&end_date=" + end + "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS" + (extra || "");
   }
   function get(u) {
     return fetch(u, { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
@@ -64,6 +64,7 @@
 
   function mhhw() { return LK.mhhw(STATION); }
   function red() { return LK.num("TIDE_RED_FT_RWC"); }
+  function king() { return LK.num("KING_TIDE_FT_RWC"); }
   function level(v) { return v == null ? 0 : v >= red() ? 2 : v > mhhw() ? 1 : 0; }
 
   /* Each day's highest tide-table high tide: {date: {t, v}} */
@@ -72,17 +73,11 @@
     (S.highs || []).forEach(function (h) { var d = iso(h.t); if (!out[d] || h.v > out[d].v) out[d] = h; });
     return out;
   }
-  /* King Tide days: the highest tide-table high tide of each month in KING_MONTHS (whole months loaded only) */
+  /* King Tide days: days whose highest tide-table high tide reaches the 1-year tide (KING_TIDE_FT_RWC). The tide table only,
+     so the stars are known months ahead and don't come and go with the NOAA projection. */
   function kingDays() {
-    var best = {};
-    if (!S.highs) return {};
-    S.highs.forEach(function (h) {
-      var d = new Date(h.t), mo = d.getUTCMonth() + 1, key = d.getUTCFullYear() + "-" + mo;
-      if (KING_MONTHS.indexOf(mo) < 0) return;
-      if (!best[key] || h.v > best[key].v) best[key] = h;
-    });
-    var out = {};
-    Object.keys(best).forEach(function (k) { out[iso(best[k].t)] = best[k]; });
+    var dh = dayHighs(), k = king(), out = {};
+    Object.keys(dh).forEach(function (d) { if (dh[d].v >= k) out[d] = dh[d]; });
     return out;
   }
   /* NOAA projection (next TIDE_EXPECTED_HOURS): the model's peak near each tide-table high tide, highest per day */
@@ -135,5 +130,5 @@
 
   window.TIDE_SEASON = { load: function () { return Promise.all([loadTable(), loadModel()]); }, loadTable: loadTable, loadModel: loadModel,
     dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote,
-    clock: clock, ft: ft, mhhw: mhhw, red: red, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };
+    clock: clock, ft: ft, mhhw: mhhw, red: red, king: king, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };
 })();

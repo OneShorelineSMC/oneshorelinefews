@@ -71,7 +71,7 @@
 <body>
 <div class="card">
   <h2>7-Day Tide Forecast — Alameda</h2>
-  <div id="subtitle">NOAA Station 9414750 · Measured and predicted water levels · Datum: MLLW</div>
+  <div id="subtitle">NOAA Station 9414750 · Measured and predicted water levels · Datum: NAVD88</div>
   <div class="legend">
     <span><i class="sw meas"></i>Measured (past 48 hrs)</span>
     <span><i class="sw tide"></i>Predicted tide</span>
@@ -85,7 +85,7 @@
 
 <script>
 var STATION = "9414750";
-var MHHW = 6.60;          // ← MHHW in ft MLLW (NOAA datums)
+var MHHW = 6.37;          // ← MHHW in NAVD88 feet
 var DAYS = 7;
 var HISTORY_HOURS = 48;      // hours of measured water level shown before "now"
 var REFRESH_MINUTES = 6;     // measured levels update every 6 minutes
@@ -271,7 +271,7 @@ function draw(preds, obs, startMs, now) {
         y: {
           min: yMin,
           max: yMax,
-          title: { display: !narrow(), text: "Tide height (ft MLLW)", color: "#888" },
+          title: { display: !narrow(), text: "Tide height (ft NAVD88)", color: "#888" },
           ticks: {
             stepSize: narrow() ? 2 : 1,
             font: { size: narrow() ? 11 : 13 },
@@ -293,7 +293,7 @@ function noaaUrl(product, begin, end) {
     + "&station=" + STATION
     + "&begin_date=" + begin
     + "&end_date=" + end
-    + "&datum=MLLW"
+    + "&datum=NAVD"
     + "&time_zone=lst_ldt"
     + "&units=english"
     + "&format=json"
