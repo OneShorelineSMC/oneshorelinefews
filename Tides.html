@@ -620,7 +620,7 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<div class="head unknown"><div class="hm">Loading tides…</div></div>' +
     '<details class="mhhwq"><summary>What is MHHW?</summary><p>' + esc(LK.text("mhhw_info")) + "</p></details>" +
     '<div class="nowl"></div>' +
-    '<div class="sec"><b>Next 7 days</b> · <span class="hint">highest tide each day (tide table)</span></div>' +
+    '<div class="sec"><b class="dhead">Next 7 days</b> · <span class="hint">highest tide each day (tide table)</span></div>' +
     '<div class="days"></div>' +
     '<div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div>' +
     '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the Bay tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
@@ -764,6 +764,33 @@ var nowLine = {
     ctx.restore();
   }
 };
+/* Wide screens: the day columns above the graph sit over their days. 7 days = 7 equal columns (CSS). 3 days = the graph starts
+   24 hours back, so each column is placed over its part of the graph from the chart's own scale (redone on every resize);
+   a day with too little of it in view (under 80 px) is left out of the strip. Phones show the days as a list, unchanged. */
+var dayAlign = {
+  id: "dayAlign",
+  afterLayout: function (c) {
+    var o = c.options.plugins.dayAlign; if (!o || !o.el) return;
+    var cells = o.el.children, xs = c.scales.x, wide = window.matchMedia("(min-width: 760px)").matches;
+    if (!o.three || !wide) {
+      o.el.style.gridTemplateColumns = ""; o.el.style.marginLeft = "";
+      Array.prototype.forEach.call(cells, function (e) { e.style.display = ""; });
+      if (o.head) o.head.textContent = "Next " + cells.length + " days";
+      return;
+    }
+    var cols = [], first = null;
+    Array.prototype.forEach.call(cells, function (e, k) {
+      var a = Math.max(o.day0 + k * 86400000, o.x0), b = Math.min(o.day0 + (k + 1) * 86400000, o.x1);
+      var w = b > a ? xs.getPixelForValue((b - o.x0) / 3600000) - xs.getPixelForValue((a - o.x0) / 3600000) : 0;
+      if (w < 80) { e.style.display = "none"; return; }
+      e.style.display = ""; if (first == null) first = xs.getPixelForValue((a - o.x0) / 3600000);
+      cols.push(w.toFixed(1) + "px");
+    });
+    o.el.style.marginLeft = (first == null ? 0 : first).toFixed(1) + "px";
+    o.el.style.gridTemplateColumns = cols.join(" ");
+    if (o.head) o.head.textContent = cols.length === 1 ? "Today" : "Next " + cols.length + " days";
+  }
+};
 /* Graph time range: 3 days (the last 24 hours and the next 48, tide by tide) or 7 days (today and the next 6).
    Phones start on 3 days, wider screens on 7; the choice is kept while on the page (and in this browser if it allows). */
 var RANGE = (function () {
@@ -842,6 +869,7 @@ function drawChart(s, i, now, useModel) {
   var opts = { responsive: true, maintainAspectRatio: false, animation: false,
     interaction: { mode: "nearest", axis: "x", intersect: false },
     plugins: { legend: { display: false }, nowLine: { x: H(now) }, refMarks: { side: "right" },
+      dayAlign: { el: $("st" + i).querySelector(".days"), head: $("st" + i).querySelector(".dhead"), three: three, x0: x0, x1: x1, day0: dayStart(now) },
       tooltip: { filter: function (it) { return it.dataset.label !== "above" && it.dataset.label !== "MHHW" && it.dataset.label !== "flood" && it.dataset.label !== "king"; },
         callbacks: { title: function (it) { var tt = x0 + it[0].parsed.x * 3600000; return fmt(tt, { weekday: "short" }) + " " + fTime(tt); },
           label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2); } } } },
@@ -863,7 +891,7 @@ function drawChart(s, i, now, useModel) {
     opts.scales.x.grid.color = function (c) { return c.tick && c.tick.value % 24 === 0 && c.tick.value > 0 && c.tick.value < span ? line : "rgba(0,0,0,0)"; };
   }
   if (D.charts[i]) { D.charts[i].data = data; D.charts[i].options = opts; D.charts[i].update("none"); }
-  else D.charts[i] = new Chart($("ch" + i), { type: "line", data: data, options: opts, plugins: [refMarks, nowLine] });
+  else D.charts[i] = new Chart($("ch" + i), { type: "line", data: data, options: opts, plugins: [refMarks, nowLine, dayAlign] });
   $("ch" + i).setAttribute("aria-label", chartSummary(s, now, useModel, R));
   Array.prototype.forEach.call($("st" + i).querySelectorAll(".rng button"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.r === RANGE)); });
   $("st" + i).querySelector(".key").innerHTML = '<span><i style="border-top:3px solid #1e88e5"></i>Measured</span>' +
