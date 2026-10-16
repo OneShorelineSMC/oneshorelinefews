@@ -91,4 +91,4 @@ show OneRain's Redwood City tide in NAVD88 on the sensor map) · `used_for` · `
   page headings and button names.
 - Level colors (yellow / orange / red / purple) — part of the design and the color-blind checks.
 - Kiosk display settings (tab rotation, burn-in shift, refresh timing) — top of `ShorelineKiosk.html`.
-- County King Tide dates — `data/tide_days_lookup_2026-27.json` (its source line is `king_tide_source` here).
+- King Tide days and the high tide calendar are worked out from NOAA's Redwood City tide table each time (`tide_season.js`); the flood level is `TIDE_RED_FT_RWC` in `settings.csv`.

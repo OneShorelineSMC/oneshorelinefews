@@ -79,7 +79,6 @@ datums page:
 | NAVD88 zero | 1.18 | 0.00 |
 | MLLW | 0.00 | −1.18 |
 
-San Francisco 9414290 (County King Tide dates): NAVD88 ≈ MLLW + 0.06 ft.
 
 `mllw_to_navd88_ft` (−1.18 for Redwood City) also converts OneRain's Redwood City tide readings (MLLW) to NAVD88 on
 the sensor map. Alameda's is blank because its OneRain tide site isn't public.
@@ -94,6 +93,9 @@ the sensor map. Alameda's is blank because its OneRain tide site isn't public.
 | Gauge offline | 12 hr silent (gauges that report on change), 3 hr (scheduled gauges) | On-change gauges can be silent for hours when the level is steady; set to avoid false "offline" | Working choice, review | |
 | Creek data delayed | 30 min | Data job runs every 5 min; 30 min = several missed runs | Working choice | |
 | Map site not reporting / old reading / data late | 24 hr / 3 hr / 45 min | Map data refreshes every 15 min | Working choice | |
+| High tide flood level (red), Redwood City | 8.5 ft NAVD88 (`TIDE_RED_FT_RWC`) | Staff working level ("about 8.5 and we're in the red", Oct 2026). Just under the highest astronomical tide (8.53), so the tide table alone almost never reaches it: red mostly means weather is pushing a high tide up. Above MHHW (7.02) and below this = amber | **Provisional** — confirm against known flooding (low points, past events) | |
+| King Tide (label only) | Day of the highest tide-table high tide of the month in Nov, Dec and Jan at Redwood City | Matches the popular meaning; worked out from NOAA, no yearly file. Gives no color or alert by itself | Working choice (replaces the County "tide days of concern" sheet, Oct 15) | |
+| Expected height with the weather | next 48 hr (`TIDE_EXPECTED_HOURS`); "weather may push it higher/lower" on a King Tide day when ≥ 0.25 ft from the tide table (`TIDE_WEATHER_NOTE_FT`) | NOAA model reaches about 2 days | Working choice | |
 | NOAA model forecast used | download < 12 hr old and reaching ≥ 6 hr ahead | Model runs 4×/day; older or shorter runs are dropped and the pages fall back to predictions | Working choice | |
 | "Higher than predicted" called out | ≥ 0.2 ft (red at ≥ 0.5 ft); average of the last 4 high tides | Working threshold so small differences aren't called out | Working choice, review | |
 
@@ -204,7 +206,7 @@ Results stay out of the repo (`out/` is not committed).
 | Bay tide: NOAA model forecast | NOAA CO-OPS API product `ofs_water_level` (San Francisco Bay Operational Forecast System), `datum=NAVD` | read by each page | hourly (model runs 4×/day) |
 | NWS alerts | api.weather.gov active alerts, San Mateo County (SAME 006081) | read by each page | 3 min |
 | NWS forecast notes on tides | api.weather.gov Area Forecast Discussion, office MTR (San Francisco Bay Area) | kiosk and Tides page | 30 min |
-| King Tide dates | San Mateo County Emergency Management, "Tide days of concern, Oct 2026 to Apr 2027" (San Francisco gauge, astronomical) → `data/tide_days_lookup_2026-27.json` | kiosk and Tides page | as published |
+| King Tide days, high tide calendar | NOAA Tides & Currents tide table (high/low predictions) at Redwood City 9414523, 6 months ahead, ft NAVD88; and the model's expected height (`ofs_water_level`) | `tide_season.js`, read by the kiosk and Tides page | twice a day / hourly |
 | Tide datums | NOAA Tides & Currents datums pages for each station | entered in `tide_stations.csv` | when NOAA updates the epoch |
 | Rain frequency | NOAA HDSC Precipitation Frequency Data Server, Atlas 14 Vol. 6 v2 (hdsc.nws.noaa.gov/pfds) | `scripts/fetch_atlas14.py` → `rain_frequency.csv` | once; again when Atlas 15 is published |
 | USGS stream gauges (proposed creeks) | USGS Water Data API (`api.waterdata.usgs.gov`) and WaterServices (`waterservices.usgs.gov`, retiring late 2026/early 2027) | history: `scripts/fetch_usgs.py`; live: not yet | 15 min |
