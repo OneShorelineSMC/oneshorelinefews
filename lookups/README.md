@@ -12,6 +12,10 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 | `settings.csv` | Numbers behind the page logic: the rapidly-rising rule, when a gauge counts as offline or data as delayed, when the NOAA forecast is used, when "higher than predicted" is called out, flood reports (`REPORTS_*`) | pages directly (`REPORTS_*` also the data job) | within about 10 min (the kiosk re-reads every 30 min) |
 | `display_text.csv` | Wording: disclaimer, 911 line, SMC Alert note, tide explanations, status words on the creek cards, contact details and links, the Report page and flood report labels (`report_*`, `url_report_form`: blank = reporting not open) | pages directly | within about 10 min (kiosk: 30 min) |
 | `rain_frequency.csv` | Rain depths (in) for the 1-, 2- and 5-year storms at each rain gauge and duration (15 min – 48 hr), from NOAA Atlas 14, with the level they set (1 Heavy · 2 Very heavy · 3 Severe) and 10/25/100-year values for reference | data job (creek status layer, staff preview) | next data run |
+| `creek_facts.csv` | Each creek's cities and communities, where it drains, and a short description, for the fact sheets | fact sheets only | next fact-sheet rebuild |
+| `gauge_facts.csv` | Each creek gauge's record, reporting pattern, history and known issues, for the fact sheets | fact sheets only | next fact-sheet rebuild |
+| `rising_fast_results.csv` | Rising-fast results per gauge, written by `scripts/evaluate_rising_fast.py` (don't edit by hand) | fact sheets only | when the evaluation is rerun |
+| `factsheets/` | **One fact sheet per creek, generated** from the tables above by `scripts/build_creek_factsheets.py` (the **Rebuild creek fact sheets** Action reruns it whenever a table changes). Don't edit these pages; edit the tables. | — | automatic |
 | `proposed/` | Drafts for the creek status layer: 10 more creeks and their gauges. See `proposed/README.md` | **not read** | — |
 
 Where each number came from, and who has signed off, is in **[THRESHOLDS_BASIS.md](THRESHOLDS_BASIS.md)**.

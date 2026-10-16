@@ -1,0 +1,11 @@
+creek,cities,drains_to,description,status,checked_by,checked_on
+colma,Daly City; Colma; South San Francisco,San Francisco Bay at South San Francisco,Urban creek from San Bruno Mountain and Daly City through Colma to South San Francisco; the gauge is at Orange Memorial Park and the thresholds are for the community downstream.,draft - confirm cities and outlet,,
+sanbruno,San Bruno; South San Francisco,San Francisco Bay near SFO,Short urban creek; the gauge at First Avenue is tidal (rises and falls with the Bay tide).,draft - confirm cities and outlet,,
+belmont,Belmont; San Carlos; unincorporated Harbor Industrial Area,"Belmont Slough, then San Francisco Bay",Flashy urban creek; frequent street flooding downstream; thresholds are for the Harbor Industrial Area.,draft - confirm cities and outlet,,
+atherton,Woodside (upper watershed); Atherton; unincorporated North Fair Oaks; Redwood City,"Bayfront Canal, then San Francisco Bay",Channelized creek; thresholds are for the area downstream of the Caltrain crossing.,draft - confirm cities and outlet,,
+sanfrancisquito,Woodside; Portola Valley; Menlo Park; East Palo Alto; Palo Alto; Stanford (unincorporated Santa Clara County),San Francisco Bay,Large creek on the San Mateo / Santa Clara county line; the USGS gauge is at Stanford.,draft - confirm cities and outlet,,
+sanmateo,Hillsborough; San Mateo,San Francisco Bay,Flow below Crystal Springs Reservoir is controlled by SFPUC releases and spills.,draft - confirm cities and outlet,,
+greenhills,Millbrae,"Highline Canal, then San Francisco Bay",Small creek through Green Hills Country Club in Millbrae.,draft - confirm cities and outlet,,
+pilarcitos,Half Moon Bay; unincorporated Pilarcitos Canyon (SFPUC lands above Stone Dam),Pacific Ocean at Half Moon Bay,Coastal creek regulated by Pilarcitos Lake and Stone Dam in its upper reaches.,draft - confirm cities and outlet,,
+sangregorio,Unincorporated San Gregorio; La Honda (upper watershed),Pacific Ocean at San Gregorio State Beach,Rural coastal creek.,draft - confirm cities and outlet,,
+pescadero,Unincorporated Pescadero; Loma Mar; La Honda area,"Pescadero Marsh, then the Pacific Ocean",Rural coastal creek; the town of Pescadero floods from Pescadero and Butano Creeks.,draft - confirm cities and outlet,,
