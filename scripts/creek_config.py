@@ -47,6 +47,22 @@ def _rows(path, name):
     return out, None
 
 
+def _rise(r):
+    """creek_gauges.csv rise_ft for a stage gauge -> ({"rise_ft": x} / {"rise_off": True} / {}, error or None).
+    Blank = the RISE_FT default in settings.csv; a number from 0.05 to 10 ft; 'off' = rising fast not used."""
+    v = r.get("rise_ft", "").strip().lower()
+    if not v:
+        return {}, None
+    if v == "off":
+        return {"rise_off": True}, None
+    try:
+        x = float(v)
+        assert 0.05 <= x <= 10
+    except (ValueError, AssertionError):
+        return {}, "rise_ft must be blank, 'off', or a number of feet from 0.05 to 10"
+    return {"rise_ft": x}, None
+
+
 def _window(minutes):
     return f"{minutes}-minute" if minutes < 60 else f"{minutes // 60}-hour"
 
@@ -136,8 +152,11 @@ def load_creeks(tides):
             tid = r.get("tidal", "").lower()
             if tid not in ("", "yes", "no"):
                 errors.append(f"{w}: tidal must be yes, no or blank"); continue
+            rise, err = _rise(r)
+            if err:
+                errors.append(f"{w}: {err}"); continue
             g = {"key": key, "label": r["label"], "number": "USGS " + r["usgs_site"], "source": "usgs", "usgs_site": r["usgs_site"],
-                 "note": r.get("note", ""), "site_name": r.get("site_name") or r["label"], "reports": "interval", "tidal": tid == "yes"}
+                 "note": r.get("note", ""), "site_name": r.get("site_name") or r["label"], "reports": "interval", "tidal": tid == "yes", **rise}
             creeks[cid]["stages"].append(g)
             keys.add(key)
             continue
@@ -157,13 +176,18 @@ def load_creeks(tides):
             tid = r.get("tidal", "").lower()
             if tid not in ("", "yes", "no"):
                 errors.append(f"{w}: tidal must be yes, no or blank"); continue
-            g.update({"site_name": r.get("site_name") or r["label"], "reports": rep, "tidal": tid == "yes"})
+            rise, err = _rise(r)
+            if err:
+                errors.append(f"{w}: {err}"); continue
+            g.update({"site_name": r.get("site_name") or r["label"], "reports": rep, "tidal": tid == "yes", **rise})
             creeks[cid]["stages"].append(g)
         else:
             # role: blank/primary = shown on the pages; supporting = counts toward the creek's rain level only
             # (creek status layer, staff preview), not in the rain tables or graphs
             if role not in ("", "primary", "supporting"):
                 errors.append(f"{w}: role must be primary, supporting or blank for a rain gauge"); continue
+            if r.get("rise_ft", "").strip():
+                errors.append(f"{w}: rise_ft is for stage gauges only; leave it blank for a rain gauge"); continue
             g["where"] = r.get("where", "")
             creeks[cid]["rain_support" if role == "supporting" else "rain"].append(g)
         keys.add(key)

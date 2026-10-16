@@ -5,8 +5,9 @@ Nothing on the public pages reads these yet; they are written into creeks.json f
   Rain gauges:  rolling totals over 15 min - 48 hr, compared with NOAA Atlas 14 storms at that gauge
                 (lookups/rain_frequency.csv) -> level 0-3 (none / Heavy / Very heavy / Severe), the duration
                 and depth that set it, and a rough storm size (years) for staff.
-  Stage gauges: trend (rising fast / rising / steady / falling) and the rapidly-rising check, using the
-                same rule as the home page (RISE_* in lookups/settings.csv).
+  Stage gauges: trend (rising fast / rising / steady / falling) and the rapidly-rising check (rise_check), the
+                same rule as the home page: RISE_* in lookups/settings.csv, per-gauge rise_ft in creek_gauges.csv.
+                Basis: lookups/RISING_FAST_BASIS.md.
 
   Creeks:       one status (creek_status): Flooding likely / Be ready / Stay alert / Offline / No alerts, with
                 reason codes the pages turn into words from display_text.csv (THRESHOLDS_BASIS.md §10).
@@ -15,11 +16,13 @@ Times are Pacific clock times as naive datetimes, like the rest of the data job.
 See lookups/THRESHOLDS_BASIS.md §8-11.
 """
 
+import bisect
 import csv
 import datetime as dt
 import math
 import os
 import re
+from zoneinfo import ZoneInfo
 
 LOOKUPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups")
 DURATIONS = [15, 30, 60, 120, 180, 360, 720, 1440, 2880]   # minutes (rain_frequency.csv)
@@ -28,6 +31,8 @@ DURATIONS = [15, 30, 60, 120, 180, 360, 720, 1440, 2880]   # minutes (rain_frequ
 # Keys not in lookups/settings.csv yet use the built-in value (the proposed ones live in lookups/proposed/).
 SETTINGS = {
     "RISE_FT": (0.5, 0.05, 10), "RISE_MINUTES": (60, 5, 720), "RISE_FRESH_MIN": (90, 5, 720),
+    "RISE_REF_LATE_MIN": (15, 0, 240), "RISE_CONFIRM_MIN": (20, 0, 120), "RISE_CONFIRM_FRACTION": (0.5, 0, 1),
+    "RISE_HOLD_MIN": (30, 0, 240),
     "RISE_TIDAL_RAIN_IN": (0.10, 0, 5), "RISE_TIDAL_RAIN_HOURS": (3, 0.25, 48),
     "GAUGE_QUIET_HOURS": (12, 0.5, 168), "GAUGE_QUIET_HOURS_INTERVAL": (3, 0.25, 168),
     "TREND_WINDOW_MIN": (30, 5, 240), "TREND_MAX_WINDOW_MIN": (120, 15, 360), "TREND_STEADY_FT_PER_HR": (0.1, 0.01, 2),
@@ -170,6 +175,107 @@ def rain_signals(points, latest, freq, now, quiet_hours):
     return out
 
 
+HOLD_TOLERANCE_FT = 0.05   # "hasn't dropped" allows for gauge noise of about one reading step
+PT = ZoneInfo("America/Los_Angeles")
+
+
+def rise_threshold(gauge, S):
+    """The rise (ft within RISE_MINUTES) that counts as rising fast at this gauge; None = not used here.
+    creek_gauges.csv rise_ft: a number for this gauge, 'off', or blank for the RISE_FT default."""
+    if gauge.get("rise_off"):
+        return None
+    return gauge.get("rise_ft") or S["RISE_FT"]
+
+
+def utc_series(points, latest):
+    """[(UTC time, value, Pacific label)] sorted by UTC, for the rate of rise. Pacific clock times repeat for an hour
+    when daylight saving ends, so the rise is worked out on UTC: every point carries it as its 3rd element. A point
+    without one (the sensor's 'latest', older points) takes the UTC offset of the point before it (or after it).
+    If no point has a UTC time, the Pacific times are used as they are. Same as utcSeries in index.html."""
+    rows = []
+    for x in points or []:
+        u = None
+        if len(x) > 2 and isinstance(x[2], str) and x[2].endswith("Z"):
+            try:
+                u = dt.datetime.strptime(x[2][:16], "%Y-%m-%dT%H:%M")
+            except ValueError:
+                u = None   # not a time we understand: treated like a point without one
+        rows.append([u, _t(x[0]), x[1]])
+    if latest and latest[0] and latest[1] is not None:
+        lt = _t(latest[0])
+        if not rows or lt > rows[-1][1]:
+            rows.append([None, lt, latest[1]])
+    if not any(r[0] for r in rows):
+        return sorted(((r[1], r[2], r[1]) for r in rows), key=lambda x: x[0]), False
+    off = next(r[0] - r[1] for r in rows if r[0])          # first known offset, for points before it
+    for r in rows:
+        if r[0]:
+            off = r[0] - r[1]
+        else:
+            r[0] = r[1] + off
+    return sorted(((r[0], r[2], r[1]) for r in rows), key=lambda x: x[0]), True
+
+
+def rise_check(p, gauge, now, S):
+    """Rapidly rising at one stage gauge. p: [(time, value)] sorted by time; now: on the same clock (use UTC, see
+    utc_series). Basis and results: lookups/RISING_FAST_BASIS.md. Same rule as riseCheck in index.html.
+
+    A reading "meets" the rule when the level is at least the gauge's threshold above the reading in force
+    RISE_MINUTES earlier. That earlier reading must not be too old: for a gauge that reports on a schedule, no more
+    than RISE_REF_LATE_MIN older than it should be; for a gauge that reports only on change (it holds its value), no
+    more than GAUGE_QUIET_HOURS (longer = the gauge was offline). If the reading before is within RISE_CONFIRM_MIN,
+    it must have risen too, by at least RISE_CONFIRM_FRACTION of the threshold over its own RISE_MINUTES. An on-change gauge that was quiet for more than RISE_MINUTES before the reading (its
+    level wasn't changing) and then jumps needs its next report to confirm it: a real rise is reported step by step. Once met, it stays on until RISE_HOLD_MIN after that
+    reading, and a scheduled gauge's newest reading counts until the next one arrives; it ends early if the level
+    drops back. The newest reading must be within RISE_FRESH_MIN.
+    Returns {"rise_ft", "i" (index of the reading that met it), "at", "held" (True once that reading is not the
+    newest or is more than RISE_HOLD_MIN old: the rise may have stopped), "threshold_ft"} or None.
+    Tidal gauges: the caller applies the rain condition."""
+    th = rise_threshold(gauge, S)
+    if th is None or not p or now - p[-1][0] > dt.timedelta(minutes=S["RISE_FRESH_MIN"]):
+        return None
+    times = [x[0] for x in p]
+    on_change = gauge.get("reports") != "interval"
+    win = dt.timedelta(minutes=S["RISE_MINUTES"])
+    late = dt.timedelta(hours=S["GAUGE_QUIET_HOURS"]) if on_change else dt.timedelta(minutes=S["RISE_REF_LATE_MIN"])
+
+    def rise_at(i):
+        t0 = p[i][0] - win
+        j = bisect.bisect_right(times, t0) - 1
+        if j < 0 or t0 - p[j][0] > late:
+            return None
+        return p[i][1] - p[j][1]
+
+    def meets(i):
+        r = rise_at(i)
+        if r is None or r < th - 1e-9:
+            return None
+        if not S["RISE_CONFIRM_MIN"]:
+            return r   # 0 = confirmation off
+        near = i > 0 and p[i][0] - p[i - 1][0] <= dt.timedelta(minutes=S["RISE_CONFIRM_MIN"])
+        if on_change and (i == 0 or p[i][0] - p[i - 1][0] > win):
+            return None   # an on-change gauge quiet for over RISE_MINUTES (level unchanged) that jumps: wait for the next report
+        if near:
+            r0 = rise_at(i - 1)
+            if r0 is None or r0 < S["RISE_CONFIRM_FRACTION"] * th - 1e-9:
+                return None   # the reading before wasn't rising too: a lone jump
+        return r
+
+    last = len(p) - 1
+    hold_from = now - dt.timedelta(minutes=S["RISE_HOLD_MIN"])
+    for i in range(last, -1, -1):
+        if p[i][0] < hold_from and not (i == last and not on_change):
+            break
+        r = meets(i)
+        if r is not None:
+            if p[last][1] < p[i][1] - HOLD_TOLERANCE_FT:
+                return None   # met earlier, but the creek has dropped back since
+            return {"rise_ft": round(r, 2), "i": i, "at": p[i][0].strftime("%Y-%m-%d %H:%M"),
+                    "held": i != last or p[i][0] < hold_from,
+                    "threshold_ft": th}
+    return None
+
+
 def stage_signals(points, latest, gauge, now, S, creek_rain_series):
     """Trend and rapidly-rising check for one stage gauge.
     S: settings from load_settings; creek_rain_series: [(datetime, value)] lists for the creek's rain gauges."""
@@ -212,18 +318,21 @@ def stage_signals(points, latest, gauge, now, S, creek_rain_series):
         den = sum((x - mx) ** 2 for x in xs)
         slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / den if den else None
 
-    # Rapidly rising: same rule as the home page
+    # Rapidly rising: same rule as the home page (rise_check, on UTC times)
     fast = None
-    if now - last_t <= dt.timedelta(minutes=S["RISE_FRESH_MIN"]):
-        ref = value_at(last_t - dt.timedelta(minutes=S["RISE_MINUTES"]))
-        rise = last_v - ref[1] if ref else None
-        rain = max([rain_total(rs, now - dt.timedelta(hours=S["RISE_TIDAL_RAIN_HOURS"]), now) for rs in creek_rain_series] or [0])
-        tidal_ok = not gauge.get("tidal") or rain >= S["RISE_TIDAL_RAIN_IN"]
-        if rise is not None and rise >= S["RISE_FT"] and tidal_ok:
-            nxt = [t for t in gauge.get("thresholds", []) if t["value"] > last_v]
-            rate = rise / (S["RISE_MINUTES"] / 60)
-            fast = {"rise_ft": round(rise, 2), "minutes": S["RISE_MINUTES"],
-                    "hours_to_next": round((nxt[0]["value"] - last_v) / rate, 2) if nxt and rate > 0 else None,
+    rain = max([rain_total(rs, now - dt.timedelta(hours=S["RISE_TIDAL_RAIN_HOURS"]), now) for rs in creek_rain_series] or [0])
+    if not gauge.get("tidal") or rain >= S["RISE_TIDAL_RAIN_IN"]:
+        pu, is_utc = utc_series(points, latest)
+        now_u = now.replace(tzinfo=PT).astimezone(dt.timezone.utc).replace(tzinfo=None) if is_utc else now
+        r = rise_check([(x[0], x[1]) for x in pu], gauge, now_u, S)
+        if r:
+            now_v = pu[-1][1]   # newest reading in time order (Pacific order differs in the repeated hour)
+            nxt = [t for t in gauge.get("thresholds", []) if t["value"] > now_v]
+            rate = r["rise_ft"] / (S["RISE_MINUTES"] / 60)
+            fast = {"rise_ft": r["rise_ft"], "at": pu[r["i"]][2].strftime("%Y-%m-%d %H:%M"), "held": r["held"],
+                    "threshold_ft": r["threshold_ft"], "minutes": S["RISE_MINUTES"],
+                    # no "at this rate" estimate while the alert is only being held: the rise may have stopped
+                    "hours_to_next": round((nxt[0]["value"] - now_v) / rate, 2) if nxt and rate > 0 and not r["held"] else None,
                     "next": nxt[0]["name"] if nxt else None}
     word = None
     if fast:
