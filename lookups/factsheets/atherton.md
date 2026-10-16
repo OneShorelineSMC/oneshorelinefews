@@ -12,7 +12,7 @@
 | Drains to | Bayfront Canal, then San Francisco Bay |
 | Description | Channelized creek; thresholds are for the area downstream of the Caltrain crossing. |
 | Linked to flooding | **Yes**: flood levels at the creek gauge (what they mean is below) |
-| Bay tide station | NOAA 9414523 Redwood City (MHHW ? ft MLLW) |
+| Bay tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
@@ -32,7 +32,7 @@
 | Rising fast | 0.5 ft in 60 min (default; not calibrated) |
 | History and known issues | Short record: no Flood Monitoring crossing yet. |
 
-**Flood levels** (gauge height, ft; gauge's own zero, not a tidal datum)
+**Flood levels** (gauge height, ft; gauge's own zero, not NAVD88)
 
 | Level | Name | Stage (ft) | Source | Notes |
 |---|---|---|---|---|
@@ -71,7 +71,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | History and known issues | Probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow. |
 | Note shown on the site | The probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow. |
 
-**Flood levels** (gauge height, ft; gauge's own zero, not a tidal datum)
+**Flood levels** (gauge height, ft; gauge's own zero, not NAVD88)
 
 | Level | Name | Stage (ft) | Source | Notes |
 |---|---|---|---|---|

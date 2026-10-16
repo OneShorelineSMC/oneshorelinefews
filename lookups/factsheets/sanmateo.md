@@ -12,7 +12,7 @@
 | Drains to | San Francisco Bay |
 | Description | Flow below Crystal Springs Reservoir is controlled by SFPUC releases and spills. |
 | Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
-| Bay tide station | NOAA 9414750 Alameda (MHHW ? ft MLLW) |
+| Bay tide station | NOAA 9414750 Alameda (MHHW 6.37 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
