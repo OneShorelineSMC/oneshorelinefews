@@ -102,6 +102,10 @@ Script: `scripts/evaluate_rising_fast.py --usgs <USGS download> --onerain <OneRa
 4. **Big-storm level:** the gauge's lowest flood level, if it has one. Otherwise, the median of its water-year
    peak stages, roughly a 2-year storm (about a 50% chance in any year). Only years with enough data count: 80% of
    15-minute readings, or readings in at least 10 months for gauges that report on change.
+   The median yearly peak is a statistical stand-in, **not** a flood level: on gauges without flood levels, "big
+   storms warned first" means warned before a typical yearly high, not before flooding. Where a gauge has flood
+   levels, the lowest is Flood Monitoring (50% of channel capacity on Colma, Belmont and Atherton), which is
+   still below flooding. See [THRESHOLDS_BASIS.md, Terms](THRESHOLDS_BASIS.md#terms).
 5. **Big-storm crossings:** each time the creek rose through that level, at least 24 hours after the previous
    time. A crossing made by a single reading that jumps at least 1 ft from a steady level (the two readings before
    it within 0.1 ft) and falls straight back by 80% or more is a sensor spike, not a storm. It is set aside and

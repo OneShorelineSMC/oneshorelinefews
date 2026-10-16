@@ -10,7 +10,48 @@ Fill in "Checked by / on" here (and in the CSV row's `checked_by` / `checked_on`
 
 ---
 
-## 1. Creek flood thresholds (stage, ft) — `thresholds.csv`
+## Terms
+
+FEWS uses "threshold" for three different kinds of value. Only the first says anything about flooding.
+
+**Threshold:** a set value of something FEWS measures (creek height, a rain total, or how fast the creek rises) at
+which the pages change what they show or who is alerted.
+
+| Kind | What it says | Tied to flooding? | Where it's set | Creeks |
+|---|---|---|---|---|
+| **Flood level** | The creek (or rain) has reached a point linked to an effect downstream, such as how full the channel is or water on a road | **Yes**, if its meaning is recorded | `thresholds.csv` (§1 creek heights, §2 rain triggers) | Colma, San Bruno, Belmont, Atherton |
+| **Rain alert level** | How rare the rain is at a gauge: Heavy = 1-year, Very heavy = 2-year, Intense = 5-year storm | No: rainfall frequency isn't flood frequency | `rain_frequency.csv` (§8) | All |
+| **Rising fast** (an alert level) | How quickly the creek is rising, e.g. 0.5 ft in an hour | No: a rate, not a height | `creek_gauges.csv` `rise_ft`, `settings.csv` (§11) | All with a creek gauge |
+
+Notes:
+- **Not every flood level means flooding.** On Colma, Belmont and Atherton, Flood Monitoring and Flood Watch are 50%
+  and 75% of the channel's capacity downstream, so the water is still in the channel. Only Flood Warning (100%,
+  "flooding likely") and Atherton's Roadway Flooded mean water outside the channel. Nobody has recorded what San
+  Bruno's levels mean, and nobody has recorded who set any of the OneRain levels, or from what study (§1).
+- **Belmont's rain triggers** are flood levels for rain: they set the creek to "Flooding likely". The rain + tide
+  value came from an analysis of 2022–2025 events (§2).
+- **Big-storm level** is used only to test rising fast ([RISING_FAST_BASIS.md](RISING_FAST_BASIS.md) §5). It is the
+  gauge's lowest flood level (Flood Monitoring) where there is one. Otherwise it is the median yearly peak, a typical
+  yearly high (about a 2-year event). That is a statistical stand-in, **not** a flood level. On those creeks, "big
+  storms warned first" means warned before a typical yearly high, not before flooding.
+
+**Linked to flooding** (shown on each [fact sheet](factsheets/README.md)):
+
+| | Meaning | Creeks |
+|---|---|---|
+| **Yes** | Flood levels at the creek gauge, with their meaning recorded | Colma, Belmont, Atherton |
+| **Partly** | Flood levels are set, but their meaning isn't recorded | San Bruno |
+| **No** | Alert levels only: status comes from rain and rising fast | San Francisquito, San Mateo, Green Hills, Pilarcitos, San Gregorio, Pescadero |
+
+**To link a creek to flooding:** find the creek height at each gauge where the creek leaves its banks or floods a
+road. Sources: a survey of the bank and road elevations tied to the gauge's zero, a hydraulic study, or a past flood
+with gauge readings at the time (for example, Green Hills on Nov 17, 2025). Where the National Weather Service
+publishes a flood stage for a USGS gauge, record it as a starting point. Then add the levels to `thresholds.csv`
+with their meaning and source, and the creek's status will use them ahead of the alert levels (§10).
+
+---
+
+## 1. Creek flood levels (stage, ft) — `thresholds.csv`
 
 All stage values are **gauge height in feet at each OneRain sensor** (the gauge's own zero), not a tidal datum.
 Source for all rows: the OneRain sensor threshold settings, copied October 2026.
