@@ -195,9 +195,11 @@ check(st["key"] == "ready" and "why_rising_fast" in codes(st), f"no flood levels
 S0 = dict(S, BE_READY_FROM_RAIN=0)
 st = creek(fast, [dry], levels=False, settings=S0)
 check(st["key"] == "alert", f"...or Stay alert with BE_READY_FROM_RAIN = 0: {st}")
-trig = [{"gauge": "r0", "minutes": 240, "value": 0.42, "level": 3, "high_tide": True, "tide_min": 6.32, "label": "4-hour rain + high tide", "name": "Flooding likely"}]
-st = creek(flat(1.0), [rain(0.15, 240)], triggers=trig, tide={"ft": 6.5})
+trig = [{"gauge": "r0", "minutes": 240, "value": 0.42, "level": 3, "high_tide": True, "tide_min": 7.50, "label": "4-hour rain + high tide", "name": "Flooding likely"}]
+st = creek(flat(1.0), [rain(0.15, 240)], triggers=trig, tide={"ft": 7.7})
 check(st["key"] == "likely" and "why_trigger_tide" in codes(st), f"Belmont-style rain + tide trigger met = Flooding likely: {st}")
+st = creek(flat(1.0), [rain(0.15, 240)], triggers=trig, tide={"ft": 7.3})
+check(st["key"] != "likely", f"MLLW: tide 7.3 ft is under the 7.5 ft trigger: {st}")
 st = creek(flat(1.0), [rain(0.15, 240)], triggers=trig, tide={"ft": None})
 check(st["key"] != "likely" and any("tide unknown" in n for n in st["staff_notes"]), f"tide unknown: trigger not met, flagged: {st}")
 st = creek(flat(1.0), [rain(0.1, 60)], tidal=True, tide={"high_soon": True, "next_high": "2026-01-05 13:30"})

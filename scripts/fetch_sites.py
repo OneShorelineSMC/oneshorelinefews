@@ -26,11 +26,8 @@ import os
 from creek_config import CREEKS, THRESHOLD_ERRORS, TIDE_STATIONS, map_thresholds
 from fetch_onerain import SITE, TZ, Session, parse_readings, sensor_page, to_time
 
-# OneRain's tide stations report in MLLW. The public pages show NAVD88 only, so tide readings are shifted by the
-# station's NOAA datum difference (NAVD88 minus MLLW). Redwood City 9414523: NAVD88 is 1.18 ft above MLLW.
-# OneRain tide sites numbered like a NOAA station: their readings (ft MLLW) are shown in ft NAVD88 using the
-# MLLW-to-NAVD88 difference in lookups/tide_stations.csv
-TIDE_MLLW_TO_NAVD88 = {k: v["mllw_to_navd88"] for k, v in TIDE_STATIONS.items() if v["mllw_to_navd88"] is not None}
+# OneRain's tide stations report in ft MLLW, the same datum the pages use (NOAA's datum for the gauges), so their
+# readings are shown as they are (until Oct 16 they were shifted to NAVD88).
 
 HISTORY_HOURS = 24   # history kept per sensor for the small graphs and the 24-hour rain total
 MAX_POINTS = 96      # graph points kept per sensor (keeps the file small)
@@ -226,12 +223,8 @@ def main():
                     s["kind"] = rain_kind(s) or "level"
                     s["history_error"] = f"{type(e).__name__}: {e}"[:200]
                 time.sleep(PAUSE_SEC)
-                if number in TIDE_MLLW_TO_NAVD88 and re.search(r"tide", s["name"], re.I) and s["unit"] == "ft":
-                    shift = TIDE_MLLW_TO_NAVD88[number]
-                    if s["value"] is not None:
-                        s["value"] = round(s["value"] + shift, 2)
-                    s["points"] = [[t, round(v + shift, 3)] for t, v in s.get("points", [])]
-                    s["unit"] = "ft NAVD88"
+                if re.search(r"tide", s["name"], re.I) and s["unit"] == "ft":
+                    s["unit"] = "ft MLLW"
                 s["url"] = (f"{SITE}/sensor/?site_id={site_id}&site={uuid}"
                             f"&device_id={s['device_id']}&device={s['device']}")
                 del s["device"]

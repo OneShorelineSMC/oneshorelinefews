@@ -266,11 +266,11 @@ NOAA = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 
 
 def noaa_tide(station, now):
-    """Predicted (6-min and high/low) and measured tide at a NOAA station, ft NAVD88, Pacific clock time.
+    """Predicted (6-min and high/low) and measured tide at a NOAA station, ft MLLW (NOAA's datum for the gauge), Pacific clock time.
     Any part that can't be downloaded comes back empty; the status then skips the tide."""
     def get(product, begin, end, **extra):
         q = dict(product=product, station=station, begin_date=begin.strftime("%Y%m%d %H:%M"), end_date=end.strftime("%Y%m%d %H:%M"),
-                 datum="NAVD", time_zone="lst_ldt", units="english", format="json", application="OneShorelineFEWS", **extra)
+                 datum="MLLW", time_zone="lst_ldt", units="english", format="json", application="OneShorelineFEWS", **extra)
         req = urllib.request.Request(NOAA + "?" + urllib.parse.urlencode(q), headers={"User-Agent": HEADERS["User-Agent"]})
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:
@@ -444,7 +444,7 @@ def main():
     now = dt.datetime.now(TZ).replace(tzinfo=None, microsecond=0)
     start = now - dt.timedelta(hours=HOURS)
     result = {"generated": now.strftime("%Y-%m-%d %H:%M:%S"),
-              "generated_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "timezone": "America/Los_Angeles",
+              "generated_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "timezone": "America/Los_Angeles", "tide_datum": "MLLW",
               "hours": HOURS, "creeks": creeks_out, "creeks_preview": creeks_preview, "sensors": {}}
     failures = 0
     session = Session()

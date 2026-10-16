@@ -343,7 +343,7 @@ def stage_signals(points, latest, gauge, now, S, creek_rain_series):
             "points": len(pts), "rising_fast": fast}
 
 
-# ---------------------------------------------------------------- tide (NOAA, ft NAVD88) and creek status
+# ---------------------------------------------------------------- tide (NOAA, ft MLLW) and creek status
 
 def tide_state(pred, hilo, obs, now, lookahead_h):
     """Tide now at a NOAA station: measured if within the hour, else predicted; whether it is rising; next high tide.

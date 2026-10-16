@@ -94,7 +94,7 @@ def main():
              f"| Drains to | {esc(cf.get('drains_to', '')) or '**To add**'} |",
              f"| Description | {esc(cf.get('description', '') or c.get('intro', ''))} |",
              f"| Linked to flooding | {linked_text} |",
-             f"| Bay tide station | " + (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))} (MHHW {tide.get('mhhw_navd88_ft', '?')} ft NAVD88)"
+             f"| Bay tide station | " + (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))} (MHHW {tide.get('mhhw_mllw_ft', '?')} ft MLLW)"
                                        if c.get("tide_station") else "None (coastal creek)") + " |",
              f"| Rain totals shown | {', '.join(dur(m) for m in c.get('rain_windows_min', '').split() if m.isdigit())} |",
              "",
@@ -133,7 +133,7 @@ def main():
             th = sorted([t for t in thresholds if t["gauge"] == g["gauge"] and t["type"] == "stage"],
                         key=lambda t: float(t["value"]))
             if th:
-                L += ["**Flood levels** (gauge height, ft; gauge's own zero, not NAVD88)", "",
+                L += ["**Flood levels** (gauge height, ft; gauge's own zero, not a tidal datum)", "",
                       "| Level | Name | Stage (ft) | Source | Notes |", "|---|---|---|---|---|"]
                 L += [f"| {t['level']} | {esc(t['name'])} | {t['value']} | {esc(t['source'])} | {esc(t.get('notes', ''))} |" for t in th]
                 L += ["", f"Meaning: {esc(meaning)}" if meaning else "Meaning: **to document**."]
@@ -193,7 +193,7 @@ def main():
             if trig:
                 L += ["**Rain triggers** (flood levels for rain: each one sets the creek to the status shown)", "", "| Gauge | Window | Rain (in) | Tide | Shows | Source |", "|---|---|---|---|---|---|"]
                 L += [f"| `{t['gauge']}` | {dur(t['minutes'])} | {t['value']} | "
-                      f"{('≥ ' + t['tide_at_least_navd88'] + ' ft NAVD88') if t.get('tide_at_least_navd88') else '–'} | "
+                      f"{('≥ ' + t['tide_at_least_mllw'] + ' ft MLLW') if t.get('tide_at_least_mllw') else '–'} | "
                       f"{esc(t['name'])} | {esc(t['source'])} |" for t in trig]
                 L += ["", "Basis: [THRESHOLDS_BASIS.md §2](../THRESHOLDS_BASIS.md).", ""]
 
