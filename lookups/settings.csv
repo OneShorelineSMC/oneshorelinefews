@@ -23,6 +23,8 @@ TREND_MAX_WINDOW_MIN,120,minutes,"creek cards, kiosk",Longest window for the tre
 TREND_STEADY_FT_PER_HR,0.1,ft/hr,"creek cards, kiosk",A slope smaller than this either way counts as Steady,,
 TIDE_RISING_LOOKAHEAD_HOURS,3,hours,creek cards (tidal creeks),The rising-tide line shows when the next high tide is within this many hours,,
 BE_READY_FROM_RAIN,1,1 = yes / 0 = no,creek cards,"POLICY: whether severe rain or rising fast can make a creek without flood levels ""Be ready"" (1) or only ""Stay alert"" (0)",,
+SF_FORECAST_NOTE_FT,0.25,ft,"kiosk King Tide line, Tides page King Tide card and calendar","Within the look-ahead, a note is added when NOAA's forecast high at San Francisco differs from the predicted high by at least this much (higher or lower).",,
+SF_FORECAST_HOURS,48,hours,same,How far ahead the San Francisco forecast notes look (the model reaches about 2 days).,,
 MORE_CREEKS_PUBLIC,1,0 or 1,Creeks page,"1 = everyone sees the 'More creeks · readings only' section (creeks with preview_only = yes in creeks.csv: readings and graphs, no status). 0 = only the staff preview (?preview=1).",,
 REPORTS_PUBLIC,0,0 or 1,"Report page, sensor map",0 = flood reports (the Report page link and the map's Flood reports layer) show only in the staff preview (?preview=1). 1 = everyone.,,
 REPORTS_MAX_AGE_DAYS,180,days,sensor map,Approved flood reports older than this (by the date the flooding was seen) are no longer published.,,
