@@ -1,13 +1,13 @@
 /* High tides at Redwood City for the King Tide line (kiosk), the Tides page card and its calendar.
  *
- * Everything comes from NOAA at the Redwood City tide gauge (9414523), ft NAVD88, so nothing needs a yearly update:
+ * Everything comes from NOAA at the Redwood City tide gauge (9414523), ft MLLW, so nothing needs a yearly update:
  *   - the tide table (predicted high tides) from the start of this month through the next 6 months
  *   - the NOAA projection (NOAA's San Francisco Bay model, ofs_water_level: storms, wind, runoff, ocean conditions such as El Niño), about 2 days ahead
  *
  * Levels (the colors) come from the water height, never from the name "King Tide":
  *   below MHHW (tide_stations.csv)            normal
  *   MHHW up to TIDE_RED_FT_RWC (settings.csv)  level 1 (shown blue, information): higher than an average high tide
- *   TIDE_RED_FT_RWC or more (8.5, provisional) red: high enough to flood low areas near the Bay
+ *   TIDE_RED_FT_RWC or more (9.68 ft MLLW, provisional) red: high enough to flood low areas near the Bay
  * "King Tide" is only a label: the day with the highest tide-table high tide of the month in KING_MONTHS.
  * Times: Pacific wall clock as UTC milliseconds, like the pages. Wording: lookups/display_text.csv (tide_*, king_tide_*).
  */
@@ -29,7 +29,7 @@
   function monthStart(y, m) { return Date.UTC(y, m, 1); }   // m: 0-11 (rolls over the year)
   function url(product, begin, end, extra) {
     return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product + "&station=" + STATION +
-      "&begin_date=" + begin + "&end_date=" + end + "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS" + (extra || "");
+      "&begin_date=" + begin + "&end_date=" + end + "&datum=MLLW&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS" + (extra || "");
   }
   function get(u) {
     return fetch(u, { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })

@@ -1,7 +1,7 @@
 /* FEWS shared lookups: reads the staff-maintained files in lookups/ for every page.
  *
  *   lookups/settings.csv       numbers the pages use (rapidly-rising rule, offline timing, NOAA forecast rules, ...)
- *   lookups/tide_stations.csv  NOAA tide stations and their MHHW (ft NAVD88)
+ *   lookups/tide_stations.csv  NOAA tide stations and their MHHW (ft MLLW)
  *   lookups/display_text.csv   wording shown on the pages (disclaimer, SMC Alert note, status words, contact info, ...)
  *
  * Creeks, gauges and thresholds (lookups/creeks.csv, creek_gauges.csv, thresholds.csv) reach the pages through the
@@ -31,13 +31,13 @@
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
    
-    TIDE_RED_FT_RWC: [8.5, 6, 15], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
+    TIDE_RED_FT_RWC: [9.68, 7, 16], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
     MORE_CREEKS_PUBLIC: [1, 0, 1],
     REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
   };
   var TIDES = {
-    "9414523": { id: "9414523", name: "Redwood City", mhhw: 7.02 },
-    "9414750": { id: "9414750", name: "Alameda", mhhw: 6.37 }
+    "9414523": { id: "9414523", name: "Redwood City", mhhw: 8.20 },   // ft MLLW (NOAA datums, 1983-2001 epoch)
+    "9414750": { id: "9414750", name: "Alameda", mhhw: 6.60 }
   };
   var TEXT = {
     e911: "In an emergency, call 911.",
@@ -48,7 +48,7 @@
     smc_alert_intro: "Sign up for SMC Alert to get emergency alerts for San Mateo County by text, email or phone.",
     smc_alert_note: "This site does not send alerts. SMC Alert messages are sent by San Mateo County officials and are not set off by the creek, rain or tide readings shown here, so a high reading on this site does not mean an alert has gone out.",
     tide_causes: "Storms, onshore wind, heavy runoff and El Niño conditions can all raise the Bay above the tide table.",
-    mhhw_definition_home: "“Average high tide” is Mean Higher High Water (MHHW): the average of each day’s highest tide at the NOAA tide gauge in {station}, {mhhw} ft NAVD88. Tides above it reach farther onto low shorelines, marshes and trails. Based on NOAA tide measurements, the NOAA projection (about 2 days ahead) and the tide table.",
+    mhhw_definition_home: "“Average high tide” is Mean Higher High Water (MHHW): the average of each day’s highest tide at the NOAA tide gauge in {station}, {mhhw} ft MLLW. Tides above it reach farther onto low shorelines, marshes and trails. Based on NOAA tide measurements, the NOAA projection (about 2 days ahead) and the tide table.",
     mhhw_definition: "MHHW (Mean Higher High Water) is the average height of the highest tide each day. Tides above it reach farther up shorelines, marshes and low-lying areas than usual.",
     noaa_forecast_note: "NOAA projection: NOAA’s computer model of San Francisco Bay starts from the tide table and adds what it leaves out: storms, wind, air pressure, river flow and ocean conditions such as the higher sea levels of an El Niño winter. It runs about 2 days ahead and updates 4 times a day. It’s guidance, not an official forecast; follow National Weather Service advisories.",
     predicted_tide_note: "The tide table is the normal tide from the moon and sun, worked out years ahead by NOAA. It doesn't include storm surge, wind or runoff.",
@@ -148,7 +148,7 @@
     tide_cal_title: "High tides and King Tides",
     tide_cal_tap: "Tap any day to see its highest tide and time.",
     tide_cal_day: "highest tide {ft} at {time} (tide table)",
-    tide_cal_source: "Heights at NOAA’s Redwood City tide gauge (9414523), ft NAVD88: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Blue = above MHHW ({mhhw} ft), the average high tide: higher than usual, not flooding. Red = {red} ft or more, OneShoreline’s provisional level for flooding of low areas near the Bay.",
+    tide_cal_source: "Heights at NOAA’s Redwood City tide gauge (9414523), ft MLLW: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Blue = above MHHW ({mhhw} ft), the average high tide: higher than usual, not flooding. Red = {red} ft or more, OneShoreline’s provisional level for flooding of low areas near the Bay.",
     more_creeks_title: "More creeks · readings only",
     more_creeks_intro: "Readings from gauges on other San Mateo County creeks. Flood levels for these creeks haven't been set yet, so no status is shown. Tap a creek for its graphs.",
     more_creeks_badge: "Readings only",
@@ -246,8 +246,8 @@
       cur.settings[k] = v;
     });
     if (files.tides) files.tides.forEach(function (r) {
-      var v = parseFloat(r.mhhw_navd88_ft);
-      if (!/^\d{7}$/.test(r.station) || !/^-?\d+(\.\d+)?$/.test(r.mhhw_navd88_ft) || v < -5 || v > 20) { problems.push("tide_stations.csv row " + r._row + ": station or mhhw_navd88_ft not valid"); return; }
+      var v = parseFloat(r.mhhw_mllw_ft);
+      if (!/^\d{7}$/.test(r.station) || !/^-?\d+(\.\d+)?$/.test(r.mhhw_mllw_ft) || v < 0 || v > 20) { problems.push("tide_stations.csv row " + r._row + ": station or mhhw_mllw_ft not valid"); return; }
       cur.tides[r.station] = { id: r.station, name: r.name || r.station, mhhw: v };
     });
     if (files.text) files.text.forEach(function (r) {

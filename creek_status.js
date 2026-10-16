@@ -159,7 +159,7 @@
         '<span class="cs-sm">' + (s.last_report ? "last report " + esc(dated(s.last_report)) : "no recent report") + "</span>");
     });
     if (st.trigger) row("Flooding trigger", esc(st.trigger.label) + ": " + st.trigger.amount.toFixed(2) + " of " + st.trigger.value.toFixed(2) + " in · met");
-    if (st.tidal && st.tide && st.tide.ft != null) row("Bay tide (ft NAVD88)", st.tide.ft.toFixed(2) + " ft · " + (st.tide.rising ? "rising" : "falling") +
+    if (st.tidal && st.tide && st.tide.ft != null) row("Bay tide (ft MLLW)", st.tide.ft.toFixed(2) + " ft · " + (st.tide.rising ? "rising" : "falling") +
       (st.tide.next_high ? '<span class="cs-sm">next high ' + esc(clock(st.tide.next_high)) + " (" + st.tide.next_high_ft + " ft)</span>" : ""));
     return '<details class="cs-num"' + (open ? " open" : "") + "><summary>" + esc(T("numbers_title")) + '</summary><div class="cs-numb">' + rows +
       '<p class="cs-sm">Gauge readings are heights at the gauge, not water depth.</p></div></details>';

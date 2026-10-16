@@ -236,8 +236,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261016a"></script>
-<script src="creek_status.js?v=20261016a"></script>
+<script src="lookups.js?v=20261016b"></script>
+<script src="creek_status.js?v=20261016b"></script>
 <script>
 // ?preview=1: the proposed home page (staff preview). Creeks first, then NWS, Bayside tide, sign-up; the sensor map card
 // goes (the creek list links to the map); System status and the OneRain card fold away at the bottom.
@@ -549,7 +549,7 @@ function loadTides() {   // only the stations that a rain + high tide trigger ne
   (C.data.creeks || []).forEach(function (c) { (c.rain_triggers || []).forEach(function (tr) { if (tr.high_tide && ids.indexOf(c.tide) < 0) ids.push(c.tide); }); });
   return Promise.all(ids.map(function (id) {
     var base = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=" + encodeURIComponent(id) +
-      "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
+      "&datum=MLLW&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
     var T = C.tides[id] = C.tides[id] || {};
     return Promise.all([
       getJSON(base + "&product=water_level&date=latest").then(function (j) { var x = (j.data || [])[0]; T.obs = x ? { t: parseLocal(x.t), v: parseFloat(x.v) } : null; }).catch(function () {}),
@@ -568,7 +568,7 @@ function creeks() {
 }
 
 /* ---------- Bay tide at Redwood City (same rule as the Tides page and the kiosk) ---------- */
-// Heights in ft NAVD88 from one series: measured for what has happened, then NOAA's model forecast
+// Heights in ft MLLW from one series: measured for what has happened, then NOAA's model forecast
 // (ofs_water_level, about 2 days), then the astronomical prediction. MHHW is the threshold for now.
 var TIDE_STATION = "9414523", TIDE_DAYS = 7;
 var TD = { obs: null, ofs: null, pred: null, t: 0 };
@@ -577,7 +577,7 @@ function dayStart(ms) { var d = new Date(ms); return Date.UTC(d.getUTCFullYear()
 function relDay(ms, now) { var d = Math.round((dayStart(ms) - dayStart(now)) / 864e5); return d === 0 ? "Today" : d === 1 ? "Tomorrow" : fmt(ms, { weekday: "short", month: "short", day: "numeric" }); }
 function noaaURL(product, b, e) {
   return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=" + TIDE_STATION + "&product=" + product + "&begin_date=" + b + "&end_date=" + e +
-    "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
+    "&datum=MLLW&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
 }
 function toPts(a) { return (a || []).map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); }); }
 function findWindows(pts, lvl) {
@@ -633,8 +633,8 @@ function renderTide() {
       (list.length > 2 ? ", and " + (list.length - 2) + " more time" + (list.length > 3 ? "s" : "") + " this week" : "") + ".";
     var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
     sub = (top.peakT <= now ? "It reached " : "At its highest, ") + feet(top.peak - m) + " above an average high tide (" + dayWord(top.peakT) + " around " + clock(top.peakT) + ").";
-    if (top.peak >= redLvl) sub += " " + LK.text("tide_red_home", { ft: redLvl.toFixed(1) });
-    else if (isFinite(redLvl)) sub += " " + LK.text("tide_below_red_home", { ft: redLvl.toFixed(1) });
+    if (top.peak >= redLvl) sub += " " + LK.text("tide_red_home", { ft: +redLvl.toFixed(2) });
+    else if (isFinite(redLvl)) sub += " " + LK.text("tide_below_red_home", { ft: +redLvl.toFixed(2) });
   }
   var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
   if (last && now - last.t < 36e5) {
