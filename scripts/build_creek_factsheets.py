@@ -74,6 +74,15 @@ def main():
         rains = [g for g in cg if g["type"] == "rain"]
         tide = tides.get(c.get("tide_station", ""), {})
         public = c.get("preview_only", "").lower() != "yes"
+        has_levels = any(t["creek"] == cid and t["type"] == "stage" for t in thresholds)
+        has_triggers = any(t["creek"] == cid and t["type"] == "rain" for t in thresholds)
+        meaning = c.get("note", "") if has_levels and "No flood levels" not in c.get("note", "") else ""
+        linked = "Yes" if has_levels and meaning else "Partly" if has_levels else "No"
+        linked_text = {
+            "Yes": "**Yes**: flood levels at the creek gauge (what they mean is below)",
+            "Partly": "**Partly**: flood levels are set in OneRain, but what they mean isn't recorded",
+            "No": "**No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet",
+        }[linked] + ("; rain triggers too" if has_triggers else "")
         L = [f"# {c['name']}", "",
              "*Fact sheet generated from the FEWS lookup tables by `scripts/build_creek_factsheets.py`. Don't edit "
              "this page; edit the tables and rerun the script.*", "",
@@ -84,9 +93,14 @@ def main():
              + (f" *({esc(cf['status'])})*" if cf.get("status") else "") + " |",
              f"| Drains to | {esc(cf.get('drains_to', '')) or '**To add**'} |",
              f"| Description | {esc(cf.get('description', '') or c.get('intro', ''))} |",
+             f"| Linked to flooding | {linked_text} |",
              f"| Bay tide station | " + (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))} (MHHW {tide.get('mhhw_navd88_ft', '?')} ft NAVD88)"
                                        if c.get("tide_station") else "None (coastal creek)") + " |",
              f"| Rain totals shown | {', '.join(dur(m) for m in c.get('rain_windows_min', '').split() if m.isdigit())} |",
+             "",
+             "**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the "
+             "channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; "
+             "they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).",
              ""]
 
         # ---- stage gauges
@@ -122,20 +136,29 @@ def main():
                 L += ["**Flood levels** (gauge height, ft; gauge's own zero, not NAVD88)", "",
                       "| Level | Name | Stage (ft) | Source | Notes |", "|---|---|---|---|---|"]
                 L += [f"| {t['level']} | {esc(t['name'])} | {t['value']} | {esc(t['source'])} | {esc(t.get('notes', ''))} |" for t in th]
-                L += ["", f"Meaning: {esc(c['note'])}" if c.get("note") and "No flood levels" not in c["note"] else
-                      "Meaning: **to document**.",
+                L += ["", f"Meaning: {esc(meaning)}" if meaning else "Meaning: **to document**."]
+                if "channel capacity" in meaning:
+                    L += ["By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning "
+                          "means flooding is likely."]
+                L += [
                       "Basis and sign-off status: [THRESHOLDS_BASIS.md §1](../THRESHOLDS_BASIS.md).", ""]
             else:
-                L += ["**Flood levels:** none set yet. Status comes from rain and rising fast "
+                L += ["**Flood levels:** none. No creek height at this gauge is tied to flooding yet, so the creek's "
+                      "status comes from alert levels only: rain and rising fast "
                       "([THRESHOLDS_BASIS.md §10](../THRESHOLDS_BASIS.md)).", ""]
 
             # rising fast results
             res = [r for r in results if r["gauge"] == g["gauge"]]
             if res:
                 y = float(res[0]["years"])
-                L += [f"**Rising fast, tested on history** ({y:.1f} years; big-storm level {res[0]['big_storm_level_ft']} ft"
-                      + ("" if th else ", the median yearly peak") + ")", "",
-                      "| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |", "|---|---|---|---|"]
+                lvl = res[0]["big_storm_level_ft"]
+                L += [f"**Rising fast (alert level), tested on {y:.1f} years of history.** "
+                      + (f"Tested against the gauge's lowest flood level, {th[0]['name']} at {lvl} ft, so \"warned\" "
+                         "means an alert came before the creek reached that level." if th else
+                         f"Tested against {lvl} ft, the creek's typical yearly high (the median yearly peak, about a "
+                         "2-year event). **This is not a flood level:** \"warned\" means an alert came before a typical "
+                         "yearly high, not before flooding."), "",
+                      "| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |", "|---|---|---|---|"]
                 for r in res:
                     mark = " ◀ current" if r["chosen"] == "True" else ""
                     py = f"{int(r['episodes']) / y:.1f}" if y >= 1 else f"{r['episodes']} total"
@@ -155,8 +178,9 @@ def main():
                 role = "Supporting (counts toward the rain level only)" if g.get("role") == "supporting" else "Primary (shown on the pages)"
                 L.append(f"| {esc(g['label'])} (`{g['gauge']}`) | {g['onerain_number']} | "
                          f"{f'{lat:.5f}, {lon:.5f}' if lat is not None else '**To add**'} | {esc(g.get('where', ''))} | {role} |")
-            L += ["", "**Rain levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, "
-                  "Intense = 5-year, for the heaviest window of rain.", "",
+            L += ["", "**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = "
+                  "2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, "
+                  "not whether the creek floods.", "",
                   "| Gauge | Level | " + " | ".join(dur(m) for m in KEY_MINUTES) + " |", "|---|---|" + "---|" * len(KEY_MINUTES)]
             for g in rains:
                 fr = freq.get(g["onerain_number"].upper(), [])
@@ -167,7 +191,7 @@ def main():
             L += ["", f"Source: {esc(src) or 'rain_frequency.csv'}. Basis: [THRESHOLDS_BASIS.md §8](../THRESHOLDS_BASIS.md).", ""]
             trig = [t for t in thresholds if t["creek"] == cid and t["type"] == "rain"]
             if trig:
-                L += ["**Rain triggers**", "", "| Gauge | Window | Rain (in) | Tide | Shows | Source |", "|---|---|---|---|---|---|"]
+                L += ["**Rain triggers** (flood levels for rain: each one sets the creek to the status shown)", "", "| Gauge | Window | Rain (in) | Tide | Shows | Source |", "|---|---|---|---|---|---|"]
                 L += [f"| `{t['gauge']}` | {dur(t['minutes'])} | {t['value']} | "
                       f"{('≥ ' + t['tide_at_least_navd88'] + ' ft NAVD88') if t.get('tide_at_least_navd88') else '–'} | "
                       f"{esc(t['name'])} | {esc(t['source'])} |" for t in trig]
@@ -184,22 +208,29 @@ def main():
             opens.append("Add this creek to creek_facts.csv (cities, outlet, description)")
         elif cf.get("status", "").startswith("draft"):
             opens.append(f"Confirm cities and outlet in creek_facts.csv ({esc(cf['status'])})")
-        if any(t["creek"] == cid and t["type"] == "stage" for t in thresholds) and not c.get("note"):
+        if has_levels and not meaning:
             opens.append("Document what the flood levels mean (THRESHOLDS_BASIS.md §1)")
+        if not has_levels:
+            opens.append("Link to flooding: find the creek height at each gauge where the creek leaves its banks or "
+                         "floods a road (survey, hydraulic study, or a past flood with gauge readings), then add it to "
+                         "thresholds.csv (THRESHOLDS_BASIS.md, Terms)")
         L += ["## Open items", ""] + ([f"- {o}" for o in opens] or ["None recorded."]) + [""]
 
         with open(os.path.join(OUT, f"{cid}.md"), "w", encoding="utf-8") as f:
             f.write("\n".join(L))
-        index.append((c, cf, stages, rains, public, bool([t for t in thresholds if t["creek"] == cid and t["type"] == "stage"])))
+        index.append((c, cf, stages, rains, public, linked))
 
     I = ["# Creek fact sheets", "",
          "One page per creek, generated from the lookup tables by `scripts/build_creek_factsheets.py`. To change a "
          "fact sheet, edit the tables (`creeks.csv`, `creek_gauges.csv`, `thresholds.csv`, `rain_frequency.csv`, "
          "`creek_facts.csv`, `gauge_facts.csv`) and rerun the script.", "",
-         "| Creek | On the site | Cities and communities | Creek gauges | Rain gauges | Flood levels |", "|---|---|---|---|---|---|"]
-    for c, cf, stages, rains, public, has_levels in index:
+         "**Linked to flooding:** Yes = flood levels at the creek gauge with a recorded meaning; Partly = flood levels "
+         "whose meaning isn't recorded; No = alert levels only (rain and rising fast). See "
+         "[THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).", "",
+         "| Creek | On the site | Cities and communities | Creek gauges | Rain gauges | Linked to flooding |", "|---|---|---|---|---|---|"]
+    for c, cf, stages, rains, public, linked in index:
         I.append(f"| [{c['name']}]({c['creek']}.md) | {'Public' if public else 'Preview'} | {esc(cf.get('cities', ''))} | "
-                 f"{len(stages)} | {len(rains)} | {'Yes' if has_levels else 'Not yet'} |")
+                 f"{len(stages)} | {len(rains)} | {linked} |")
     with open(os.path.join(OUT, "README.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(I) + "\n")
     print(f"wrote {len(index)} fact sheets to {OUT}")
