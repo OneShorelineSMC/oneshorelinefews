@@ -8,7 +8,7 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 | `creeks.csv` | The four dashboard creeks: names, intro and note text, which NOAA tide station, which rain totals (minutes) to show, Belmont's running-rain graph | data job → `creeks.json` → kiosk, home page, Creeks page | next data run (about 5 min) |
 | `creek_gauges.csv` | Each creek's stage and rain gauges, mapped to their OneRain sensors; how each stage gauge reports; whether it is tidal | data job | next data run |
 | `thresholds.csv` | Flood thresholds (Monitoring / Watch / Warning, ft) for every stage gauge, and rain triggers (in, with minutes and tide level) | data job (also colors the sensor map) | next data run |
-| `tide_stations.csv` | NOAA tide stations: MHHW (ft NAVD88) and the MLLW-to-NAVD88 difference | pages directly, and the data job | pages: within about 10 min |
+| `tide_stations.csv` | NOAA tide stations: MHHW (ft MLLW) and, for reference, how far NAVD88 is above MLLW | pages directly, and the data job | pages: within about 10 min |
 | `settings.csv` | Numbers behind the page logic: the rapidly-rising rule, when a gauge counts as offline or data as delayed, when the NOAA forecast is used, when "higher than predicted" is called out, flood reports (`REPORTS_*`) | pages directly (`REPORTS_*` also the data job) | within about 10 min (the kiosk re-reads every 30 min) |
 | `display_text.csv` | Wording: disclaimer, 911 line, SMC Alert note, tide explanations, status words on the creek cards, contact details and links, the Report page and flood report labels (`report_*`, `url_report_form`: blank = reporting not open) | pages directly | within about 10 min (kiosk: 30 min) |
 | `rain_frequency.csv` | Rain depths (in) for the 1-, 2- and 5-year storms at each rain gauge and duration (15 min – 48 hr), from NOAA Atlas 14, with the level they set (1 Heavy · 2 Very heavy · 3 Severe) and 10/25/100-year values for reference | data job (creek status layer, staff preview) | next data run |
@@ -74,12 +74,12 @@ gauge: then fill `usgs_site` with the USGS number and leave the OneRain columns 
 **thresholds.csv** — `creek` · `gauge` · `gauge_name` (for people; not used) · `type` (`stage` or `rain`) ·
 `minutes` (rain only) · `level` (1 Flood Monitoring, 2 Flood Watch, 3 Flood Warning, 4 above Flood Warning; sets
 the color) · `name` (shown; blank = the standard name for the level) · `value` (ft for stage, in for rain) ·
-`tide_at_least_navd88` (rain + tide triggers: tide at the creek's station at or above this, ft NAVD88) · `source`
+`tide_at_least_mllw` (rain + tide triggers: tide at the creek's station at or above this, ft MLLW) · `source`
 · `notes` (shown with the threshold).
 
-**tide_stations.csv** — `station` (NOAA number) · `name` · `mhhw_navd88_ft` (the "average high tide" line on every
-tide graph and the threshold for "above MHHW") · `mllw_to_navd88_ft` (add to a MLLW height to get NAVD88; used to
-show OneRain's Redwood City tide in NAVD88 on the sensor map) · `used_for` · `source`.
+**tide_stations.csv** — `station` (NOAA number) · `name` · `mhhw_mllw_ft` (the "average high tide" line on every
+tide graph and the threshold for "above MHHW", ft MLLW) · `navd88_above_mllw_ft` (reference only, for comparing with NAVD88
+documents; nothing is converted) · `used_for` · `source`. All tide heights are ft MLLW, NOAA's datum for the gauges.
 
 **settings.csv** — `key` · `value` · `unit` · `used_on` · `what_it_does`. Each value has an allowed range (in
 `lookups.js`); a value outside it is ignored and reported.
