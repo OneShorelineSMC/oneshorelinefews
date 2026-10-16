@@ -11,8 +11,11 @@
 | Cities and communities | Woodside; Portola Valley; Menlo Park; East Palo Alto; Palo Alto; Stanford (unincorporated Santa Clara County) *(draft - confirm cities and outlet)* |
 | Drains to | San Francisco Bay |
 | Description | Large creek on the San Mateo / Santa Clara county line; the USGS gauge is at Stanford. |
+| Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
 | Bay tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
+
+**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
 
 ## Creek level gauges
 
@@ -30,11 +33,11 @@
 | History and known issues | USGS data approved through spring 2026, provisional since Apr 2026. |
 | Note shown on the site | No flood levels set yet · To check: USGS 11164500; OneRain site SFC shows the same gauge, so read it from USGS. Confirm whether this gauge reads the tide |
 
-**Flood levels:** none set yet. Status comes from rain and rising fast ([THRESHOLDS_BASIS.md §10](../THRESHOLDS_BASIS.md)).
+**Flood levels:** none. No creek height at this gauge is tied to flooding yet, so the creek's status comes from alert levels only: rain and rising fast ([THRESHOLDS_BASIS.md §10](../THRESHOLDS_BASIS.md)).
 
-**Rising fast, tested on history** (19.0 years; big-storm level 6.0 ft, the median yearly peak)
+**Rising fast (alert level), tested on 19.0 years of history.** Tested against 6.0 ft, the creek's typical yearly high (the median yearly peak, about a 2-year event). **This is not a flood level:** "warned" means an alert came before a typical yearly high, not before flooding.
 
-| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |
+| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
 |---|---|---|---|
 | 0.25 | 19.9 | 20 of 20 | 4.6 h |
 | 0.5 ◀ current | 9.5 | 20 of 20 | 3.0 h |
@@ -52,7 +55,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Windy Hill Open Space Preserve (`sfq_rain_a0839db4`) | A0839DB4 | 37.35799, -122.23990 | upper watershed | Supporting (counts toward the rain level only) |
 | Trappers Trail (Valley Water) (`sfq_rain_a08204fe`) | A08204FE | 37.34611, -122.18083 | upper watershed | Supporting (counts toward the rain level only) |
 
-**Rain levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain.
+**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
 
 | Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|
@@ -75,3 +78,4 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 - `sfq_rain_a0839db4`: check they open the Rain Increment sensor; pick one for the card
 - `sfq_rain_a08204fe`: check they open the Rain Increment sensor; pick one for the card
 - Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)
+- Link to flooding: find the creek height at each gauge where the creek leaves its banks or floods a road (survey, hydraulic study, or a past flood with gauge readings), then add it to thresholds.csv (THRESHOLDS_BASIS.md, Terms)

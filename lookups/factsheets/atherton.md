@@ -11,8 +11,11 @@
 | Cities and communities | Woodside (upper watershed); Atherton; unincorporated North Fair Oaks; Redwood City *(draft - confirm cities and outlet)* |
 | Drains to | Bayfront Canal, then San Francisco Bay |
 | Description | Channelized creek; thresholds are for the area downstream of the Caltrain crossing. |
+| Linked to flooding | **Yes**: flood levels at the creek gauge (what they mean is below) |
 | Bay tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 24 hr |
+
+**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
 
 ## Creek level gauges
 
@@ -39,11 +42,12 @@
 | 4 | Roadway Flooded | 10.40 | OneRain sensor thresholds (Oct 2026) | Water detected on road |
 
 Meaning: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely).
+By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 Basis and sign-off status: [THRESHOLDS_BASIS.md §1](../THRESHOLDS_BASIS.md).
 
-**Rising fast, tested on history** (0.7 years; big-storm level 3.18 ft)
+**Rising fast (alert level), tested on 0.7 years of history.** Tested against the gauge's lowest flood level, Flood Monitoring at 3.18 ft, so "warned" means an alert came before the creek reached that level.
 
-| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |
+| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
 |---|---|---|---|
 | 0.25 | 9 total | 0 of 0 | – |
 | 0.5 ◀ current | 4 total | 0 of 0 | – |
@@ -76,11 +80,12 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | 3 | Flood Warning | 5.50 | OneRain sensor thresholds (Oct 2026) |  |
 
 Meaning: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely).
+By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 Basis and sign-off status: [THRESHOLDS_BASIS.md §1](../THRESHOLDS_BASIS.md).
 
-**Rising fast, tested on history** (6.0 years; big-storm level 2.8 ft)
+**Rising fast (alert level), tested on 6.0 years of history.** Tested against the gauge's lowest flood level, Flood Monitoring at 2.8 ft, so "warned" means an alert came before the creek reached that level.
 
-| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |
+| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
 |---|---|---|---|
 | 0.25 | 33.2 | 24 of 25 | 2.9 h |
 | 0.5 ◀ current | 28.1 | 24 of 25 | 2.1 h |
@@ -96,7 +101,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 |---|---|---|---|---|
 | Caltrain (`ath_rain`) | 41106 | 37.46192, -122.19387 | upstream of Caltrain | Primary (shown on the pages) |
 
-**Rain levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain.
+**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
 
 | Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|

@@ -11,8 +11,11 @@
 | Cities and communities | San Bruno; South San Francisco *(draft - confirm cities and outlet)* |
 | Drains to | San Francisco Bay near SFO |
 | Description | Short urban creek; the gauge at First Avenue is tidal (rises and falls with the Bay tide). |
+| Linked to flooding | **Partly**: flood levels are set in OneRain, but what they mean isn't recorded |
 | Bay tide station | NOAA 9414750 Alameda (MHHW 6.37 ft NAVD88) |
 | Rain totals shown | 15 min, 30 min, 1 hr, 3 hr, 24 hr |
+
+**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
 
 ## Creek level gauges
 
@@ -40,9 +43,9 @@
 Meaning: **to document**.
 Basis and sign-off status: [THRESHOLDS_BASIS.md §1](../THRESHOLDS_BASIS.md).
 
-**Rising fast, tested on history** (5.8 years; big-storm level 2.4 ft)
+**Rising fast (alert level), tested on 5.8 years of history.** Tested against the gauge's lowest flood level, Flood Monitoring at 2.4 ft, so "warned" means an alert came before the creek reached that level.
 
-| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |
+| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
 |---|---|---|---|
 | 0.25 | 57.2 | 27 of 28 | 3.4 h |
 | 0.5 ◀ current | 31.3 | 25 of 28 | 1.8 h |
@@ -59,7 +62,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | San Bruno Mountain (`rain_mountain`) | 41200 | 37.69222, -122.44833 | upper watershed | Primary (shown on the pages) |
 | First Avenue (`rain_first_ave`) | 41102 | 37.62273, -122.40671 | lower watershed | Primary (shown on the pages) |
 
-**Rain levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain.
+**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
 
 | Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|

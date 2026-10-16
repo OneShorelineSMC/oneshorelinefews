@@ -11,8 +11,11 @@
 | Cities and communities | Hillsborough; San Mateo *(draft - confirm cities and outlet)* |
 | Drains to | San Francisco Bay |
 | Description | Flow below Crystal Springs Reservoir is controlled by SFPUC releases and spills. |
+| Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
 | Bay tide station | NOAA 9414750 Alameda (MHHW 6.37 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
+
+**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
 
 ## Creek level gauges
 
@@ -30,11 +33,11 @@
 | History and known issues | Rises follow Crystal Springs Reservoir releases and spills (reservoir level: USGS 11162750; spill about 294.6 ft). USGS data approved through spring 2026. |
 | Note shown on the site | No flood levels set yet · To check: Confirm whether this gauge reads the tide; Flow below Crystal Springs dam; reservoir level is USGS 11162750 (spill at 294.6 ft) |
 
-**Flood levels:** none set yet. Status comes from rain and rising fast ([THRESHOLDS_BASIS.md §10](../THRESHOLDS_BASIS.md)).
+**Flood levels:** none. No creek height at this gauge is tied to flooding yet, so the creek's status comes from alert levels only: rain and rising fast ([THRESHOLDS_BASIS.md §10](../THRESHOLDS_BASIS.md)).
 
-**Rising fast, tested on history** (18.1 years; big-storm level 5.88 ft, the median yearly peak)
+**Rising fast (alert level), tested on 18.1 years of history.** Tested against 5.88 ft, the creek's typical yearly high (the median yearly peak, about a 2-year event). **This is not a flood level:** "warned" means an alert came before a typical yearly high, not before flooding.
 
-| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |
+| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
 |---|---|---|---|
 | 0.25 | 17.6 | 21 of 60 | 1.5 h |
 | 0.5 ◀ current | 7.2 | 11 of 60 | 45 min |
@@ -50,7 +53,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 |---|---|---|---|---|
 | Crystal Springs Cottage (`smc_rain_csc`) | CSC | 37.49600, -122.32900 | nearby | Supporting (counts toward the rain level only) |
 
-**Rain levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain.
+**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
 
 | Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|
@@ -65,3 +68,4 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 - `smc_rain_csc`: check they open the Rain Increment sensor
 - `smc_stage_11162753`: Confirm whether this gauge reads the tide; Flow below Crystal Springs dam; reservoir level is USGS 11162750 (spill at 294.6 ft)
 - Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)
+- Link to flooding: find the creek height at each gauge where the creek leaves its banks or floods a road (survey, hydraulic study, or a past flood with gauge readings), then add it to thresholds.csv (THRESHOLDS_BASIS.md, Terms)

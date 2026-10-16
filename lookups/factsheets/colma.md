@@ -11,8 +11,11 @@
 | Cities and communities | Daly City; Colma; South San Francisco *(draft - confirm cities and outlet)* |
 | Drains to | San Francisco Bay at South San Francisco |
 | Description | Urban creek from San Bruno Mountain and Daly City through Colma to South San Francisco; the gauge is at Orange Memorial Park and the thresholds are for the community downstream. |
+| Linked to flooding | **Yes**: flood levels at the creek gauge (what they mean is below) |
 | Bay tide station | NOAA 9414750 Alameda (MHHW 6.37 ft NAVD88) |
 | Rain totals shown | 1 hr, 6 hr, 24 hr |
+
+**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
 
 ## Creek level gauges
 
@@ -38,11 +41,12 @@
 | 3 | Flood Warning | 6.75 | OneRain sensor thresholds (Oct 2026) |  |
 
 Meaning: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely).
+By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 Basis and sign-off status: [THRESHOLDS_BASIS.md §1](../THRESHOLDS_BASIS.md).
 
-**Rising fast, tested on history** (6.3 years; big-storm level 3.4 ft)
+**Rising fast (alert level), tested on 6.3 years of history.** Tested against the gauge's lowest flood level, Flood Monitoring at 3.4 ft, so "warned" means an alert came before the creek reached that level.
 
-| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |
+| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
 |---|---|---|---|
 | 0.25 | 9.2 | 3 of 7 | 80 min |
 | 0.5 ◀ current | 5.9 | 3 of 7 | 80 min |
@@ -59,7 +63,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Orange Memorial Park (`col_rain`) | 41101 | 37.65379, -122.42669 | lower watershed | Primary (shown on the pages) |
 | San Bruno Mountain (`col_rain_41200`) | 41200 | 37.69222, -122.44833 | upper watershed | Supporting (counts toward the rain level only) |
 
-**Rain levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain.
+**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
 
 | Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|

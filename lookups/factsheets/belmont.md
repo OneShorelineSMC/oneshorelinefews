@@ -11,8 +11,11 @@
 | Cities and communities | Belmont; San Carlos; unincorporated Harbor Industrial Area *(draft - confirm cities and outlet)* |
 | Drains to | Belmont Slough, then San Francisco Bay |
 | Description | Flashy urban creek; frequent street flooding downstream; thresholds are for the Harbor Industrial Area. |
+| Linked to flooding | **Yes**: flood levels at the creek gauge (what they mean is below); rain triggers too |
 | Bay tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 4 hr, 24 hr |
+
+**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
 
 ## Creek level gauges
 
@@ -38,11 +41,12 @@
 | 3 | Flood Warning | 4.00 | OneRain sensor thresholds (Oct 2026) |  |
 
 Meaning: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely).
+By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 Basis and sign-off status: [THRESHOLDS_BASIS.md §1](../THRESHOLDS_BASIS.md).
 
-**Rising fast, tested on history** (7.0 years; big-storm level 2.25 ft)
+**Rising fast (alert level), tested on 7.0 years of history.** Tested against the gauge's lowest flood level, Flood Monitoring at 2.25 ft, so "warned" means an alert came before the creek reached that level.
 
-| Threshold (ft in 60 min) | Alerts / yr | Big storms warned first | Median lead |
+| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
 |---|---|---|---|
 | 0.25 | 27.6 | 44 of 45 | 59 min |
 | 0.5 ◀ current | 23.6 | 44 of 45 | 42 min |
@@ -58,7 +62,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 |---|---|---|---|---|
 | Old County Road (`bel_rain`) | 41104 | 37.51719, -122.27125 | lower watershed | Primary (shown on the pages) |
 
-**Rain levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain.
+**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
 
 | Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|
@@ -68,7 +72,7 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13). Basis: [THRESHOLDS_BASIS.md §8](../THRESHOLDS_BASIS.md).
 
-**Rain triggers**
+**Rain triggers** (flood levels for rain: each one sets the creek to the status shown)
 
 | Gauge | Window | Rain (in) | Tide | Shows | Source |
 |---|---|---|---|---|---|
