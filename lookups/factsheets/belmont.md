@@ -12,7 +12,7 @@
 | Drains to | Belmont Slough, then San Francisco Bay |
 | Description | Flashy urban creek; frequent street flooding downstream; thresholds are for the Harbor Industrial Area. |
 | Linked to flooding | **Yes**: flood levels at the creek gauge (what they mean is below); rain triggers too |
-| Bay tide station | NOAA 9414523 Redwood City (MHHW ? ft MLLW) |
+| Bay tide station | NOAA 9414523 Redwood City (MHHW 8.20 ft MLLW) |
 | Rain totals shown | 30 min, 1 hr, 4 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
@@ -77,7 +77,7 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 | Gauge | Window | Rain (in) | Tide | Shows | Source |
 |---|---|---|---|---|---|
 | `bel_rain` | 30 min | 0.20 | – | Flooding likely (rain) | Belmont Creek OneRain dashboard (Oct 2026) |
-| `bel_rain` | 4 hr | 0.42 | – | Flooding likely (rain + tide) | OneRain alarm rule 'Rainfall and Tide (Belmont)' #34: 4 Hr Accumulation >= 0.42 in and OneRain Redwood City Tide Elevation >= 7.5 ft. OneRain's tide is MLLW; NOAA 9414523 MLLW is 1.18 ft below NAVD88, so 7.5 ft MLLW = 6.32 ft NAVD88. Rain threshold from analysis of 2022-2025 events |
+| `bel_rain` | 4 hr | 0.42 | ≥ 7.50 ft MLLW | Flooding likely (rain + tide) | OneRain alarm rule 'Rainfall and Tide (Belmont)' #34: 4 Hr Accumulation >= 0.42 in and OneRain Redwood City Tide Elevation >= 7.5 ft. OneRain's tide is MLLW, the same datum the pages now use (Oct 16), so the rule's 7.5 ft is used as is. Rain threshold from analysis of 2022-2025 events |
 
 Basis: [THRESHOLDS_BASIS.md §2](../THRESHOLDS_BASIS.md).
 
