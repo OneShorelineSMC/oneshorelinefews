@@ -107,7 +107,7 @@ tide_red_key,Flood level {ft} ft,Tides page and kiosk day cards ('Flood level 8.
 tide_red_day,At flood level,kiosk Bay Tides day cards (one short line),Keep short: the card is narrow,,
 tide_red_line,Flood level {ft} ft (provisional),Tides page and kiosk Bay Tides graph (red dash-dot line and key),Provisional level from TIDE_RED_FT_RWC in settings.csv,,
 tide_red_line_creek,Bay shoreline overtopping {ft} ft (provisional),Creeks page and kiosk Creeks tab tide graph (red dash-dot line and key),"Same 8.5 ft line (TIDE_RED_FT_RWC) as on the Tides page. On creek graphs it is labeled as overtopping at the Bay edge, not creek flooding.",,
-tide_king_ref,King Tide (1-year tide) {ft} ft,Tides page and kiosk Bay Tides graph (purple dashed line and key),Level from KING_TIDE_FT_RWC in settings.csv,,
+tide_king_ref,King Tide (1-year tide) {ft} ft,Tides page graph (purple dashed line and key; only when a King Tide day is in view),Level from KING_TIDE_FT_RWC in settings.csv,,
 tide_expected_ft,NOAA projects {ft},"King Tide line (kiosk), Tides page card and calendar",,,
 tide_table_ft,{ft} in the tide table,"King Tide line (kiosk), Tides page card and calendar",,,
 tide_table_word,tide table,"King Tide line (kiosk), Tides page card and calendar",,,

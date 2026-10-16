@@ -268,6 +268,7 @@ minimum stage, tide subtraction) were not used, and why. Rerun `scripts/evaluate
 - [ ] Communications and DEM approve `proposed/display_text.csv`; order translations
 - [ ] Get a Genasys Protect link centered on San Mateo County
 - [ ] Run staff-only through the first storms before going public
+- [ ] **Check the tide flood level (8.5 ft NAVD88, provisional) at this winter's King Tides** (Nov 25, Dec 23–24; tide table 8.36–8.43 ft): at high tide, photograph or note where water reaches at known low spots near Redwood City (Bay trail, marsh edges, low roads and parking lots) and note the Redwood City gauge reading at that time. If there is some Bay-edge overtopping at about 8.4 ft, 8.5 is about right and "provisional" can come off; if water stays well inside the shoreline, raise it; if low areas are already wet, lower it. The 1-year tide (8.3) is only 0.2 ft below 8.5, so the page will turn red about every winter when a storm lands on a King Tide: confirm that matches real flooding.
 
 ## Sign-off log
 
