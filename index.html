@@ -230,8 +230,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261015g"></script>
-<script src="creek_status.js?v=20261015g"></script>
+<script src="lookups.js?v=20261015h"></script>
+<script src="creek_status.js?v=20261015h"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Numbers, tide levels and wording that staff check live in the lookups/ folder (settings.csv, tide_stations.csv,
@@ -240,18 +240,21 @@ var DATA = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/d
 var COUNTY_SAME = "006081";
 var LK = window.LOOKUPS;
 var CREEK_DATA_LATE_MIN, GAUGE_QUIET_HOURS, GAUGE_QUIET_HOURS_INTERVAL, SITE_QUIET_HOURS, MODEL_MIN_AHEAD_HOURS, OFFSET_NOTE_FT;
-// "Rapidly rising" (PROVISIONAL, logic to be confirmed): a gauge counts when its level rose at least RISE_FT
-// in the last RISE_MINUTES, its newest reading is under RISE_FRESH_MIN old, and the creek data is current.
-// Tidal gauges (tidal = yes in lookups/creek_gauges.csv; they rise with every high tide) count only if the
-// creek's rain gauges had at least RISE_TIDAL_RAIN_IN in the last RISE_TIDAL_RAIN_HOURS. RISE_ETA_HOURS: say
-// when the next flood level would be reached, if within this many hours.
-var RISE_FT, RISE_MINUTES, RISE_FRESH_MIN, RISE_TIDAL_RAIN_IN, RISE_TIDAL_RAIN_HOURS, RISE_ETA_HOURS;
+// "Rapidly rising" (riseCheck below; same rule as the data job's rise_check in scripts/creek_signals.py, basis in
+// lookups/RISING_FAST_BASIS.md): a gauge counts when its level rose at least its threshold (rise_ft in
+// creek_gauges.csv, else RISE_FT; 'off' = not used) in RISE_MINUTES, confirmed by the reading before it, and the
+// creek data is current. Tidal gauges (tidal = yes; they rise with every high tide) count only if the creek's rain
+// gauges had at least RISE_TIDAL_RAIN_IN in the last RISE_TIDAL_RAIN_HOURS. RISE_ETA_HOURS: say when the next
+// flood level would be reached, if within this many hours.
+var RISE_FT, RISE_MINUTES, RISE_FRESH_MIN, RISE_TIDAL_RAIN_IN, RISE_TIDAL_RAIN_HOURS, RISE_ETA_HOURS,
+  RISE_REF_LATE_MIN, RISE_CONFIRM_MIN, RISE_CONFIRM_FRACTION, RISE_HOLD_MIN;
 function applyLookups() {
   CREEK_DATA_LATE_MIN = LK.num("CREEK_DATA_LATE_MIN"); GAUGE_QUIET_HOURS = LK.num("GAUGE_QUIET_HOURS");
   GAUGE_QUIET_HOURS_INTERVAL = LK.num("GAUGE_QUIET_HOURS_INTERVAL"); SITE_QUIET_HOURS = LK.num("SITE_QUIET_HOURS");
   MODEL_MIN_AHEAD_HOURS = LK.num("MODEL_MIN_AHEAD_HOURS"); OFFSET_NOTE_FT = LK.num("OFFSET_NOTE_FT");
   RISE_FT = LK.num("RISE_FT"); RISE_MINUTES = LK.num("RISE_MINUTES"); RISE_FRESH_MIN = LK.num("RISE_FRESH_MIN");
   RISE_TIDAL_RAIN_IN = LK.num("RISE_TIDAL_RAIN_IN"); RISE_TIDAL_RAIN_HOURS = LK.num("RISE_TIDAL_RAIN_HOURS"); RISE_ETA_HOURS = LK.num("RISE_ETA_HOURS");
+  RISE_REF_LATE_MIN = LK.num("RISE_REF_LATE_MIN"); RISE_CONFIRM_MIN = LK.num("RISE_CONFIRM_MIN"); RISE_CONFIRM_FRACTION = LK.num("RISE_CONFIRM_FRACTION"); RISE_HOLD_MIN = LK.num("RISE_HOLD_MIN");
 }
 applyLookups();
 var MAX_ALERTS_OPEN = 3;             // NWS alerts shown in full; any more are listed with a tap to open
@@ -334,6 +337,60 @@ function pts(key) {
 function rainSum(p, from, to) { var s = 0; p.forEach(function (x) { if (x.t > from && x.t <= to) s += x.v; }); return s; }
 function stageLevel(g, v) { var l = null; (g.thresholds || []).forEach(function (t) { if (v >= t.value) l = t; }); return l; }
 function valueAt(p, t) { var v = null; p.forEach(function (x) { if (x.t <= t) v = x; }); return v; }
+var HOLD_TOLERANCE_FT = 0.05;   // "hasn't dropped" allows for gauge noise of about one reading step
+// A sensor's readings for the rate of rise, on UTC (Pacific clock times repeat for an hour when daylight saving
+// ends): [{t: UTC ms, v, lt: Pacific ms as from parseLocal}], sorted. Every point carries its UTC time as the 3rd
+// element; one without (the sensor's "latest") takes the offset of the point before it. No UTC at all: Pacific
+// times as they are. Same as utc_series in scripts/creek_signals.py.
+function utcSeries(sensor) {
+  var rows = (sensor && sensor.points || []).map(function (x) {
+    var u = typeof x[2] === "string" && /Z$/.test(x[2]) ? Date.parse(x[2]) : null;
+    return { u: isNaN(u) ? null : u, lt: parseLocal(x[0]), v: x[1] };
+  });
+  var lat = sensor && sensor.latest;
+  if (lat && lat[0] && lat[1] != null && (!rows.length || parseLocal(lat[0]) > rows[rows.length - 1].lt)) rows.push({ u: null, lt: parseLocal(lat[0]), v: lat[1] });
+  var first = rows.filter(function (r) { return r.u != null; })[0];
+  if (!first) return { p: rows.map(function (r) { return { t: r.lt, v: r.v, lt: r.lt }; }).sort(function (a, b) { return a.t - b.t; }), utc: false };
+  var off = first.u - first.lt;
+  return { p: rows.map(function (r) { if (r.u != null) off = r.u - r.lt; return { t: r.u != null ? r.u : r.lt + off, v: r.v, lt: r.lt }; })
+    .sort(function (a, b) { return a.t - b.t; }), utc: true };
+}
+// Rapidly rising at one stage gauge (p: readings sorted by time, {t, v}; now on the same clock). Same rule as
+// rise_check in scripts/creek_signals.py; see lookups/RISING_FAST_BASIS.md. Met when the level is at least the
+// threshold above the reading in force RISE_MINUTES earlier, if that reading isn't too old (scheduled gauges:
+// RISE_REF_LATE_MIN; on-change gauges: GAUGE_QUIET_HOURS); if the reading before is within RISE_CONFIRM_MIN it must
+// have risen RISE_CONFIRM_FRACTION of the threshold too (an on-change gauge quiet for over RISE_MINUTES needs its next report to confirm a jump); stays on until RISE_HOLD_MIN after the reading that met it (a scheduled gauge's newest reading
+// counts until the next one) unless the level drops back. Returns {rise, i, held, th} or null.
+function riseCheck(p, g, now) {
+  if (g.rise_off || !p.length || now - p[p.length - 1].t > RISE_FRESH_MIN * 60000) return null;
+  var th = g.rise_ft || RISE_FT, onChange = g.reports !== "interval", win = RISE_MINUTES * 60000;
+  var late = onChange ? GAUGE_QUIET_HOURS * 3600000 : RISE_REF_LATE_MIN * 60000;
+  function riseAt(i) {
+    var t0 = p[i].t - win, j = -1;
+    for (var k = i; k >= 0; k--) { if (p[k].t <= t0) { j = k; break; } }
+    if (j < 0 || t0 - p[j].t > late) return null;
+    return p[i].v - p[j].v;
+  }
+  function meets(i) {
+    var r = riseAt(i);
+    if (r == null || r < th - 1e-9) return null;
+    if (!RISE_CONFIRM_MIN) return r;   // 0 = confirmation off
+    var near = i > 0 && p[i].t - p[i - 1].t <= RISE_CONFIRM_MIN * 60000;
+    if (onChange && (i === 0 || p[i].t - p[i - 1].t > win)) return null;   // quiet for over RISE_MINUTES, then a jump: wait for the next report
+    if (near) {
+      var r0 = riseAt(i - 1);
+      if (r0 == null || r0 < RISE_CONFIRM_FRACTION * th - 1e-9) return null;   // the reading before wasn't rising too
+    }
+    return r;
+  }
+  var last = p.length - 1, from = now - RISE_HOLD_MIN * 60000;
+  for (var i = last; i >= 0; i--) {
+    if (p[i].t < from && !(i === last && !onChange)) break;
+    var r = meets(i);
+    if (r != null) return p[last].v < p[i].v - HOLD_TOLERANCE_FT ? null : { rise: r, i: i, held: i !== last || p[i].t < from, th: th };
+  }
+  return null;
+}
 function tideNowFor(id, now) {   // measured if recent, else predicted (needed only for rain + high tide triggers)
   var T = C.tides[id]; if (!T) return null;
   if (T.obs && now - T.obs.t < 3600000) return T.obs.v;
@@ -358,14 +415,15 @@ function creekState(c, now) {
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null };
     st.stages.push(s);
     if (lvl && !late && (!st.top || lvl.level > st.top.level)) st.top = lvl;
-    // rapidly rising (provisional rule; see CONFIG)
-    if (!late && last && !quiet && now - last.t <= RISE_FRESH_MIN * 60000) {
-      var ref = valueAt(p, last.t - RISE_MINUTES * 60000);
-      var rise = ref ? last.v - ref.v : null;
+    // rapidly rising (riseCheck; see CONFIG)
+    if (!late && last && !quiet) {
       var tidalOk = !g.tidal || rainP.some(function (rp) { return rainSum(rp, now - RISE_TIDAL_RAIN_HOURS * 3600000, now) >= RISE_TIDAL_RAIN_IN; });
-      if (rise != null && rise >= RISE_FT && tidalOk) {
-        var eta = s.next ? (s.next.value - last.v) / (rise / (RISE_MINUTES / 60)) : null;
-        st.rising.push({ s: s, rise: rise, eta: eta != null && eta <= RISE_ETA_HOURS ? eta : null });
+      var us = utcSeries(C.data.sensors[g.key]);
+      var rf = tidalOk ? riseCheck(us.p, g, us.utc ? Date.now() : now) : null;
+      if (rf) {
+        // no "at this rate" estimate while the alert is only being held: the rise may have stopped
+        var eta = s.next && !rf.held ? (s.next.value - last.v) / (rf.rise / (RISE_MINUTES / 60)) : null;
+        st.rising.push({ s: s, rise: rf.rise, at: us.p[rf.i].lt, held: rf.held, eta: eta != null && eta <= RISE_ETA_HOURS ? eta : null });
       }
     }
   });
@@ -424,7 +482,9 @@ function renderCreeks() {
       (r.eta < 1 ? Math.max(5, Math.round(r.eta * 60 / 5) * 5) + " min" : (Math.round(r.eta * 2) / 2) + " hr") + ".";
     return '<a class="box rs ' + (red ? "red" : "amber") + '" href="Creeks.html#' + encodeURIComponent(c.id) + '"><span class="ar">⇡</span><span>' +
       "<h3>Rapidly rising: " + esc(c.name) + (c.stages.length > 1 ? " at " + esc(x.g.label) : "") + "</h3>" +
-      "<p>Up " + r.rise.toFixed(2) + " ft in the last " + (RISE_MINUTES === 60 ? "hour" : RISE_MINUTES + " min") + ", now " + x.last.v.toFixed(2) + " ft (" + esc(fTime(x.last.t)) + ")." + eta + "</p></span></a>";
+      "<p>" + (r.held ? "Rose " + r.rise.toFixed(2) + " ft in " + (RISE_MINUTES === 60 ? "an hour" : RISE_MINUTES + " min") + ", up to " + esc(fTime(r.at)) + "; now "
+        : "Up " + r.rise.toFixed(2) + " ft in the last " + (RISE_MINUTES === 60 ? "hour" : RISE_MINUTES + " min") + ", now ") +
+      x.last.v.toFixed(2) + " ft (" + esc(fTime(x.last.t)) + ")." + eta + "</p></span></a>";
   }).join("");
   var anyLate = states.some(function (s) { return s.late; });
   var CS = window.CREEK_STATUS;
@@ -435,7 +495,7 @@ function renderCreeks() {
     document.querySelector('nav a[href="Creeks.html"]').href = "Creeks.html?preview=1";
   }
   $("calm").textContent = rising.length ? "" : anyLate ? "Rapid-rise check paused: creek data is delayed." :
-    "No creek gauges rising rapidly (" + RISE_FT.toFixed(1) + " ft or more in the last hour).";
+    "No creek gauges rising rapidly.";
 
   // System status rows for creek data and gauges
   var gen = states.length ? states[0].gen : null;
