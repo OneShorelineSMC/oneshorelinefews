@@ -813,7 +813,10 @@ function drawChart(s, i, now, useModel) {
   var ys = tp.concat(to, fc).map(function (p) { return p.y; }).concat([m]);
   var showRed = isFinite(rl);   // the flood level line is always drawn (Redwood City only)
   if (showRed) ys.push(rl);
-  var showKing = isFinite(kl);   // the King Tide (1-year tide) line, Redwood City only
+  // the King Tide (1-year tide) line: Redwood City only, and only when a King Tide day (calendar star) is in view, so the
+  // purple line doesn't sit just under the flood level line the rest of the year
+  var kd = isFinite(kl) && window.TIDE_SEASON ? window.TIDE_SEASON.kingDays() : {}, d0 = new Date(x0).toISOString().slice(0, 10), d1 = new Date(x1).toISOString().slice(0, 10);
+  var showKing = Object.keys(kd).some(function (d) { return d >= d0 && d <= d1; });
   if (showKing) ys.push(kl);
   var lo = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), hi = Math.ceil(Math.max.apply(null, ys) + 0.5);   // room above the top line for its label
   var narrow = window.innerWidth < 520;
@@ -1027,8 +1030,9 @@ S.forEach(loadModel);
 if (!EMBED) { loadAFD(); setInterval(loadAFD, 30 * 60000); }
 setInterval(function () { S.forEach(loadModel); }, 60 * 60000);   // the model runs 4 times a day
 if (TSN) {   // Redwood City tide table (6 months ahead, twice a day) and the NOAA projection (hourly)
-  TSN.load().then(renderSeason);
-  setInterval(function () { TSN.loadTable().then(renderSeason); }, 12 * 3600000);
+  function seasonAndGraph() { renderSeason(); render(); }   // the graph's King Tide line depends on the tide table's King Tide days
+  TSN.load().then(seasonAndGraph);
+  setInterval(function () { TSN.loadTable().then(seasonAndGraph); }, 12 * 3600000);
   setInterval(function () { TSN.loadModel().then(renderSeason); }, 60 * 60000);
 }
 setInterval(renderSeason, 60000);   // rolls over at midnight (Pacific)
