@@ -12,7 +12,7 @@
 | Drains to | San Francisco Bay near SFO |
 | Description | Short urban creek; the gauge at First Avenue is tidal (rises and falls with the Bay tide). |
 | Linked to flooding | **Partly**: flood levels are set in OneRain, but what they mean isn't recorded |
-| Bay tide station | NOAA 9414750 Alameda (MHHW 6.60 ft MLLW) |
+| Bay tide station | NOAA 9414750 Alameda (MHHW ? ft MLLW) |
 | Rain totals shown | 15 min, 30 min, 1 hr, 3 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
