@@ -10,7 +10,7 @@
   "use strict";
   var LK = window.LOOKUPS;
   var PREVIEW = /[?&]preview=1\b/.test(location.search);
-  var COL = { likely: "#c62828", ready: "#e07b00", alert: "#e6c200", offline: "#8a96a3", delayed: "#8a96a3", none: "#8a96a3" };
+  var COL = { likely: "#c62828", ready: "#e07b00", alert: "#e6c200", offline: "#66717d", delayed: "#66717d", none: "#66717d" };   // grays dark enough for text (4.5:1)
   var TINT = { likely: "#c62828", ready: "rgba(224,123,0,.16)", alert: "rgba(230,194,0,.20)", offline: "rgba(138,150,163,.14)",
     delayed: "rgba(138,150,163,.14)", none: "rgba(138,150,163,.10)" };
   var RANK = { likely: 4, ready: 3, alert: 2, offline: 1, delayed: 1, none: 0 };
@@ -63,6 +63,21 @@
     return s;
   }
 
+  /* Status icons, so a status can be told apart without color (WCAG 1.4.1): flooding likely = warning triangle,
+     be ready = exclamation in a circle, stay alert = eye; no alerts = plain dot; offline / not updated = dashed square.
+     Always next to the status word (decoration only, aria-hidden). */
+  var ICON = {
+    likely: '<path d="M10 2.2 19 17.8H1Z" fill="currentColor"/><path class="x" d="M10 7.5v4.6" stroke-width="2.2" stroke-linecap="round"/><circle class="x" cx="10" cy="14.9" r="1.25"/>',
+    ready: '<circle cx="10" cy="10" r="8.6" fill="currentColor"/><path d="M10 5.4v5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14" r="1.3" fill="#fff"/>',
+    alert: '<path d="M1.3 10C3.6 6 6.6 4.2 10 4.2S16.4 6 18.7 10C16.4 14 13.4 15.8 10 15.8S3.6 14 1.3 10Z" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="10" cy="10" r="3" fill="currentColor"/>',
+    none: '<circle cx="10" cy="10" r="5" fill="currentColor"/>'
+  };
+  function icon(key) {
+    var k = ICON[key] ? key : "nodata";
+    if (k === "nodata") return '<span class="cs-ic cs-ic-nodata" aria-hidden="true"></span>';
+    return '<svg class="cs-ic cs-ic-' + k + '" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">' + ICON[k] + "</svg>";
+  }
+
   /* Pieces */
   function chip(level) {
     if (!level) return '<span class="cs-norain">' + esc(T("rain_none")) + "</span>";
@@ -106,7 +121,7 @@
     var v = view(data, c), st = v.st, h = "";
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
     h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + (c.preview_only ? '<span class="cs-sm">New creek, preview only</span>' : "") + "</div>";
-    h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>";
+    h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div>";
     if (v.since) h += '<p class="cs-since">' + esc(v.since) + "</p>";
     v.reasons.forEach(function (r) { h += '<p class="cs-why">' + esc(r) + "</p>"; });
     h += "</div>";
@@ -154,7 +169,7 @@
   function howTo() {
     return '<details class="cs-how"><summary>' + esc(T("howto_title")) + '</summary><div class="cs-howb"><ul>' +
       ["likely", "ready", "alert", "none"].map(function (k) {
-        return '<li><span class="cs-ic cs-ic-' + k + '" aria-hidden="true"></span>' + esc(T("howto_" + k)) + "</li>"; }).join("") +
+        return "<li>" + icon(k) + esc(T("howto_" + k)) + "</li>"; }).join("") +
       "</ul><p>" + esc(T("howto_band")) + "</p><p>" + esc(T("howto_rain")) + "</p><p>" + esc(T("nws_separate")) + "</p></div></details>";
   }
 
@@ -237,7 +252,7 @@
   function tile(data, c) {
     var v = view(data, c), st = v.st, r = st.rain || {};
     return '<div class="cs-tile cs-' + v.key + '"><div class="cs-tn">' + esc(c.name) + "</div>" +
-      '<div class="cs-verdict cs-v-' + v.key + '"><span class="cs-ic" aria-hidden="true"></span>' + esc(v.word) + "</div>" +
+      '<div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div>" +
       (v.since ? '<div class="cs-ts">' + esc(v.since) + "</div>" : "") +
       (v.reasons[0] ? '<div class="cs-tr">' + esc(v.reasons[0]) + "</div>" : "") +
       '<div class="cs-tm"><span class="cs-dim">Rain</span> ' + chip(r.level) + (st.trend ? ' &nbsp; <span class="cs-dim">Creek</span> ' + trendText(st.trend, true) : "") + "</div></div>";
@@ -256,12 +271,15 @@
     ".cs-card.cs-offline,.cs-card.cs-delayed{border:2px dashed #8a96a3}",
     ".cs-head{padding:12px 14px 8px}.cs-head h3{margin:0;font-size:19px;color:var(--ink,#16202b)}",
     ".cs-verdict{margin:0 14px;padding:9px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;font-size:19px;font-weight:700;color:var(--ink,#16202b)}",
-    ".cs-ic{width:14px;height:14px;border-radius:3px;flex:none}",
-    ".cs-v-likely{background:#c62828;color:#fff}.cs-v-likely .cs-ic{background:#fff}",
-    ".cs-v-ready{background:" + TINT.ready + "}.cs-v-ready .cs-ic{background:#e07b00}",
-    ".cs-v-alert{background:" + TINT.alert + "}.cs-v-alert .cs-ic{background:#e6c200}",
-    ".cs-v-none,.cs-v-offline,.cs-v-delayed{background:" + TINT.none + ";font-size:17px;font-weight:600}.cs-v-none .cs-ic{background:#8a96a3}",
-    ".cs-v-offline .cs-ic,.cs-v-delayed .cs-ic{border:2px dashed #8a96a3}",
+    ".cs-ic{width:20px;height:20px;flex:none;display:block}",
+    ".cs-ic-likely{color:#c62828}.cs-ic-ready{color:#b45a00}.cs-ic-alert{color:#7a6400}.cs-ic-none{color:#6b7682}",
+    "span.cs-ic-nodata{width:14px;height:14px;margin:3px;border:2px dashed #6b7682;border-radius:3px;box-sizing:border-box}",
+    ".cs-v-likely{background:#c62828;color:#fff}.cs-v-likely .cs-ic-likely{color:#fff}",
+    ".cs-ic-likely .x{stroke:#fff;fill:#fff}.cs-v-likely .cs-ic-likely .x{stroke:#c62828;fill:#c62828}",   // the "!" shows on a red triangle and on a white one
+    ".cs-v-ready{background:" + TINT.ready + "}",
+    ".cs-v-alert{background:" + TINT.alert + "}",
+    ".cs-v-none,.cs-v-offline,.cs-v-delayed{background:" + TINT.none + ";font-size:17px;font-weight:600}",
+    "@media (prefers-color-scheme:dark){.cs-ic-ready{color:#ffa94d}.cs-ic-alert{color:#f2d544}.cs-ic-none{color:#9aa8b8}span.cs-ic-nodata{border-color:#9aa8b8}.cs-v-likely .cs-ic-likely{color:#fff}}",
     ".cs-why{margin:8px 14px 0;font-size:14.5px;line-height:1.45;color:var(--text,var(--ink))}",
     ".cs-body{padding:8px 14px 10px}.cs-body p{margin:0 0 4px;font-size:15px;line-height:1.45}",
     ".cs-danger{font-weight:700;color:#c62828}",
@@ -303,7 +321,7 @@
     ".cs-num{margin:0 14px 10px}.cs-num>summary,.cs-how>summary{cursor:pointer;font-weight:600;font-size:14px;min-height:36px;display:flex;align-items:center;color:var(--ink,#16202b)}",
     ".cs-how{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:10px;padding:2px 14px;margin:0 0 12px}",
     ".cs-howb ul{list-style:none;margin:4px 0 8px;padding:0}.cs-howb li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font-size:14.5px}",
-    ".cs-howb li .cs-ic{margin-top:3px}.cs-ic-likely{background:#c62828}.cs-ic-ready{background:#e07b00}.cs-ic-alert{background:#e6c200}.cs-ic-none{background:#8a96a3}",
+    ".cs-howb li .cs-ic{margin-top:1px}",
     ".cs-howb p{font-size:14px;line-height:1.45;margin:0 0 8px;color:var(--text,var(--ink))}",
     ".cs-changed{font-size:13.5px;margin:6px 0 8px}"
   ].join("\n");
@@ -321,5 +339,5 @@
         quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.short || c.name; })) : ""].filter(Boolean).join(" · ") };
   }
 
-  window.CREEK_STATUS = { preview: PREVIEW, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge };
+  window.CREEK_STATUS = { preview: PREVIEW, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon };
 })();

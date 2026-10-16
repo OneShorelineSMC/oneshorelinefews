@@ -52,6 +52,7 @@
 
   #main { position: relative; flex: 1; min-height: 0; }
   #map { position: absolute; inset: 0; background: #dfe7ee; }
+  .leaflet-control-attribution a { text-decoration: underline; }   /* links in text need more than color (WCAG 1.4.1) */
   #list { position: absolute; inset: 0; z-index: 1200; background: var(--bg); overflow-y: auto; display: none; padding: 10px 12px 24px; }
   #list.show { display: block; }
 
@@ -166,7 +167,7 @@
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261015h"></script>
+<script src="lookups.js?v=20261015i"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)

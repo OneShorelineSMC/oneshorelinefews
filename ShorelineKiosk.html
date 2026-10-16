@@ -21,11 +21,11 @@
   /* Designed at exactly 800x480 and scaled to fit whatever screen it's on. */
   :root {
     --bg: #f0f4f8; --panel: #ffffff; --ink: #003B5C; --muted: #5b6877; --line: #e3e8ee;
-    --red: #c0392b; --amber: #a35f00; --green: #2e7d32; --blue: #1e6fd9; --fc: #005A70; --fcline: #009E73; --mhhw: #455a75; --tidetbl: #4a4f55;
+    --red: #c0392b; --amber: #a35f00; --green: #2e7d32; --blue: #1e6fd9; --fc: #005A70; --fcline: #00838f; --mhhw: #5f6b78; --tidetbl: #4a4f55; --info: #0a5587; --infob: #1e88e5; --infobg: rgba(30,136,229,.08); --infofill: rgba(30,136,229,.20);
   }
   :root[data-theme="dark"] {
     --bg: #0e1319; --panel: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542;
-    --red: #f47c79; --amber: #ffa726; --green: #66bb6a; --blue: #6ea8fe; --fc: #4fc3d9; --fcline: #4fc3d9; --mhhw: #9aa8b8; --tidetbl: #a7b0ba;
+    --red: #f47c79; --amber: #ffa726; --green: #66bb6a; --blue: #6ea8fe; --fc: #4fc3d9; --fcline: #4fc3d9; --mhhw: #9aa8b8; --tidetbl: #a7b0ba; --info: #8cc8ff; --infob: #4ea3f0; --infobg: rgba(78,163,240,.12); --infofill: rgba(78,163,240,.26);
   }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg);
     font-family: Arial, Helvetica, sans-serif; color: var(--ink); cursor: none; }
@@ -67,16 +67,21 @@
   /* Headline band: the one line a responder reads first. The color goes around the whole box. */
   #thead { flex: none; display: flex; align-items: center; gap: 12px; border: 3px solid #8a96a3; border-radius: 8px;
     padding: 4px 12px; min-height: 38px; box-sizing: border-box; background: rgba(138,150,163,.08); cursor: pointer; }
-  #thead.over { border-color: #e07b00; background: rgba(224,123,0,.08); }
+  /* Above MHHW = higher than usual: blue, for information (MHHW is a tidal reference, not a flood level). Red only at the flood level. */
+  #thead.over { border-color: var(--infob); background: var(--infobg); }
   #thead.red { border-color: #c62828; background: rgba(198,40,40,.08); }
   #thead.ok { border-color: #2e7d32; background: rgba(46,125,50,.07); }
   #thead .hm { flex: 1; min-width: 0; font-size: 16.5px; font-weight: bold; line-height: 1.2; overflow: hidden;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  #thead.over .hm { color: var(--amber); } #thead.red .hm { color: var(--red); } #thead.ok .hm { color: var(--green); }
+    display: block; }
+  #thead.over .hm { color: var(--info); } #thead.red .hm { color: var(--red); } #thead.ok .hm { color: var(--green); }
   #thead .hm span { font-weight: normal; color: var(--ink); }
+  #thead .hm .hd { display: block; font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #thead .hm .hd b { font-weight: bold; }
+  #thead .hm .hi { margin-right: 5px; }
   #thead .hnow { flex: none; text-align: right; font-size: 12.5px; color: var(--muted); line-height: 1.25; white-space: nowrap; }
   #thead .hnow b { font-size: 17px; color: var(--ink); }
-  #stage.creekalert #thead .hm { -webkit-line-clamp: 1; font-size: 15.5px; }
+  #stage.creekalert #thead .hm { font-size: 15.5px; white-space: nowrap; text-overflow: ellipsis; }
+  #stage.creekalert #thead .hm .hd { display: none; }   /* small screen space during a creek alert: title line only */
   #stage.creekalert #thead { min-height: 32px; padding: 2px 12px; }
 
   /* Right: 7-day look-ahead (the main element) */
@@ -93,12 +98,12 @@
   .tday .dt { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
   .tday .dx { font-size: 11.5px; font-weight: bold; margin-top: 2px; line-height: 1.2; min-height: 14px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* one line, so the graph below keeps its height */
-  .tday.over { border-top-color: #e07b00; background: rgba(224,123,0,.09); }
-  .tday.over .dv, .tday.over .dx { color: var(--amber); }
+  .tday.over { border-top-color: var(--infob); background: var(--infobg); }
+  .tday.over .dv, .tday.over .dx { color: var(--info); }
   .tday.red { border-top-color: #c0392b; background: rgba(192,57,43,.09); }
   .tday.red .dv, .tday.red .dx { color: var(--red); }
-  .tday.maybe { border-top-color: #e69f00; background: rgba(230,159,0,.10); }
-  .tday.maybe .dx { color: var(--amber); }
+  .tday.maybe { border-top-color: var(--infob); border-top-style: dashed; background: var(--infobg); }
+  .tday.maybe .dx { color: var(--info); }
   .tday.under .dx { color: var(--green); font-weight: normal; }
   .tday.past .dv { color: var(--muted); }
   .tday .dt .fc { color: var(--fc); font-weight: bold; }
@@ -107,7 +112,7 @@
   #tchart { position: relative; flex: 1; min-height: 60px; }
   #tkey { font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; white-space: nowrap; height: 15px; }
   #tkey i { display: inline-block; width: 14px; height: 0; margin-right: 3px; vertical-align: middle; }
-  #tkey i.ab { height: 9px; background: rgba(224,123,0,.40); border-top: 2px solid #e07b00; box-sizing: border-box; }
+  #tkey i.ab { height: 9px; background: var(--infofill); border-top: 2px solid var(--infob); box-sizing: border-box; }
   #tkey .tap { margin-left: auto; }
 
   /* Bottom: NWS coastal flood information */
@@ -272,7 +277,7 @@
   .ctitle .ck i { display: inline-block; width: 13px; height: 0; margin-right: 3px; vertical-align: middle; }
   .cchart { position: relative; }
   #clock { font-size: 16px; font-weight: bold; color: var(--ink); white-space: nowrap; }
-  #stale { color: var(--amber); font-weight: bold; display: block; }
+  #stale { color: var(--ink); font-weight: bold; display: block; }   /* data problem, not a hazard: no orange */
 
   /* Detail overlay (touch) */
   #detail { position: absolute; inset: 0; background: var(--panel); display: none; flex-direction: column; }
@@ -285,7 +290,7 @@
   #dbody table { width: 100%; border-collapse: collapse; font-size: 17px; }
   #dbody th { text-align: left; font-size: 13px; color: var(--muted); font-weight: normal; padding: 0 10px 6px 0; border-bottom: 1px solid var(--line); }
   #dbody td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  #dbody .red { color: var(--red); }
+  #dbody .red { color: var(--red); } #dbody .info { color: var(--info); font-weight: bold; }
   .dalert { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
   .dalert h3 { margin: 0 0 4px; font-size: 18px; }
   .dalert .when { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
@@ -327,7 +332,7 @@
   .msens .val { font-size: 20px; font-weight: bold; white-space: nowrap; }
   .msens .val small { font-size: 12px; font-weight: normal; color: var(--muted); }
   .msens .a { font-size: 11.5px; color: var(--muted); }
-  .msens .a.old { color: var(--amber); }
+  .msens .a.old { color: var(--ink); font-weight: bold; }
   .msens canvas { width: 100%; height: 30px; display: block; margin-top: 2px; }
   #mback { margin-top: auto; text-align: center; font-size: 15px; font-weight: bold; padding: 8px; border-radius: 8px;
     background: var(--ink); color: var(--panel); }
@@ -435,9 +440,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261015h"></script>
-<script src="tide_season.js?v=20261015h"></script>
-<script src="creek_status.js?v=20261015h"></script>
+<script src="lookups.js?v=20261015i"></script>
+<script src="tide_season.js?v=20261015i"></script>
+<script src="creek_status.js?v=20261015i"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -714,6 +719,20 @@ function upcomingAbove(s, now) {
     return w;
   });
 }
+/* Headline for the coming week's tides above MHHW (same as the Tides page): title and when, then peak, how far above
+   MHHW and where it is against the flood level. Above MHHW alone is "higher than usual" (information); red only at TIDE_RED_FT_RWC. */
+function headHtml(ups, st, now) {
+  var rl = redFor(st), red = ups.filter(function (w) { return w.peak >= rl; }), first = red[0] || ups[0], on = first.start <= now;
+  var when = on ? LK.text("tide_head_now", { time: fTime(first.end) }) : winText(first, now).replace(/ \([^)]*\)$/, "");
+  var title = red.length ? LK.text("tide_head_red") : LK.text("tide_head_info");
+  var tag = first.src === "fcst" ? " (projected)" : first.src === "measured" ? " (measured)" : "";   // short: one line on the kiosk
+  var peak = (on && first.peakT <= now ? "Peaked " : "Peak ") + "<b>" + first.peak.toFixed(2) + " ft</b> at " + esc(fTime(first.peakT)) + tag;
+  var bits = [peak, sgn(first.peak - st.mhhw).replace(/^\+/, "") + " ft above MHHW"];
+  if (isFinite(rl)) bits.push(esc(LK.text(first.peak >= rl ? "tide_head_at_red_short" : "tide_head_below_red_short", { ft: rl.toFixed(1) })));
+  var more = ups.length - 1;
+  return '<span class="hi" aria-hidden="true">' + (red.length ? "⚠" : "〰") + "</span>" + esc(title) + ": " + esc(when) +
+    (more ? " <span>+" + more + " more this week</span>" : "") + '<span class="hd">' + bits.join(" · ") + "</span>";
+}
 function winText(w, now) {
   return relDay(w.start, now) + " " + fTime(w.start).replace(/ (AM|PM)$/, function (m) { return fTime(w.end).slice(-3) === m ? "" : m; }) +
     "–" + fTime(w.end) + " (" + w.peak.toFixed(2) + " ft)";
@@ -736,13 +755,7 @@ function renderTides() {
     if (!ups.length) { hd.className = "ok"; hm.textContent = "No tides above MHHW in the next 7 days"; }
     else {
       hd.className = ups.some(function (w) { return w.peak >= redFor(st); }) ? "red" : "over";
-      var first = ups[0], on = first.start <= now;
-      var lead = on ? "Above MHHW now, until " + fTime(first.end) + " · " + (first.peakT <= now ? "peaked " : "peak ") + first.peak.toFixed(2) +
-        " ft " + srcWord(first.src) + " at " + fTime(first.peakT) : "Tides above MHHW: " + winText(first, now);
-      var rest = (on ? ups.slice(1) : ups.slice(1)).slice(0, 1).map(function (w) { return winText(w, now); });
-      var more = ups.length - 1 - rest.length;
-      if (ups.some(function (w) { return w.peak >= redFor(st); })) lead += " · " + LK.text("tide_level_red");
-      hm.innerHTML = esc(lead) + (rest.length ? " · " + esc(rest[0]) : "") + (more > 0 ? " <span>+" + more + " more this week</span>" : "");
+      hm.innerHTML = headHtml(ups, st, now);
     }
   }
 
@@ -794,17 +807,31 @@ function refCss(n) { return getComputedStyle(document.documentElement).getProper
 var refMarks = {
   id: "refMarks",
   afterDatasetsDraw: function (c) {
+    // Each label sits on its line, in the first spot (right end, left end, then stepping across) where it covers no plotted
+    // water level and no other label; if there is none, at the right end.
     var o = c.options.plugins.refMarks || {}, xs = c.scales.x, ys = c.scales.y, ctx = c.ctx, placed = [], left = o.side === "left";
-    ctx.save(); ctx.font = "600 10px Arial, sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    var pts = [];
+    c.data.datasets.forEach(function (d, i) {
+      if (d.refLabel || d.fill || !c.isDatasetVisible(i)) return;
+      c.getDatasetMeta(i).data.forEach(function (e) { if (e && isFinite(e.x) && isFinite(e.y)) pts.push(e); });
+    });
+    function free(x, y, w, h) {
+      for (var k = 0; k < pts.length; k++) { var p = pts[k]; if (p.x >= x - 3 && p.x <= x + w + 3 && p.y >= y - 3 && p.y <= y + h + 3) return false; }
+      for (k = 0; k < placed.length; k++) { var q = placed[k]; if (x < q.x + q.w + 6 && x + w + 6 > q.x && y < q.y + q.h && y + h > q.y) return false; }
+      return true;
+    }
+    ctx.save(); ctx.font = "bold 11px Arial, sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
     c.data.datasets.forEach(function (d, i) {
       if (!d.refLabel || !c.isDatasetVisible(i) || !d.data.length) return;
       var v = d.data[0].y; if (v < ys.min || v > ys.max) return;
-      var py = Math.round(ys.getPixelForValue(v)), w = ctx.measureText(d.refLabel).width + 6, h = 12;
-      var x = left ? xs.left + 4 : xs.right - 4 - w;
-      placed.forEach(function (p) { if (Math.abs(p.y - py) < h + 1 && x < p.x + p.w && x + w > p.x) x = left ? p.x + p.w + 8 : p.x - w - 8; });
-      ctx.globalAlpha = 0.9; ctx.fillStyle = o.bg || refCss("--card"); ctx.fillRect(x, py - h / 2, w, h); ctx.globalAlpha = 1;
-      ctx.fillStyle = d.borderColor; ctx.fillText(d.refLabel, x + 3, py + 0.5);
-      placed.push({ x: x, y: py, w: w });
+      var py = Math.round(ys.getPixelForValue(v)), w = ctx.measureText(d.refLabel).width + 8, h = 14, y = py - h / 2;
+      var a = xs.left + 4, b = xs.right - 4 - w, cands = left ? [a, b] : [b, a];
+      for (var f = 0.1; f < 1; f += 0.1) cands.push(left ? a + (b - a) * f : b - (b - a) * f);
+      var x = cands[0];
+      for (var n = 0; n < cands.length; n++) { if (free(cands[n], y, w, h)) { x = cands[n]; break; } }
+      ctx.globalAlpha = 0.92; ctx.fillStyle = o.bg || refCss("--card"); ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
+      ctx.fillStyle = d.borderColor; ctx.fillText(d.refLabel, x + 4, py + 0.5);
+      placed.push({ x: x, y: y, w: w, h: h });
     });
     ctx.restore();
   }
@@ -828,6 +855,22 @@ var nowLinePlugin = {
 var TC = { chart: null, bars: null };
 
 // 7-day graph lined up under the day cards: one card per day column, no side axes taking up width.
+/* Text alternative for the tide graph (screen readers): what it shows, the level now, the highest tide ahead and its
+   source, and where that is against MHHW and the flood level (same as the Tides page) */
+function chartSummary(s, now, useModel) {
+  var st = s.st, rl = redFor(st), fe = useModel ? modelEnd(s) : now, end = dayStart(now) + DAYS * 86400000, out = [];
+  out.push("Tide graph for " + (st.name || "Redwood City") + ", today and the next 6 days, in feet NAVD88.");
+  var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null;
+  if (last && now - last.t < 3600000) out.push("Now " + last.v.toFixed(2) + " ft, measured at " + fTime(last.t) + ".");
+  var top = null;
+  (useModel ? s.ofs : []).forEach(function (p) { if (p.t >= now && p.t <= fe && (!top || p.v > top.v)) top = { t: p.t, v: p.v, src: "NOAA projection" }; });
+  (s.pred || []).forEach(function (p) { if (p.t > Math.max(now, fe) && p.t <= end && (!top || p.v > top.v)) top = { t: p.t, v: p.v, src: "tide table" }; });
+  if (top) out.push("Highest ahead: " + top.v.toFixed(2) + " ft, " + relDay(top.t, now) + " " + fTime(top.t) + " (" + top.src + "), " +
+    (top.v > st.mhhw ? (top.v - st.mhhw).toFixed(2) + " ft above" : (st.mhhw - top.v).toFixed(2) + " ft below") + " MHHW (" + st.mhhw.toFixed(2) + " ft)" +
+    (isFinite(rl) ? ", " + LK.text(top.v >= rl ? "tide_head_at_red" : "tide_head_below_red", { ft: rl.toFixed(1) }) : "") + ".");
+  out.push("Lines: measured until now" + (useModel ? ", NOAA projection until " + relDay(fe, now) + " " + fTime(fe) : "") + ", then the tide table.");
+  return out.join(" ");
+}
 function drawTideChart(s, now) {
   if (!s.pred || typeof Chart === "undefined" || $t("tides").classList.contains("hide")) return;
   var start = dayStart(now), m = s.st.mhhw, ink = cssVar("--ink"), muted = cssVar("--muted"), line = cssVar("--line");
@@ -845,11 +888,11 @@ function drawTideChart(s, now) {
   var yMin = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), yMax = Math.ceil(Math.max.apply(null, ys) + 0.3);   // top: just above the highest line
   var data = { datasets: [
     { data: mh, refLabel: "MHHW " + m.toFixed(2) + " ft", borderColor: cssVar("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false, order: 3 },
-    { data: ab, borderColor: "rgba(0,0,0,0)", backgroundColor: "rgba(224,123,0,0.40)", borderWidth: 0, pointRadius: 0, tension: 0.3, fill: 0, order: 5 },
+    { data: ab, borderColor: "rgba(0,0,0,0)", backgroundColor: cssVar("--infofill"), borderWidth: 0, pointRadius: 0, tension: 0.3, fill: 0, order: 5 },
     { data: pts, borderColor: cssVar("--tidetbl"), borderWidth: 1, pointRadius: 0, tension: 0.3, fill: false, order: 2 },
-    { data: ob, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false, order: 1 },
+    { data: ob, borderColor: "#1e88e5", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false, order: 1 },
     { data: fc, borderColor: cssVar("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false, order: 0 }
-  ].concat(showRed ? [{ data: [{ x: 0, y: rl }, { x: DAYS * 24, y: rl }], refLabel: LK.text("tide_red_line", { ft: rl.toFixed(1) }), borderColor: cssVar("--red"), borderWidth: 2, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false, order: 4 }] : []) };
+  ].concat(showRed ? [{ data: [{ x: 0, y: rl }, { x: DAYS * 24, y: rl }], refLabel: LK.text("tide_red_line", { ft: rl.toFixed(1) }), borderColor: cssVar("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false, order: 4 }] : []) };
   var opts = {
     responsive: true, maintainAspectRatio: false, animation: false, events: [],
     layout: { padding: 0 },
@@ -865,10 +908,11 @@ function drawTideChart(s, now) {
   };
   if (TC.chart) { TC.chart.data = data; TC.chart.options = opts; TC.chart.update("none"); }
   else TC.chart = new Chart($t("tchartc"), { type: "line", data: data, options: opts, plugins: [refMarks, nowLinePlugin] });
-  $t("tkey").innerHTML = "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span>" +
+  $t("tchartc").setAttribute("aria-label", chartSummary(s, now, useModel));
+  $t("tkey").innerHTML = "<span><i style='border-top:3px solid #1e88e5'></i>Measured</span>" +
     (fc.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
     "<span><i style='border-top:1.5px dashed var(--mhhw)'></i>MHHW " + s.st.mhhw.toFixed(2) + " ft</span><span><i class='ab'></i>Above MHHW</span>" +
-    (showRed ? "<span><svg width='16' height='4' aria-hidden='true' style='vertical-align:middle;margin-right:3px'><line x1='0' y1='2' x2='16' y2='2' style='stroke:var(--red)' stroke-width='2' stroke-dasharray='7 2 2 2'/></svg>" + esc(LK.text("tide_red_line", { ft: rl.toFixed(1) })) + "</span>" : "");
+    (showRed ? "<span><svg width='16' height='4' aria-hidden='true' style='vertical-align:middle;margin-right:3px'><line x1='0' y1='2' x2='16' y2='2' style='stroke:var(--red)' stroke-width='3' stroke-dasharray='7 2 2 2'/></svg>" + esc(LK.text("tide_red_line", { ft: rl.toFixed(1) })) + "</span>" : "");
 }
 
 /* ---------- Loading tide data ---------- */
@@ -1095,7 +1139,7 @@ function showLookAhead() {
     html += "<h3 style='margin:4px 0 6px;font-size:18px'>NOAA projection, through " + esc(fDay(fe)) + " " + esc(fTime(fe)) + "</h3>" +
       (hs.length ? "<table><tr><th>High tide</th><th>Tide table</th><th>NOAA projection</th><th>Difference</th></tr>" + hs.map(function (h) {
         var mp = modelPeak(s, h); if (!mp) return "";
-        return "<tr><td><b>" + fDay(mp.t) + "</b> " + fTime(mp.t) + "</td><td>" + h.v.toFixed(2) + " ft</td><td" + (mp.v > st.mhhw ? ' class="red"' : "") +
+        return "<tr><td><b>" + fDay(mp.t) + "</b> " + fTime(mp.t) + "</td><td>" + h.v.toFixed(2) + " ft</td><td" + (mp.v >= redFor(st) ? ' class="red"' : mp.v > st.mhhw ? ' class="info"' : "") +
           "><b>" + mp.v.toFixed(2) + " ft</b></td><td>" + sgn(mp.v - h.v) + " ft</td></tr>";
       }).join("") + "</table>" : "") +
       "<p style='margin-top:8px'>" + (fwins.length ? "Above MHHW (measured so far, then NOAA projection): " + fwins.map(function (w) {
@@ -1106,18 +1150,18 @@ function showLookAhead() {
   html += wins.length ? "<table><tr><th>Day</th><th>Above MHHW (tide table)</th><th>High tide (tide table)</th></tr>" + wins.map(function (w) {
     return "<tr><td><b>" + fDay(w.start) + "</b></td><td>" + fTime(w.start) + " – " + fTime(w.end) +
       ' <span style="color:var(--muted);font-size:14px">(' + dur(Math.round((w.end - w.start) / 60000)) + ")</span></td><td>" +
-      w.peak.toFixed(2) + ' ft at ' + fTime(w.peakT) + ' <span class="red" style="font-size:14px">' + sgn(w.peak - st.mhhw) + "</span></td></tr>";
+      w.peak.toFixed(2) + ' ft at ' + fTime(w.peakT) + ' <span class="' + (w.peak >= redFor(st) ? "red" : "info") + '" style="font-size:14px">' + sgn(w.peak - st.mhhw) + "</span></td></tr>";
   }).join("") + "</table>" : "<p>The tide table has no tides above MHHW in the next " + DAYS + " days.</p>";
   if (adj) {
     var after = modelOK(s, now) ? modelEnd(s) : now;   // the model forecast covers the tides before this
     var extra = (s.highs || []).filter(function (h) { return h.t > after && h.v <= st.mhhw && h.v + off > st.mhhw; });
-    html += "<p style='margin-top:12px'><b style='color:var(--amber)'>If the Bay stays " + off.toFixed(2) + " ft higher than the tide table</b> (its average at the last " +
+    html += "<p style='margin-top:12px'><b style='color:var(--info)'>If the Bay stays " + off.toFixed(2) + " ft higher than the tide table</b> (its average at the last " +
       OFFSET_RECENT_HIGHS + " high tides)" + (after > now ? ", after the NOAA projection ends" : "") + ", " + (extra.length ? "these high tides would also go above MHHW: " +
       extra.map(function (h) { return fDay(h.t) + " " + fTime(h.t) + " (" + (h.v + off).toFixed(2) + " ft)"; }).join("; ") + "."
       : "no other high tides would go above MHHW.") + "</p>";
   }
   html += '<div id="dnote">MHHW = ' + st.mhhw.toFixed(2) + " ft NAVD88. " + esc(LK.text("mhhw_definition")) + " " + esc(LK.text("predicted_tide_note")) + " " +
-    esc(LK.text("noaa_forecast_note")) + " All heights ft NAVD88. NOAA station " + esc(st.id) + ".</div>";
+    esc(LK.text("mhhw_info")) + " " + esc(LK.text("noaa_forecast_note")) + " All heights ft NAVD88. NOAA station " + esc(st.id) + ".</div>";
   openDetail(st.name + " – next " + DAYS + " days", html);
 }
 function showPast() {
@@ -1133,7 +1177,7 @@ function showPast() {
     (Math.abs(mc.mean) >= 0.05 ? "; measured averaged " + sgn(mc.mean) + " ft from the model" : "") + ".</p>";
   html += R.length ? "<table><tr><th>High tide</th><th>Tide table</th><th>Measured</th><th>Difference</th></tr>" + R.map(function (r) {
     return "<tr><td><b>" + fDay(r.t) + "</b> " + fTime(r.t) + "</td><td>" + r.pred.toFixed(2) + " ft</td><td>" + r.meas.toFixed(2) + " ft</td><td" +
-      (r.d >= OFFSET_HIGH_FT ? ' class="red"' : "") + "><b>" + sgn(r.d) + " ft</b></td></tr>";
+      (r.d >= OFFSET_HIGH_FT ? ' class="info"' : "") + "><b>" + sgn(r.d) + " ft</b></td></tr>";
   }).join("") + "</table>" : "<p>Not enough measurements yet.</p>";
   html += '<div id="dnote">Measured = the highest NOAA reading within 90 minutes of each tide-table high tide (preliminary data). ' +
     "A positive difference means the Bay ran higher than the tide table, usually from storms, wind, runoff or a seasonal rise. " +
@@ -1257,7 +1301,7 @@ function creekTide(c, now, short) {   // short: leave out the vs-predicted note 
   var trend = ago ? (tl.v - ago.v > 0.05 ? "rising" : tl.v - ago.v < -0.05 ? "falling" : "steady") : "";
   var dm = tl.v - T.st.mhhw, pv = predAt(T, tl.t), dp = pv == null ? null : tl.v - pv;
   return { name: T.st.name, v: tl.v, html: "<b>" + tl.v.toFixed(2) + " ft</b> <span class='m'>· " +
-    (dm >= 0 ? "<b style='color:" + (tl.v >= redFor(T.st) ? "var(--red)" : "var(--amber)") + "'>" + dm.toFixed(2) + " above MHHW</b>" : Math.abs(dm).toFixed(2) + " below MHHW") +
+    (dm >= 0 ? "<b style='color:" + (tl.v >= redFor(T.st) ? "var(--red)" : "var(--info)") + "'>" + dm.toFixed(2) + " above MHHW</b>" : Math.abs(dm).toFixed(2) + " below MHHW") +
     (trend ? ", " + trend : "") + (!short && dp != null && Math.abs(dp) >= OFFSET_NOTE_FT ? " · " + (dp > 0 ? "+" : "−") + Math.abs(dp).toFixed(2) + " vs tide table" : "") + "</span>" };
 }
 // Rain trigger progress, e.g. "4-hr rain 0.30 of 0.42 in + tide 6.10 of 6.32 ft"; null when it is dry and nothing is met
@@ -1316,7 +1360,7 @@ function renderCreek() {
   st.stages.forEach(function (s, i) {
     var g = s.g, col = s.quiet ? "#6b7a8c" : s.lvl ? s.lvl.color : "#2e7d32";
     var sub = !s.last ? "No recent readings" : s.quiet
-      ? "<b style='color:var(--amber)'>Gauge may be offline</b> · last report " + fDay(s.last.t).replace(/^\w+, /, "") + " " + fTime(s.last.t)
+      ? "<b>⚠ Gauge may be offline</b> · last report " + fDay(s.last.t).replace(/^\w+, /, "") + " " + fTime(s.last.t)
       : "<b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" + (s.lvl ? esc(s.lvl.name) : esc(LK.text("status_normal"))) + "</b> · " +
         (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) : "highest level") + " · " + fTime(s.last.t);
     h += '<div class="cbox sbox' + (two ? " two" : "") + '" data-info="1" style="border-left-color:' + col + '">' +
@@ -1374,7 +1418,7 @@ function renderAllCreeks(states, now) {
     // each gauge: stage, its level and distance to the next one (an offline gauge shows no old number)
     st.stages.forEach(function (s) {
       var row = !s.last ? "<span class='m'>no data</span>" : s.quiet
-        ? "<span style='color:var(--amber);font-weight:bold'>Offline</span> <span class='m'>· since " + fDay(s.last.t).replace(/^\w+, /, "") + "</span>"
+        ? "<span style='font-weight:bold'>⚠ Offline</span> <span class='m'>· since " + fDay(s.last.t).replace(/^\w+, /, "") + "</span>"
         : "<span class='ccv'>" + s.last.v.toFixed(2) + s.arrow + " ft</span><b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" +
           (s.lvl ? esc(s.lvl.name.replace("Flood ", "")) : esc(LK.text("status_normal"))) + "</b>" +
           (s.next ? " <span class='m'>· " + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) + "</span>" : "");
@@ -1605,7 +1649,7 @@ function drawCreekCharts(st, now) {
     });
     sets.push({ data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.10)", borderWidth: 2, pointRadius: 0, fill: "origin", tension: 0 });
     put("chStage" + i, { data: { datasets: sets }, options: sopt });
-    document.getElementById("cStageKey" + i).innerHTML = (i === 0 && st.late && st.gen ? "<b style='color:var(--amber)'>Data delayed · " + agoText(now - st.gen) + "</b>" : "") +
+    document.getElementById("cStageKey" + i).innerHTML = (i === 0 && st.late && st.gen ? "<b>⚠ Data delayed · " + agoText(now - st.gen) + "</b>" : "") +
       "<span><i style='border-top:2px solid var(--ink)'></i>Stage</span>" +
       shown.map(function (t) { return "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + " " + t.value.toFixed(2) + "</span>"; }).join("");
   });
@@ -1623,10 +1667,10 @@ function drawCreekCharts(st, now) {
   put("chTide", { data: { datasets: [
       { data: [{ x: H(x0), y: tS.st.mhhw }, { x: H(x1), y: tS.st.mhhw }], refLabel: "MHHW " + tS.st.mhhw.toFixed(2) + " ft", borderColor: cssVar("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, fill: false },
       { data: tp, borderColor: cssVar("--tidetbl"), borderWidth: 1, pointRadius: 0, tension: 0.3, fill: false },
-      { data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2, fill: false },
+      { data: to, borderColor: "#1e88e5", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false },
       { data: tf, borderColor: cssVar("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false }
-    ].concat(isFinite(trl) ? [{ data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], refLabel: LK.text("tide_red_line_creek", { ft: trl.toFixed(1) }), borderColor: cssVar("--red"), borderWidth: 2, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false }] : []) }, options: topt });
-  document.getElementById("cTideKey").innerHTML = "<span><i style='border-top:2.5px solid #1e88e5'></i>Measured</span>" +
+    ].concat(isFinite(trl) ? [{ data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], refLabel: LK.text("tide_red_line_creek", { ft: trl.toFixed(1) }), borderColor: cssVar("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false }] : []) }, options: topt });
+  document.getElementById("cTideKey").innerHTML = "<span><i style='border-top:3px solid #1e88e5'></i>Measured</span>" +
     (tf.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") +
     "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>";   // MHHW and the flood level are labeled on their lines
 }
@@ -1760,7 +1804,7 @@ function renderMap() {
   });
   if (!M.fitted) { mapFitAll(); M.fitted = true; }
   var gen = parseLocal(M.data.generated), late = now - gen > 45 * 60000;
-  var sub = M.data.sites.length + " sites · updated " + fTime(gen) + (late ? ' · <b style="color:var(--amber)">⚠ delayed</b>' : "");
+  var sub = M.data.sites.length + " sites · updated " + fTime(gen) + (late ? ' · <b>⚠ delayed</b>' : "");
   var selSite = M.sel && all.find(function (o) { return o.site.site === M.sel; });
   if (selSite) { side.innerHTML = siteDetail(selSite.site, selSite.st, now, sub); drawSparks(selSite.site, now); return; }
 

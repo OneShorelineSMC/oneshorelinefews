@@ -54,6 +54,9 @@
     border: 3px solid var(--line); }
   .box.ok { border-color: var(--ok); }
   .box.amber { border-color: #e07b00; background: color-mix(in srgb, #e07b00 7%, var(--card)); }
+  /* information, not a hazard: a tide higher than an average high tide (MHHW is a tidal reference, not a flood level) */
+  .box.info { border-color: #1e88e5; background: color-mix(in srgb, #1e88e5 7%, var(--card)); }
+  @media (prefers-color-scheme: dark) { .box.info { border-color: #4ea3f0; } }
   .box.red { border-color: #c62828; background: color-mix(in srgb, #c62828 7%, var(--card)); }
   .box.gray { border-color: var(--gray); }
 
@@ -133,6 +136,7 @@
   .sys .row:first-child { border-top: 0; }
   .sys .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--gray); transform: translateY(1px); }
   .sys .dot.ok { background: var(--ok); } .sys .dot.amber { background: #e07b00; } .sys .dot.red { background: #c62828; }
+  .sys .dot.dq { background: transparent; border: 2px dashed var(--gray); box-sizing: border-box; }   /* data problem (late, not reporting), not a hazard */
   .sys .k { font-weight: 700; color: var(--ink); white-space: nowrap; }
   .sys .v { flex: 1; min-width: 0; }
   .sys a { white-space: nowrap; }
@@ -164,14 +168,14 @@
 
   <h2 class="sec">Creeks <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
   <div id="csPreview"></div>
-  <div class="creeks" id="creeks" aria-live="polite">
+  <div class="creeks" id="creeks">
     <div class="box ck gray"><span class="nm">Loading…</span></div>
   </div>
   <div class="rising" id="rising"></div>
   <div class="calm" id="calm"></div>
 
   <h2 class="sec">Bay tides <a href="Tides.html">Tide details ›</a></h2>
-  <a class="box tide gray" id="tide" href="Tides.html" aria-live="polite"><span class="th">Loading tides…</span></a>
+  <a class="box tide gray" id="tide" href="Tides.html"><span class="th">Loading tides…</span></a>
 
   <h2 class="sec">More</h2>
   <div class="grid">
@@ -193,7 +197,7 @@
     <div class="row"><span class="dot" id="dCreek"></span><span class="k">Creek data</span><span class="v" id="vCreek">checking…</span></div>
     <div class="row"><span class="dot" id="dGauges"></span><span class="k">Creek gauges</span><span class="v" id="vGauges">checking…</span></div>
     <div class="row"><span class="dot" id="dSites"></span><span class="k">Monitoring network</span><span class="v"><span id="vSites">checking…</span> · <a href="SiteMap.html">map ›</a></span></div>
-    <div class="row" id="rLook" hidden><span class="dot amber"></span><span class="k">Settings files</span><span class="v" id="vLook"></span></div>
+    <div class="row" id="rLook" hidden><span class="dot dq"></span><span class="k">Settings files</span><span class="v" id="vLook"></span></div>
   </div>
   <div class="grid" style="margin-top:12px">
     <a class="card" href="https://oneshorelineearlywarning.onerain.com/" target="_blank" rel="noopener">
@@ -230,9 +234,16 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261015h"></script>
-<script src="creek_status.js?v=20261015h"></script>
+<script src="lookups.js?v=20261015i"></script>
+<script src="creek_status.js?v=20261015i"></script>
 <script>
+// The NWS alerts box is a live region: rewrite it only when its content changes, so screen readers aren't
+// re-read the same alerts every few minutes. (Creek cards and the tide box update quietly; they aren't live regions.)
+(function () {
+  var el = document.getElementById("alerts"), d = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
+  Object.defineProperty(el, "innerHTML", { configurable: true, get: function () { return d.get.call(this); },
+    set: function (v) { if (v !== this.__last) { this.__last = v; d.set.call(this, v); } } });
+})();
 /* ===================== CONFIG ===================== */
 // Numbers, tide levels and wording that staff check live in the lookups/ folder (settings.csv, tide_stations.csv,
 // display_text.csv; see lookups/README.md). They are read by lookups.js into the variables below.
@@ -499,10 +510,10 @@ function renderCreeks() {
 
   // System status rows for creek data and gauges
   var gen = states.length ? states[0].gen : null;
-  sys("dCreek", "vCreek", anyLate ? "amber" : "ok", gen ? (anyLate ? "Delayed · last updated " + agoText(now - gen) : "Current · updated " + fTime(gen) + " " + tzAbbr()) : "No update time");
+  sys("dCreek", "vCreek", anyLate ? "dq" : "ok", gen ? (anyLate ? "Delayed · last updated " + agoText(now - gen) : "Current · updated " + fTime(gen) + " " + tzAbbr()) : "No update time");
   var all = [], off = [];
   states.forEach(function (st) { st.stages.forEach(function (x) { all.push(x); if (x.quiet) off.push({ st: st, x: x }); }); });
-  sys("dGauges", "vGauges", off.length ? "amber" : "ok", (all.length - off.length) + " of " + all.length + " reporting" + (off.length ? " · not reporting: " + off.map(function (o) {
+  sys("dGauges", "vGauges", off.length ? "dq" : "ok", (all.length - off.length) + " of " + all.length + " reporting" + (off.length ? " · not reporting: " + off.map(function (o) {
     return (o.st.c.short || o.st.c.name) + (o.st.c.stages.length > 1 ? " (" + o.x.g.label + ")" : "") + (o.x.last ? " since " + fmt(o.x.last.t, { month: "short", day: "numeric" }) : "");
   }).join(", ") : ""));
 }
@@ -532,7 +543,7 @@ function creeks() {
     return loadTides().then(renderCreeks);
   }).catch(function () {
     if (!C.data) $("creeks").innerHTML = '<div class="box ck gray" style="grid-column:1/-1"><span class="nm">Creek data unavailable right now</span><span class="g">Retrying in a few minutes. <a href="Creeks.html">Creek page ›</a></span></div>';
-    sys("dCreek", "vCreek", "amber", "Unavailable right now");
+    sys("dCreek", "vCreek", "dq", "Unavailable right now");
   });
 }
 
@@ -592,9 +603,9 @@ function renderTide() {
   var head, sub = "";
   if (!ups.length) { el.className = "box tide ok"; head = "No tides higher than an average high tide expected in the next " + TIDE_DAYS + " days."; }
   else {
-    // amber above MHHW; red at the Redwood City flood level (TIDE_RED_FT_RWC, provisional)
+    // blue (information) above MHHW; red at the Redwood City flood level (TIDE_RED_FT_RWC, provisional)
     var redLvl = TIDE_STATION === "9414523" ? LK.num("TIDE_RED_FT_RWC") : Infinity;
-    el.className = "box tide " + (ups.some(function (w) { return w.peak >= redLvl; }) ? "red" : "amber");
+    el.className = "box tide " + (ups.some(function (w) { return w.peak >= redLvl; }) ? "red" : "info");
     var on = ups[0].start <= now, list = on ? ups.slice(1) : ups;
     if (on) head = "The tide is higher than an average high tide right now, until about " + clock(ups[0].end) + "." +
       (list.length ? " Next: " + dayWord(list[0].start) + " about " + span(list[0]) + "." : "");
@@ -603,6 +614,7 @@ function renderTide() {
     var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
     sub = (top.peakT <= now ? "It reached " : "At its highest, ") + feet(top.peak - m) + " above an average high tide (" + dayWord(top.peakT) + " around " + clock(top.peakT) + ").";
     if (top.peak >= redLvl) sub += " " + LK.text("tide_red_home", { ft: redLvl.toFixed(1) });
+    else if (isFinite(redLvl)) sub += " " + LK.text("tide_below_red_home", { ft: redLvl.toFixed(1) });
   }
   var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
   if (last && now - last.t < 36e5) {
@@ -632,9 +644,9 @@ function sites() {
       if (!newest || now - newest > SITE_QUIET_HOURS * 36e5) off++;
       else if (lvl) { alert++; top = Math.max(top, lvl); }
     });
-    sys("dSites", "vSites", alert ? (top >= 3 ? "red" : "amber") : off ? "amber" : "ok",
+    sys("dSites", "vSites", alert ? (top >= 3 ? "red" : "amber") : off ? "dq" : "ok",
       (n - off) + " of " + n + " sites reporting" + (alert ? " · " + alert + (alert === 1 ? " site" : " sites") + " at an alert level" : " · none at an alert level"));
-  }).catch(function () { sys("dSites", "vSites", "amber", "Unavailable right now"); });
+  }).catch(function () { sys("dSites", "vSites", "dq", "Unavailable right now"); });
 }
 
 function all() { nws(); creeks(); sites(); loadTide(); }

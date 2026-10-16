@@ -6,7 +6,7 @@
  *
  * Levels (the colors) come from the water height, never from the name "King Tide":
  *   below MHHW (tide_stations.csv)            normal
- *   MHHW up to TIDE_RED_FT_RWC (settings.csv)  amber: higher than an average high tide
+ *   MHHW up to TIDE_RED_FT_RWC (settings.csv)  level 1 (shown blue, information): higher than an average high tide
  *   TIDE_RED_FT_RWC or more (8.5, provisional) red: high enough to flood low areas near the Bay
  * "King Tide" is only a label: the day with the highest tide-table high tide of the month in KING_MONTHS.
  * Times: Pacific wall clock as UTC milliseconds, like the pages. Wording: lookups/display_text.csv (tide_*, king_tide_*).

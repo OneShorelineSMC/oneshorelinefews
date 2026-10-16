@@ -106,7 +106,7 @@ Reboot (`sudo reboot`). The kiosk should open full screen after the desktop load
 - **Refresh:** NWS alerts every 3 min, measured water levels every 6 min, creek data every 3 min,
   tide predictions every hour.
 - **Network drops:** it keeps showing the last good data and retries on its own. If data is more than
-  90 minutes old, the footer turns amber: *"Data out of date"*.
+  90 minutes old, the footer shows *"⚠ Data out of date"* (dark text with a warning sign; orange is kept for flood hazards).
 - **Daily reload at 3 AM** keeps the browser fresh during multi-day activations.
 - **Touch:** tap the alert bar for full NWS alert text, or a station for its full list of predicted
   times above MHHW. Detail screens return to the main view after 45 seconds. The buttons at the bottom
