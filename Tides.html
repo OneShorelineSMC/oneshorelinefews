@@ -303,8 +303,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js"></script>
-<script src="tide_season.js"></script>
+<script src="lookups.js?v=20261015b"></script>
+<script src="tide_season.js?v=20261015b"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -788,7 +788,7 @@ function renderCalendar() {
   $("wlist").innerHTML = Object.keys(kd).sort().map(function (d) {
     var x = kd[d], lv = TSN.level(x.v);
     return "<li><b>" + esc(LK.text("tide_day_king_short")) + " " + esc(tsDay(d)) + "</b> · " + esc(TSN.ft(x.v)) + " at " + esc(TSN.clock(x.t)) +
-      ' <span class="lv">(' + esc(LK.text("tide_table_word")) + (lv ? "; " + esc(LK.text(lv === 2 ? "tide_level_red" : "tide_level_amber")) : "") + ")</span>" +
+      ' <span class="lv">(' + esc([LK.text("tide_table_word"), lv ? LK.text(lv === 2 ? "tide_level_red" : "tide_level_amber") : ""].filter(Boolean).join("; ")) + ")</span>" +
       (d < today ? ' <span class="lbl">(past)</span>' : "") + "</li>";
   }).join("");
   $("calsrc").textContent = LK.text("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2) });
