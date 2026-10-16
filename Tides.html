@@ -15,12 +15,12 @@
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root {
-    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #6b7a8c; --line: #e3e8ee;
-    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75; --fc: #005A70; --fcline: #009E73;
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5b6877; --line: #e3e8ee;
+    --red: #c0392b; --amber: #a35f00; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75; --tidetbl: #4a4f55; --fc: #005A70; --fcline: #009E73;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
-      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --fc: #4fc3d9; --fcline: #4fc3d9; --mhhw: #9aa8b8; }
+      --red: #f47c79; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --fc: #4fc3d9; --fcline: #4fc3d9; --mhhw: #9aa8b8; --tidetbl: #a7b0ba; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
@@ -42,12 +42,12 @@
   /* NWS alert banner */
   #alert { color: #fff; background: #6b7a8c; padding: 10px 16px; display: flex; gap: 10px; align-items: center; cursor: pointer; }
   #alert.none { background: #2e7d32; } #alert.warning { background: #b71c1c; }
-  #alert.watch, #alert.advisory { background: #c77700; } #alert.statement { background: #455a75; }
+  #alert.watch, #alert.advisory { background: #9a5b00; } #alert.statement { background: #455a75; }
   #alert .ic { font-size: 22px; line-height: 1; }
   #alert .tx { flex: 1; min-width: 0; }
   #alert .main { font-weight: bold; font-size: 16px; }
   #alert .sub { font-size: 12.5px; opacity: .92; }
-  #alert .more { font-size: 12px; background: rgba(255,255,255,.22); border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
+  #alert .more { font-size: 12px; background: rgba(0,0,0,.22); border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
   #alertList { display: none; background: var(--card); padding: 4px 16px 10px; border-bottom: 1px solid var(--line); }
   #alertList.open { display: block; }
   .al { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
@@ -203,8 +203,8 @@
   body.embed { padding-bottom: 0; }
 
   /* High tides at Redwood City (tide_season.js): status card and calendar. Colors come from the water height. */
-  :root { --king: #6A3D8F; --amb: #e07b00; --ambbg: rgba(224,123,0,.16); --rbg: rgba(198,40,40,.18); }
-  @media (prefers-color-scheme: dark) { :root { --king: #9b72c4; --amb: #ffa726; --ambbg: rgba(255,167,38,.18); --rbg: rgba(239,83,80,.24); } }
+  :root { --king: #6A3D8F; --kingtx: #6A3D8F; --amb: #e07b00; --ambbg: rgba(224,123,0,.16); --rbg: rgba(198,40,40,.18); }
+  @media (prefers-color-scheme: dark) { :root { --king: #6f45a0; --kingtx: #bfa3e0; --amb: #ffa726; --ambbg: rgba(255,167,38,.18); --rbg: rgba(239,83,80,.24); } }
   #season { display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer; }
   #season.hide, #calcard.hide { display: none; }
   #season .chip { flex: none; font-size: 11px; font-weight: 700; color: #fff; background: #6b7a8c; border-radius: 5px; padding: 3px 7px; letter-spacing: .03em; }
@@ -231,13 +231,22 @@
   .mgrid .d.r { background: var(--rbg); color: var(--red); font-weight: 700; }
   .mgrid .d.k { background: var(--king); color: #fff; font-weight: 700; }
   .mgrid .d.x1 { box-shadow: inset 0 0 0 2px var(--amb); } .mgrid .d.x2 { box-shadow: inset 0 0 0 2px #c62828; }
-  .mgrid .d.past { opacity: .4; }
+  .mgrid .d.past { color: var(--muted); font-weight: 400; }   /* past days: plain, still readable (no see-through fading) */
+  .mgrid .d.past.a, .mgrid .d.past.r { background: transparent; color: var(--muted); }
+  .mgrid .d.past.k { background: var(--soft); color: var(--kingtx); box-shadow: inset 0 0 0 1.5px var(--king); }
+  /* Not by color alone (WCAG 1.4.1): flood-level days carry "!", King Tide days a star */
+  .mgrid .d { position: relative; }
+  .mgrid .d.r:not(.past) { background: #c62828; color: #fff; }
+  .mgrid .d.r::after, .mgrid .d.k::after { position: absolute; top: -1px; right: 1px; font-size: 9px; font-weight: 700; line-height: 1; }
+  .mgrid .d.r::after { content: "!"; } .mgrid .d.k::after { content: "★"; }
+  .mgrid .d:focus-visible, #season:focus-visible, #alert:focus-visible { outline: 3px solid #e69f00; outline-offset: 2px; }
+  .ckey .sym { font-size: 10px; font-weight: 700; color: #fff; text-align: center; line-height: 13px; }
   .mgrid .d.today { outline: 2px solid var(--ink); outline-offset: 1px; }
   .mgrid .d.sel { outline: 2px solid #e69f00; outline-offset: 1px; }
   #calsel { min-height: 20px; font-size: 14px; margin-top: 10px; color: var(--ink); }
   .wlist { font-size: 14px; margin: 10px 0 0; padding: 0; list-style: none; }
   .wlist li { padding: 5px 0; border-top: 1px solid var(--line); }
-  .wlist b { color: var(--king); }
+  .wlist b { color: var(--kingtx); }
   .wlist .lv { font-size: 12.5px; color: var(--muted); }
   body.embed #calcard, body.embed #season .src { display: none; }
 </style>
@@ -251,7 +260,7 @@
   </div>
 </header>
 
-<div id="alert" class="unknown" role="button" aria-expanded="false">
+<div id="alert" class="unknown" role="button" tabindex="0" aria-expanded="false">
   <span class="ic" id="aIc">…</span>
   <span class="tx"><span class="main" id="aMain">Checking NWS alerts…</span><br><span class="sub" id="aSub">San Mateo County</span></span>
   <span class="more" id="aMore" style="display:none"></span>
@@ -260,7 +269,7 @@
 
 <main>
   <div class="intro" id="intro">When the Bay at the NOAA tide gauge in Redwood City is expected to rise above MHHW in the next 7 days.</div>
-  <div class="card hide" id="season" role="button"><span class="chip" id="tschip">KING TIDE</span>
+  <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
     <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
   <div id="cards"></div>
   <div style="height:12px"></div>
@@ -268,8 +277,8 @@
     <h2 data-text="tide_cal_title">High tides and King Tides</h2>
     <div class="lbl"><span data-text="king_tide_intro"></span> Tap a day.</div>
     <div class="ckey"><span><i style="background:var(--ambbg)"></i><span data-text="tide_day_amber"></span></span>
-      <span><i style="background:var(--rbg)"></i><span data-text="tide_day_red"></span></span>
-      <span><i style="background:var(--king)"></i><span data-text="tide_day_king"></span></span>
+      <span><i class="sym" style="background:#c62828">!</i><span data-text="tide_day_red"></span></span>
+      <span><i class="sym" style="background:var(--king)">★</i><span data-text="tide_day_king"></span></span>
       <span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>
       <span id="fckey" class="hide"><i style="box-shadow:inset 0 0 0 2px var(--amb)"></i><span data-text="tide_day_expected"></span></span></div>
     <div id="calfc" class="hide"></div>
@@ -281,8 +290,8 @@
   <div class="card explain">
     <p data-text="mhhw_definition"></p>
     <p data-text="tide_words" data-lead></p>
-    <p><b>Heights</b> come from one series: measured for what has already happened, then the expected height with weather for about 2 days, then
-      the tide table. Each value is labeled <b>measured</b>, <b>expected</b> or (no label) tide table.</p>
+    <p><b>Heights</b> come from one series: measured for what has already happened, then the NOAA projection for about 2 days, then
+      the tide table. Each value is labeled <b>measured</b>, <b>projected</b> (NOAA projection) or (no label) tide table.</p>
     <p data-text="noaa_forecast_note"></p>
     <p class="lbl">All heights are in feet, NAVD88.
       <span data-text="disclaimer_short"></span> <a href="Creeks.html#about">Disclaimer</a> · <span data-text="e911"></span></p>
@@ -303,8 +312,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261015b"></script>
-<script src="tide_season.js?v=20261015b"></script>
+<script src="lookups.js?v=20261015c"></script>
+<script src="tide_season.js?v=20261015c"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -500,7 +509,7 @@ function bestSeries(s, now) {
   (s.pred || []).forEach(function (p) { if (p.t > tail) out.push({ t: p.t, v: p.v, src: "pred" }); });
   return out;
 }
-function srcWord(src) { return src === "measured" ? "measured" : src === "fcst" ? "expected" : "tide table"; }
+function srcWord(src) { return src === "measured" ? "measured" : src === "fcst" ? "NOAA projection" : "tide table"; }
 function upcomingAbove(s, now) {   // stretches above MHHW that haven't ended, with each peak and its source
   var ser = bestSeries(s, now).filter(function (p) { return p.t >= now - 12 * 3600000 && p.t <= dayStart(now) + DAYS * 86400000; });
   return findWindows(ser, s.st.mhhw).filter(function (w) { return w.end > now; }).map(function (w) {
@@ -570,7 +579,7 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<div class="nowl"></div>' +
     '<div class="sec"><b>Next 7 days</b> · <span class="hint">highest tide each day (tide table)</span></div>' +
     '<div class="days"></div>' +
-    '<div class="gbox"><canvas id="ch' + i + '"></canvas></div>' +
+    '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the Bay tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
     '<div class="afd" style="display:none"></div>' +
     '<details class="all"><summary>Times above MHHW</summary><div class="wl"></div></details>' +
@@ -593,6 +602,7 @@ function render() {
       var lead = on ? "Above MHHW now, until " + fTime(first.end) + " · " + (first.peakT <= now ? "peaked " : "peak ") + first.peak.toFixed(2) + " ft " +
         srcWord(first.src) + " at " + fTime(first.peakT) : "Tides above MHHW: " + winText(first, now);
       var rest = ups.slice(1, 2).map(function (w) { return winText(w, now); }), more = ups.length - 1 - rest.length;
+      if (ups.some(function (w) { return w.peak >= redFor(st); })) lead += " · " + LK.text("tide_level_red");
       hm.innerHTML = esc(lead) + (rest.length ? " · " + esc(rest[0]) : "") + (more > 0 ? " <span>+" + more + " more this week</span>" : "");
     }
 
@@ -619,11 +629,11 @@ function render() {
       if (!top) { h += '<div class="day"><span class="dn">' + name + '</span><span class="dv">–</span></div>'; continue; }
       var over = top.v > st.mhhw, isRed = top.v >= redFor(st); if (top.src === "fcst") fcDays++;
       h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span></span>' +
-        '<span class="dt">' + fTime(top.t) + (top.src === "fcst" ? ' <span class="tag fc">expected</span>' : top.src === "measured" ? ' <span class="tag ms">measured</span>' : "") + '</span>' +
-        '<span class="dx">' + (over ? sgn(top.v - st.mhhw) + " ft over MHHW" : "") + "</span></div>";
+        '<span class="dt">' + fTime(top.t) + (top.src === "fcst" ? ' <span class="tag fc">projected</span>' : top.src === "measured" ? ' <span class="tag ms">measured</span>' : "") + '</span>' +
+        '<span class="dx">' + (isRed ? esc(LK.text("tide_red_key", { ft: redFor(st).toFixed(1) })) + " reached" : over ? sgn(top.v - st.mhhw) + " ft over MHHW" : "") + "</span></div>";
     }
     q(".days").innerHTML = h;
-    q(".hint").textContent = fcDays ? "highest tide each day · measured, expected with weather, then tide table" : "highest tide each day (tide table)";
+    q(".hint").textContent = fcDays ? "highest tide each day · measured, NOAA projection, then tide table" : "highest tide each day (tide table)";
 
     // NWS forecasters on tides (the alert itself is in the banner at the top)
     var afd = afdFresh() ? AFD.lines : null, box = q(".afd");
@@ -642,16 +652,16 @@ function render() {
           ' <span class="lbl">(' + dur(Math.round((w.end - w.start) / 60000)) + ")</span></td><td>" + w.peak.toFixed(2) + " ft " +
           '<span class="lbl">' + esc(srcWord(w.src)) + '</span> <span class="' + (w.peak >= redFor(st) ? "red" : "amb") + '">' + sgn(w.peak - st.mhhw) + "</span></td></tr>"; }).join("") + "</table>"
       : '<p class="lbl">None in the next ' + DAYS + " days.</p>") +
-      '<p class="lbl" style="margin-top:8px">' + (useModel ? "Measured so far, then expected with weather (NOAA model) through " + esc(fmt(fe, { weekday: "short" })) + " " + esc(fTime(fe)) +
-        ", then the tide table. The expected height is model guidance, not an official forecast; NWS advisories take precedence."
-        : "Tide table only; NOAA's expected height with weather isn’t available right now.") + " MHHW = " + st.mhhw.toFixed(2) + " ft NAVD88.</p>";
+      '<p class="lbl" style="margin-top:8px">' + (useModel ? "Measured so far, then the NOAA projection through " + esc(fmt(fe, { weekday: "short" })) + " " + esc(fTime(fe)) +
+        ", then the tide table. The NOAA projection is model guidance, not an official forecast; NWS advisories take precedence."
+        : "Tide table only; the NOAA projection isn’t available right now.") + " MHHW = " + st.mhhw.toFixed(2) + " ft NAVD88.</p>";
 
     // Now and the past 7 days (tap)
     var R = highResiduals(s, now), rec = R.slice(-OFFSET_RECENT_HIGHS), off = rec.length >= 2 ? rec.reduce(function (x, r) { return x + r.d; }, 0) / rec.length : null;
     var mc = useModel ? modelCheck(s, now) : null;
     q(".pw").innerHTML = (off == null ? "" : "<p><b>" + (Math.abs(off) < OFFSET_NOTE_FT ? "High tides about matching the tide table" :
         "High tides running " + Math.abs(off).toFixed(2) + " ft " + (off > 0 ? "higher" : "lower") + " than the tide table") + "</b> (average of the last " + rec.length + ").</p>") +
-      (mc != null ? '<p class="lbl">Expected (NOAA model) vs measured, last 24 hours: 90% of readings within ' + mc.toFixed(2) + " ft.</p>" : "") +
+      (mc != null ? '<p class="lbl">NOAA projection vs measured, last 24 hours: 90% of readings within ' + mc.toFixed(2) + " ft.</p>" : "") +
       (R.length ? "<table><tr><th>High tide</th><th>Tide table</th><th>Measured</th><th>Diff.</th></tr>" + R.slice().reverse().map(function (r) {
         return "<tr><td><b>" + esc(fmt(r.t, { weekday: "short", month: "short", day: "numeric" })) + "</b> " + esc(fTime(r.t)) + "</td><td>" + r.pred.toFixed(2) + "</td><td>" +
           r.meas.toFixed(2) + "</td><td" + (r.d >= 0.5 ? ' class="red"' : "") + "><b>" + sgn(r.d) + "</b></td></tr>"; }).join("") + "</table>" : '<p class="lbl">Not enough measurements yet.</p>') +
@@ -686,18 +696,17 @@ function drawChart(s, i, now, useModel) {
   var to = (s.obs || []).filter(function (p) { return p.t >= x0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
   var fc = useModel ? s.ofs.filter(function (p) { return p.t >= now - 30 * 60000 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
   var ys = tp.concat(to, fc).map(function (p) { return p.y; }).concat([m]);
-  var showRed = isFinite(rl) && Math.max.apply(null, ys) >= rl - 1;   // draw the flood level when the water gets within 1 ft of it
+  var showRed = isFinite(rl);   // the flood level line is always drawn (Redwood City only)
   if (showRed) ys.push(rl);
   var lo = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), hi = 2 * Math.ceil((Math.max.apply(null, ys) + 0.3) / 2);
   var narrow = window.innerWidth < 520;
   var data = { datasets: [
     { label: "MHHW", data: [{ x: 0, y: m }, { x: DAYS * 24, y: m }], borderColor: css("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
     { label: "above", data: above, borderColor: "transparent", backgroundColor: "rgba(224,123,0,0.40)", pointRadius: 0, pointHoverRadius: 0, fill: { target: 0 }, tension: 0.3 },
-    { label: LK.text("lbl_tide_table") + " (ft)", data: tp, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-      segment: { borderColor: function (cx) { var y = Math.min(cx.p0.parsed.y, cx.p1.parsed.y); return y >= rl ? "#c0392b" : y > m ? "#e07b00" : ink; } }, borderColor: ink },
+    { label: LK.text("lbl_tide_table") + " (ft)", data: tp, borderWidth: 1, borderColor: css("--tidetbl"), pointRadius: 0, tension: 0.3 },
     { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-    { label: LK.text("lbl_expected") + " (ft)", data: fc, borderColor: css("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2 }
-  ].concat(showRed ? [{ label: "flood", data: [{ x: 0, y: rl }, { x: DAYS * 24, y: rl }], borderColor: "#c62828", borderWidth: 1.5, borderDash: [3, 3], pointRadius: 0, pointHoverRadius: 0 }] : []) };
+    { label: LK.text("lbl_expected") + " (ft)", data: fc, borderColor: css("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2 }
+  ].concat(showRed ? [{ label: "flood", data: [{ x: 0, y: rl }, { x: DAYS * 24, y: rl }], borderColor: css("--red"), borderWidth: 2, borderDash: [8, 4], pointRadius: 0, pointHoverRadius: 0 }] : []) };
   var opts = { responsive: true, maintainAspectRatio: false, animation: false,
     interaction: { mode: "nearest", axis: "x", intersect: false },
     plugins: { legend: { display: false }, nowLine: { x: H(now) },
@@ -717,10 +726,10 @@ function drawChart(s, i, now, useModel) {
   if (D.charts[i]) { D.charts[i].data = data; D.charts[i].options = opts; D.charts[i].update("none"); }
   else D.charts[i] = new Chart($("ch" + i), { type: "line", data: data, options: opts, plugins: [nowLine] });
   $("st" + i).querySelector(".key").innerHTML = '<span><i style="border-top:3px solid #1e88e5"></i>Measured</span>' +
-    (fc.length ? '<span><i style="border-top:3px solid var(--fcline)"></i>' + esc(LK.text("lbl_expected")) + "</span>" : "") +
-    '<span><i style="border-top:2px solid var(--ink)"></i>' + esc(LK.text("lbl_tide_table")) + '</span><span><i style="border-top:2px dashed var(--mhhw)"></i>MHHW ' + m.toFixed(2) +
+    (fc.length ? '<span><i style="border-top:3px dotted var(--fcline)"></i>' + esc(LK.text("lbl_expected")) + "</span>" : "") +
+    '<span><i style="border-top:1.5px solid var(--tidetbl)"></i>' + esc(LK.text("lbl_tide_table")) + '</span><span><i style="border-top:2px dashed var(--mhhw)"></i>MHHW ' + m.toFixed(2) +
     ' ft</span><span><i class="ab"></i>Above MHHW</span>' +
-    (showRed ? "<span><i style='border-top:2px dashed #c62828'></i>" + esc(LK.text("tide_red_key", { ft: rl.toFixed(1) })) + "</span>" : "");
+    (showRed ? "<span><i style='border-top:2px dashed var(--red)'></i>" + esc(LK.text("tide_red_line", { ft: rl.toFixed(1) })) + "</span>" : "");
 }
 
 
@@ -744,7 +753,7 @@ function renderSeason() {
   $("tssub").textContent = st.sub ? " · " + st.sub : "";
   $("tssrc").textContent = st.what + " · see calendar";
 }
-// One day in words: "Sat Nov 14: highest tide 8.1 ft at 9:40 AM (tide table), King Tide. Expected 8.5 ft with the weather."
+// One day in words: "Sat Nov 14: highest tide 8.1 ft at 9:40 AM (tide table), King Tide. NOAA projects 8.5 ft."
 function dayWords(day) {
   var h = TSN.dayHighs()[day], k = TSN.kingDays()[day], x = TSN.expected()[day], out = tsDay(day) + ": ";
   if (!h) return out + "no tide table yet";
@@ -760,7 +769,7 @@ function renderCalendar() {
   var key = today + S0.tHighs + S0.tOfs + LK.num("TIDE_RED_FT_RWC") + TSN.mhhw();
   if (calBuiltFor === key) return;   // rebuild only when the day, the data or the levels change
   calBuiltFor = key;
-  // Next 2 days with the weather
+  // Next 2 days: NOAA projection
   var xs = Object.keys(ex).sort();
   $("calfc").classList.toggle("hide", !xs.length);
   $("fckey").classList.toggle("hide", !xs.length);
@@ -780,7 +789,7 @@ function renderCalendar() {
       if (day < today) c += " past";
       if (day === today) c += " today";
       var lab = hi ? dayWords(day) : tsDay(day);
-      h += '<span class="' + c + '" data-d="' + esc(day) + '" title="' + esc(lab) + '" aria-label="' + esc(lab) + '">' + (+day.slice(8)) + "</span>";
+      h += '<span class="' + c + '" data-d="' + esc(day) + '" role="button" tabindex="0" title="' + esc(lab) + '" aria-label="' + esc(lab) + '">' + (+day.slice(8)) + "</span>";
     }
     return h + "</div></div>";
   }).join("");
@@ -794,6 +803,12 @@ function renderCalendar() {
   $("calsrc").textContent = LK.text("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2) });
   $("calsel").textContent = "";
 }
+// Keyboard: Enter or Space acts like a tap on anything marked role="button" (calendar days, the King Tide card, the alert bar)
+document.addEventListener("keydown", function (e) {
+  if ((e.key === "Enter" || e.key === " ") && e.target.getAttribute && e.target.getAttribute("role") === "button" && e.target.tagName !== "BUTTON") {
+    e.preventDefault(); e.target.click();
+  }
+});
 $("months").addEventListener("click", function (e) {
   var c = e.target.closest(".d"); if (!c) return;
   Array.prototype.forEach.call(document.querySelectorAll(".mgrid .d.sel"), function (s) { s.classList.remove("sel"); });
@@ -819,7 +834,7 @@ refreshAll();
 S.forEach(loadModel);
 if (!EMBED) { loadAFD(); setInterval(loadAFD, 30 * 60000); }
 setInterval(function () { S.forEach(loadModel); }, 60 * 60000);   // the model runs 4 times a day
-if (TSN) {   // Redwood City tide table (6 months ahead, twice a day) and the expected height with the weather (hourly)
+if (TSN) {   // Redwood City tide table (6 months ahead, twice a day) and the NOAA projection (hourly)
   TSN.load().then(renderSeason);
   setInterval(function () { TSN.loadTable().then(renderSeason); }, 12 * 3600000);
   setInterval(function () { TSN.loadModel().then(renderSeason); }, 60 * 60000);

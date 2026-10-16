@@ -195,11 +195,11 @@ the week next, details behind a tap.
   Storm Surge / Tsunami alert appears here instead ("Also: …") so it isn't hidden. Tap for full details.
 
 - **King Tide / high water line** (under the NWS row, `tide_season.js`): from NOAA's Redwood City tide table and the
-  height expected with the weather (about 2 days ahead). It shows, first, a high tide in the next 7 days that reaches the
-  flood level (`TIDE_RED_FT_RWC`, 8.5 ft NAVD88, provisional): "HIGH WATER · Tomorrow 9:40 AM: expected 8.6 ft with the
-  weather, high enough to flood low areas near the Bay". Otherwise the next King Tide within 7 days (the highest tide of
+  NOAA projection (about 2 days ahead). It shows, first, a high tide in the next 7 days that reaches the
+  flood level (`TIDE_RED_FT_RWC`, 8.5 ft NAVD88, provisional): "HIGH WATER · Tomorrow 9:40 AM: NOAA projects 8.6 ft,
+  high enough to flood low areas near the Bay". Otherwise the next King Tide within 7 days (the highest tide of
   the month in Nov, Dec, Jan): "KING TIDE · King Tide Sat Nov 14: highest tide of the month, 8.1 ft around 9:40 AM",
-  with "weather may push it about 0.4 ft higher" when NOAA's model differs. Hidden the rest of the time. Tap for the
+  with "NOAA projects about 0.4 ft higher than the tide table" when NOAA's model differs. Hidden the rest of the time. Tap for the
   next 2 days and the coming King Tides.
 
 ## Title bar

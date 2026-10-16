@@ -11,8 +11,8 @@
 <title>OneShoreline Flood Early Warning</title>
 <style>
   :root {
-    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587;
-    --ok: #2e7d32; --amber: #c77700; --red: #b71c1c; --gray: #8a96a3; --link: #0A5587;
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #56657a; --line: #e3e8ee; --brand: #0A5587;
+    --ok: #2e7d32; --amber: #a35f00; --red: #b71c1c; --gray: #66717d; --link: #0A5587;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542; --link: #6ea8fe;
@@ -230,8 +230,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261015b"></script>
-<script src="creek_status.js?v=20261015b"></script>
+<script src="lookups.js?v=20261015c"></script>
+<script src="creek_status.js?v=20261015c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Numbers, tide levels and wording that staff check live in the lookups/ folder (settings.csv, tide_stations.csv,
@@ -389,8 +389,8 @@ function creekState(c, now) {
 function statusOf(st) {
   if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace("Flood ", ""), color: hex(st.top.color, "#c62828"),
     ink: st.top.level === 1 ? "#1a1a1a" : "#fff", lvl: st.top.level };
-  if (st.late) return { w: LK.text("status_delayed"), color: "#8a96a3", ink: "#fff", lvl: 0 };
-  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline"), color: "#8a96a3", ink: "#fff", lvl: 0 };
+  if (st.late) return { w: LK.text("status_delayed"), color: "#66717d", ink: "#fff", lvl: 0 };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline"), color: "#66717d", ink: "#fff", lvl: 0 };
   return { w: LK.text("status_normal"), color: "#2e7d32", ink: "#fff", lvl: 0, ok: true };
 }
 function renderCreeks() {

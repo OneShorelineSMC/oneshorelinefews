@@ -2,7 +2,7 @@
  *
  * Everything comes from NOAA at the Redwood City tide gauge (9414523), ft NAVD88, so nothing needs a yearly update:
  *   - the tide table (predicted high tides) from the start of this month through the next 6 months
- *   - the height expected with the weather (NOAA's San Francisco Bay model, ofs_water_level), about 2 days ahead
+ *   - the NOAA projection (NOAA's San Francisco Bay model, ofs_water_level: storms, wind, runoff, ocean conditions such as El Niño), about 2 days ahead
  *
  * Levels (the colors) come from the water height, never from the name "King Tide":
  *   below MHHW (tide_stations.csv)            normal
@@ -85,7 +85,7 @@
     Object.keys(best).forEach(function (k) { out[iso(best[k].t)] = best[k]; });
     return out;
   }
-  /* Expected with the weather (next TIDE_EXPECTED_HOURS): the model's peak near each tide-table high tide, highest per day */
+  /* NOAA projection (next TIDE_EXPECTED_HOURS): the model's peak near each tide-table high tide, highest per day */
   function expected(now) {
     now = now || nowLocal();
     var out = {};
@@ -104,14 +104,14 @@
 
   function clock(ms) { var d = new Date(ms), h = d.getUTCHours(), mi = d.getUTCMinutes(); return (h % 12 || 12) + ":" + String(mi).padStart(2, "0") + (h < 12 ? " AM" : " PM"); }
   function ft(v) { return v.toFixed(1) + " ft"; }
-  function weatherNote(x) {   // "weather may push it about 0.4 ft higher", or "" when the difference is small
+  function weatherNote(x) {   // "NOAA projects about 0.4 ft higher than the tide table", or "" when the difference is small
     if (!x || Math.abs(x.diff) < LK.num("TIDE_WEATHER_NOTE_FT")) return "";
     return LK.text(x.diff > 0 ? "tide_weather_higher" : "tide_weather_lower", { diff: Math.abs(x.diff).toFixed(1) });
   }
 
   /* The line (kiosk) / card (Tides page), or null. Looks at today and the next 6 days.
      1. Red first: a day expected (or in the tide table) to reach TIDE_RED_FT_RWC.
-     2. Otherwise a King Tide day coming up, with the weather note when it is within the expected-height window.
+     2. Otherwise a King Tide day coming up, with the NOAA projection note when it is within the projection window.
      Ordinary days above MHHW are left to the day cards. dayName(iso) = the page's "Sat Dec 12". */
   function line(dayName, now) {
     now = now || nowLocal();

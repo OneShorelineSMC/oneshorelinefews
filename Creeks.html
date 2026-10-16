@@ -16,11 +16,11 @@
 <style>
   :root {
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #6b7a8c; --line: #e3e8ee;
-    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75; --fcline: #009E73;
+    --red: #c0392b; --amber: #c77700; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #455a75; --tidetbl: #4a4f55; --fcline: #009E73;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
-      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --mhhw: #9aa8b8; --fcline: #4fc3d9; }
+      --red: #ef5350; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --mhhw: #9aa8b8; --tidetbl: #a7b0ba; --fcline: #4fc3d9; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
@@ -248,8 +248,8 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261015b"></script>
-<script src="creek_status.js?v=20261015b"></script>
+<script src="lookups.js?v=20261015c"></script>
+<script src="creek_status.js?v=20261015c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -737,21 +737,24 @@ function drawCharts(st, now) {
     // model forecast only if it is from the last 12 h and reaches at least 6 h ahead (same rule as the kiosk)
     var fcOK = T.ofs && T.ofs.length && Date.now() - T.tOfs < MODEL_MAX_AGE_HOURS * 3600000 && T.ofs[T.ofs.length - 1].t >= now + MODEL_MIN_AHEAD_HOURS * 3600000;
     var tf = fcOK ? T.ofs.filter(function (p) { return p.t >= now - 30 * 60000 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
-    var tys = tp.concat(to, tf).map(function (p) { return p.y; }).concat([T.st.mhhw]);
+    var trl = T.st.id === "9414523" ? LK.num("TIDE_RED_FT_RWC") : Infinity;   // flood level line, Redwood City only
+    var tys = tp.concat(to, tf).map(function (p) { return p.y; }).concat([T.st.mhhw], isFinite(trl) ? [trl] : []);
     var tO = base(true); tO.scales.y = yScale(2 * Math.floor((Math.min.apply(null, tys) - 0.3) / 2), 2 * Math.ceil((Math.max.apply(null, tys) + 0.3) / 2), 2);
     tO.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };   // feet on the tide axis
     put("chTide", { data: { datasets: [
       { label: "MHHW", data: [{ x: H(x0), y: T.st.mhhw }, { x: H(x1), y: T.st.mhhw }], borderColor: css("--mhhw"), borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 0 },
-      { label: LK.text("lbl_tide_table") + " (ft)", data: tp, borderColor: ink, borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+      { label: LK.text("lbl_tide_table") + " (ft)", data: tp, borderColor: css("--tidetbl"), borderWidth: 1, pointRadius: 0, tension: 0.3 },
       { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-      { label: LK.text("lbl_expected") + " (ft)", data: tf, borderColor: css("--fcline"), borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] }, options: tO });
+      { label: LK.text("lbl_expected") + " (ft)", data: tf, borderColor: css("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2 }]
+      .concat(isFinite(trl) ? [{ label: LK.text("tide_red_line", { ft: trl.toFixed(1) }), data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], borderColor: css("--red"), borderWidth: 2, borderDash: [8, 4], pointRadius: 0, pointHoverRadius: 0 }] : []) }, options: tO });
   }
   var seen = {}, key = "";
   c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
     key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
   $("key").innerHTML = !c.tide ? key : key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
-    (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px solid var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:2px solid " + ink + "'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
-    (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "");
+    (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
+    (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "") +
+    (T && T.st.id === "9414523" ? "<span><i style='border-top:2px dashed var(--red)'></i>" + esc(LK.text("tide_red_line", { ft: LK.num("TIDE_RED_FT_RWC").toFixed(1) })) + "</span>" : "");
   var notes = [];
   if (readingsOnly(c)) notes.push(esc(LK.text("more_creeks_note")));   // creeks.csv notes are for staff
   else if (c.note) notes.push(esc(c.note));
