@@ -145,13 +145,13 @@
   #stage.creekalert #creekStrip { display: flex; }
   #creekStrip .sicon { font-size: 15px; font-weight: bold; }
   #creekStrip .stext { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #creekStrip .stap { font-size: 12px; opacity: .85; white-space: nowrap; }
+  #creekStrip .stap { font-size: 12px; white-space: nowrap; }
   #creekStrip.lvl-warning { color: #fff; }
   /* Make room for the strip: content moves down 28px and gets 28px shorter */
   #stage.creekalert #creek, #stage.creekalert #about { top: 104px; height: 324px; }
   /* Creek tab button takes the creek's alert color */
   .tab.creek-monitoring { background: #f2d024; border-color: #f2d024; color: #1a1a1a; }
-  .tab.creek-watch { background: #e07b00; border-color: #e07b00; color: #fff; }
+  .tab.creek-watch { background: #b45a00; border-color: #b45a00; color: #fff; }   /* darker orange: white text 4.5:1 */
   .tab.creek-warning { background: #c62828; border-color: #c62828; color: #fff; }
   .tab.creek-beyond { background: #9c27b0; border-color: #9c27b0; color: #fff; }
   .tab.on.creek-monitoring, .tab.on.creek-watch, .tab.on.creek-warning, .tab.on.creek-beyond { box-shadow: inset 0 0 0 3px var(--ink); }
@@ -440,9 +440,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261015i"></script>
-<script src="tide_season.js?v=20261015i"></script>
-<script src="creek_status.js?v=20261015i"></script>
+<script src="lookups.js?v=20261016a"></script>
+<script src="tide_season.js?v=20261016a"></script>
+<script src="creek_status.js?v=20261016a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1243,6 +1243,8 @@ function stageLevel(g, v) {
 }
 function levelClass(l) { return ["", "monitoring", "watch", "warning", "beyond"][l ? Math.min(l.level, 4) : 0]; }
 function inkOn(l) { return l && l.level === 1 ? "#1a1a1a" : "#fff"; }
+// A level color used as a fill under white text: the Watch orange is darkened a little so white text reaches 4.5:1
+function fillOf(col) { return String(col).toLowerCase() === "#e07b00" ? "#b45a00" : col; }
 function textCol(l) { return l.level === 1 ? "#8a6d00" : l.color; }   // readable on a white panel
 function tideFor(c) { return S.filter(function (s) { return s.st.id === c.tide; })[0] || S[1]; }
 
@@ -1348,7 +1350,7 @@ function renderCreek() {
   el("cpick").innerHTML = '<span class="cbtn' + (all ? " on" : "") + '" data-creek="all">Dashboard Creeks</span>' + states.map(function (x) {
     var on = !all && x.c === c, col = x.top ? x.top.color : null;
     return '<span class="cbtn' + (on ? " on" : "") + '" data-creek="' + esc(x.c.id) + '"' +
-      (col ? ' style="background:' + col + ";border-color:" + col + ";color:" + inkOn(x.top) + '"' : "") + ">" +
+      (col ? ' style="background:' + fillOf(col) + ";border-color:" + fillOf(col) + ";color:" + inkOn(x.top) + '"' : "") + ">" +
       (col ? "▲ " : "") + esc(shortName(x.c)) + "</span>";
   }).join("") + (all ? '<span class="cinfo">' + (window.CREEK_STATUS && CREEK_STATUS.preview ? "preview · " : "") + 'tap a creek for graphs</span>' : '<span class="cinfo" data-info="1">ⓘ thresholds &amp; notes</span>');
   el("call").style.display = all ? "" : "none";
@@ -1399,14 +1401,19 @@ function creekStatus(st) {
   return { w: LK.text("status_normal"), col: "#2e7d32", ink: "#fff", ok: true };
 }
 function renderAllCreeks(states, now) {
-  if (window.CREEK_STATUS && CREEK_STATUS.preview) {   // ?preview=1: creek status tiles (staff preview), nothing to tap but the tile itself
-    var K = CREEK_STATUS.kiosk(C.data, 6), el = document.getElementById("call"), n = K.tiles.length;
-    el.style.gridTemplateColumns = n > 4 ? "1fr 1fr 1fr" : "";
-    el.style.gridTemplateRows = "1fr 1fr" + (K.note ? " auto" : "");
-    el.innerHTML = K.tiles.map(function (t, i) {
-      var id = i < (C.data.creeks || []).length ? C.data.creeks[i].id : "";   // dashboard creeks open their graphs; preview creeks have none yet
-      return '<div' + (id ? ' data-creek="' + esc(id) + '"' : "") + ' style="display:flex;min-height:0">' + t.replace('class="cs-tile', 'style="flex:1" class="cs-tile') + "</div>";
-    }).join("") + (K.note ? '<div style="grid-column:1/-1;font-size:13px;color:var(--muted)">' + esc(K.note) + "</div>" : "");
+  if (window.CREEK_STATUS && CREEK_STATUS.preview) {   // ?preview=1: status board (staff preview), one row per creek, worst first; tap a dashboard creek's row for its graphs
+    var el = document.getElementById("call");
+    el.style.gridTemplateColumns = "1fr"; el.style.gridTemplateRows = "1fr";
+    el.innerHTML = CREEK_STATUS.board(C.data);
+    // Rows that don't fit (the screen is shorter during a creek alert) fold into one line, least serious first
+    var box = el.querySelector(".cs-brows"), rows = box ? Array.prototype.slice.call(box.querySelectorAll(".cs-brow")) : [], cut = [], more = null;
+    function over() { return box.scrollHeight > box.clientHeight + 1; }
+    while (box && rows.length > 1 && over()) {
+      var r = rows.pop(); r.style.display = "none";
+      cut.unshift(r.querySelector(".cs-bname").textContent + " (" + r.querySelector(".cs-bword").textContent + ")");
+      if (!more) { more = document.createElement("div"); more.className = "cs-bquiet"; more.style.marginTop = "0"; box.parentNode.insertBefore(more, box.nextSibling); }
+      more.innerHTML = "<b>+" + cut.length + " more:</b> " + esc(cut.join(" · ")) + " · see the Creeks page";
+    }
     return;
   }
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
@@ -1414,7 +1421,7 @@ function renderAllCreeks(states, now) {
     var c = st.c, s0 = creekStatus(st), h = "";
     var tint = s0.ok ? "" : ";background:color-mix(in srgb," + s0.col + " 8%,var(--panel))";
     h += '<div class="ccard" data-creek="' + esc(c.id) + '" style="border-color:' + s0.col + tint + '">' +
-      '<div class="cch"><span class="ccn">' + esc(c.name) + '</span><span class="ccs" style="background:' + s0.col + ";color:" + s0.ink + '">' + esc(s0.w) + "</span></div>";
+      '<div class="cch"><span class="ccn">' + esc(c.name) + '</span><span class="ccs" style="background:' + fillOf(s0.col) + ";color:" + s0.ink + '">' + esc(s0.w) + "</span></div>";
     // each gauge: stage, its level and distance to the next one (an offline gauge shows no old number)
     st.stages.forEach(function (s) {
       var row = !s.last ? "<span class='m'>no data</span>" : s.quiet
@@ -1487,14 +1494,14 @@ function updateCreekAlert(states) {
     var l = worst.top, s = worst.topGauge, key = levelClass(l), trg = worst.topTrigger;
     tab.classList.add("creek-" + key);
     strip.className = "lvl-" + key;
-    strip.style.background = l.color; strip.style.color = inkOn(l);
+    strip.style.background = fillOf(l.color); strip.style.color = inkOn(l);
     var higher = s ? (s.g.thresholds || []).filter(function (t) { return t.value > l.value; })[0] : null;
     if (!s) document.getElementById("csText").innerHTML =
       "<b>" + esc(worst.c.name.toUpperCase()) + ": " + esc(l.name.toUpperCase()) + "</b> · " + esc(trg.tr.label) + " " + trg.amt.toFixed(2) +
-      " in <span style='opacity:.85'>(trigger " + trg.tr.value.toFixed(2) + " in" + (trg.tr.high_tide ? " with high tide" : "") + ")</span>";
+      " in <span>(trigger " + trg.tr.value.toFixed(2) + " in" + (trg.tr.high_tide ? " with high tide" : "") + ")</span>";
     else document.getElementById("csText").innerHTML =
       "<b>" + esc(worst.c.name.toUpperCase()) + ": " + esc(l.name.toUpperCase()) + " level</b> · " +
-      s.last.v.toFixed(2) + " ft" + s.arrow + " <span style='opacity:.85'>· " +
+      s.last.v.toFixed(2) + " ft" + s.arrow + " <span>· " +
       (higher ? higher.name.replace("Flood ", "") + " at " + higher.value.toFixed(2) + " ft" : "highest level") +
       (alerting.length > 1 ? " · +" + (alerting.length - 1) + " more creek" + (alerting.length > 2 ? "s" : "") : " · " + esc(s.g.label)) + "</span>";
     strip.dataset.creek = worst.c.id;

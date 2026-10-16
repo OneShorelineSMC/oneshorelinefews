@@ -258,6 +258,116 @@
       '<div class="cs-tm"><span class="cs-dim">Rain</span> ' + chip(r.level) + (st.trend ? ' &nbsp; <span class="cs-dim">Creek</span> ' + trendText(st.trend, true) : "") + "</div></div>";
   }
 
+
+  /* ---------- Home page (staff preview): one line per creek, grouped by status ---------- */
+  // What the creek is doing, in everyday words (no Flood Watch / Warning names: most people know those as NWS alerts;
+  // no staff-only notes such as a silent rain gauge). Wording: home_reason_* in display_text.csv.
+  function plain(st) {
+    var R = st.reasons || [], has = function (c) { return R.filter(function (r) { return r.code === c; })[0]; };
+    var fast = R.some(function (r) { return r.rising_fast || r.code === "why_rising_fast"; }) || (st.trend || {}).trend === "fast";
+    var rising = !fast && (R.some(function (r) { return r.rising; }) || (st.trend || {}).trend === "rising");
+    var move = fast ? " " + T("home_reason_and_fast") : rising ? " " + T("home_reason_and_rising") : "";
+    var rl = (st.rain || {}).level || 0, out = [];
+    if (has("why_warning")) out.push(T("home_reason_warning") + move);
+    else if (has("why_watch")) out.push(T("home_reason_watch") + move);
+    else if (has("why_monitoring")) out.push(T("home_reason_monitoring") + move);
+    else if (fast) out.push(T("home_reason_rising_fast"));
+    else if (has("why_normal_rain")) out.push(T("home_reason_normal_rain"));
+    else if (rising) out.push(T("home_reason_rising"));
+    if (has("why_trigger_tide")) out.push(T("home_reason_trigger_tide"));
+    else if (has("why_trigger")) out.push(T("home_reason_trigger"));
+    else if (rl && !has("why_normal_rain")) out.push(rainWord(rl).toLowerCase() + " rain");
+    var t = out.join("; ").replace(/^./, function (c) { return c.toUpperCase(); });
+    if (has("why_gauge_offline")) t = t ? t + " (" + T("home_reason_offline") + ")" : T("home_reason_offline").replace(/^./, function (c) { return c.toUpperCase(); });
+    return t;
+  }
+  // { banner, html }: banner = the red "Flooding is likely" box (it carries the 911 line), or "" when nothing is likely
+  function home(data, linkFor) {
+    var rows = allCreeks(data).map(function (c) {
+      var v = view(data, c), k = v.key, late = k === "delayed";
+      if (late) k = (c.status || {}).key || "none";
+      return { c: c, v: v, k: k, late: late };
+    });
+    var late = rows.some(function (r) { return r.late; });
+    var groups = ["likely", "ready", "alert"].map(function (k) { return { k: k, rows: rows.filter(function (r) { return r.k === k; }) }; })
+      .filter(function (g) { return g.rows.length; });
+    var quiet = rows.filter(function (r) { return r.k === "none" || r.k === "offline"; });
+    var likely = rows.filter(function (r) { return r.k === "likely"; });
+    var banner = likely.length ? '<div class="cs-banner" role="alert">' + (late ? esc("As of " + clock(data.generated) + ": ") : "") +
+      esc(T("banner_likely", { creeks: list(likely.map(function (r) { return r.c.name; })) })) + "</div>" : "";
+    var h = '<div class="cs-home">';
+    if (late) h += '<div class="cs-hlate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing the last statuses.</div>";
+    if (!groups.length) h += '<section class="cs-hg cs-hg-none"><div class="cs-verdict cs-v-none">' + icon("none") + esc(T("home_none")) + "</div></section>";
+    groups.forEach(function (g) {
+      h += '<section class="cs-hg cs-hg-' + g.k + '" aria-label="' + esc(T("verdict_" + g.k)) + '"><div class="cs-verdict cs-v-' + g.k + '">' + icon(g.k) + esc(T("verdict_" + g.k)) + "</div>" +
+        '<ul class="cs-hrows">' + g.rows.map(function (r) {
+          var href = linkFor ? linkFor(r.c) : "";
+          return "<li>" + (href ? '<a class="cs-hrow" href="' + esc(href) + '">' : '<span class="cs-hrow">') + '<span class="cs-hx"><span class="cs-hn">' + esc(r.c.name) +
+            '</span><span class="cs-hy">' + esc(plain(r.v.st)) + "</span></span>" + (href ? '<span class="cs-hc" aria-hidden="true">›</span></a>' : "</span>") + "</li>";
+        }).join("") + "</ul>" +
+        '<p class="cs-hdo"><span class="cs-hdo-l">What to do</span>' + esc(T("verdict_" + g.k + "_todo")) + "</p></section>";
+    });
+    if (groups.some(function (g) { return g.k === "likely" || g.k === "ready"; })) {
+      var u = T("url_evacuation");
+      if (/^https:\/\//.test(u)) h += '<a class="cs-evac cs-evacb" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
+    }
+    h += '<div class="cs-hmore">';
+    if (quiet.length && groups.length) h += '<p><b>' + esc(T("home_quiet")) + ":</b> " + esc(quiet.map(function (r) {
+      return r.c.name + (r.k === "offline" ? " (" + T("home_gauge_down") + ")" : ""); }).join(" · ")) + "</p>";
+    else if (quiet.some(function (r) { return r.k === "offline"; })) h += "<p>" + esc(quiet.filter(function (r) { return r.k === "offline"; }).map(function (r) { return r.c.name; }).join(", ")) +
+      ": " + esc(T("home_gauge_down")) + ".</p>";
+    h += '<p><a href="SiteMap.html">' + esc(T("home_map_link")) + " ›</a></p>";
+    h += '<p class="cs-hsm">' + esc(T("home_updated", { time: clock(data.generated) })) + "</p></div></div>";
+    return { banner: banner, html: h };
+  }
+
+  /* ---------- EOC kiosk (staff preview): a status board, one row per creek, worst first ---------- */
+  // Short reasons, a few words each (staff wording: the Flood Watch / Warning level names are fine here)
+  function brief(st, k) {
+    if (k === "delayed") return "Data not updated";
+    var out = [];
+    (st.reasons || []).forEach(function (r) {
+      var t = { why_warning: "At Flood Warning level", why_watch: "At Flood Watch level", why_monitoring: "Higher than usual",
+        why_rising_fast: "Rising fast", why_normal_rain: "Normal level, rain could raise it", why_trigger: "Rain trigger met",
+        why_trigger_tide: "Rain + high tide trigger met", why_gauge_offline: "Creek gauge offline", why_stale: "A rain gauge is silent",
+        tide_rising_line: "Rising tide" }[r.code] || "";
+      if ((r.code === "why_watch" || r.code === "why_monitoring") && r.rising_fast) t += ", rising fast";
+      if (t && out.indexOf(t) < 0) out.push(t);
+    });
+    if (!out.length && k === "offline") out.push("Creek gauge not reporting");
+    var tr = (st.trend || {}).trend, words = { fast: "rising fast", rising: "rising", falling: "falling" };
+    if (k !== "offline" && words[tr] && !out.some(function (x) { return /rising|falling/i.test(x); })) out.push("Creek " + words[tr]);
+    if (!out.length && (st.rain || {}).level) out.push(rainWord(st.rain.level) + " rain");
+    return out.slice(0, 2).join(" · ");
+  }
+  function board(data) {
+    // When the data file is late, the board says so once and shows the last statuses, dimmed
+    var late = false;
+    var rows = allCreeks(data).map(function (c, i) {
+      var v = view(data, c), k = v.key;
+      if (k === "delayed") { late = true; k = (c.status || {}).key || "none"; v = Object.assign({}, v, { key: k, word: T("verdict_" + k), rank: RANK[k], color: COL[k] }); }
+      return { c: c, v: v, k: k, i: i, dash: i < (data.creeks || []).length };
+    });
+    var act = rows.filter(function (x) { return x.k !== "none"; }).sort(function (a, b) { return b.v.rank - a.v.rank || a.i - b.i; });
+    var quiet = rows.filter(function (x) { return x.k === "none"; });
+    var h = '<div class="cs-board"><div class="cs-bhead"><b>Creeks</b><span>' + act.length + " with a status · " + quiet.length + " with no alerts · updated " + esc(clock(data.generated)) + "</span></div>" +
+      (late ? '<div class="cs-blate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing each creek’s status at that time.</div>" : "");
+    if (!act.length) h += '<div class="cs-bnone">' + esc(T("summary_none")) + "</div>";
+    else h += '<div class="cs-brows' + (late ? " cs-dimmed" : "") + '">' + act.map(function (x, n) {
+      var st = x.v.st, rl = (st.rain || {}).level || 0, off = x.k === "offline";
+      var r = '<div class="cs-brow cs-b-' + x.k + '"' + (x.dash ? ' data-creek="' + esc(x.c.id) + '"' : "") + '><i class="cs-bbar" style="background:' + COL[x.k] + '"></i>' +
+        '<span class="cs-bname">' + esc(x.c.short || x.c.name) + "</span>" +
+        '<span class="cs-bword cs-v-' + x.k + '">' + icon(x.k) + esc(T("verdict_" + x.k)) + "</span>" +
+        '<span class="cs-bwhy">' + esc(brief(st, x.k)) + "</span>" +
+        '<span class="cs-brain">' + (rl ? chip(rl) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
+        '<span class="cs-bsince">' + (st.since && !off ? "since " + esc(clock(st.since)) : "") + "</span></div>";
+      if (n === 0 && x.v.eoc) r += '<div class="cs-beoc"><b>EOC:</b> ' + esc(x.v.eoc) + "</div>";
+      return r;
+    }).join("") + "</div>";
+    if (quiet.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + esc(quiet.map(function (x) { return x.c.short || x.c.name; }).join(" · ")) + "</div>";
+    return h + "</div>";
+  }
+
   var css = [
     ".cs-badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;background:#003B5C;color:#fff;border-radius:6px;padding:3px 8px;margin:4px 0 8px}",
     ".cs-banner{background:#c62828;color:#fff;border-radius:10px;padding:12px 14px;font-size:17px;font-weight:700;line-height:1.4;margin:0 0 10px}",
@@ -323,6 +433,39 @@
     ".cs-howb ul{list-style:none;margin:4px 0 8px;padding:0}.cs-howb li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font-size:14.5px}",
     ".cs-howb li .cs-ic{margin-top:1px}",
     ".cs-howb p{font-size:14px;line-height:1.45;margin:0 0 8px;color:var(--text,var(--ink))}",
+    // home page (staff preview): status boxes with the color all the way around, creeks first, what to do at the bottom
+    ".cs-home{display:flex;flex-direction:column;gap:12px;margin:0 0 6px}",
+    ".cs-hg{background:var(--card,var(--panel,#fff));border-radius:12px;overflow:hidden;padding:12px 0 0;color:var(--text,var(--ink,#16202b))}",
+    ".cs-hg-likely{border:4px solid #c62828}.cs-hg-ready{border:4px solid #e07b00}.cs-hg-alert{border:4px solid #e6c200}.cs-hg-none{border:2px solid #2e7d32;padding-bottom:12px}",
+    ".cs-hg-likely{background:color-mix(in srgb,#c62828 4%,var(--card,#fff))}.cs-hg-ready{background:color-mix(in srgb,#e07b00 4%,var(--card,#fff))}.cs-hg-alert{background:color-mix(in srgb,#e6c200 6%,var(--card,#fff))}",
+    ".cs-hg-none .cs-verdict{background:rgba(46,125,50,.1)}.cs-hg-none .cs-ic-none{color:#2e7d32}",
+    ".cs-hrows{list-style:none;margin:0;padding:4px 14px 0}.cs-hrows li+li{border-top:1px solid var(--line,#e3e8ee)}",
+    ".cs-hrow{display:flex;align-items:center;gap:10px;padding:9px 0;min-height:44px;text-decoration:none;color:inherit}",
+    ".cs-hx{flex:1;display:flex;flex-direction:column;gap:1px}.cs-hn{font-weight:700;font-size:16px;color:var(--ink,#16202b)}",
+    ".cs-hy{font-size:14px;line-height:1.35;color:var(--text,var(--ink,#16202b))}.cs-hc{color:var(--muted,#556274);font-size:20px;flex:none}",
+    "a.cs-hrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:2px;border-radius:4px}",
+    ".cs-hdo{margin:0;padding:9px 14px 11px;font-size:14px;line-height:1.4;border-top:1px solid var(--line,#e3e8ee)}",
+    ".cs-hdo-l{display:block;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#556274);margin-bottom:1px}",
+    ".cs-evacb{justify-content:center;margin-top:0}",
+    ".cs-hlate{padding:8px 12px;background:#fff3cd;color:#5c4a00;font-weight:700;font-size:14px;border-radius:8px}",
+    ".cs-hmore{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:12px;padding:4px 14px}",
+    ".cs-hmore p{margin:8px 0;font-size:14px;line-height:1.45}.cs-hmore a{font-weight:600}.cs-hsm{font-size:12.5px!important;color:var(--muted,#556274)}",
+    // EOC kiosk board (staff preview)
+    ".cs-board{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel,var(--card,#fff));border-radius:8px;overflow:hidden;border:1px solid var(--line,#d5dae1)}",
+    ".cs-bhead{display:flex;justify-content:space-between;align-items:baseline;padding:6px 12px;background:#003B5C;color:#fff;font-size:13px}.cs-bhead b{font-size:17px}",
+    ".cs-brows{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}.cs-dimmed .cs-brow{opacity:.75}",
+    ".cs-brow{display:grid;grid-template-columns:8px 130px 150px 1fr 110px 84px;align-items:center;gap:0 10px;min-height:36px;flex:none;padding:0 10px 0 0;border-bottom:1px solid var(--line,#e3e8ee);font-size:14px;cursor:default}",
+    ".cs-brow[data-creek]{cursor:pointer}.cs-bbar{align-self:stretch}",
+    ".cs-bname{font-weight:700;color:var(--ink,#16202b);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".cs-bword{display:inline-flex;align-items:center;font-weight:700;margin:0;padding:3px 8px;border-radius:6px;font-size:14px;gap:6px;justify-self:start;white-space:nowrap}.cs-bword .cs-ic{width:16px;height:16px}",
+    ".cs-bwhy{font-size:14px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;padding:3px 0;color:var(--ink,#16202b)}",
+    ".cs-brain{font-size:13px;white-space:nowrap}.cs-brain .cs-chip{padding:0 7px;font-size:13px}",
+    ".cs-bsince{font-size:12px;color:var(--muted,#556274);white-space:nowrap;text-align:right}",
+    ".cs-b-likely{background:rgba(198,40,40,.06)}",
+    ".cs-beoc{padding:5px 12px 5px 28px;font-size:13px;background:rgba(198,40,40,.06);border-bottom:1px solid var(--line,#e3e8ee)}",
+    ".cs-blate{padding:6px 12px;background:#fff3cd;color:#5c4a00;font-weight:700;font-size:14px}",
+    ".cs-bquiet{margin-top:auto;padding:7px 12px;font-size:13.5px;color:var(--ink,#16202b);border-top:1px solid var(--line,#e3e8ee)}",
+    ".cs-bnone{flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--ink,#16202b)}",
     ".cs-changed{font-size:13.5px;margin:6px 0 8px}"
   ].join("\n");
   var styleEl = document.createElement("style"); styleEl.textContent = css; document.head.appendChild(styleEl);
@@ -339,5 +482,5 @@
         quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.short || c.name; })) : ""].filter(Boolean).join(" · ") };
   }
 
-  window.CREEK_STATUS = { preview: PREVIEW, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon };
+  window.CREEK_STATUS = { preview: PREVIEW, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief };
 })();

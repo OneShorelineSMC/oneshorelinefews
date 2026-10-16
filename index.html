@@ -136,6 +136,7 @@
   .sys .row:first-child { border-top: 0; }
   .sys .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--gray); transform: translateY(1px); }
   .sys .dot.ok { background: var(--ok); } .sys .dot.amber { background: #e07b00; } .sys .dot.red { background: #c62828; }
+  .sysfold { margin: 18px 0 0; } .sysfold > summary { cursor: pointer; font-weight: 600; color: var(--ink); min-height: 44px; display: flex; align-items: center; }
   .sys .dot.dq { background: transparent; border: 2px dashed var(--gray); box-sizing: border-box; }   /* data problem (late, not reporting), not a hazard */
   .sys .k { font-weight: 700; color: var(--ink); white-space: nowrap; }
   .sys .v { flex: 1; min-width: 0; }
@@ -163,27 +164,28 @@
 <div class="e911"><div class="wrap"><b><a href="tel:911" data-text="e911">In an emergency, call 911.</a></b> <span data-text="e911_note"></span></div></div>
 
 <main class="wrap">
-  <h2 class="sec">National Weather Service · San Mateo County <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">NWS forecast ↗</a></h2>
+  <div id="csBanner"></div>
+  <h2 class="sec" id="hNws">National Weather Service · San Mateo County <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">NWS forecast ↗</a></h2>
   <div class="alerts" id="alerts" aria-live="polite"><div class="box al none gray"><span>Checking NWS alerts…</span></div></div>
 
-  <h2 class="sec">Creeks <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
+  <div id="secCreeks"><h2 class="sec"><span id="hCreeks">Creeks</span> <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
   <div id="csPreview"></div>
   <div class="creeks" id="creeks">
     <div class="box ck gray"><span class="nm">Loading…</span></div>
   </div>
   <div class="rising" id="rising"></div>
-  <div class="calm" id="calm"></div>
+  <div class="calm" id="calm"></div></div>
 
-  <h2 class="sec">Bay tides <a href="Tides.html">Tide details ›</a></h2>
+  <h2 class="sec"><span id="hTide">Bay tides</span> <a href="Tides.html">Tide details ›</a></h2>
   <a class="box tide gray" id="tide" href="Tides.html"><span class="th">Loading tides…</span></a>
 
-  <h2 class="sec">More</h2>
+  <div id="secMore"><h2 class="sec">More</h2>
   <div class="grid">
     <a class="card" href="SiteMap.html">
       <span class="ic">🗺️</span><h3>Sensor map</h3>
       <p>Every public rain, creek and tide gauge in the network. Tap a site for its latest readings.</p>
       <span class="lnk">Open map ›</span></a>
-  </div>
+  </div></div>
 
   <h2 class="sec">Get alerts</h2>
   <div class="box smc">
@@ -192,7 +194,7 @@
     <a class="btn" href="https://www.smcgov.org/dem/smc-alert" data-href="url_smc_alert" target="_blank" rel="noopener">Sign up for SMC Alert</a>
   </div>
 
-  <h2 class="sec">System status</h2>
+  <div id="secSys"><h2 class="sec">System status</h2>
   <div class="box sys" id="sys">
     <div class="row"><span class="dot" id="dCreek"></span><span class="k">Creek data</span><span class="v" id="vCreek">checking…</span></div>
     <div class="row"><span class="dot" id="dGauges"></span><span class="k">Creek gauges</span><span class="v" id="vGauges">checking…</span></div>
@@ -204,7 +206,7 @@
       <span class="ic">📈</span><h3>Detailed data</h3>
       <p>Full history, graphs and tide outlooks on the OneShoreline Early Warning System (OneRain).</p>
       <span class="lnk">Open OneRain ↗</span></a>
-  </div>
+  </div></div>
 
   <h2 class="sec">Contact</h2>
   <div class="contact">
@@ -234,9 +236,24 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261015i"></script>
-<script src="creek_status.js?v=20261015i"></script>
+<script src="lookups.js?v=20261016a"></script>
+<script src="creek_status.js?v=20261016a"></script>
 <script>
+// ?preview=1: the proposed home page (staff preview). Creeks first, then NWS, Bayside tide, sign-up; the sensor map card
+// goes (the creek list links to the map); System status and the OneRain card fold away at the bottom.
+var HOME_PREVIEW = /[?&]preview=1\b/.test(location.search);
+if (HOME_PREVIEW) (function () {
+  var main = document.querySelector("main"), nws = document.getElementById("hNws");
+  main.insertBefore(document.getElementById("secCreeks"), nws);
+  main.insertBefore(document.getElementById("csBanner"), document.getElementById("secCreeks"));
+  document.getElementById("hCreeks").textContent = "Creeks right now";
+  document.getElementById("hTide").textContent = "Bayside tide";
+  document.getElementById("secMore").hidden = true;
+  var sys = document.getElementById("secSys"), d = document.createElement("details");
+  d.className = "sysfold"; d.innerHTML = "<summary>System status and data sources</summary>";
+  sys.parentNode.insertBefore(d, sys); d.appendChild(sys);
+  sys.querySelector("h2").hidden = true;
+})();
 // The NWS alerts box is a live region: rewrite it only when its content changes, so screen readers aren't
 // re-read the same alerts every few minutes. (Creek cards and the tide box update quietly; they aren't live regions.)
 (function () {
@@ -331,7 +348,7 @@ function nws() {
     $("alerts").innerHTML = list.map(function (p, i) {
       var c = classify(p.event), cls = c === "warning" ? "red" : c === "statement" ? "gray" : "amber";
       var head = "<h3>" + esc(p.event) + "</h3><div class='when'>" + esc(untilText(p.ends || p.expires)) + " · NWS San Francisco Bay Area</div>";
-      if (i < MAX_ALERTS_OPEN) return '<div class="box al ' + cls + '">' + head + alertBody(p) + "</div>";
+      if (i < (HOME_PREVIEW ? 0 : MAX_ALERTS_OPEN)) return '<div class="box al ' + cls + '">' + head + alertBody(p) + "</div>";
       return '<details class="box al ' + cls + '"><summary>' + head + "</summary>" + alertBody(p) + "</details>";
     }).join("");
   }).catch(function () {
@@ -500,7 +517,10 @@ function renderCreeks() {
   var anyLate = states.some(function (s) { return s.late; });
   var CS = window.CREEK_STATUS;
   if (CS && CS.preview) {   // ?preview=1: creek status layer (staff preview) in place of the creek cards and rapid-rise cards
-    $("csPreview").innerHTML = CS.page(C.data, function (c) { return "Creeks.html?preview=1#" + encodeURIComponent(c.id); }, { staff: false });
+    var HM = CS.home(C.data, function (c) { return "Creeks.html?preview=1#" + encodeURIComponent(c.id); });
+    $("csPreview").innerHTML = HM.html;
+    $("csBanner").innerHTML = HM.banner;
+    document.querySelector(".e911").hidden = !!HM.banner;   // 911 once: the red banner carries it when flooding is likely
     $("creeks").style.display = $("rising").style.display = $("calm").style.display = "none";
     $("creeksLink").href = "Creeks.html?preview=1";
     document.querySelector('nav a[href="Creeks.html"]').href = "Creeks.html?preview=1";
