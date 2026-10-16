@@ -12,7 +12,7 @@
 | Drains to | San Francisco Bay at South San Francisco |
 | Description | Urban creek from San Bruno Mountain and Daly City through Colma to South San Francisco; the gauge is at Orange Memorial Park and the thresholds are for the community downstream. |
 | Linked to flooding | **Yes**: flood levels at the creek gauge (what they mean is below) |
-| Bay tide station | NOAA 9414750 Alameda (MHHW 6.37 ft NAVD88) |
+| Bay tide station | NOAA 9414750 Alameda (MHHW ? ft MLLW) |
 | Rain totals shown | 1 hr, 6 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
@@ -32,7 +32,7 @@
 | Rising fast | 0.5 ft in 60 min (default; not calibrated) |
 | History and known issues | Outages: Jun 23 - Oct 6, 2020; Nov 24 - Dec 15, 2021; May 29 - Oct 16, 2025. Sensor faults: Jul 15, 2022 (readings to about 16.7 ft); Aug 18, 2022 (one-reading spike to 4.56 ft). When it switches from hourly to faster readings in a storm, the rising-fast check can miss the rise (RISING_FAST_BASIS.md section 8). |
 
-**Flood levels** (gauge height, ft; gauge's own zero, not NAVD88)
+**Flood levels** (gauge height, ft; gauge's own zero, not a tidal datum)
 
 | Level | Name | Stage (ft) | Source | Notes |
 |---|---|---|---|---|
