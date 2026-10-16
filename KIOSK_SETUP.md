@@ -179,11 +179,15 @@ the week next, details behind a tap.
   a placeholder threshold until OneShoreline sets tide levels tied to known impacts. On the right: "Now 6.69 ft
   rising · +0.45 vs predicted"; tap it for the measured-vs-predicted table for the past week, the "running higher
   than predicted" summary and the model's accuracy over the last 24 hours. Tap the rest of the band for the times.
-- **Next 7 days:** one card per day with that day's highest tide (ft) and time; red with "+0.21 ft over MHHW" when above
-  MHHW. Other days carry no "below MHHW" label: past the ~2-day model forecast the heights are only the astronomical
-  prediction and can't rule a high tide out. Cards marked "fcst" use the NOAA model forecast; later days use the prediction. The graph under the cards lines up with them and has three
-  lines: measured (blue), NOAA forecast (teal) and predicted (dark), heights in ft NAVD88 on the left, and a "Now" tag on the current time. Tap for the forecast and predicted times above
-  MHHW and the "if the Bay stays high" scenario for the days after the forecast ends.
+- **Next 3 days (graph) and Later:** the graph shows the last 24 hours and the next 48 (about as far as the NOAA
+  projection goes; Oct 16, for EOC use: the next few tides at a readable size). Over it, one card per day in view (Today,
+  tomorrow, and the day after when at least 7 of its hours are on the graph), each placed over its own day, with that
+  day's highest tide (ft), time and source ("measured", "projected", or tide table); blue with "MHHW +0.21" above MHHW,
+  red "At flood level" at 8.5 ft. The rest of the week is one line in the heading, "Later: Mon 19 5.47 · Tue 20 5.62 …
+  (tide table)", blue or red when a day reaches those levels, so a high tide later in the week is not hidden. The
+  headline, the King Tide / high water line and the tap screen still look 7 days ahead. The graph lines: measured
+  (blue), NOAA projection (teal dotted), tide table (thin gray), MHHW and the flood level labeled on their lines, and a
+  "Now" tag. No 3/7 toggle on the kiosk (a wall display left on the wrong setting would mislead the next person).
 - **NOAA model forecast:** NOAA's San Francisco Bay Operational Forecast System publishes a water-level forecast for
   the Redwood City gauge that includes wind, air pressure and river flow (Tides & Currents product
   `ofs_water_level`, requested in ft NAVD88, updated 4 times a day, about 2 days ahead). It is model guidance, not an

@@ -84,12 +84,13 @@
   #stage.creekalert #thead .hm .hd { display: none; }   /* small screen space during a creek alert: title line only */
   #stage.creekalert #thead { min-height: 32px; padding: 2px 12px; }
 
-  /* Right: 7-day look-ahead (the main element) */
+  /* Right: 3-day look-ahead (the main element): the last 24 hours and the next 48, with a one-line "Later" for the rest of the week */
   #tright { flex: 1; min-height: 0; display: flex; flex-direction: column; cursor: pointer; }
   .tsec { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; height: 15px; white-space: nowrap; }
   .tsec b { color: var(--ink); font-size: 13px; }
   .tsec .tap { font-size: 11.5px; }
-  #tdays { display: grid; grid-template-columns: repeat(7, 1fr); flex: none; margin-left: 30px; }   /* 30px = graph's y-axis */
+  #tdays { display: grid; grid-template-columns: repeat(3, 1fr); flex: none; margin-left: 30px; }   /* placed over their days by dayAlign */
+  #tlater { color: var(--muted); } #tlater b { font-size: 12px; } #tlater .over { color: var(--info); font-weight: bold; } #tlater .red { color: var(--red); font-weight: bold; }
   .tday { border-top: 4px solid var(--line); padding: 4px 4px 5px; text-align: center; border-right: 1px solid var(--line); min-width: 0; }
   .tday:last-child { border-right: 0; }
   .tday .dn { font-size: 13px; font-weight: bold; white-space: nowrap; }
@@ -107,7 +108,7 @@
   .tday.under .dx { color: var(--green); font-weight: normal; }
   .tday.past .dv { color: var(--muted); }
   .tday .dt .fc { color: var(--fc); font-weight: bold; }
-  .tday .dt .ms { color: #1e88e5; font-weight: bold; }
+  .tday .dt .ms { color: var(--info); font-weight: bold; }   /* 4.5:1 text; the measured line itself stays #1e88e5 */
   .tvsub.model { color: var(--fc); }
   #tchart { position: relative; flex: 1; min-height: 60px; }
   #tkey { font-size: 11.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; white-space: nowrap; height: 15px; }
@@ -359,9 +360,9 @@
 </div>
     <div id="thead" class="unknown"><div class="hm" id="thm">Loading tides…</div><div class="hnow" id="thnow"></div></div>
     <div id="tright">
-      <div class="tsec"><span><b>Next 7 days</b> · <span id="tsechint">highest tide each day (tide table)</span></span><span class="tap">Tap for times ›</span></div>
+      <div class="tsec"><span><b id="tsechead">Next 3 days</b> · <span id="tsechint">highest tide each day</span><span id="tlater"></span></span><span class="tap">Tap for times ›</span></div>
       <div id="tdays"></div>
-      <div id="tchart"><canvas id="tchartc" role="img" aria-label="Graph of the Bay tide for the next 7 days. The same heights are listed day by day above."></canvas></div>
+      <div id="tchart"><canvas id="tchartc" role="img" aria-label="Graph of the Bay tide for the last 24 hours and the next 48 hours. The same heights are listed day by day above."></canvas></div>
       <div id="tkey"></div>
     </div>
     <div id="tnws" class="unknown"><span class="ni" id="tnwsi">…</span><div class="nt"><div class="nm" id="tnwsm">Checking NWS coastal flood information…</div>
@@ -452,7 +453,9 @@ var STATIONS = [LK.station("9414523"),   // MHHW in ft NAVD88 from lookups/tide_
                 LK.station("9414750")];  // Alameda: used only by the Creeks tab (San Bruno, Colma)
 var TIDE_STATION = "9414523";      // the Bay Tides tab shows this station only (Redwood City)
 var COUNTY_SAME = "006081";        // San Mateo County
-var DAYS = 7;
+var DAYS = 7;                      // days looked ahead (headline, day list, King Tide line)
+var GRAPH_BACK_H = 24, GRAPH_AHEAD_H = 48;   // the graph: the last 24 hours and the next 48 (about as far as the NOAA projection goes)
+var CARD_MIN_H = 7;                // a day gets a card over the graph only if at least this many of its hours are in view; otherwise it goes to "Later"
 var PAST_DAYS = 7;                 // days of measured water level loaded, to compare with predictions
 // (lookups) OFFSET_RECENT_HIGHS: "running higher than predicted" = average of the last few high tides;
 // OFFSET_NOTE_FT: a difference this big (ft) is called out; OFFSET_HIGH_FT: ...and this big is shown in red
@@ -777,7 +780,7 @@ function renderTides() {
 function renderDays(s, now) {
   var st = s.st, el = $t("tdays"), h = "", fcDays = 0;
   if (!s.highs) { el.innerHTML = ""; return; }
-  var ser = bestSeries(s, now);
+  var ser = bestSeries(s, now), x0 = now - GRAPH_BACK_H * 3600000, x1 = now + GRAPH_AHEAD_H * 3600000, later = [], cards = 0;
   for (var d = 0; d < DAYS; d++) {
     var a = dayStart(now) + d * 86400000, b = a + 86400000;
     // Each high tide that day: the highest value near it in the measured / forecast / predicted series
@@ -789,15 +792,23 @@ function renderDays(s, now) {
       if (!top || c.v > top.v) top = c;
     });
     var name = d === 0 ? "Today" : fmt(a, { weekday: "short" }) + " " + fmt(a, { day: "numeric" });
-    if (!top) { h += '<div class="tday"><div class="dn">' + name + '</div><div class="dv">–</div></div>'; continue; }
+    var inView = (Math.min(b, x1) - Math.max(a, x0)) / 3600000 >= CARD_MIN_H;
+    if (!inView) {   // after the graph: one line, colored when the day is above MHHW or at the flood level
+      if (top) later.push('<span class="' + (top.v >= redFor(st) ? "red" : top.v > st.mhhw ? "over" : "") + '">' + esc(name) + " " + top.v.toFixed(2) + "</span>");
+      continue;
+    }
+    cards++;
+    if (!top) { h += '<div class="tday" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">–</div></div>'; continue; }
     var over = top.v > st.mhhw, isRed = top.v >= redFor(st);
     var tag = top.src === "fcst" ? ' <span class="fc">projected</span>' : top.src === "measured" ? ' <span class="ms">measured</span>' : "";
     if (top.src === "fcst") fcDays++;
-    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span>' +
+    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span>' +
       '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (isRed ? esc(LK.text("tide_red_day")) : over ? "MHHW " + sgn(top.v - st.mhhw) : "") + "</div></div>";
   }
   el.innerHTML = h;
-  $t("tsechint").textContent = fcDays ? "highest tide each day · measured, NOAA projection, then tide table" : "highest tide each day (tide table)";
+  $t("tsechead").textContent = cards === 1 ? "Today" : "Next " + cards + " days";
+  $t("tsechint").textContent = "highest tide each day";
+  $t("tlater").innerHTML = later.length ? " · <b>Later:</b> " + later.join(" · ") + " (tide table)" : "";
 }
 
 /* Tide graphs: labels written on the flat reference lines (MHHW, flood level) so the dashed lines can be read without the key.
@@ -854,14 +865,31 @@ var nowLinePlugin = {
     ctx.restore();
   }
 };
+/* The day cards sit over their days on the graph (the graph starts 24 hours back), placed from the chart's own scale,
+   redone whenever the chart lays out. */
+var dayAlign = {
+  id: "dayAlign",
+  afterLayout: function (c) {
+    var o = c.options.plugins.dayAlign; if (!o || !o.el) return;
+    var xs = c.scales.x, cols = [], first = null;
+    Array.prototype.forEach.call(o.el.children, function (e) {
+      var a = Math.max(+e.dataset.a, o.x0), b = Math.min(+e.dataset.a + 86400000, o.x1);
+      var pa = xs.getPixelForValue((a - o.x0) / 3600000), pb = xs.getPixelForValue((b - o.x0) / 3600000);
+      if (first == null) first = pa;
+      cols.push(Math.max(0, pb - pa).toFixed(1) + "px");
+    });
+    o.el.style.marginLeft = (first == null ? 30 : first).toFixed(1) + "px";
+    o.el.style.gridTemplateColumns = cols.join(" ");
+  }
+};
 var TC = { chart: null, bars: null };
 
-// 7-day graph lined up under the day cards: one card per day column, no side axes taking up width.
+// 3-day graph (last 24 h, next 48 h) under the day cards: each card over its day, no side axes taking up width.
 /* Text alternative for the tide graph (screen readers): what it shows, the level now, the highest tide ahead and its
    source, and where that is against MHHW and the flood level (same as the Tides page) */
 function chartSummary(s, now, useModel) {
-  var st = s.st, rl = redFor(st), fe = useModel ? modelEnd(s) : now, end = dayStart(now) + DAYS * 86400000, out = [];
-  out.push("Tide graph for " + (st.name || "Redwood City") + ", today and the next 6 days, in feet NAVD88.");
+  var st = s.st, rl = redFor(st), fe = useModel ? modelEnd(s) : now, end = now + GRAPH_AHEAD_H * 3600000, out = [];
+  out.push("Tide graph for " + (st.name || "Redwood City") + ", the last 24 hours and the next 48 hours, in feet NAVD88.");
   var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null;
   if (last && now - last.t < 3600000) out.push("Now " + last.v.toFixed(2) + " ft, measured at " + fTime(last.t) + ".");
   var top = null;
@@ -875,11 +903,12 @@ function chartSummary(s, now, useModel) {
 }
 function drawTideChart(s, now) {
   if (!s.pred || typeof Chart === "undefined" || $t("tides").classList.contains("hide")) return;
-  var start = dayStart(now), m = s.st.mhhw, ink = cssVar("--ink"), muted = cssVar("--muted"), line = cssVar("--line");
-  var hrs = function (t) { return (t - start) / 3600000; }, end = start + DAYS * 86400000;
+  var start = now - GRAPH_BACK_H * 3600000, m = s.st.mhhw, ink = cssVar("--ink"), muted = cssVar("--muted"), line = cssVar("--line");
+  var hrs = function (t) { return (t - start) / 3600000; }, end = now + GRAPH_AHEAD_H * 3600000, span = GRAPH_BACK_H + GRAPH_AHEAD_H;
+  var mids = []; for (var mt = dayStart(start) + 86400000; mt < end; mt += 86400000) mids.push(hrs(mt));   // midnights: lines between the days
   var pr = s.pred.filter(function (p) { return p.t >= start && p.t <= end; });
   var pts = pr.map(function (p) { return { x: hrs(p.t), y: p.v }; });
-  var mh = [{ x: 0, y: m }, { x: DAYS * 24, y: m }];
+  var mh = [{ x: 0, y: m }, { x: span, y: m }];
   var ab = pts.map(function (p) { return { x: p.x, y: Math.max(p.y, m) }; });
   var ob = (s.obs || []).filter(function (p) { return p.t >= start; }).map(function (p) { return { x: hrs(p.t), y: p.v }; });
   var useModel = modelOK(s, now), fcEnd = useModel ? modelEnd(s) : now;
@@ -894,14 +923,16 @@ function drawTideChart(s, now) {
     { data: pts, borderColor: cssVar("--tidetbl"), borderWidth: 1, pointRadius: 0, tension: 0.3, fill: false, order: 2 },
     { data: ob, borderColor: "#1e88e5", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false, order: 1 },
     { data: fc, borderColor: cssVar("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false, order: 0 }
-  ].concat(showRed ? [{ data: [{ x: 0, y: rl }, { x: DAYS * 24, y: rl }], refLabel: LK.text("tide_red_line", { ft: rl.toFixed(1) }), borderColor: cssVar("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false, order: 4 }] : []) };
+  ].concat(showRed ? [{ data: [{ x: 0, y: rl }, { x: span, y: rl }], refLabel: LK.text("tide_red_line", { ft: rl.toFixed(1) }), borderColor: cssVar("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false, order: 4 }] : []) };
   var opts = {
     responsive: true, maintainAspectRatio: false, animation: false, events: [],
     layout: { padding: 0 },
-    plugins: { legend: { display: false }, tooltip: { enabled: false }, nowLine: { x: hrs(now), label: true }, refMarks: { side: "right", bg: cssVar("--panel") } },
+    plugins: { legend: { display: false }, tooltip: { enabled: false }, nowLine: { x: hrs(now), label: true }, refMarks: { side: "right", bg: cssVar("--panel") },
+      dayAlign: { el: $t("tdays"), x0: start, x1: end } },
     scales: {
-      x: { type: "linear", min: 0, max: DAYS * 24, ticks: { display: false, stepSize: 24 }, border: { display: false },
-        grid: { color: function (c) { return c.tick && c.tick.value % 24 === 0 && c.tick.value > 0 && c.tick.value < DAYS * 24 ? line : "rgba(0,0,0,0)"; }, drawTicks: false } },
+      x: { type: "linear", min: 0, max: span, ticks: { display: false }, border: { display: false },
+        afterBuildTicks: function (ax) { ax.ticks = mids.map(function (v) { return { value: v }; }); },
+        grid: { color: line, drawTicks: false } },
       y: { min: yMin, max: yMax, border: { display: false }, afterFit: function (ax) { ax.width = 30; },   // matches #tdays margin
         ticks: { stepSize: 2, autoSkip: false, color: muted, font: { size: 10.5 }, padding: 3,
           callback: function (v) { return v % 4 === 0 ? v + " ft" : ""; } },   // label every 4 ft, gridline every 2
@@ -909,7 +940,7 @@ function drawTideChart(s, now) {
     }
   };
   if (TC.chart) { TC.chart.data = data; TC.chart.options = opts; TC.chart.update("none"); }
-  else TC.chart = new Chart($t("tchartc"), { type: "line", data: data, options: opts, plugins: [refMarks, nowLinePlugin] });
+  else TC.chart = new Chart($t("tchartc"), { type: "line", data: data, options: opts, plugins: [refMarks, nowLinePlugin, dayAlign] });
   $t("tchartc").setAttribute("aria-label", chartSummary(s, now, useModel));
   $t("tkey").innerHTML = "<span><i style='border-top:3px solid #1e88e5'></i>Measured</span>" +
     (fc.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
