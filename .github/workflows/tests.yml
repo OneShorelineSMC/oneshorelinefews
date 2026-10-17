@@ -1,0 +1,54 @@
+name: Tests
+
+# Runs the data job's checks whenever the scripts, the lookup tables or the home page change: creek signals and
+# status rules, point times (UTC on every reading and on 'latest'), community flood reports, the lookup tables
+# loading cleanly, and the rising-fast parity test (the home page's JavaScript and the data job must agree; needs
+# Node.js). A failure shows as a red X on the commit and in the Actions tab; nothing on the site changes.
+# Can also be run by hand from the Actions tab.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "lookups/*.csv"
+      - "index.html"
+      - ".github/workflows/tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Lookup tables load
+        run: |
+          cd scripts
+          python - <<'EOF'
+          import sys
+          import creek_config as c
+          t = c.load_tide_stations()
+          tides = t[0] if isinstance(t, tuple) else t
+          r = c.load_creeks(tides)
+          problems = r[1] if isinstance(r, tuple) else []
+          if problems:
+              print("\n".join(problems)); sys.exit(1)
+          print("lookup tables load with no problems")
+          EOF
+      - name: Creek signals and status
+        run: python scripts/test_creek_signals.py
+      - name: Point times
+        run: python scripts/test_point_times.py
+      - name: Community flood reports
+        run: python scripts/test_community_flood_reports.py
+      - name: Rising fast, page and data job agree
+        run: python scripts/test_rise_parity.py
