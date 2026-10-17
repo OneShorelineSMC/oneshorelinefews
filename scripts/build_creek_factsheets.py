@@ -130,6 +130,14 @@ def also_fews(note):
     return v, note[m.end():]
 
 
+RAIN_WHY = ("Why these numbers: for most creeks there is no record of how much rain causes flooding, so the rain "
+            "indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall "
+            "frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three "
+            "steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy "
+            "in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not "
+            "yet checked against past floods on this creek.")
+
+
 def main():
     creeks = rows("creeks.csv")
     gauges = rows("creek_gauges.csv")
@@ -334,6 +342,9 @@ def main():
                         yrs = re.search(r"analysis of ([0-9–-]+ events)", src)
                         return (f"Rain amount from an analysis of {yrs[1] if yrs else 'past events'}; tide level from OneRain alarm "
                                 "rule #34 (7.5 ft MLLW, converted to NAVD88)")
+                    if "dashboard" in src.lower():
+                        return ("Taken from OneRain's Belmont settings (Oct 2026); it matches OneRain's lower 30-minute threshold on "
+                                "this gauge (0.20 in, which OneRain calls 'Potential for flooding'). No study recorded")
                     return f"Copied from {src}; no study recorded"
                 L += [f"| {esc(label.get(t['gauge'], t['gauge']))} | {dur(t['minutes'])} | {t['value']} | "
                       f"{(t['tide_at_least_navd88'] + ' ft NAVD88') if t.get('tide_at_least_navd88') else '–'} | "
@@ -344,9 +355,7 @@ def main():
                 | {int(d["window_min"]) for d in dash_rain if d["window_min"]}
             avail = {int(r["minutes"]) for g in rains for r in freq.get(g["onerain_number"].upper(), [])}
             wins = sorted(w for w in wins if w in avail)
-            L += ["**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each "
-                  "gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a "
-                  "starting point, not yet checked against past floods on this creek.", ""]
+            L += ["**Rain indicator** (Heavy, Very heavy, Intense). " + RAIN_WHY, ""]
             L += ["<details><summary>Background: rain indicator levels at each gauge (no action needed)</summary>", "",
                   "The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, "
                   "Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether "
@@ -364,10 +373,11 @@ def main():
         L += ["## Thresholds: the 2026 Update compared with OneRain today", "",
               ("The 2026 Update shows this creek's status on its public pages." if public else
                "On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview.")
-              + " The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today "
-              "(read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; "
-              "OneRain sends text alerts only through separate alarm rules. The 2026 Update doesn't read any of these; they're "
-              "shown so the two systems can be compared.", ""]
+              + " The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each "
+              "OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from "
+              "the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself "
+              "(OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. "
+              "The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.", ""]
         cmp_notes = []
 
         # creek height
@@ -387,10 +397,10 @@ def main():
                 L.append(f"| {name} | {esc(k)} | {fv + ' ft' if fv else '–'} | "
                          + (f"{ov} ft (\"{esc(od['description'])}\")" if od else "–") + f" | {same} |")
             if not levels:
-                L.append(f"| {name} | – | none | none | – |")
+                L.append(f"| {name} | Flood levels | none set | none set | – |")
             rise = g.get("rise_ft", "")
             L.append(f"| {name} | Rising fast | " + ("off" if rise.lower() == "off" else f"{rise or default_rise} ft within an hour")
-                     + " | none | 2026 Update only |")
+                     + " | nothing comparable | 2026 Update only |")
         for d in dash_stage:
             if d["from_value"] and not d["fews_gauge"]:
                 L.append(f"| {esc(d['onerain_site'])} (not a 2026 Update gauge) | {esc(d['threshold_name'])} | – | "
@@ -410,7 +420,7 @@ def main():
         def lvl_text(num, w):
             fr = freq.get(num.upper(), [])
             v = {r["level"]: r["value_in"] for r in fr if r["minutes"] == str(w)}
-            return (f"rain indicator: Heavy {v['1']}, Very heavy {v['2']}, Intense {v['3']} in" if all(k in v for k in "123") else "")
+            return (f"Heavy from {v['1']} in, Very heavy from {v['2']} in, Intense from {v['3']} in" if all(k in v for k in "123") else "")
         gauge_rows = {}
         for g in rains:
             num = g["onerain_number"].upper()
@@ -432,42 +442,43 @@ def main():
                                  if t.get("tide_at_least_navd88") else "") for t in trig)
                 if is_fews:
                     lv = lvl_text(num, w)
-                    fews = "; ".join(x for x in (fews, lv) if x) or "no rain level for this window"
+                    fews = "; ".join(x for x in (fews, lv) if x) or "nothing for this window"
                 else:
                     fews = "– (the 2026 Update doesn't use this gauge)"
                 ds = [d for d in dash_rain if d["onerain_number"].upper() == num and d["from_value"] and str(d["window_min"]) == str(w)]
                 al = [d for d in ds if d["kind"] == "sensor threshold"]
                 co = [d for d in ds if d["kind"] == "dashboard rain color" and d["color"] != "green"]
-                al_t = "; ".join(re.sub(r"^(Hourly|30-minute) rainfall intensity ", "", re.sub(r" \(OneRain level: [^)]*\)", "", d["threshold_name"])).capitalize()
-                                 + f" {d['from_value']} in" for d in al) or "none"
-                co_t = "; ".join(f"{d['color']} from {d['from_value']} in" for d in co) or "none"
-                rrows.append(f"| {esc(lab)} | {dur(w)} | {fews} | {al_t} | {co_t} |")
+                parts = []
+                if al:
+                    named = any(d.get("window_basis") == "name" for d in al)
+                    parts.append(", ".join(
+                        re.sub(r"^(Hourly|30-minute) rainfall intensity ", "", re.sub(r" \(OneRain level: [^)]*\)", "", d["threshold_name"])).capitalize()
+                        + f" from {d['from_value']} in" for d in al)
+                        + (" *(time window from the threshold's name only; how OneRain applies it is unconfirmed)*" if named else ""))
+                rrows.append(f"| {esc(lab)} | {dur(w)} | {fews} | {'<br>'.join(parts) or 'no threshold for this length of time'} |")
         if rrows:
-            L += ["**Rain (inches within the time shown)**", "",
-                  "The 2026 Update's rain indicator (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over "
-                  "windows from 15 minutes to 48 hours; only the windows OneRain or a 2026 Update trigger uses are listed here.", "",
-                  "| Gauge | Rain within | 2026 Update uses | OneRain threshold | OneRain dashboard color |", "|---|---|---|---|---|"] + rrows + [""]
+            L += ["**Rain**", "",
+                  "Each row is one length of time (\"rain within\"). **2026 Update** = the amounts at which its rain indicator turns "
+                  "Heavy, Very heavy and Intense (or a rain trigger shows). **OneRain** = the thresholds set on that gauge's rain "
+                  "sensors for the same length of time. Rows are listed only where "
+                  "OneRain or a 2026 Update trigger uses that length of time; the 2026 Update checks every length from 15 minutes to "
+                  "48 hours.", "",
+                  "| Gauge | Rain within | 2026 Update (inches) | OneRain thresholds (inches) |", "|---|---|---|---|"] + rrows + [""]
+            if any(g for g in rains):
+                L += ["*Why the 2026 Update uses these amounts:* " + RAIN_WHY.replace("Why these numbers: ", ""), ""]
         none_r = [d["onerain_site"] for d in dash_rain if not d["from_value"]]
         if none_r:
-            L += ["No OneRain rain thresholds or dashboard colors on: " + "; ".join(esc(x) for x in dict.fromkeys(none_r)) + ".", ""]
+            L += ["No OneRain rain thresholds on: " + "; ".join(esc(x) for x in dict.fromkeys(none_r)) + ".", ""]
         for d in dash_rain:
             n = also_fews(d["notes"])[1]
             n = re.sub(r"(Rain (alarms|thresholds) set on the Rain Increment sensor[^.]*\.|Only window on the [^.]*\.|Same values as the gauge[^.]*\.|No rain (alarms|thresholds) on this gauge in OneRain\.|A 4th color row[^.]*\.|San Bruno Mountain \(41200\) has no dashboard colors\.|Pescadero and Butano dashboard; only window\.)\s*", "", n).strip()
             if n and n not in cmp_notes: cmp_notes.append(n)
 
         # tide
-        if c.get("tide_station") or dash_tide:
-            L += ["**Tide**", "", "| | 2026 Update uses | OneRain dashboard color |", "|---|---|---|"]
-            fews_t = (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))}: tide graph and high-tide lines (MHHW "
-                      f"{tide.get('mhhw_navd88_ft', '?')} ft NAVD88)" if c.get("tide_station") else
-                      "not linked to this creek" + (f"; the 2026 Update shows {esc(tides[dash_tide[0]['onerain_number']]['name'])} on its "
-                      f"{esc(tides[dash_tide[0]['onerain_number']]['used_for'])}" if dash_tide and dash_tide[0]['onerain_number'] in tides else ""))
-            co = "; ".join(f"{esc(d['onerain_site'])}: {d['color']} from {d['from_value']} ft (datum not shown; assumed MLLW)"
-                           for d in dash_tide if d["color"] != "green") or "none recorded"
-            L += [f"| Tide | {fews_t} | {co} |", ""]
-            for d in dash_tide:
-                n = re.sub(r"^Pescadero and Butano dashboard; ", "", d["notes"]).strip()
-                if n and n not in cmp_notes: cmp_notes.append(n[0].upper() + n[1:])
+        if c.get("tide_station"):
+            L += [f"**Tide:** the 2026 Update uses NOAA {c['tide_station']} {esc(tide.get('name', ''))} for this creek's tide graph and "
+                  f"high-tide lines (average daily high tide, MHHW, {tide.get('mhhw_navd88_ft', '?')} ft NAVD88). OneRain's tide "
+                  "settings aren't included.", ""]
         if cmp_notes:
             L += ["Notes:", ""] + [f"- {esc(upd(n))}" for n in cmp_notes] + [""]
 
