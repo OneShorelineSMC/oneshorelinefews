@@ -176,6 +176,21 @@ def add_thresholds(number, sensor):
             sensor["thresholds"] = levels
 
 
+def site_creeks(number):
+    """Creeks a OneRain site belongs to, for the map's links to the creek pages: [{"id", "name", "role"}], where role is
+    "stage" (a creek level gauge), "rain" (a creek's rain gauge) or "support" (a rain gauge that only counts toward the
+    creek's status). One entry per creek, strongest role first; from creek_gauges.csv via creek_config."""
+    order, out = {"stage": 0, "rain": 1, "support": 2}, {}
+    for c in CREEKS or []:
+        roles = [("stage", g) for g in c.get("stages", [])] + [("rain", g) for g in c.get("rain", [])] + \
+                [("support", g) for g in c.get("rain_support", [])]
+        for role, g in roles:
+            if g.get("number") and str(g["number"]) == str(number):
+                if c["id"] not in out or order[role] < order[out[c["id"]]["role"]]:
+                    out[c["id"]] = {"id": c["id"], "name": c["name"], "role": role}
+    return sorted(out.values(), key=lambda x: order[x["role"]])
+
+
 def main():
     args = sys.argv[1:]
     out_path = args[0] if args else "sites.json"
@@ -213,7 +228,7 @@ def main():
     result, failures = [], 0
     for site_id, uuid, name, number in sites:
         entry = {"name": name, "number": number, "site_id": site_id, "site": uuid,
-                 "url": f"{SITE}/site/?site_id={site_id}&site={uuid}"}
+                 "url": f"{SITE}/site/?site_id={site_id}&site={uuid}", "creeks": site_creeks(number)}
         try:
             (lat, lon), sensors = parse_site(session.get(entry["url"]))
             time.sleep(PAUSE_SEC)
