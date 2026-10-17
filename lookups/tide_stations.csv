@@ -1,3 +1,4 @@
 station,name,mhhw_navd88_ft,mllw_to_navd88_ft,used_for,source,checked_by,checked_on
 9414523,Redwood City,7.02,-1.18,Bay Tides (all pages); tide for Belmont and Atherton; Belmont rain + tide trigger; OneRain tide readings converted to NAVD88 on the sensor map,NOAA Tides & Currents datums for 9414523 (MHHW 8.20 ft MLLW; NAVD88 is 1.18 ft above MLLW),,
 9414750,Alameda,6.37,,Tide for Colma and San Bruno (creek pages and kiosk creek graphs),NOAA Tides & Currents datums for 9414750,,
+9413450,Monterey,5.48,,Coastside Tides (phone page and kiosk tab),NOAA Tides & Currents datums for 9413450 (epoch 1983-2001: MHHW 8.72 and NAVD88 3.24 ft above station datum; MHHW 5.34 ft MLLW; MLLW is 0.14 ft above NAVD88),,
