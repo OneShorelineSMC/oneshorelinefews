@@ -28,7 +28,7 @@
 | Location | 37.65379, -122.42669 |
 | Reports | Every 12 hours plus extra readings in some storms until May 2025; hourly plus extra storm readings since Oct 2025 |
 | Record | Jun 2020 (public OneRain pages) |
-| Tidal | No (dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide) |
+| Tidal | Yes (tidal (staff, Oct 16, 2026): tidally influenced at Orange Memorial Park; dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide; storm-time backwater not yet measured) |
 | Rising fast | 0.5 ft in 60 min (default; not calibrated) |
 | History and known issues | Outages: Jun 23 - Oct 6, 2020; Nov 24 - Dec 15, 2021; May 29 - Oct 16, 2025. Sensor faults: Jul 15, 2022 (readings to about 16.7 ft); Aug 18, 2022 (one-reading spike to 4.56 ft). When it switches from hourly to faster readings in a storm, the rising-fast check can miss the rise (RISING_FAST_BASIS.md section 8). |
 
