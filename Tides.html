@@ -117,9 +117,9 @@
   #tideSub { font-size: 13px; margin-top: 2px; }
 
   /* Graphs */
-  .gtitle { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .gtitle { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-top: 6px; }
   .gbox { position: relative; }
-  #key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  #key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); margin-top: 8px; }
   #key i { display: inline-block; width: 16px; height: 0; margin-right: 4px; vertical-align: 3px; }
 
   .note { font-size: 12.5px; color: var(--muted); text-align: center; margin: 4px 0 8px; }
@@ -209,7 +209,7 @@
   .rng button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
   .rng button[aria-pressed="true"]::before { content: "✓ "; }
   .rng button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; position: relative; z-index: 1; }
-  .tcard .gbox { height: 215px; margin-top: 8px; }
+  .tcard .gbox { height: 235px; margin-top: 8px; }
   .key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); margin-top: 6px; }
   .key i { display: inline-block; width: 16px; height: 0; margin-right: 4px; vertical-align: 3px; }
   .key i.ab { height: 9px; background: var(--infofill); border-top: 2px solid var(--infob); vertical-align: 0; }
@@ -353,8 +353,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261016i"></script>
-<script src="tide_season.js?v=20261016i"></script>
+<script src="lookups.js?v=20261016j"></script>
+<script src="tide_season.js?v=20261016j"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -766,11 +766,11 @@ var refMarks = {
     }
     var nl = c.options.plugins.nowLine, nx = nl && nl.x != null && nl.x >= xs.min && nl.x <= xs.max ? xs.getPixelForValue(nl.x) : null;
     if (nx != null) placed.push({ x: nx - 22, y: ys.top, w: 44, h: 16 });   // keep labels clear of the "Now" tag
-    ctx.save(); ctx.font = "bold 11px Arial, sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    ctx.save(); ctx.font = "bold 13px Arial, sans-serif";   /* readable on a phone (canvas text does not follow the text-size setting) */ ctx.textBaseline = "middle"; ctx.textAlign = "left";
     c.data.datasets.forEach(function (d, i) {
       if (!d.refLabel || !c.isDatasetVisible(i) || !d.data.length) return;
       var v = d.data[0].y; if (v < ys.min || v > ys.max) return;
-      var py = Math.round(ys.getPixelForValue(v)), w = ctx.measureText(d.refLabel).width + 8, h = 14, y = py - h / 2;
+      var py = Math.round(ys.getPixelForValue(v)), w = ctx.measureText(d.refLabel).width + 8, h = 17, y = py - h / 2;
       var a = xs.left + 4, b = xs.right - 4 - w, cands = left ? [a, b] : [b, a];
       for (var f = 0.1; f < 1; f += 0.1) cands.push(left ? a + (b - a) * f : b - (b - a) * f);
       var x = cands[0];
@@ -877,7 +877,7 @@ function drawChart(s, i, now, useModel) {
   var kd = isFinite(kl) && window.TIDE_SEASON ? window.TIDE_SEASON.kingDays() : {}, d0 = new Date(x0).toISOString().slice(0, 10), d1 = new Date(x1).toISOString().slice(0, 10);
   var showKing = Object.keys(kd).some(function (d) { return d >= d0 && d <= d1; });
   if (showKing) ys.push(kl);
-  var lo = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), hi = Math.ceil(Math.max.apply(null, ys) + 0.5);   // room above the top line for its label
+  var lo = 2 * Math.floor((Math.min.apply(null, ys) - 0.3) / 2), hi = Math.ceil(Math.max.apply(null, ys) + 0.9);   // room above the top line for its label and the "Now" tag
   var narrow = window.innerWidth < 520;
   // x axis: 7 days = one weekday label per day; 3 days = midnight (weekday) and noon, so each tide is easy to place
   var ticks = [], t0 = dayStart(x0);
@@ -907,14 +907,14 @@ function drawChart(s, i, now, useModel) {
           label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2); } } } },
     layout: { padding: { right: 2 } },
     scales: {
-      x: { type: "linear", min: 0, max: span, ticks: { autoSkip: false, maxRotation: 0, color: muted, font: { size: 12 }, callback: tickLabel },
+      x: { type: "linear", min: 0, max: span, ticks: { autoSkip: false, maxRotation: 0, color: muted, font: { size: 13 }, callback: tickLabel },
         afterBuildTicks: function (ax) { ax.ticks = ticks.slice(); },
         grid: { drawTicks: false, color: function (c) {
           if (!c.tick) return "rgba(0,0,0,0)";
           var h = (x0 + c.tick.value * 3600000) % 86400000;   // midnight lines (7 days: between the day labels)
           return three ? (h === 0 ? line : "rgba(0,0,0,0)") : "rgba(0,0,0,0)"; } } },
       y: { min: lo, max: hi, afterFit: function (ax) { ax.width = 38; },
-        ticks: { stepSize: 2, autoSkip: false, color: muted, font: { size: 12 }, callback: function (v) { return v % 4 === 0 ? v + " ft" : ""; } },
+        ticks: { stepSize: 2, autoSkip: false, color: muted, font: { size: 13 }, callback: function (v) { return v % 4 === 0 ? v + " ft" : ""; } },
         grid: { color: line } }
     } };
   if (!three) {   // 7 days: lines between days, as before

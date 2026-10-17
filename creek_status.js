@@ -368,7 +368,7 @@
     if (!act.length) h += '<div class="cs-bnone">' + esc(T("summary_none")) + "</div>";
     else h += '<div class="cs-brows' + (late ? " cs-dimmed" : "") + '">' + act.map(function (x, n) {
       var st = x.v.st, rl = (st.rain || {}).level || 0, off = x.k === "offline";
-      var r = '<div class="cs-brow cs-b-' + x.k + '"' + (x.dash ? ' data-creek="' + esc(x.c.id) + '"' : "") + '><i class="cs-bbar" style="background:' + COL[x.k] + '"></i>' +
+      var r = '<div class="cs-brow cs-b-' + x.k + '"' + ' data-creek="' + esc(x.c.id) + '"'  + '><i class="cs-bbar" style="background:' + COL[x.k] + '"></i>' +
         '<span class="cs-bname">' + esc(x.c.short || x.c.name) + "</span>" +
         '<span class="cs-bword cs-v-' + x.k + '">' + icon(x.k) + esc(T("verdict_" + x.k)) + "</span>" +
         '<span class="cs-bwhy">' + review(x.c, true) + esc(brief(st, x.k)) + "</span>" +   // the tag goes with the reason: the name column is narrow

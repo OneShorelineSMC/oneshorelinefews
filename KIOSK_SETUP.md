@@ -166,6 +166,15 @@ own map:
   (see below), so the map can lag OneRain by up to about 20 minutes.
 - **Alert levels** on the map come from the creek gauges and thresholds in `lookups/creek_gauges.csv` and `lookups/thresholds.csv`.
 
+## Creeks tab (Oct 16 update)
+
+- **All creeks** (first button) is the status board: every creek, worst first, the other six tagged "Under review". Tap any row for that creek.
+- Buttons for the four dashboard creeks, then **More creeks ▾**, which lists the other six (Methodology under review) as big buttons.
+- A creek's screen: left, each gauge's level (with the level's icon), rain over the creek's windows, triggers and the Bay tide; right, the graphs.
+  Flood levels are drawn like the Creeks page: Monitoring = eye, short dashes; Watch = exclamation in a circle, dashes; Warning = triangle,
+  long dashes; each labeled on its line. Creeks with more than two gauges (Pilarcitos) get one graph with a color per gauge; creeks with no
+  Bay tide (Pilarcitos, San Gregorio, Pescadero) have no tide graph.
+
 ## Bayside Tides tab (and Coastside Tides)
 
 **High tides calendar** (added Oct 16): the "High tides calendar ›" button at the top right of the tides panel opens this
