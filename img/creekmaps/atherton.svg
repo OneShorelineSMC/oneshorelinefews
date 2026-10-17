@@ -409,7 +409,7 @@
 <text class="t h" x="199.0" y="383.3" font-size="14" font-weight="700" text-anchor="start">Alameda de las Pulgas</text>
 <rect class="gr" x="240.6" y="274.1" width="10" height="10" fill="#5b6b7c" stroke="#fff" stroke-width="2"/>
 <circle class="gs" cx="255.6" cy="272.1" r="7" fill="#0A5587" stroke="#fff" stroke-width="2"/>
-<text class="t h" x="244.6" y="276.1" font-size="14" font-weight="700" text-anchor="end">Upstream of Caltrain</text>
+<text class="t h" x="92.6" y="276.1" font-size="14" font-weight="700" text-anchor="start">Upstream of Caltrain</text>
 <text class="t h" x="197" y="156" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">101</text>
 <text class="t h" x="170" y="219" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">El Camino Real</text>
 <text class="t h" x="118" y="419" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">I-280</text>

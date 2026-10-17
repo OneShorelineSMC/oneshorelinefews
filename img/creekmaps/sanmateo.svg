@@ -499,13 +499,12 @@
 <path class="ck" d="M111.0,173.2 L111.7,174.9" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 <circle class="gs" cx="224.4" cy="254.3" r="7" fill="#0A5587" stroke="#fff" stroke-width="2"/>
-<text class="t h" x="235.4" y="258.3" font-size="14" font-weight="700" text-anchor="start">Below Crystal Springs Reservoir</text>
+<text class="t h" x="106.6" y="278.3" font-size="14" font-weight="700" text-anchor="start">Below Crystal Springs Reservoir</text>
 <rect class="gp" x="269.0" y="321.0" width="12" height="12" fill="#fff" stroke="#5b6b7c" stroke-width="2.5"/>
-<text class="t h" x="264.0" y="331.0" font-size="14" font-weight="700" text-anchor="end">Crystal Springs Cottage</text>
-<text class="t h" x="274" y="133" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">101</text>
+<text class="t h" x="89.2" y="331.0" font-size="14" font-weight="700" text-anchor="start">Crystal Springs Cottage</text>
+<text class="t h" x="220" y="252" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">I-280</text>
 <text class="t h" x="292" y="214" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Hwy 92</text>
 <text class="t h" x="230" y="383" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Skyline Blvd</text>
-<text class="t h" x="176" y="106" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">El Camino Real</text>
 <text class="t h" x="252" y="157" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Hwy 82</text>
 <text class="t h" x="64" y="340" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Hwy 1</text>
 <text class="wt h" x="348" y="140" font-size="12.5" font-weight="700" font-style="italic" text-anchor="middle" fill="#3d6f9c">San Francisco Bay</text>
@@ -517,11 +516,10 @@
 <text class="ct h" x="72" y="44" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">SAN BRUNO</text>
 <text class="ct h" x="36" y="104" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">PACIFICA</text>
 <text class="ct h" x="372" y="320" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">SAN CARLOS</text>
-<text class="ct h" x="336" y="284" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">BELMONT</text>
+<text class="ct h" x="372" y="284" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">BELMONT</text>
 <text class="ct h" x="48" y="284" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">EL GRANADA</text>
 <text class="ct h" x="372" y="440" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">WOODSIDE</text>
 <text class="ct h" x="372" y="392" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">REDWOOD CITY</text>
-<text class="ct h" x="240" y="284" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">HIGHLANDS</text>
 <text class="ct h" x="240" y="236" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">BAYWOOD PARK</text>
 <text class="ct h" x="48" y="176" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">MONTARA</text>
 <g transform="translate(394,26)"><path class="na" d="M0,-14 L7,8 L0,3 L-7,8Z" fill="#16324a"/><text class="t" y="22" font-size="11" font-weight="700" text-anchor="middle">N</text></g>

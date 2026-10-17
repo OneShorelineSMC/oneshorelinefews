@@ -410,8 +410,8 @@
 </g>
 <rect class="gr" x="305.2" y="138.0" width="10" height="10" fill="#5b6b7c" stroke="#fff" stroke-width="2"/>
 <circle class="gs" cx="320.2" cy="136.0" r="7" fill="#0A5587" stroke="#fff" stroke-width="2"/>
-<text class="t h" x="309.2" y="156.0" font-size="14" font-weight="700" text-anchor="end">Old County Road</text>
-<text class="t h" x="302" y="121" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">El Camino Real</text>
+<text class="t h" x="195.2" y="156.0" font-size="14" font-weight="700" text-anchor="start">Old County Road</text>
+<text class="t h" x="302" y="121" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Hwy 82</text>
 <text class="t h" x="340" y="93" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">101</text>
 <text class="t h" x="107" y="269" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">I-280</text>
 <text class="ct h" x="192" y="176" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">BELMONT</text>

@@ -522,7 +522,6 @@
 <text class="t h" x="238.2" y="55.4" font-size="14" font-weight="700" text-anchor="start">La Honda</text>
 <text class="t h" x="47" y="123" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Hwy 1</text>
 <text class="t h" x="323" y="209" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Hwy 236</text>
-<text class="t h" x="183" y="38" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">Hwy 84</text>
 <text class="ct h" x="336" y="44" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">PALO ALTO</text>
 <g transform="translate(394,26)"><path class="na" d="M0,-14 L7,8 L0,3 L-7,8Z" fill="#16324a"/><text class="t" y="22" font-size="11" font-weight="700" text-anchor="middle">N</text></g>
 <g class="sb" stroke="#16324a" stroke-width="2"><path class="sb" d="M16,219 V224 H57 V219" fill="none"/></g><text class="t h" x="63" y="224" font-size="12">2 mi</text>
