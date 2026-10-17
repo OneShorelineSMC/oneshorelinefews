@@ -313,8 +313,8 @@
     // No alerts: say only what was measured, name any creek whose gauge is down, and where it comes from (not an all-clear)
     var down = quiet.filter(function (r) { return r.k === "offline"; }).map(function (r) { return r.c.short || r.c.name; });
     if (!groups.length) h += '<section class="cs-hg cs-hg-none"><div class="cs-verdict cs-v-none">' + icon("none") + esc(T("home_none")) + "</div>" +
-      (down.length ? '<p class="cs-hdown">⚠ ' + esc(T("home_none_offline", { creeks: list(down) })) + "</p>" : "") +
-      '<p class="cs-hdo">' + esc(T("home_none_note")) + "</p></section>";
+      '<p class="cs-hscope">' + esc(T("home_none_note")) + "</p>" +   // what "no alerts" covers, right under it
+      (down.length ? '<p class="cs-hdown">⚠ ' + esc(T("home_none_offline", { creeks: list(down) })) + "</p>" : "") + "</section>";   // then any gauge out, set apart
     groups.forEach(function (g) {
       h += '<section class="cs-hg cs-hg-' + g.k + '" aria-label="' + esc(T("verdict_" + g.k)) + '"><div class="cs-verdict cs-v-' + g.k + '">' + icon(g.k) + esc(T("verdict_" + g.k)) + "</div>" +
         '<ul class="cs-hrows">' + g.rows.map(function (r) {
@@ -347,7 +347,7 @@
       var t = { why_warning: "At Flood Warning level", why_watch: "At Flood Watch level", why_monitoring: "Higher than usual",
         why_rising_fast: "Rising fast", why_normal_rain: "Normal level, rain could raise it", why_trigger: "Rain trigger met",
         why_trigger_tide: "Rain + high tide trigger met", why_gauge_offline: "Creek gauge offline", why_stale: "A rain gauge is silent",
-        tide_rising_line: "Rising tide" }[r.code] || "";
+        tide_rising_line: "Rising tide", why_rain: r.rain ? rainWord(r.rain) + " rain" : "" }[r.code] || "";
       if ((r.code === "why_watch" || r.code === "why_monitoring") && r.rising_fast) t += ", rising fast";
       if (t && out.indexOf(t) < 0) out.push(t);
     });
@@ -462,7 +462,7 @@
     ".cs-hg-none .cs-verdict{background:rgba(46,125,50,.1)}.cs-hg-none .cs-ic-none{color:#2e7d32}",
     ".cs-hrows{list-style:none;margin:0;padding:4px 14px 0}.cs-hrows li+li{border-top:1px solid var(--line,#e3e8ee)}",
     ".cs-hrow{display:flex;align-items:center;gap:10px;padding:9px 0;min-height:44px;text-decoration:none;color:inherit}",
-    ".cs-hdown{margin:0;padding:9px 14px 0;font-size:15px;font-weight:700;color:var(--ink,#16202b)}",
+    ".cs-hdown{margin:0;padding:9px 14px 0;font-size:15px;font-weight:700;color:var(--ink,#16202b)}.cs-hg-none .cs-hdown{border-top:1px solid var(--line,#e3e8ee);margin-top:9px}.cs-hscope{margin:0;padding:7px 14px 0;font-size:14px;line-height:1.4;color:var(--muted,#556274)}",
     ".cs-hx{flex:1;display:flex;flex-direction:column;gap:1px}.cs-hx .cs-review{align-self:flex-start;margin:2px 0}.cs-bwhy .cs-review{margin:0 6px 0 0;font-size:11px}.cs-hn{font-weight:700;font-size:16px;color:var(--ink,#16202b)}",
     ".cs-hy{font-size:14px;line-height:1.35;color:var(--text,var(--ink,#16202b))}.cs-hc{color:var(--muted,#556274);font-size:20px;flex:none}",
     "a.cs-hrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:2px;border-radius:4px}",
