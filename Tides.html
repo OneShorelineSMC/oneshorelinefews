@@ -159,6 +159,9 @@
   /* Bayside / Coastside Tides: one sentence first, the week next, details behind taps (same as the kiosk tab) */
   .tcard .th { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .tn { font-size: 20px; font-weight: 700; color: var(--ink); }
+  .ptitle { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; margin: 12px 2px 8px; }
+  .ptitle h1.page { margin: 0; } .ptitle .pst { font-weight: 600; } .ptitle .lbl { margin-left: auto; }
+  .tcard > .head:first-child { margin-top: 0; }
   .head { margin-top: 8px; border: 3px solid #8a96a3; border-radius: 10px; padding: 8px 12px; background: rgba(138,150,163,.08); }
   /* Above MHHW = higher than usual: blue, for information (MHHW is a tidal reference, not a flood level). Red only at the flood level. */
   .head.over { border-color: var(--infob); background: var(--infobg); }
@@ -176,6 +179,11 @@
   .nowl b { font-size: 18px; color: var(--ink); }
   .sec { font-size: 13px; color: var(--muted); margin: 12px 2px 4px; }
   .sec b { color: var(--ink); font-size: 14px; }
+  /* condensed top: "Now" and "What is MHHW?" share a line; "Next 7 days" and the graph range share a line */
+  .nowrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 14px; margin-top: 6px; }
+  .nowrow .nowl, .nowrow .mhhwq { margin-top: 0; } .nowrow .mhhwq[open] { flex-basis: 100%; order: 2; }
+  .secrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 14px; margin: 8px 0 4px; }
+  .secrow .sec { margin: 0 2px; } .secrow .rng { margin: 0; }
   /* 7 days: a list on phones, 7 columns on wide screens */
   .days { display: grid; gap: 0; border-top: 1px solid var(--line); }
   .day { display: grid; grid-template-columns: 4.2em 4.4em minmax(0, 1fr) auto; align-items: baseline; gap: 6px; padding: 6px 4px;
@@ -190,12 +198,14 @@
   .day.over .dv, .day.over .dx { color: var(--info); font-weight: 700; }
   .day.red { background: rgba(192,57,43,.09); }
   .day.red .dv, .day.red .dx { color: var(--red); font-weight: 700; }
-  .tag { font-size: 11.5px; font-weight: 700; }
+  .tag { font-size: 11.5px; font-weight: 700; } .hd .wsep { display: none; }
   .tag.fc { color: var(--fc); } .tag.ms { color: var(--info); }
   @media (min-width: 760px) {
     .days { grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 0; margin-left: 38px; }   /* 38px = graph's y-axis, so days line up */
     .day > span { display: block; }
     .day .dt .tag { display: inline; }
+    .hd br.nb { display: none; } .hd .wsep { display: inline; }   /* wide screens: the headline's details on one line */
+    .day .dxw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* "+0.21 ft" (the day's color says above MHHW; still read aloud) */
     .day { display: block; text-align: center; border-bottom: 0; border-top: 4px solid var(--line); border-right: 1px solid var(--line); padding: 5px 4px; }
     .day:last-child { border-right: 0; }
     .day.over { border-top-color: var(--infob); } .day.red { border-top-color: #c0392b; }
@@ -306,7 +316,7 @@
 
 <main>
   <h1 class="page" id="h1">Bayside Tides</h1>
-  <div class="intro" id="intro">When the Bay at the NOAA tide gauge in Redwood City is expected to rise above MHHW in the next 7 days.</div>
+  <div class="intro vh" id="intro">When the Bay at the NOAA tide gauge in Redwood City is expected to rise above MHHW in the next 7 days.</div>
   <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
     <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
   <div id="cards"></div>
@@ -586,7 +596,7 @@ function headHtml(ups, st, now) {
   if (isFinite(rl)) bits.push(esc(LK.text(first.peak >= rl ? "tide_head_at_red" : "tide_head_below_red", { ft: rl.toFixed(1) })));
   var others = ups.filter(function (w) { return w !== first; }), more = others.length;
   return '<span class="hi" aria-hidden="true">' + (red.length ? "⚠" : "〰") + "</span>" + esc(title) + ": " + esc(when) +
-    '<span class="hd">' + bits[0] + "<br>" + bits.slice(1).join(" · ") + (more ? '<br><span class="lbl">+' + more + " more " + (more > 1 ? "times" : "time") + " this week</span>" : "") + "</span>";
+    '<span class="hd">' + bits[0] + '<br class="nb"><span class="wsep"> · </span>' + bits.slice(1).join(" · ") + (more ? '<br class="nb"><span class="wsep"> · </span><span class="lbl">+' + more + " more " + (more > 1 ? "times" : "time") + " this week</span>" : "") + "</span>";
 }
 function winText(w, now) {
   return relDay(w.start, now) + " " + fTime(w.start).replace(/ (AM|PM)$/, function (m) { return fTime(w.end).slice(-3) === m ? "" : m; }) +
@@ -645,22 +655,29 @@ function afdFresh() { return AFD.lines && AFD.issued && Date.now() - new Date(AF
 /* ---------- page ---------- */
 $("cards").innerHTML = S.map(function (s, i) {
   return '<div class="card tcard" id="st' + i + '">' +
-    '<div class="th"><span class="tgauge"><span class="tn">' + esc(s.st.name) + " · " + esc(SIDE.tide) + '</span>' +
+    '<div class="th"><span class="tgauge"><span class="tn">' + esc(s.st.name) + '</span>' +
     '<span class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html" aria-label="Bayside Tides"' + (COAST ? "" : ' aria-current="page"') + '>Bay</a>' +
     '<a href="Tides.html?side=coast" aria-label="Coastside Tides"' + (COAST ? ' aria-current="page"' : "") + ">Coast</a></span></span>" +
     '<span class="lbl">NOAA ' + esc(s.st.id) + " · ft NAVD88</span></div>" +
     '<div class="head unknown"><div class="hm">Loading tides…</div></div>' +
-    '<details class="mhhwq"><summary>What is MHHW?</summary><p>' + esc(LK.text("mhhw_info")) + "</p></details>" +
-    '<div class="nowl"></div>' +
-    '<div class="sec"><b class="dhead">Next 7 days</b> · <span class="hint">highest tide each day (tide table)</span></div>' +
+    '<div class="nowrow"><div class="nowl"></div><details class="mhhwq"><summary>What is MHHW?</summary><p>' + esc(LK.text("mhhw_info")) + "</p></details></div>" +
+    '<div class="secrow"><div class="sec"><b class="dhead">Next 7 days</b> · <span class="hint">highest tide each day (tide table)</span></div>' +
+    '<div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div></div>' +
     '<div class="days"></div>' +
-    '<div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div>' +
     '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
     '<div class="afd" style="display:none"></div>' +
     '<details class="all"><summary>Times above MHHW</summary><div class="wl"></div></details>' +
     '<details class="all"><summary>Now and the past 7 days</summary><div class="pw"></div></details></div>';
 }).join("");
+// Page title, gauge, Bay|Coast switch and NOAA id on one line: "Bayside Tides · Redwood City  [Bay|Coast]   NOAA 9414523 · ft NAVD88".
+// (?embed=1 has no page title, so the card keeps its own gauge line there.)
+if (!EMBED && S.length === 1) (function () {
+  var th = $("st0").querySelector(".th"), h1 = $("h1"), row = document.createElement("div");
+  row.className = "ptitle"; h1.parentNode.insertBefore(row, h1); row.appendChild(h1);
+  h1.innerHTML = esc(SIDE.name) + '<span class="pst"> · ' + esc(S[0].st.name) + "</span>";
+  row.appendChild(th.querySelector(".side")); row.appendChild(th.querySelector(".lbl")); th.parentNode.removeChild(th);
+})();
 
 function render() {
   var now = nowLocal();
@@ -701,7 +718,7 @@ function render() {
       var over = top.v > st.mhhw, isRed = top.v >= redFor(st); if (top.src === "fcst") fcDays++;
       h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span></span>' +
         '<span class="dt">' + fTime(top.t) + (top.src === "fcst" ? ' <span class="tag fc">projected</span>' : top.src === "measured" ? ' <span class="tag ms">measured</span>' : "") + '</span>' +
-        '<span class="dx">' + (isRed ? esc(LK.text("tide_red_key", { ft: redFor(st).toFixed(1) })) + " reached" : over ? sgn(top.v - st.mhhw) + " ft above MHHW" : "") + "</span></div>";
+        '<span class="dx">' + (isRed ? esc(LK.text("tide_red_key", { ft: redFor(st).toFixed(1) })) + " reached" : over ? sgn(top.v - st.mhhw) + ' ft<span class="dxw"> above MHHW</span>' : "") + "</span></div>";
     }
     q(".days").innerHTML = h;
     q(".hint").textContent = fcDays ? "highest tide each day · measured, NOAA projection, then tide table" : "highest tide each day (tide table)";
