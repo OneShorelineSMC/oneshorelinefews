@@ -12,6 +12,21 @@ Fill in "Checked by / on" here (and in the CSV row's `checked_by` / `checked_on`
 
 ## Terms
 
+**Names.** **OneRain** is the County's existing gauge system and its dashboards, which many staff call "FEWS".
+**FEWS 2026 Update** ("2026 Update" for short) is the new public creek and tide status site in this repository, built
+on OneRain's gauge data. In this document "FEWS" means the 2026 Update; the fact sheets say "2026 Update" throughout
+and compare it with OneRain.
+
+**Shared vocabulary** (fact sheets, review workbook and meetings):
+- **Threshold:** any set value that changes a color or a status, in either system.
+- **Flood level** and **alert level:** the two kinds of 2026 Update threshold (defined below).
+- **Status:** the 2026 Update's one overall message per creek (Flooding likely, Be ready, Stay alert, No alerts).
+- **OneRain threshold:** a named level on a OneRain sensor (e.g. Flood Watch, 3.25 ft); it colors that gauge's readings
+  and graph and has a OneRain severity (Informational, Warning, Alert, Critical). It sends nothing by itself.
+- **OneRain dashboard color:** a green/orange/red range on a OneRain dashboard reading, set separately from thresholds.
+- **Notification:** a message sent to people. OneRain sends these through *alarm* rules (Administration > Alarms), which
+  may use thresholds; the 2026 Update sends none.
+
 FEWS uses "threshold" for three different kinds of value. Only the first says anything about flooding.
 
 **Threshold:** a set value of something FEWS measures (creek height, a rain total, or how fast the creek rises) at
