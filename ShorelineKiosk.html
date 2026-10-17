@@ -63,6 +63,28 @@
   .tname { font-size: 19px; font-weight: bold; }
   .tid { font-size: 12px; color: var(--muted); }
   .th .tmhhw { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .th .tcalb { margin-left: auto; font-size: 13px; font-weight: bold; color: var(--ink); border: 2px solid var(--line); border-radius: 8px; padding: 3px 10px; white-space: nowrap; }
+  body.cursor .tcalb, body.mouse .tcalb { cursor: pointer; }
+  /* High tides calendar (tap screen): this month and the next 6, same colors and marks as the Tides page */
+  #kcal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 14px; }
+  #kcal h4 { margin: 0 0 2px; font-size: 13px; color: var(--ink); }
+  .kgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .kgrid .wd { font-size: 10px; color: var(--muted); text-align: center; }
+  .kgrid .d { position: relative; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; border-radius: 3px; color: var(--ink); }
+  .kgrid .d.a { background: var(--infobg); color: var(--info); font-weight: bold; box-shadow: inset 0 -3px 0 var(--infob); }
+  .kgrid .d.k { background: #6A3D8F; color: #fff; font-weight: bold; }
+  .kgrid .d.r { background: #c62828; color: #fff; font-weight: bold; }
+  .kgrid .d.k::after, .kgrid .d.r::after { position: absolute; top: -1px; right: 1px; font-size: 7.5px; line-height: 1; }
+  .kgrid .d.k::after { content: "★"; } .kgrid .d.r::after { content: "!"; } .kgrid .d.r.kr::before { content: "★"; position: absolute; top: -1px; left: 1px; font-size: 7.5px; line-height: 1; }
+  .kgrid .d.xp { border: 2px dotted var(--ink); }
+  .kgrid .d.xp.r, .kgrid .d.xp.k { border-color: #fff; }
+  .kgrid .d.past { background: transparent; color: var(--muted); font-weight: normal; box-shadow: none; }
+  .kgrid .d.past.k { box-shadow: inset 0 0 0 1.5px #6A3D8F; color: var(--ink); }
+  .kgrid .d.today { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .kgrid .d.sel { outline: 3px double var(--ink); outline-offset: 1px; }
+  #kckey { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
+  #kckey i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; font-style: normal; font-size: 9px; color: #fff; text-align: center; line-height: 13px; font-weight: bold; }
+  #kcsel { font-size: 15px; min-height: 22px; margin-top: 6px; color: var(--ink); }
   .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed var(--mhhw); vertical-align: middle; margin-right: 4px; }
   /* Headline band: the one line a responder reads first. The color goes around the whole box. */
   #thead { flex: none; display: flex; align-items: center; gap: 12px; border: 3px solid #8a96a3; border-radius: 8px;
@@ -357,7 +379,7 @@
 
   <div id="tides">
     <div class="th"><span class="tname" id="tname">Redwood City · Bay tide</span><span class="tid" id="tid">NOAA 9414523 · ft NAVD88</span>
-</div>
+      <span class="tcalb" id="tcalb" role="button" tabindex="0">High tides calendar ›</span></div>
     <div id="thead" class="unknown"><div class="hm" id="thm">Loading tides…</div><div class="hnow" id="thnow"></div></div>
     <div id="tright">
       <div class="tsec"><span><b id="tsechead">Next 3 days</b> · <span id="tsechint">highest tide each day</span><span id="tlater"></span></span><span class="tap">Tap for times ›</span></div>
@@ -433,7 +455,7 @@
 
   <div id="detail">
     <div id="dhead"><span id="dtitle"></span><span id="dclose">✕ Back</span></div>
-    <div id="dbody"></div>
+    <div id="dbody" tabindex="0"></div>
   </div>
 </div>
 
@@ -1256,6 +1278,49 @@ $t("tseason").addEventListener("click", function () {
     return "<tr><td><b>" + esc(tsDay(d)) + "</b></td><td>" + esc(TSN.ft(kd[d].v)) + " at " + esc(TSN.clock(kd[d].t)) + "</td></tr>"; }).join("") + "</table>";
   html += '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) })) + " " + esc(TSN.txt("noaa_forecast_note")) + "</div>";
   openDetail(st.cls === "red" ? LK.text("tide_red_chip") : LK.text("tide_day_king"), html);
+});
+
+/* High tides calendar (tap "High tides calendar ›"): this month and the next 6 for the tab's gauge (Redwood City on
+   Bayside Tides, Monterey on Coastside Tides). Colors from the tide table, or the NOAA projection for the next 2 days;
+   tap a day for its highest tide. */
+function calLine(day) {
+  var h = TSN.dayHighs()[day], k = TSN.kingDays()[day], x = TSN.expected()[day];
+  if (!h) return tsDay(day) + ": no tide table yet.";
+  var v = x ? x.v : h.v, lv = TSN.level(v);
+  return tsDay(day) + ": highest tide " + TSN.ft(h.v) + " at " + TSN.clock(h.t) + " (tide table)" + (x ? "; NOAA projects " + TSN.ft(x.v) : "") +
+    (k ? " · " + LK.text("tide_day_king") : "") + (lv ? " · " + LK.text(lv === 2 ? "tide_level_red" : "tide_level_amber") : "") + ".";
+}
+function showCalendar() {
+  if (!TSN || !TSN.state.highs) { openDetail("High tides calendar", "<p>Loading the tide table…</p>"); return; }
+  var today = TSN.iso(TSN.now()), dh = TSN.dayHighs(), kd = TSN.kingDays(), ex = TSN.expected(), m0 = new Date(TSN.state.from), html = "";
+  var red = isFinite(TSN.red());
+  html += '<div id="kckey"><span><i style="background:var(--infobg);box-shadow:inset 0 -3px 0 var(--infob)"></i>' + esc(LK.text("tide_day_amber")) + "</span>" +
+    (red ? '<span><i style="background:#c62828">!</i>' + esc(LK.text("tide_red_key", { ft: TSN.red().toFixed(1) })) + "</span>" : "") +
+    '<span><i style="background:#6A3D8F">★</i>' + esc(LK.text("tide_day_king")) + " " + (+TSN.king().toFixed(2)) + " ft</span>" +
+    '<span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>' +
+    '<span><i style="border:2px dotted var(--ink);box-sizing:border-box"></i>NOAA projection</span></div><div id="kcal">';
+  for (var k = 0; k <= TSN.months; k++) {
+    var mm = new Date(Date.UTC(m0.getUTCFullYear(), m0.getUTCMonth() + k, 1)).toISOString().slice(0, 10), first = new Date(mm + "T12:00:00Z");
+    html += "<div><h4>" + esc(first.toLocaleDateString("en-US", { timeZone: "UTC", month: "long", year: "numeric" })) + '</h4><div class="kgrid">' +
+      ["S", "M", "T", "W", "T", "F", "S"].map(function (w) { return '<span class="wd">' + w + "</span>"; }).join("");
+    for (var i = 0; i < first.getUTCDay(); i++) html += "<span></span>";
+    for (var t = first.getTime(); new Date(t).toISOString().slice(0, 7) === mm.slice(0, 7); t += 86400000) {
+      var day = new Date(t).toISOString().slice(0, 10), hi = dh[day], xp = ex[day], lv = xp ? TSN.level(xp.v) : hi ? TSN.level(hi.v) : 0, c = "d";
+      if (lv === 2) c += kd[day] ? " r kr" : " r"; else if (kd[day]) c += " k"; else if (lv === 1) c += " a";
+      if (xp) c += " xp"; if (day < today) c += " past"; if (day === today) c += " today";
+      html += '<span class="' + c + '" data-d="' + day + '" role="button" aria-label="' + esc(calLine(day)) + '">' + (+day.slice(8)) + "</span>";
+    }
+    html += "</div></div>";
+  }
+  html += '</div><div id="kcsel" aria-live="polite">Tap a day for its highest tide and time.</div>' +
+    '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) })) + "</div>";
+  openDetail("High tides and King Tides · " + LK.station(TSN.station).name, html);
+}
+$t("tcalb").addEventListener("click", function (e) { e.stopPropagation(); showCalendar(); });
+$t("dbody").addEventListener("click", function (e) {
+  var d = e.target.closest && e.target.closest(".kgrid .d[data-d]"); if (!d) return;
+  Array.prototype.forEach.call(document.querySelectorAll(".kgrid .d.sel"), function (x) { x.classList.remove("sel"); });
+  d.classList.add("sel"); $t("kcsel").textContent = calLine(d.dataset.d); bumpDetailTimer();
 });
 
 /* ---------- Tabs ---------- */

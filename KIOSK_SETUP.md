@@ -168,6 +168,11 @@ own map:
 
 ## Bayside Tides tab (and Coastside Tides)
 
+**High tides calendar** (added Oct 16): the "High tides calendar ›" button at the top right of the tides panel opens this
+month and the next 6, colored like the Tides page calendar (blue = above MHHW with a bar along the bottom, red "!" = flood level,
+purple ★ = King Tide, dotted outline = NOAA projection, outlined = today). Tap a day for its highest tide and time. On the
+Coastside Tides tab it shows Monterey. It closes on its own after `DETAIL_TIMEOUT_SEC`.
+
 **Coastside Tides** (added Oct 16; `?tab=coast` opens it) is the same panel for NOAA's Monterey gauge (9413450), the
 nearest NOAA gauge with live readings on the open coast south of San Francisco: MHHW 5.48 ft NAVD88, NOAA projection from
 NOAA's West Coast model, King Tide = the tide table reaches 6.87 ft NAVD88 (`KING_TIDE_FT_MRY`, provisional), no red level
