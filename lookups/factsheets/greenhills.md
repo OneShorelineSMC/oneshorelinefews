@@ -29,7 +29,7 @@
 | On the 2026 Update site | Staff preview only (not yet on the public pages) |
 | Cities and communities | Millbrae *(draft)* |
 | Drains to | Highline Canal, then San Francisco Bay |
-| Description | Small creek through Green Hills Country Club in Millbrae. |
+| Description | Small creek through Green Hills Country Club in Millbrae. At the east corner of the course it goes underground into a 42-inch storm drain and a 48-inch storm drain flow split structure; the City's 2018 Storm Drain Master Plan lists flooding there (Flooding Problem #3, p. 1-2) because the entrance restricts flow into the drains and the area is lower than downstream parts of the City. The Master Plan does not name the creek or say where the drains lead (Highline Canal to confirm). |
 | Flood levels set? | None |
 | Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
 | Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
