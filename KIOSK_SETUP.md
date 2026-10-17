@@ -168,6 +168,11 @@ own map:
 
 ## Creeks tab (Oct 16 update)
 
+**Tab order (Oct 16): Creeks · Bayside Tides · Coastside Tides · Map · About.** The kiosk opens on Creeks (All creeks, the
+status board) unless `?tab=` says otherwise (`?tab=tides` for Bayside Tides); About returns to Creeks. When no creek is at a level
+but Redwood City's tide is expected to reach the flood level today or tomorrow, the red strip under the NWS bar says so on every
+tab ("HIGH WATER · REDWOOD CITY · …", tap for Bayside Tides).
+
 - **All creeks** (first button) is the status board: every creek, worst first, the other six tagged "Under review". Tap any row for that creek.
 - Buttons for the four dashboard creeks, then **More creeks ▾**, which lists the other six (Methodology under review) as big buttons.
 - A creek's screen: left, each gauge's level (with the level's icon), rain over the creek's windows, triggers and the Bay tide; right, the graphs.
@@ -186,7 +191,7 @@ Coastside Tides tab it shows Monterey. It closes on its own after `DETAIL_TIMEOU
 nearest NOAA gauge with live readings on the open coast south of San Francisco: MHHW 5.48 ft NAVD88, NOAA projection from
 NOAA's West Coast model, King Tide = the tide table reaches 6.87 ft NAVD88 (`KING_TIDE_FT_MRY`, provisional), no red level
 yet. Its NWS row also picks up High Surf, Beach Hazards, Sneaker Wave and Rip Current alerts and forecast lines about surf.
-It returns to Bayside Tides after `TAB_RETURN_MIN` like the Creeks tab. The **Disclaimer** is now a button on the About tab
+It returns to Creeks after `TAB_RETURN_MIN`, like Bayside Tides. The **Disclaimer** is now a button on the About tab
 (`?tab=disclaimer` still works).
 
 Bayside Tides:
@@ -238,13 +243,13 @@ San Mateo County**, above the NWS alert bar.
 
 The **About** button shows what each tab means, an "in an emergency, call 911" reminder, OneShoreline's
 contact details (phone, email, website, address), and two QR codes people can scan with their phones:
-**Contact OneShoreline** and **Get alerts: SMC Alert**. It returns to Bayside Tides on its own after 2 minutes.
+**Contact OneShoreline** and **Get alerts: SMC Alert**. It returns to Creeks on its own after 2 minutes.
 `?tab=about` at the end of the kiosk URL opens it directly (handy for checking the QR codes).
 
 ## Disclaimer tab
 
 The **Disclaimer** button shows OneShoreline's data disclaimer (informational purposes only; thresholds are
-approximate; actual conditions may vary) and "In an emergency, call 911". Like About, it returns to Bayside Tides
+approximate; actual conditions may vary) and "In an emergency, call 911". Like About, it returns to Creeks
 on its own after 2 minutes and isn't part of the automatic tab rotation.
 
 ## Creeks tab
@@ -371,5 +376,5 @@ in `ShorelineKiosk.html`:
 | `PIXEL_SHIFT_MIN`     | 10      | How often the picture shifts slightly (burn-in protection; 0 = off) |
 | `PIXEL_SHIFT_PX`      | 2       | How far it shifts, in pixels                    |
 | `ROTATE_SECONDS`      | 0       | Switch tabs automatically (0 = off)             |
-| `TAB_RETURN_MIN`      | 0       | Return to Bayside Tides after this long on the Creeks or Coastside Tides tab (0 = off) |
-| `ABOUT_RETURN_SEC`    | 120     | About tab returns to Bayside Tides after this long  |
+| `TAB_RETURN_MIN`      | 0       | Return to Creeks after this long on a tides tab (0 = off) |
+| `ABOUT_RETURN_SEC`    | 120     | About tab returns to Creeks after this long  |

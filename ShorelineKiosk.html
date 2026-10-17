@@ -381,8 +381,8 @@
     <div id="alertMore" style="display:none"></div>
   </div>
 
-  <div id="creekStrip" title="San Bruno Creek gauge">
-    <span class="sicon">▲</span><span class="stext" id="csText"></span><span class="stap">creeks tab ›</span>
+  <div id="creekStrip" title="Creek or high water alert">
+    <span class="sicon" id="csIcon">▲</span><span class="stext" id="csText"></span><span class="stap" id="csTap">creeks tab ›</span>
   </div>
 
   <div id="tides">
@@ -452,9 +452,9 @@
   <div id="footer">
     <span id="clock">--:--</span>
     <div id="tabs">
-      <span class="tab on" data-tab="tides">Bayside Tides</span>
+      <span class="tab on" data-tab="creek">Creeks</span>
+      <span class="tab" data-tab="tides">Bayside Tides</span>
       <span class="tab" data-tab="coast">Coastside Tides</span>
-      <span class="tab" data-tab="creek">Creeks</span>
       <span class="tab" data-tab="map">Map</span>
       <span class="tab" data-tab="about">About</span>
     </div>
@@ -467,9 +467,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261016j"></script>
-<script src="tide_season.js?v=20261016j"></script>
-<script src="creek_status.js?v=20261016j"></script>
+<script src="lookups.js?v=20261016k"></script>
+<script src="tide_season.js?v=20261016k"></script>
+<script src="creek_status.js?v=20261016k"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -527,11 +527,11 @@ function applyLookups() {
 }
 applyLookups();
 var CREEK_RETURN_MIN = 5;          // a single creek returns to the "All creeks" summary after this long (0 = stay)
-var ABOUT_RETURN_SEC = 120;        // the About tab returns to Bayside Tides on its own after this long
+var ABOUT_RETURN_SEC = 120;        // the About tab returns to Creeks on its own after this long
 var PIXEL_SHIFT_MIN = 10;          // screen-burn protection: nudge the picture this often (0 = off)
 var PIXEL_SHIFT_PX = 2;            // ...by up to this many pixels
 var ROTATE_SECONDS = 0;            // 0 = stay on the chosen tab; e.g. 30 = switch tabs every 30 seconds
-var TAB_RETURN_MIN = 0;            // 0 = stay; e.g. 10 = return to Bay Tides after 10 min on the creek tab
+var TAB_RETURN_MIN = 0;            // 0 = stay; e.g. 10 = return to Creeks after 10 min on a tides tab
 
 // URL options: ?theme=dark  ?cursor=1 (always show the mouse pointer; otherwise it shows while a mouse moves)
 //              ?tab=creek (start on the Creeks tab; also tab=coast for Coastside Tides, tab=map, tab=about, tab=disclaimer)
@@ -1360,7 +1360,7 @@ $t("dbody").addEventListener("click", function (e) {
 });
 
 /* ---------- Tabs ---------- */
-var currentTab = "tides", tabChangedAt = Date.now();
+var currentTab = "creek", tabChangedAt = Date.now();   // the EOC screen opens on Creeks (All creeks: the status board)
 var C = { data: null, t: 0, charts: {}, sel: params.get("creek") || "all", selAt: Date.now() };
 
 function loadCreek() {
@@ -1652,12 +1652,22 @@ function showCreekInfo() {
 /* ---------- Creek alert strip (any creek at Flood Monitoring or above) ---------- */
 var creekWarned = {};
 function updateCreekAlert(states) {
+  C.lastStates = states;
   var stage = document.getElementById("stage"), strip = document.getElementById("creekStrip");
   var tab = document.querySelector('.tab[data-tab="creek"]');
   var alerting = states.filter(function (x) { return x.top; }).sort(function (a, b) { return b.top.level - a.top.level; });
   var worst = alerting[0];
   var was = stage.classList.contains("creekalert");
-  stage.classList.toggle("creekalert", !!worst);
+  // No creek at a level: the strip can still warn of Bayside high water (flood level) today or tomorrow, from any tab
+  var bt = window.TIDE_SEASON ? window.TIDE_SEASON.line(tsDay) : null, now0 = nowLocal();
+  var hw = !worst && bt && bt.cls === "red" && bt.date <= window.TIDE_SEASON.iso(now0 + 86400000) ? bt : null;
+  stage.classList.toggle("creekalert", !!(worst || hw));
+  strip.dataset.go = hw ? "tides" : "creek";
+  document.getElementById("csTap").textContent = hw ? "Bayside Tides ›" : "creeks tab ›";
+  if (hw) {
+    strip.className = "lvl-warning"; strip.style.background = "#c62828"; strip.style.color = "#fff";
+    document.getElementById("csText").innerHTML = "<b>" + esc(LK.text("tide_red_chip")) + " · REDWOOD CITY</b> · " + esc(bt.main);
+  }
   tab.classList.remove("creek-monitoring", "creek-watch", "creek-warning", "creek-beyond");
   if (worst) {
     var l = worst.top, s = worst.topGauge, key = levelClass(l), trg = worst.topTrigger;
@@ -1683,9 +1693,10 @@ function updateCreekAlert(states) {
     }
     creekWarned[x.c.id] = warn;
   });
-  if (was !== !!worst) renderTides();   // panel changed size
+  if (was !== !!(worst || hw)) renderTides();   // panel changed size
 }
 document.getElementById("creekStrip").addEventListener("click", function () {
+  if (this.dataset.go === "tides") { closeDetail(); showTab("tides"); return; }
   closeDetail(); if (this.dataset.creek && this.dataset.creek !== C.sel) { C.sel = this.dataset.creek; C.selAt = Date.now(); destroyCreekCharts(); }
   showTab("creek");
 });
@@ -1904,11 +1915,11 @@ Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
 every(CREEK_EVERY_MIN, loadCreek);
 setInterval(function () {
   var secs = (Date.now() - tabChangedAt) / 1000;
-  if ((currentTab === "about" || currentTab === "disclaimer") && secs >= ABOUT_RETURN_SEC) { showTab("tides"); return; }
+  if ((currentTab === "about" || currentTab === "disclaimer") && secs >= ABOUT_RETURN_SEC) { showTab("creek"); return; }
   if (ROTATE_SECONDS > 0 && currentTab !== "about" && currentTab !== "disclaimer" && secs >= ROTATE_SECONDS && !document.getElementById("detail").classList.contains("show")) {
     showTab(currentTab === "tides" ? "creek" : "tides"); return;
   }
-  if (TAB_RETURN_MIN > 0 && (currentTab === "creek" || currentTab === "coast") && secs >= TAB_RETURN_MIN * 60) showTab("tides");
+  if (TAB_RETURN_MIN > 0 && (currentTab === "tides" || currentTab === "coast") && secs >= TAB_RETURN_MIN * 60) showTab("creek");
   // a single creek goes back to the "All creeks" summary after a while
   if (CREEK_RETURN_MIN > 0 && C.sel !== "all" && Date.now() - C.selAt > CREEK_RETURN_MIN * 60000 && !document.getElementById("detail").classList.contains("show")) {
     C.sel = "all"; destroyCreekCharts(); if (currentTab === "creek") renderCreek();
@@ -1926,7 +1937,7 @@ function drawQRs() {
   });
   qrDrawn = true;
 }
-if (["coast", "creek", "map", "about", "disclaimer"].indexOf(params.get("tab")) >= 0) showTab(params.get("tab"));
+showTab(["tides", "coast", "creek", "map", "about", "disclaimer"].indexOf(params.get("tab")) >= 0 ? params.get("tab") : "creek");   // Creeks first unless ?tab= says otherwise
 
 /* ---------- Map tab ---------- */
 var M = { data: null, map: null, markers: [], sel: null, timer: null };
@@ -2093,7 +2104,7 @@ every(AFD_EVERY_MIN, loadAFD);
 every(MODEL_EVERY_MIN, loadModel);
 [window.TIDE_SEASON, window.TIDE_SEASON_COAST].forEach(function (T) {   // Redwood City and Monterey: tide table (6 months ahead, twice a day) and NOAA projection (hourly)
   if (!T) return;
-  T.onUpdate(function () { renderSeason(); if (T === TSN && calWaiting()) showCalendar(); });   // also after a retry succeeds
+  T.onUpdate(function () { renderSeason(); if (T === TSN && calWaiting()) showCalendar(); if (C.lastStates) updateCreekAlert(C.lastStates); });   // also after a retry succeeds
   every(12 * 60, T.loadTable);   // the projection comes from loadModel() above
 });
 S.forEach(function (_, i) {

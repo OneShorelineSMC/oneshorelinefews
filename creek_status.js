@@ -310,7 +310,11 @@
       esc(T("banner_likely", { creeks: list(likely.map(function (r) { return r.c.name; })) })) + "</div>" : "";
     var h = '<div class="cs-home">';
     if (late) h += '<div class="cs-hlate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing the last statuses.</div>";
-    if (!groups.length) h += '<section class="cs-hg cs-hg-none"><div class="cs-verdict cs-v-none">' + icon("none") + esc(T("home_none")) + "</div></section>";
+    // No alerts: say only what was measured, name any creek whose gauge is down, and where it comes from (not an all-clear)
+    var down = quiet.filter(function (r) { return r.k === "offline"; }).map(function (r) { return r.c.short || r.c.name; });
+    if (!groups.length) h += '<section class="cs-hg cs-hg-none"><div class="cs-verdict cs-v-none">' + icon("none") + esc(T("home_none")) + "</div>" +
+      (down.length ? '<p class="cs-hdown">⚠ ' + esc(T("home_none_offline", { creeks: list(down) })) + "</p>" : "") +
+      '<p class="cs-hdo">' + esc(T("home_none_note")) + "</p></section>";
     groups.forEach(function (g) {
       h += '<section class="cs-hg cs-hg-' + g.k + '" aria-label="' + esc(T("verdict_" + g.k)) + '"><div class="cs-verdict cs-v-' + g.k + '">' + icon(g.k) + esc(T("verdict_" + g.k)) + "</div>" +
         '<ul class="cs-hrows">' + g.rows.map(function (r) {
@@ -327,7 +331,7 @@
     h += '<div class="cs-hmore">';
     if (quiet.length && groups.length) h += '<p><b>' + esc(T("home_quiet")) + ":</b> " + esc(quiet.map(function (r) {
       return r.c.name + (r.k === "offline" ? " (" + T("home_gauge_down") + ")" : ""); }).join(" · ")) + "</p>";
-    else if (quiet.some(function (r) { return r.k === "offline"; })) h += "<p>" + esc(quiet.filter(function (r) { return r.k === "offline"; }).map(function (r) { return r.c.name; }).join(", ")) +
+    else if (groups.length && quiet.some(function (r) { return r.k === "offline"; })) h += "<p>" + esc(quiet.filter(function (r) { return r.k === "offline"; }).map(function (r) { return r.c.name; }).join(", ")) +
       ": " + esc(T("home_gauge_down")) + ".</p>";
     h += '<p><a href="SiteMap.html">' + esc(T("home_map_link")) + " ›</a></p>";
     h += '<p class="cs-hsm">' + esc(T("home_updated", { time: clock(data.generated) })) + "</p></div></div>";
@@ -458,6 +462,7 @@
     ".cs-hg-none .cs-verdict{background:rgba(46,125,50,.1)}.cs-hg-none .cs-ic-none{color:#2e7d32}",
     ".cs-hrows{list-style:none;margin:0;padding:4px 14px 0}.cs-hrows li+li{border-top:1px solid var(--line,#e3e8ee)}",
     ".cs-hrow{display:flex;align-items:center;gap:10px;padding:9px 0;min-height:44px;text-decoration:none;color:inherit}",
+    ".cs-hdown{margin:0;padding:9px 14px 0;font-size:15px;font-weight:700;color:var(--ink,#16202b)}",
     ".cs-hx{flex:1;display:flex;flex-direction:column;gap:1px}.cs-hx .cs-review{align-self:flex-start;margin:2px 0}.cs-bwhy .cs-review{margin:0 6px 0 0;font-size:11px}.cs-hn{font-weight:700;font-size:16px;color:var(--ink,#16202b)}",
     ".cs-hy{font-size:14px;line-height:1.35;color:var(--text,var(--ink,#16202b))}.cs-hc{color:var(--muted,#556274);font-size:20px;flex:none}",
     "a.cs-hrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:2px;border-radius:4px}",
