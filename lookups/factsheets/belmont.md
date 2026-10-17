@@ -7,6 +7,7 @@
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
 > - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
+> - [ ] **OneRain text alerts switched off:** High Tide Warning (Belmont) at Alameda Tide Station (rule #28); Rainfall and Tide (Belmont) at Belmont Creek at Old County Rd (rule #34). Is that intended? These send no texts while off.
 > - [ ] **Rain triggers:** are the amounts and what they show right?
 > - [ ] **Flooding likely (rain + tide):** the tide part (6.32 ft NAVD88) is below the average daily high tide at Redwood City (MHHW 7.02 ft), so it is met on most days' higher high tide. Is that the intended tide level?
 > - [ ] **Belmont 30-minute rain trigger:** The 2026 Update shows 'Flooding likely' when 30-minute rain reaches 0.20 in. OneRain's thresholds on this gauge call 0.20 in 'Potential for flooding' and 0.25 in 'Flooding likely'. Should the 2026 Update's trigger be 0.25 in?
@@ -113,27 +114,38 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself (OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor and OneRain's alarm rules, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages; rain and alarm rules from the admin pages). A OneRain threshold colors that gauge's readings; only an alarm rule that is **On** sends a text alert. OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
-| Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
-|---|---|---|---|---|
-| Belmont Creek at Old County Rd | Flood Monitoring | 2.25 ft | 2.25 ft ("Potential flooding") | Same |
-| Belmont Creek at Old County Rd | Flood Watch | 3.25 ft | 3.25 ft ("Flooding probable with continued rain") | Same |
-| Belmont Creek at Old County Rd | Flood Warning | 4.00 ft | 4.00 ft ("Active flooding likely to occur downstream") | Same |
-| Belmont Creek at Old County Rd | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
+| Gauge | Level | 2026 Update uses | OneRain threshold | Same? | OneRain text alert |
+|---|---|---|---|---|---|
+| Belmont Creek at Old County Rd | Flood Monitoring | 2.25 ft | 2.25 ft ("Potential flooding") | Same | **On** (rule #20) |
+| Belmont Creek at Old County Rd | Flood Watch | 3.25 ft | 3.25 ft ("Flooding probable with continued rain") | Same | **On** (rule #18) |
+| Belmont Creek at Old County Rd | Flood Warning | 4.00 ft | 4.00 ft ("Active flooding likely to occur downstream") | Same | **On** (rule #16) |
+| Belmont Creek at Old County Rd | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only | – |
 
 **Rain**
 
 Each row is one length of time ("rain within"). **2026 Update** = the amounts at which its rain indicator turns Heavy, Very heavy and Intense (or a rain trigger shows). **OneRain** = the thresholds set on that gauge's rain sensors for the same length of time. Rows are listed only where OneRain or a 2026 Update trigger uses that length of time; the 2026 Update checks every length from 15 minutes to 48 hours.
 
-| Gauge | Rain within | 2026 Update (inches) | OneRain thresholds (inches) |
+| Gauge | Rain within | 2026 Update (inches) | OneRain thresholds and text alerts (inches) |
 |---|---|---|---|
-| Old County Road | 30 min | **Flooding likely (rain)** at 0.20 in; Heavy from 0.305 in, Very heavy from 0.366 in, Intense from 0.45 in | Flood watch from 0.20 in, Flood warning from 0.25 in *(time window from the threshold's name only; how OneRain applies it is unconfirmed)* |
+| Old County Road | 30 min | **Flooding likely (rain)** at 0.20 in; Heavy from 0.305 in, Very heavy from 0.366 in, Intense from 0.45 in | Flood watch from 0.20 in, Flood warning from 0.25 in *(time window from the threshold's name only; how OneRain applies it is unconfirmed)*<br>**Text alert** rule #27 (**On**): more than 0.2 in |
 | Old County Road | 4 hr | **Flooding likely (rain + tide)** at 0.42 in (and tide ≥ 6.32 ft NAVD88) | Rainfall warning from 0.42 in |
 
 *Why the 2026 Update uses these amounts:* for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
+
+**OneRain text alerts** (alarm rules: when its condition is met, a rule that is On sends a text to the contacts set up for it, such as Public Works and emergency responders; from OneRain's rule list, Oct 17, 2026)
+
+| Rule | Gauge | Sends a text when | OneRain severity | On or off |
+|---|---|---|---|---|
+| #16 Flood Warning | Belmont Creek at Old County Rd | stage goes above its 'Flood Warning' threshold (4.00 ft) | Critical | **On** |
+| #18 Flood Watch | Belmont Creek at Old County Rd | stage goes above its 'Flood Watch' threshold (3.25 ft) | Warning | **On** |
+| #20 Flood Monitoring | Belmont Creek at Old County Rd | stage goes above its 'Flood Monitoring' threshold (2.25 ft) | Notice | **On** |
+| #27 Rainfall intensity (Belmont) | Belmont Creek at Old County Rd | more than 0.2 in of rain within 30 min | Warning | **On** |
+| #28 High Tide Warning (Belmont) | Alameda Tide Station | tide elevation goes above its 'High tide condition' threshold (7.00 ft MLLW at Alameda, about 7.23 ft NAVD88 by OneRain's sensor note (MLLW 0.00 = 0.23 NAVD88); the average daily high tide there is 6.37 ft NAVD88) | Warning | Off |
+| #34 Rainfall and Tide (Belmont) | Belmont Creek at Old County Rd | 4-hour rain at or above its 'Rainfall warning' threshold (0.42 in) and the Redwood City tide at or above 7.5 ft (OneRain's tide reading, MLLW) | Warning | Off |
 
 **Tide:** the 2026 Update uses NOAA 9414523 Redwood City for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 7.02 ft NAVD88). OneRain's tide settings aren't included.
 

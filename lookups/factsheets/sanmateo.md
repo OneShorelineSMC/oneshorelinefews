@@ -7,6 +7,7 @@
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
 > - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
+> - [ ] **Flood levels set on flow at San Mateo Creek Below Crystal Springs Reservoir:** OneRain sets them in cfs (Flood Watch 200 cfs, Flood Warning 250 cfs). The 2026 Update reads creek height, so it uses the matching heights from recent USGS readings (see Flood levels). Is that acceptable, or should the 2026 Update read flow there instead?
 
 > **Words used on this page** (the same words for both systems)
 >
@@ -62,7 +63,7 @@ Why these heights: they are OneRain's thresholds for this gauge, copied in Octob
 
 <details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>
 
-Tested on 18.1 years of readings, against the lowest flood level (Flood Watch, 5.88 ft): "warned" means the indicator came on before the creek reached it.
+Tested on 18.1 years of readings, against 5.88 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means the indicator came on before a typical yearly high, not before flooding. (The flood levels above were added later, in October 2026; the test hasn't been rerun against Flood Watch, 6.70 ft.)
 
 | Setting (ft within an hour) | Times shown per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
@@ -100,17 +101,26 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself (OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor and OneRain's alarm rules, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages; rain and alarm rules from the admin pages). A OneRain threshold colors that gauge's readings; only an alarm rule that is **On** sends a text alert. OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
-| Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
-|---|---|---|---|---|
-| San Mateo Creek Below Crystal Springs Reservoir | Flood Watch | 6.70 ft | – | 2026 Update only |
-| San Mateo Creek Below Crystal Springs Reservoir | Flood Warning | 7.00 ft | – | 2026 Update only |
-| San Mateo Creek Below Crystal Springs Reservoir | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
+| Gauge | Level | 2026 Update uses | OneRain threshold | Same? | OneRain text alert |
+|---|---|---|---|---|---|
+| San Mateo Creek Below Crystal Springs Reservoir | Flood Watch | 6.70 ft | 200.00 cfs ("Flooding probable with continued rain") | Same (OneRain's flow level converted to creek height) | **On** (rule #30) |
+| San Mateo Creek Below Crystal Springs Reservoir | Flood Warning | 7.00 ft | 250.00 cfs ("Active flooding likely to occur downstream") | Same (OneRain's flow level converted to creek height) | **On** (rule #31) |
+| San Mateo Creek Below Crystal Springs Reservoir | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only | – |
+
+How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Watch 200.00 cfs: 3 of 19 years (highest 326 cfs); Flood Warning 250.00 cfs: 2 of 19 years (highest 326 cfs).
 
 No OneRain rain thresholds on: Crystal Springs Cottage.
+
+**OneRain text alerts** (alarm rules: when its condition is met, a rule that is On sends a text to the contacts set up for it, such as Public Works and emergency responders; from OneRain's rule list, Oct 17, 2026)
+
+| Rule | Gauge | Sends a text when | OneRain severity | On or off |
+|---|---|---|---|---|
+| #30 Flood Watch | San Mateo Creek Below Crystal Springs Reservoir | flow volume goes above its 'Flood Watch' threshold (200.00 cfs) | Warning | **On** |
+| #31 Flood Warning | San Mateo Creek Below Crystal Springs Reservoir | flow volume goes above its 'Flood Warning' threshold (250.00 cfs) | Critical | **On** |
 
 **Tide:** the 2026 Update uses NOAA 9414750 Alameda for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 6.37 ft NAVD88). OneRain's tide settings aren't included.
 

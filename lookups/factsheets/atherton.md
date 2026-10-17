@@ -148,31 +148,40 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself (OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor and OneRain's alarm rules, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages; rain and alarm rules from the admin pages). A OneRain threshold colors that gauge's readings; only an alarm rule that is **On** sends a text alert. OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
-| Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
-|---|---|---|---|---|
-| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | 3.18 ft | 3.18 ft ("Potential flooding") | Same |
-| Atherton Channel at Alameda de las Pulgas | Flood Watch | 4.60 ft | 4.60 ft ("Flooding probable with continued rain") | Same |
-| Atherton Channel at Alameda de las Pulgas | Flood Warning | 5.65 ft | 5.65 ft ("Active flooding likely to occur downstream") | Same |
-| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | 10.40 ft | 10.40 ft ("Water detected on road") | Same |
-| Atherton Channel at Alameda de las Pulgas | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
-| Atherton Channel upstream of CalTrain | Flood Monitoring | 2.80 ft | 2.80 ft ("Potential flooding") | Same |
-| Atherton Channel upstream of CalTrain | Flood Watch | 4.10 ft | 4.10 ft ("Flooding probable with continued rain") | Same |
-| Atherton Channel upstream of CalTrain | Flood Warning | 5.50 ft | 5.50 ft ("Active flooding likely to occur downstream") | Same |
-| Atherton Channel upstream of CalTrain | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
+| Gauge | Level | 2026 Update uses | OneRain threshold | Same? | OneRain text alert |
+|---|---|---|---|---|---|
+| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | 3.18 ft | 3.18 ft ("Potential flooding") | Same | none |
+| Atherton Channel at Alameda de las Pulgas | Flood Watch | 4.60 ft | 4.60 ft ("Flooding probable with continued rain") | Same | none |
+| Atherton Channel at Alameda de las Pulgas | Flood Warning | 5.65 ft | 5.65 ft ("Active flooding likely to occur downstream") | Same | none |
+| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | 10.40 ft | 10.40 ft ("Water detected on road") | Same | none |
+| Atherton Channel at Alameda de las Pulgas | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only | – |
+| Atherton Channel upstream of CalTrain | Flood Monitoring | 2.80 ft | 2.80 ft ("Potential flooding") | Same | **On** (rule #11) |
+| Atherton Channel upstream of CalTrain | Flood Watch | 4.10 ft | 4.10 ft ("Flooding probable with continued rain") | Same | **On** (rule #9) |
+| Atherton Channel upstream of CalTrain | Flood Warning | 5.50 ft | 5.50 ft ("Active flooding likely to occur downstream") | Same | **On** (rule #10) |
+| Atherton Channel upstream of CalTrain | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only | – |
 
 **Rain**
 
 Each row is one length of time ("rain within"). **2026 Update** = the amounts at which its rain indicator turns Heavy, Very heavy and Intense (or a rain trigger shows). **OneRain** = the thresholds set on that gauge's rain sensors for the same length of time. Rows are listed only where OneRain or a 2026 Update trigger uses that length of time; the 2026 Update checks every length from 15 minutes to 48 hours.
 
-| Gauge | Rain within | 2026 Update (inches) | OneRain thresholds (inches) |
+| Gauge | Rain within | 2026 Update (inches) | OneRain thresholds and text alerts (inches) |
 |---|---|---|---|
-| Caltrain | 1 hr | Heavy from 0.383 in, Very heavy from 0.483 in, Intense from 0.618 in | Flood watch from 0.40 in, Flood warning from 0.45 in *(time window from the threshold's name only; how OneRain applies it is unconfirmed)* |
+| Caltrain | 1 hr | Heavy from 0.383 in, Very heavy from 0.483 in, Intense from 0.618 in | Flood watch from 0.40 in, Flood warning from 0.45 in *(time window from the threshold's name only; how OneRain applies it is unconfirmed)*<br>**Text alert** rule #25 (**On**): more than 0.45 in |
 
 *Why the 2026 Update uses these amounts:* for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
+
+**OneRain text alerts** (alarm rules: when its condition is met, a rule that is On sends a text to the contacts set up for it, such as Public Works and emergency responders; from OneRain's rule list, Oct 17, 2026)
+
+| Rule | Gauge | Sends a text when | OneRain severity | On or off |
+|---|---|---|---|---|
+| #9 Flood Watch | Atherton Channel upstream of CalTrain | stage goes above its 'Flood Watch' threshold (4.10 ft) | Warning | **On** |
+| #10 Flood Warning | Atherton Channel upstream of CalTrain | stage goes above its 'Flood Warning' threshold (5.50 ft) | Critical | **On** |
+| #11 Flood Monitoring | Atherton Channel upstream of CalTrain | stage goes above its 'Flood Monitoring' threshold (2.80 ft) | Notice | **On** |
+| #25 Rainfall intensity (Atherton) | Atherton Channel upstream of CalTrain | more than 0.45 in of rain within 1 hr | Warning | **On** |
 
 **Tide:** the 2026 Update uses NOAA 9414523 Redwood City for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 7.02 ft NAVD88). OneRain's tide settings aren't included.
 

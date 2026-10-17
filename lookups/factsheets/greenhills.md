@@ -91,16 +91,18 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself (OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor and OneRain's alarm rules, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages; rain and alarm rules from the admin pages). A OneRain threshold colors that gauge's readings; only an alarm rule that is **On** sends a text alert. OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
-| Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
-|---|---|---|---|---|
-| Green Hills Creek at Green Hills Country Club | Flood levels | none set | none set | – |
-| Green Hills Creek at Green Hills Country Club | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
+| Gauge | Level | 2026 Update uses | OneRain threshold | Same? | OneRain text alert |
+|---|---|---|---|---|---|
+| Green Hills Creek at Green Hills Country Club | Flood levels | none set | none set | – | – |
+| Green Hills Creek at Green Hills Country Club | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only | – |
 
 No OneRain rain thresholds on: Pilarcitos Dam.
+
+**OneRain text alerts:** none set up for this creek's gauges (OneRain's rule list, Oct 17, 2026).
 
 **Tide:** the 2026 Update uses NOAA 9414750 Alameda for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 6.37 ft NAVD88). OneRain's tide settings aren't included.
 
