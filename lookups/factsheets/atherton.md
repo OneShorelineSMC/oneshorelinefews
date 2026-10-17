@@ -7,7 +7,7 @@
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
 > - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
-> - [ ] **Atherton rain window:** OneRain's Atherton dashboard colors rain over 30 minutes, but its alarms use the same amounts (0.40 / 0.45 in) over 1 hour. Over 30 minutes they are close to a 5-year storm; over 1 hour, between a 1- and 2-year storm. Which window is intended?
+> - [ ] **Atherton rain window:** OneRain's Atherton dashboard colors rain over 30 minutes, but the thresholds on its rain sensor use the same amounts (0.40 / 0.45 in) over 1 hour. Over 30 minutes they are close to a 5-year storm; over 1 hour, between a 1- and 2-year storm. Which window is intended?
 
 > **How to read this page**
 >
@@ -143,14 +143,14 @@ FEWS shows this creek's status on its public pages. The **FEWS** columns are wha
 
 | Gauge | Level | FEWS uses | OneRain alarm | Same? |
 |---|---|---|---|---|
-| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | 3.18 ft | 3.18 ft ("Potential flooding") | Same |
-| Atherton Channel at Alameda de las Pulgas | Flood Watch | 4.60 ft | 4.60 ft ("Flooding probable with continued rain") | Same |
-| Atherton Channel at Alameda de las Pulgas | Flood Warning | 5.65 ft | 5.65 ft ("Active flooding likely to occur downstream") | Same |
-| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | 10.40 ft | 10.40 ft ("Water detected on road") | Same |
+| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | 3.18 ft | – | FEWS only |
+| Atherton Channel at Alameda de las Pulgas | Flood Watch | 4.60 ft | – | FEWS only |
+| Atherton Channel at Alameda de las Pulgas | Flood Warning | 5.65 ft | – | FEWS only |
+| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | 10.40 ft | – | FEWS only |
 | Atherton Channel at Alameda de las Pulgas | Rising fast | 0.5 ft within an hour | none | FEWS only |
-| Atherton Channel upstream of CalTrain | Flood Monitoring | 2.80 ft | 2.80 ft ("Potential flooding") | Same |
-| Atherton Channel upstream of CalTrain | Flood Watch | 4.10 ft | 4.10 ft ("Flooding probable with continued rain") | Same |
-| Atherton Channel upstream of CalTrain | Flood Warning | 5.50 ft | 5.50 ft ("Active flooding likely to occur downstream") | Same |
+| Atherton Channel upstream of CalTrain | Flood Monitoring | 2.80 ft | – | FEWS only |
+| Atherton Channel upstream of CalTrain | Flood Watch | 4.10 ft | – | FEWS only |
+| Atherton Channel upstream of CalTrain | Flood Warning | 5.50 ft | – | FEWS only |
 | Atherton Channel upstream of CalTrain | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
 **Rain (inches within the time shown)**
@@ -160,7 +160,7 @@ FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm 
 | Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
 |---|---|---|---|---|
 | Caltrain | 30 min | alerts: Heavy 0.272, Very heavy 0.343, Intense 0.439 in | none | orange from 0.400 in; red from 0.45 in |
-| Caltrain | 1 hr | alerts: Heavy 0.383, Very heavy 0.483, Intense 0.618 in | Flood watch 0.40 in; Flood warning 0.45 in | none |
+| Caltrain | 1 hr | alerts: Heavy 0.383, Very heavy 0.483, Intense 0.618 in | none | none |
 
 **Tide**
 
@@ -171,10 +171,11 @@ FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm 
 Notes:
 
 - 40 / 0.45 in) but over 30 min.
+- Rain thresholds set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 
-- Ask OneRain how alarms on a Rain Increment sensor are checked: each report on its own, or rain summed over the window in the alarm's name? If each report on its own, these alarms may rarely fire.
+- Ask OneRain how thresholds on a Rain Increment sensor are checked, and which alarm rules (notifications) use them: each report on its own, or rain summed over the window in the threshold's name? If each report on its own, these thresholds may rarely be reached.
 
 </details>
 

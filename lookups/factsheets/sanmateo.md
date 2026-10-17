@@ -113,6 +113,7 @@ No OneRain rain alarms or dashboard colors on: Crystal Springs Cottage.
 Notes:
 
 - Comparison assumes Crystal Springs Cottage (CSC), the gauge FEWS uses.
+- No rain thresholds on this gauge in OneRain.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

@@ -104,9 +104,9 @@ FEWS shows this creek's status on its public pages. The **FEWS** columns are wha
 
 | Gauge | Level | FEWS uses | OneRain alarm | Same? |
 |---|---|---|---|---|
-| Colma Creek at Orange Memorial Park | Flood Monitoring | 3.40 ft | 3.40 ft ("Potential flooding") | Same |
-| Colma Creek at Orange Memorial Park | Flood Watch | 5.00 ft | 5.00 ft ("Flooding likely") | Same |
-| Colma Creek at Orange Memorial Park | Flood Warning | 6.75 ft | 6.75 ft ("Flooding likely in downstream reaches") | Same |
+| Colma Creek at Orange Memorial Park | Flood Monitoring | 3.40 ft | – | FEWS only |
+| Colma Creek at Orange Memorial Park | Flood Watch | 5.00 ft | – | FEWS only |
+| Colma Creek at Orange Memorial Park | Flood Warning | 6.75 ft | – | FEWS only |
 | Colma Creek at Orange Memorial Park | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
 **Rain (inches within the time shown)**
@@ -115,7 +115,7 @@ FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm 
 
 | Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
 |---|---|---|---|---|
-| Orange Memorial Park | 1 hr | alerts: Heavy 0.456, Very heavy 0.546, Intense 0.669 in | Flood warning 0.80 in | none |
+| Orange Memorial Park | 1 hr | alerts: Heavy 0.456, Very heavy 0.546, Intense 0.669 in | none | none |
 | Orange Memorial Park | 6 hr | alerts: Heavy 1.15, Very heavy 1.38, Intense 1.69 in | none | orange from 1.50 in; red from 2 in |
 
 No OneRain rain alarms or dashboard colors on: San Bruno Mountain.
@@ -126,9 +126,14 @@ No OneRain rain alarms or dashboard colors on: San Bruno Mountain.
 |---|---|---|
 | Tide | NOAA 9414750 Alameda: tide graph and high-tide lines (MHHW 6.37 ft NAVD88) | none recorded |
 
+Notes:
+
+- Rain thresholds set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site.
+- No rain thresholds on this gauge in OneRain.
+
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 
-- Ask OneRain how alarms on a Rain Increment sensor are checked: each report on its own, or rain summed over the window in the alarm's name? If each report on its own, these alarms may rarely fire.
+- Ask OneRain how thresholds on a Rain Increment sensor are checked, and which alarm rules (notifications) use them: each report on its own, or rain summed over the window in the threshold's name? If each report on its own, these thresholds may rarely be reached.
 
 </details>
 

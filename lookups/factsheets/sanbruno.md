@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** what do these levels mean for people downstream? FEWS has no recorded meaning; OneRain describes them as Flood Monitoring = "Potential flooding"; Flood Watch = "Flooding likely"; Flood Warning = "Projected flooding in downstream reaches". Who set them, and from what?
+> - [ ] **Flood levels:** what do these levels mean for people downstream? FEWS has no recorded meaning. Who set them, and from what?
 
 > **How to read this page**
 >
@@ -102,9 +102,9 @@ FEWS shows this creek's status on its public pages. The **FEWS** columns are wha
 
 | Gauge | Level | FEWS uses | OneRain alarm | Same? |
 |---|---|---|---|---|
-| San Bruno Creek at First Avenue | Flood Monitoring | 2.40 ft | 2.40 ft ("Potential flooding") | Same |
-| San Bruno Creek at First Avenue | Flood Watch | 3.60 ft | 3.60 ft ("Flooding likely") | Same |
-| San Bruno Creek at First Avenue | Flood Warning | 4.80 ft | 4.80 ft ("Projected flooding in downstream reaches") | Same |
+| San Bruno Creek at First Avenue | Flood Monitoring | 2.40 ft | – | FEWS only |
+| San Bruno Creek at First Avenue | Flood Watch | 3.60 ft | – | FEWS only |
+| San Bruno Creek at First Avenue | Flood Warning | 4.80 ft | – | FEWS only |
 | San Bruno Creek at First Avenue | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
 No OneRain rain alarms or dashboard colors on: San Bruno Creek at First Avenue; San Bruno Mountain.
@@ -117,7 +117,7 @@ No OneRain rain alarms or dashboard colors on: San Bruno Creek at First Avenue; 
 
 Notes:
 
-- OneRain shows this gauge's creek-level sensor as Out of Service.
+- No rain thresholds on this gauge in OneRain.
 
 ---
 

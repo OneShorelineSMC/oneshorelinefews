@@ -110,9 +110,9 @@ FEWS shows this creek's status on its public pages. The **FEWS** columns are wha
 
 | Gauge | Level | FEWS uses | OneRain alarm | Same? |
 |---|---|---|---|---|
-| Belmont Creek at Old County Rd | Flood Monitoring | 2.25 ft | 2.25 ft ("Potential flooding") | Same |
-| Belmont Creek at Old County Rd | Flood Watch | 3.25 ft | 3.25 ft ("Flooding probable with continued rain") | Same |
-| Belmont Creek at Old County Rd | Flood Warning | 4.00 ft | 4.00 ft ("Active flooding likely to occur downstream") | Same |
+| Belmont Creek at Old County Rd | Flood Monitoring | 2.25 ft | – | FEWS only |
+| Belmont Creek at Old County Rd | Flood Watch | 3.25 ft | – | FEWS only |
+| Belmont Creek at Old County Rd | Flood Warning | 4.00 ft | – | FEWS only |
 | Belmont Creek at Old County Rd | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
 **Rain (inches within the time shown)**
@@ -121,8 +121,8 @@ FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm 
 
 | Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
 |---|---|---|---|---|
-| Old County Road | 30 min | **Flooding likely (rain)** at 0.20 in; alerts: Heavy 0.305, Very heavy 0.366, Intense 0.45 in | Flood watch 0.20 in; Flood warning 0.25 in | orange from 0.20 in; red from 0.25 in |
-| Old County Road | 4 hr | **Flooding likely (rain + tide)** at 0.42 in (and tide ≥ 6.32 ft NAVD88) | Rainfall warning 0.42 in | none |
+| Old County Road | 30 min | **Flooding likely (rain)** at 0.20 in; alerts: Heavy 0.305, Very heavy 0.366, Intense 0.45 in | none | orange from 0.20 in; red from 0.25 in |
+| Old County Road | 4 hr | **Flooding likely (rain + tide)** at 0.42 in (and tide ≥ 6.32 ft NAVD88) | none | none |
 
 **Tide**
 
@@ -133,11 +133,11 @@ FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm 
 Notes:
 
 - Set on OneRain's rolling 4-hour total sensor. Same rain amount as FEWS's rain + tide trigger (0.42 in / 4 hr); the tide part is OneRain alarm rule #34.
-- FEWS shows 'Flooding likely' at 0.20 in / 30 min; OneRain calls 0.20 'Potential for flooding' and 0.25 'Flooding likely'.
+- Rain thresholds set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site. FEWS shows 'Flooding likely' at 0.20 in / 30 min; OneRain calls 0.20 'Potential for flooding' and 0.25 'Flooding likely'.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 
-- Ask OneRain how alarms on a Rain Increment sensor are checked: each report on its own, or rain summed over the window in the alarm's name? If each report on its own, these alarms may rarely fire.
+- Ask OneRain how thresholds on a Rain Increment sensor are checked, and which alarm rules (notifications) use them: each report on its own, or rain summed over the window in the threshold's name? If each report on its own, these thresholds may rarely be reached.
 
 </details>
 

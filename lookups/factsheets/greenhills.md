@@ -101,6 +101,10 @@ No OneRain rain alarms or dashboard colors on: Pilarcitos Dam.
 |---|---|---|
 | Tide | NOAA 9414750 Alameda: tide graph and high-tide lines (MHHW 6.37 ft NAVD88) | none recorded |
 
+Notes:
+
+- No rain thresholds on this gauge in OneRain.
+
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 
 - Green Hills Country Club (stage): check they open the Stage sensor; set reports; Confirm whether this gauge reads the tide
