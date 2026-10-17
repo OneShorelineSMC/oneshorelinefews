@@ -106,8 +106,8 @@
       if (i === act) pos = acc + s[2] * Math.max(0, Math.min(1, (v - s[0]) / (s[1] - s[0] || 1)));
       acc += s[2];
     });
-    var name = act ? th[act - 1].name : T("status_normal");
-    return '<div class="cs-band"><div class="cs-bt"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-now">' + esc(name) + " · " + trendText(sig, true) + "</span></div>" +
+    var name = act ? th[act - 1].name : T("status_normal"), lic = act ? icon({ 1: "alert", 2: "ready", 3: "likely" }[act]) : "";   // levels share the status icons
+    return '<div class="cs-band"><div class="cs-bt"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-now">' + (lic ? '<span class="cs-lvi">' + lic + "</span>" : "") + esc(name) + " · " + trendText(sig, true) + "</span></div>" +
       '<div class="cs-track" role="img" aria-label="' + esc(g.label + ": " + name) + '">' + seg.map(function (s, i) {
         return '<span class="cs-s" style="flex:' + s[2] + (i === act ? ";background:" + LEVEL_COL[i] : "") + '"></span>'; }).join("") +
       '<span class="cs-mark" style="left:' + pos.toFixed(1) + '%"></span></div>' +
@@ -391,6 +391,7 @@
     ".cs-head{padding:12px 14px 8px}.cs-head h3{margin:0;font-size:19px;color:var(--ink,#16202b)}",
     ".cs-verdict{margin:0 14px;padding:9px 12px;border-radius:8px;display:flex;align-items:center;gap:10px;font-size:19px;font-weight:700;color:var(--ink,#16202b)}",
     ".cs-ic{width:20px;height:20px;flex:none;display:block}",
+    ".cs-lvi{display:inline-block;vertical-align:-3px;margin-right:4px}.cs-lvi .cs-ic{width:16px;height:16px}.cs-lvi .cs-ic-likely .x{stroke:#fff;fill:#fff}",
     ".cs-ic-likely{color:#c62828}.cs-ic-ready{color:#b45a00}.cs-ic-alert{color:#7a6400}.cs-ic-none{color:#6b7682}",
     "span.cs-ic-nodata{width:14px;height:14px;margin:3px;border:2px dashed #6b7682;border-radius:3px;box-sizing:border-box}",
     ".cs-v-likely{background:#c62828;color:#fff}.cs-v-likely .cs-ic-likely{color:#fff}",
@@ -401,7 +402,7 @@
     "@media (prefers-color-scheme:dark){.cs-ic-ready{color:#ffa94d}.cs-ic-alert{color:#f2d544}.cs-ic-none{color:#9aa8b8}span.cs-ic-nodata{border-color:#9aa8b8}.cs-v-likely .cs-ic-likely{color:#fff}}",
     ".cs-why{margin:8px 14px 0;font-size:14.5px;line-height:1.45;color:var(--text,var(--ink))}",
     ".cs-body{padding:8px 14px 10px}.cs-body p{margin:0 0 4px;font-size:15px;line-height:1.45}",
-    ".cs-danger{font-weight:700;color:#c62828}",
+    ".cs-danger{font-weight:700;color:#c62828}@media (prefers-color-scheme:dark){.cs-danger{color:#f47c79}}",
     ".cs-details{margin:0 14px;border-top:1px solid var(--line,#eceff3)}.cs-rainrow{margin-bottom:6px}.cs-stages .cs-band:last-child,.cs-stages .cs-row:last-child{border-bottom:0}",
     // Cards side by side line up section by section: status, What to do, creek level, rain, numbers, footer
     "@supports (grid-template-rows:subgrid){.cs-grid>.cs-card{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0}.cs-grid>.cs-card>.cs-stages{align-self:start}}",
