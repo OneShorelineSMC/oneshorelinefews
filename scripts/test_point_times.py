@@ -72,7 +72,7 @@ U.pull_ogc = lambda site, t0, t1: {"00065": [("2026-11-01T08:45:00Z", "3.70", "f
 pts, latest, _ = F.fetch_usgs_gauge({"usgs_site": "11162570"}, T("2026-10-31 12:00"), T("2026-11-01 03:00"))
 check(pts == [["2026-11-01 01:45", 3.7, "2026-11-01T08:45Z", "P"], ["2026-11-01 01:45", 3.72, "2026-11-01T09:45Z", "P e"]],
       f"USGS: both 1:45 AMs kept, UTC and codes: {pts}")
-check(latest == ["2026-11-01 01:45", 3.72], f"latest stays [time, value]: {latest}")
+check(latest == ["2026-11-01 01:45", 3.72, "2026-11-01T09:45Z"], f"latest is [time, value, UTC] (Oct 17, 2026), no codes: {latest}")
 
 # creeks_7day.json
 with tempfile.TemporaryDirectory() as d:
@@ -96,5 +96,17 @@ with tempfile.TemporaryDirectory() as d:
     check(cs[0][1] == 2.0 and all(len(p) >= 3 or p[0] == "2026-10-15 08:00" for p in cs), f"{cs}")
     check("gone" in h["sensors"] and "new" not in h["sensors"], "sensors with points kept for the 7 days; empty ones left out")
     check(h["days"] == 7 and h["generated_utc"] == "2026-10-15T16:00:00Z", f"{ {k: h[k] for k in h if k != 'sensors'} }")
+
+# 'latest' carries its UTC time (Oct 17, 2026): from the reading with the same Pacific time (the second 1:45 AM in
+# November is PST), otherwise from its Pacific time; an old 2-element 'latest' gets one; None stays None
+pts = [["2026-11-01 01:45", 0.01, "2026-11-01T08:45Z"], ["2026-11-01 01:45", 0.03, "2026-11-01T09:45Z"]]
+check(F.latest_utc(["2026-11-01 01:45", 0.03], pts) == ["2026-11-01 01:45", 0.03, "2026-11-01T09:45Z"], "latest takes the newest matching point's UTC")
+check(F.latest_utc(["2026-10-17 07:45", 0.17], []) == ["2026-10-17 07:45", 0.17, "2026-10-17T14:45Z"], "latest without a matching point: Pacific time converted")
+check(F.latest_utc(["2026-10-17 07:45", 0.17, "2026-10-17T14:45Z"], []) == ["2026-10-17 07:45", 0.17, "2026-10-17T14:45Z"], "UTC kept")
+check(F.latest_utc(None, pts) is None, "no latest")
+import creek_signals as CSg  # noqa: E402
+ser, ok = CSg.utc_series([["2026-11-01 01:15", 0.0, "2026-11-01T08:15Z"]], ["2026-11-01 01:05", 0.5, "2026-11-01T09:05Z"])
+check(ok and ser[-1][0] == dt.datetime(2026, 11, 1, 9, 5) and ser[-1][1] == 0.5,
+      f"utc_series uses latest's own UTC (1:05 AM PST after 1:15 AM PDT is newer, not older): {ser}")
 
 print(f"point times: {checks} checks passed")

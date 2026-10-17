@@ -202,9 +202,19 @@ def utc_series(points, latest):
                 u = None   # not a time we understand: treated like a point without one
         rows.append([u, _t(x[0]), x[1]])
     if latest and latest[0] and latest[1] is not None:
-        lt = _t(latest[0])
-        if not rows or lt > rows[-1][1]:
-            rows.append([None, lt, latest[1]])
+        lt, u = _t(latest[0]), None
+        if len(latest) > 2 and isinstance(latest[2], str) and latest[2].endswith("Z"):   # 'latest' has its UTC time since Oct 17, 2026
+            try:
+                u = dt.datetime.strptime(latest[2][:16], "%Y-%m-%dT%H:%M")
+            except ValueError:
+                u = None
+        known = [r[0] for r in rows if r[0]]
+        if u and known:
+            newer = u > max(known)   # compare on UTC: right in the repeated hour in November
+        else:
+            newer = not rows or lt > rows[-1][1]
+        if newer:
+            rows.append([u, lt, latest[1]])
     if not any(r[0] for r in rows):
         return sorted(((r[1], r[2], r[1]) for r in rows), key=lambda x: x[0]), False
     off = next(r[0] - r[1] for r in rows if r[0])          # first known offset, for points before it

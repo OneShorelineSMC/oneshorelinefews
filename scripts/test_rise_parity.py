@@ -56,6 +56,8 @@ def run(S):
         latest = None
         if random.random() < 0.3:
             latest = [(u.astimezone(PT)).strftime("%Y-%m-%d %H:%M"), round(v + 0.3, 2)]
+            if random.random() < 0.5:   # 'latest' with its UTC time (Oct 17, 2026), half the time
+                latest.append(u.strftime("%Y-%m-%dT%H:%MZ"))
         now = end + dt.timedelta(minutes=random.randint(0, 100))
         pu, is_utc = utc_series(pts, latest)
         now_u = now.astimezone(UTC).replace(tzinfo=None) if is_utc else now.astimezone(PT).replace(tzinfo=None)

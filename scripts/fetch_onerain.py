@@ -203,7 +203,18 @@ def fetch_sensor(session, s, start, end):
             break
         url = next_page(page)
     points = [[t.strftime("%Y-%m-%d %H:%M"), round(v, 4), utc_str(u)] for u, (t, v) in sorted(readings.items()) if t >= start]
-    return points, latest, pages
+    return points, latest_utc(latest, points), pages
+
+
+def latest_utc(latest, points):
+    """The sensor's latest reading as [Pacific, value, UTC]. Its UTC comes from the reading with the same Pacific time
+    (right in the repeated hour in November); otherwise its Pacific time read the usual way."""
+    if not latest or latest[0] is None:
+        return latest
+    if len(latest) > 2 and latest[2]:
+        return latest
+    same = [p for p in points or [] if p[0] == latest[0] and len(p) > 2 and p[2]]
+    return [latest[0], latest[1], same[-1][2] if same else point_utc(latest)]
 
 
 def public_config():
@@ -238,7 +249,7 @@ def fetch_usgs_gauge(s, start, end):
         t = u.astimezone(TZ).replace(tzinfo=None)
         pts[utc_str(u)] = [t.strftime("%Y-%m-%d %H:%M"), round(float(v), 3), utc_str(u), usgs_codes(approval, quals)]
     points = [pts[k] for k in sorted(pts)]
-    return points, (points[-1][:2] if points else None), 1
+    return points, (points[-1][:3] if points else None), 1
 
 
 def usgs_codes(approval, quals):
@@ -462,7 +473,7 @@ def main():
             failures += 1
             old = previous.get(key, {})
             entry["points"] = with_utc(old.get("points", []))
-            entry["latest"] = old.get("latest")
+            entry["latest"] = latest_utc(old.get("latest"), entry["points"])
             entry["fetched"] = old.get("fetched")
             entry["error"] = f"{type(e).__name__}: {e}"[:300]
             print(f"{key}: FAILED ({entry['error']}); kept {len(entry['points'])} old readings", file=sys.stderr)
