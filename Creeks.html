@@ -671,10 +671,10 @@ function render() {
   if (!c) {
     document.title = "Creek Conditions – OneShoreline";
     if (PV) $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); }, { previewLinks: true, compactNotes: true });
+    else renderAll(states, now);
     // a "call 911" banner stays first, above the city picker
     var bn = $("allView").querySelector(".cs-banner"); $("cpBanner").innerHTML = "";
     if (bn) $("cpBanner").appendChild(bn);
-    else renderAll(states, now);
     if (!PV) renderMore(now);
     var gen0 = states.length && states[0].gen;
     $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";

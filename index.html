@@ -74,15 +74,15 @@
   .al.none .ck { color: var(--ok); font-size: 20px; }
   .al.none b { color: var(--ink); }
   /* National Weather Service alerts in the creek section's style (boxes from creek_status.js) */
-  .nwsg { padding-bottom: 12px; } .nwsg h3 { margin: 0; font-size: inherit; color: inherit; }
+  .nwsg { padding-bottom: 0; } .nwsg h3 { margin: 0; font-size: inherit; color: inherit; }
   .nwsg.cs-hg-info { border: 2px solid var(--gray); }
   .cs-v-info { background: rgba(138,150,163,.15); }
-  details.nwsg > summary { list-style: none; cursor: pointer; display: block; }
-  details.nwsg > summary::-webkit-details-marker { display: none; }
-  details.nwsg > summary:focus-visible { outline: 3px solid var(--blue, #1e6fd9); outline-offset: -3px; }
-  .nwsmore { display: inline-block; margin: 4px 14px 0; font-size: 14px; font-weight: 600; color: var(--link, #0b5cad); text-decoration: underline; }
-  details.nwsg[open] .nwsmore { display: none; }
-  .nwsb { padding: 6px 14px 0; }
+  .nwsg .cs-ic-info { color: #4f5b67; }
+  @media (prefers-color-scheme: dark) { .nwsg .cs-ic-info { color: #b8c4d0; } }
+  .nwsd { margin: 0; padding: 0 14px; border-top: 1px solid var(--line); }
+  .nwsd > summary { cursor: pointer; padding: 10px 0; font-size: 14px; font-weight: 600; color: var(--link); min-height: 44px; display: flex; align-items: center; }
+  .nwsd > summary:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
+  .nwsb { padding: 0 0 12px; }
 
   /* Creek status cards */
   .creeks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -366,21 +366,26 @@ function nws() {
       $("alerts").innerHTML = nwsNone();
       return;
     }
-    // Same look as the creek section: a box per alert, colored like the creek statuses (warning red, watch orange,
-    // advisory yellow, statement gray), the event as its headline; details open with a tap on the status-layer page
-    $("alerts").innerHTML = list.map(function (p, i) {
+    // Exactly the creek section's look: a box per alert, colored like the creek statuses (warning red, watch orange,
+    // advisory yellow, statement gray) with the event as its headline, a row saying until when and from whom, then
+    // "What to do" (the alert's own instructions), and the full text behind "Details"
+    $("alerts").innerHTML = list.map(function (p) {
       var c = classify(p.event), k = { warning: "likely", watch: "ready", advisory: "alert", statement: "info" }[c];
-      var ic = window.CREEK_STATUS ? CREEK_STATUS.icon(k === "info" ? "none" : k) : "";
-      var head = '<div class="cs-verdict cs-v-' + k + '">' + ic + "<h3>" + esc(p.event) + "</h3></div>" +
-        '<p class="cs-hscope">' + esc(untilText(p.ends || p.expires)) + " · National Weather Service San Francisco Bay Area</p>";
-      if (i < (HOME_PREVIEW ? 0 : MAX_ALERTS_OPEN)) return '<section class="cs-hg cs-hg-' + k + ' nwsg">' + head + '<div class="nwsb al">' + alertBody(p) + "</div></section>";
-      return '<details class="cs-hg cs-hg-' + k + ' nwsg"><summary>' + head + '<span class="nwsmore">Details</span></summary><div class="nwsb al">' + alertBody(p) + "</div></details>";
+      var ic = k === "info" ? INFO_IC : window.CREEK_STATUS ? CREEK_STATUS.icon(k) : "";
+      var todo = unwrap(p.instruction || "");
+      return '<section class="cs-hg cs-hg-' + k + ' nwsg" aria-label="' + esc(p.event) + '"><div class="cs-verdict cs-v-' + k + '">' + ic + "<h3>" + esc(p.event) + "</h3></div>" +
+        '<ul class="cs-hrows"><li><span class="cs-hrow"><span class="cs-hx"><span class="cs-hn">' + esc(untilText(p.ends || p.expires).replace(/^until/, "Until")) + "</span>" +
+        '<span class="cs-hy">National Weather Service San Francisco Bay Area · San Mateo County</span></span></span></li></ul>' +
+        (todo ? '<p class="cs-hdo"><span class="cs-hdo-l">What to do</span>' + esc(todo) + "</p>" : "") +
+        '<details class="nwsd"><summary>Details</summary><div class="nwsb al">' + alertBody(Object.assign({}, p, { instruction: "" })) + "</div></details></section>";
     }).join("");
   }).catch(function () {
     $("alerts").innerHTML = '<section class="cs-hg nwsg cs-hg-info"><div class="cs-verdict cs-v-none">' + (window.CREEK_STATUS ? CREEK_STATUS.icon("offline") : "") +
       'National Weather Service alerts are unavailable right now</div><p class="cs-hscope">Check <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">weather.gov</a>.</p></section>';
   });
 }
+// "i" in a circle for NWS statements (information), drawn like the creek status icons
+var INFO_IC = '<svg class="cs-ic cs-ic-info" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8.6" fill="currentColor"/><circle cx="10" cy="5.9" r="1.3" fill="#fff"/><path d="M10 9v5.6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>';
 // No alerts: the same box as "No alerts at OneShoreline's creek gauges right now"
 function nwsNone() {
   return '<section class="cs-hg cs-hg-none nwsg"><div class="cs-verdict cs-v-none">' + (window.CREEK_STATUS ? CREEK_STATUS.icon("none") : "") +
