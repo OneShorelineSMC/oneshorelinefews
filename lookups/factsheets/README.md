@@ -1,6 +1,6 @@
 # FEWS 2026 Update: creek fact sheets (draft for review)
 
-One page per creek in the **FEWS 2026 Update**, the new public creek and tide status site built on OneRain's gauge data (it is not OneRain's own dashboards; each page compares the two). Each page covers where the creek runs, its gauges, its flood levels and alerts, and what those are based on. Each page opens with a short **What we need you to check** list; please answer by replying to the review request. Everything else on a page is background.
+One page per creek in the **FEWS 2026 Update**, the new public creek and tide status site built on OneRain's gauge data (it is not OneRain's own dashboards; each page compares the two). Each page covers where the creek runs, its gauges, its flood levels and indicators, and what those are based on. Each page opens with a short **What we need you to check** list; please answer by replying to the review request. Everything else on a page is background.
 
 **Flood levels set?** Yes = creek heights tied to flooding, with a recorded meaning. "Yes, but what they mean isn't recorded" = heights are set but their meaning isn't written down. "None in the 2026 Update (OneRain has some)" = the 2026 Update has none, but OneRain's own system has levels whose basis isn't recorded. None = no creek height is tied to flooding yet; the creek's status comes from rain and how fast it is rising.
 
