@@ -94,26 +94,34 @@
     var w = T("trend_" + t.trend), arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[t.trend] || "";
     return '<span aria-hidden="true">' + arrow + "</span> " + esc(w) + (!short && t.ft_per_hr != null && t.trend !== "steady" ? ' <span class="cs-dim">(' + (t.ft_per_hr > 0 ? "+" : "") + t.ft_per_hr.toFixed(1) + " ft/hr)</span>" : "");
   }
-  // Normal | Monitoring | Watch | Warning, only the active segment colored, marker at the current stage
+  // A gauge's flood levels (1 Monitoring … 4 Major), low to high. A gauge with any level counts as having levels
+  // (some have only Watch and Warning, e.g. Pescadero and San Mateo; Pilarcitos and San Gregorio add Major).
+  function lvls(g) { return (g.thresholds || []).filter(function (t) { return t.level >= 1 && t.level <= 4; }).sort(function (a, b) { return a.value - b.value; }); }
+  function lvName(t) { return t.name.replace(/^Flood /, "").replace(/ Flood Stage$/, ""); }   // "Watch", "Warning", "Major"
+  var LV_IC = { 1: "alert", 2: "ready", 3: "likely", 4: "likely" };
+  // Normal | each level the gauge has, only the active segment colored, marker at the current stage
   function band(g, e) {
-    var th = (g.thresholds || []).filter(function (t) { return t.level <= 3; });
+    var th = lvls(g);
     var p = e && e.points && e.points.length ? e.points[e.points.length - 1] : null;
     if (e && e.latest && e.latest[0] && (!p || e.latest[0] > p[0])) p = e.latest;
     var sig = e && e.signals || {};
     if (!p || !sig.trend) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val cs-dim">' + esc(T("verdict_offline")) + (p ? " · " + esc(dated(p[0])) : "") + "</span></div>";
     var v = p[1];
-    if (th.length < 3) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val">' + trendText(sig, true) + "</span></div>";
-    var cut = [th[0].value, th[1].value, th[2].value], top = cut[2] + Math.max(0.5, (cut[2] - cut[1]));
-    var seg = [[0, cut[0], 35, "Normal"], [cut[0], cut[1], 20, th[0].name.replace("Flood ", "")], [cut[1], cut[2], 20, th[1].name.replace("Flood ", "")], [cut[2], top, 25, th[2].name.replace("Flood ", "")]];
-    var act = v >= cut[2] ? 3 : v >= cut[1] ? 2 : v >= cut[0] ? 1 : 0, pos = 0, acc = 0;
+    if (!th.length) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val">' + trendText(sig, true) + "</span></div>";
+    var n = th.length, last = th[n - 1].value, top = last + Math.max(0.5, n > 1 ? last - th[n - 2].value : last * 0.15);
+    var seg = [[0, th[0].value, 35, "Normal", 0]];
+    th.forEach(function (t, i) { seg.push([t.value, i + 1 < n ? th[i + 1].value : top, i + 1 < n ? 20 : 25, lvName(t), t.level]); });
+    var act = 0; th.forEach(function (t, i) { if (v >= t.value) act = i + 1; });
+    var pos = 0, acc = 0, tot = seg.reduce(function (a, s) { return a + s[2]; }, 0);
     seg.forEach(function (s, i) {
       if (i === act) pos = acc + s[2] * Math.max(0, Math.min(1, (v - s[0]) / (s[1] - s[0] || 1)));
       acc += s[2];
     });
-    var name = act ? th[act - 1].name : T("status_normal"), lic = act ? icon({ 1: "alert", 2: "ready", 3: "likely" }[act]) : "";   // levels share the status icons
+    pos = pos / tot * 100;
+    var lt = act ? th[act - 1] : null, name = lt ? lt.name : T("status_normal"), lic = lt ? icon(LV_IC[lt.level]) : "";   // levels share the status icons
     return '<div class="cs-band"><div class="cs-bt"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-now">' + (lic ? '<span class="cs-lvi">' + lic + "</span>" : "") + esc(name) + " · " + trendText(sig, true) + "</span></div>" +
       '<div class="cs-track" role="img" aria-label="' + esc(g.label + ": " + name) + '">' + seg.map(function (s, i) {
-        return '<span class="cs-s" style="flex:' + s[2] + (i === act ? ";background:" + LEVEL_COL[i] : "") + '"></span>'; }).join("") +
+        return '<span class="cs-s" style="flex:' + s[2] + (i === act ? ";background:" + LEVEL_COL[Math.min(3, s[4])] : "") + '"></span>'; }).join("") +
       '<span class="cs-mark" style="left:' + pos.toFixed(1) + '%"></span></div>' +
       '<div class="cs-ticks" aria-hidden="true">' + seg.map(function (s, i) {
         return '<span style="flex:' + s[2] + '"' + (i === act ? ' class="on"' : "") + ">" + esc(s[3]) + "</span>"; }).join("") + "</div></div>";
@@ -125,7 +133,7 @@
     var v = view(data, c), st = v.st, h = "";
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
     var noLv = (c.stages || []).length && (c.stages || []).every(function (g) {
-      return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; });
+      return !lvls(g).length; });
     h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + review(c) + (opts.lvlTag && noLv ? '<span class="cs-sm">' + esc(T("no_flood_level_title")) + "</span>" : "") + "</div>";
     h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div>";
     if (v.since) h += '<p class="cs-since">' + esc(v.since) + "</p>";
@@ -137,7 +145,7 @@
       h += '<div class="cs-details cs-stages">';
       // Creeks without flood levels: say so where the level bar would be, then each gauge's trend below it
       var noLevels = (c.stages || []).length && (c.stages || []).every(function (g) {
-        return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; });
+        return !lvls(g).length; });
       if (noLevels && !opts.lvlTag) h += '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + "</b> " + esc(T("no_flood_level")) + "</div>";
       (c.stages || []).forEach(function (g) { h += band(g, data.sensors[g.key]); });
       var r = st.rain || {};
@@ -214,7 +222,7 @@
     var link = function (c) { return !linkFor || (c.preview_only && !opts.previewLinks) ? null : linkFor(c); };   // preview creeks: detail page on Creeks.html only
     var co = function (c) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes }; };
     var noLv = rows.filter(function (x) { return (x.c.stages || []).length && x.c.stages.every(function (g) {
-      return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; }); }).map(function (x) { return x.c.short || x.c.name; });
+      return !lvls(g).length; }); }).map(function (x) { return x.c.short || x.c.name; });
     var active = rows.filter(function (x) { return x.v.key !== "none"; }), quiet = rows.filter(function (x) { return x.v.key === "none"; });
     var h = badge() + summary(data, !!opts.compactNotes) + howTo() +
       (opts.compactNotes && noLv.length ? '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + ": " + esc(list(noLv)) + "</b> " + esc(T("no_flood_level_many")) + "</div>" : "") +

@@ -246,8 +246,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261016l"></script>
-<script src="creek_status.js?v=20261016l"></script>
+<script src="lookups.js?v=20261017a"></script>
+<script src="creek_status.js?v=20261017a"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Creeks first, then NWS, Bayside tide, sign-up; the sensor map card goes (the creek list links to the map);
@@ -387,7 +387,14 @@ function utcSeries(sensor) {
     return { u: isNaN(u) ? null : u, lt: parseLocal(x[0]), v: x[1] };
   });
   var lat = sensor && sensor.latest;
-  if (lat && lat[0] && lat[1] != null && (!rows.length || parseLocal(lat[0]) > rows[rows.length - 1].lt)) rows.push({ u: null, lt: parseLocal(lat[0]), v: lat[1] });
+  if (lat && lat[0] && lat[1] != null) {
+    var lu = typeof lat[2] === "string" && /Z$/.test(lat[2]) ? Date.parse(lat[2]) : null;   // 'latest' has its UTC time since Oct 17, 2026
+    if (lu != null && isNaN(lu)) lu = null;
+    var known = rows.filter(function (r) { return r.u != null; }).map(function (r) { return r.u; });
+    var newer = lu != null && known.length ? lu > Math.max.apply(null, known)   // compare on UTC: right in the repeated hour in November
+      : !rows.length || parseLocal(lat[0]) > rows[rows.length - 1].lt;
+    if (newer) rows.push({ u: lu, lt: parseLocal(lat[0]), v: lat[1] });
+  }
   var first = rows.filter(function (r) { return r.u != null; })[0];
   if (!first) return { p: rows.map(function (r) { return { t: r.lt, v: r.v, lt: r.lt }; }).sort(function (a, b) { return a.t - b.t; }), utc: false };
   var off = first.u - first.lt;
@@ -484,7 +491,7 @@ function creekState(c, now) {
   return st;
 }
 function statusOf(st) {
-  if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace("Flood ", ""), color: hex(st.top.color, "#c62828"),
+  if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace(/^Flood | Flood Stage$/g, ""), color: hex(st.top.color, "#c62828"),
     ink: st.top.level === 1 ? "#1a1a1a" : "#fff", lvl: st.top.level };
   if (st.late) return { w: LK.text("status_delayed"), color: "#66717d", ink: "#fff", lvl: 0 };
   if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline"), color: "#66717d", ink: "#fff", lvl: 0 };

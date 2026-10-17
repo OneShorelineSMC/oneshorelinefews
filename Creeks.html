@@ -297,8 +297,8 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261016l"></script>
-<script src="creek_status.js?v=20261016l"></script>
+<script src="lookups.js?v=20261017a"></script>
+<script src="creek_status.js?v=20261017a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -502,7 +502,7 @@ function rainWindows(c) { return (c.rain_windows || [60, 1440]).slice().sort(fun
 function winLabel(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
 // One or two words for a creek's tile: its level, or Offline / Delayed / Normal
 function statusWord(st) {
-  if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace("Flood ", ""), col: st.top.level === 1 ? "#8a6d00" : st.top.color, bar: st.top.color };
+  if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace(/^Flood | Flood Stage$/g, ""), col: st.top.level === 1 ? "#8a6d00" : st.top.color, bar: st.top.color };
   if (st.late) return { w: LK.text("status_delayed_short"), col: "var(--muted)", bar: "#66717d" };
   if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline"), col: "var(--muted)", bar: "#66717d" };
   return { w: LK.text("status_normal"), col: "var(--green)", bar: "#2e7d32" };
@@ -581,7 +581,7 @@ function render() {
       '<div class="big">' + (s.last ? s.last.v.toFixed(2) + s.arrow : "–") + "<small> ft</small></div>" +
       '<span class="badge" style="background:' + col + ";color:" + (s.lvl && !s.quiet ? inkOn(s.lvl) : "#fff") + '">' + badge + "</span>" +
       '<div class="ssub">' + sub + '</div><div class="thr">' + (g.thresholds || []).map(function (t) {
-        return '<span><i style="background:' + t.color + '"></i>' + esc(t.name.replace("Flood ", "")) + " " + t.value.toFixed(2) + " ft</span>"; }).join("") + "</div>" +
+        return '<span><i style="background:' + t.color + '"></i>' + esc(t.name.replace(/^Flood | Flood Stage$/g, "")) + " " + t.value.toFixed(2) + " ft</span>"; }).join("") + "</div>" +
       (g.note ? '<div class="snote">' + esc(g.note) + "</div>" : "") + "</div>";
   }).join("");
 
@@ -631,16 +631,16 @@ function staffReadings(c, st, now) {
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
   // creek level at each gauge
   st.stages.forEach(function (s) {
-    var g = s.g, sig = (sens[g.key] || {}).signals || {}, th = (g.thresholds || []).filter(function (t) { return t.level <= 3; });
+    var g = s.g, sig = (sens[g.key] || {}).signals || {}, th = (g.thresholds || []).filter(function (t) { return t.level >= 1 && t.level <= 4; });
     var name = "<b>Creek level</b> · " + esc(g.label) + srcLink(g);
     if (!s.last || s.quiet) {
       row(name, s.last ? '<span class="off">' + s.last.v.toFixed(2) + " ft</span>" : "–", '<span class="off">Not reporting</span>' + (s.last ? '<span class="sm">last report ' + esc(when(s.last.t)) + "</span>" : ""), "", "");
       return;
     }
-    var lv = th.length < 3 ? '<span class="sm" style="display:inline">levels not set</span>'
-      : '<span class="lvw l' + (s.lvl ? s.lvl.level : 0) + '">' + (s.lvl ? lvIcon(s.lvl.level) : "") + esc(s.lvl ? s.lvl.name.replace("Flood ", "") : LK.text("status_normal")) + "</span>" +
-        (s.next ? " · " + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) : "") +
-        '<span class="sm blk">' + th.map(function (t) { return esc(t.name.replace("Flood ", "")) + " " + t.value.toFixed(2); }).join(" · ") + " ft</span>";
+    var lv = !th.length ? '<span class="sm" style="display:inline">levels not set</span>'
+      : '<span class="lvw l' + (s.lvl ? s.lvl.level : 0) + '">' + (s.lvl ? lvIcon(s.lvl.level) : "") + esc(s.lvl ? s.lvl.name.replace(/^Flood | Flood Stage$/g, "") : LK.text("status_normal")) + "</span>" +
+        (s.next ? " · " + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "")) : "") +
+        '<span class="sm blk">' + th.map(function (t) { return esc(t.name.replace(/^Flood | Flood Stage$/g, "")) + " " + t.value.toFixed(2); }).join(" · ") + " ft</span>";
     var arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[sig.trend] || "", rf = sig.rising_fast;
     var trend = sig.trend ? arrow + " " + esc(LK.text("trend_" + sig.trend)) + (sig.ft_per_hr != null && sig.trend !== "steady" ? " " + (sig.ft_per_hr > 0 ? "+" : "") + sig.ft_per_hr.toFixed(1) + " ft/hr" : "") : "";
     if (rf && rf.rise_ft != null) trend += '<span class="sm">rose ' + rf.rise_ft.toFixed(2) + " ft in " + rf.minutes + " min" + (rf.held ? " (up to " + esc(fTime(parseLocal(rf.at))) + ")" : "") + "</span>";
@@ -694,8 +694,8 @@ function renderAll(states, now) {
       st.stages.forEach(function (g) {
         var lv = !g.last ? "no data" : g.quiet
           ? '<span class="warn">offline</span> · last report ' + fDate(g.last.t)
-          : "<b style='color:" + (g.lvl ? (g.lvl.level === 1 ? "#8a6d00" : g.lvl.color) : "var(--green)") + "'>" + (g.lvl ? esc(g.lvl.name.replace("Flood ", "")) : esc(LK.text("status_normal"))) + "</b>" +
-            (g.next ? ' <span class="lbl">· ' + (g.next.value - g.last.v).toFixed(2) + " ft below " + esc(g.next.name.replace("Flood ", "")) + "</span>" : "");
+          : "<b style='color:" + (g.lvl ? (g.lvl.level === 1 ? "#8a6d00" : g.lvl.color) : "var(--green)") + "'>" + (g.lvl ? esc(g.lvl.name.replace(/^Flood | Flood Stage$/g, "")) : esc(LK.text("status_normal"))) + "</b>" +
+            (g.next ? ' <span class="lbl">· ' + (g.next.value - g.last.v).toFixed(2) + " ft below " + esc(g.next.name.replace(/^Flood | Flood Stage$/g, "")) + "</span>" : "");
         h += '<div class="ag"><div class="gl">' + esc(g.g.label) + '</div><div class="gv"><b class="v">' + (g.last ? g.last.v.toFixed(2) + g.arrow + " ft" : "–") + "</b> " + lv + "</div></div>";
       });
       var wins = rainWindows(c);
@@ -924,7 +924,7 @@ function drawCharts(st, now) {
     so.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };
     var PVg = window.CREEK_STATUS && window.CREEK_STATUS.preview;   // staff preview: each level's name on its line, so the key can leave them out
     var sets = shown.map(function (t) { var lv = PVg && t.level <= 4;
-      return { label: t.name, refLabel: PVg ? t.name.replace("Flood ", "") + " " + t.value.toFixed(2) : undefined, refIcon: lv ? LV_ICON[t.level] : undefined,
+      return { label: t.name, refLabel: PVg ? t.name.replace(/^Flood | Flood Stage$/g, "") + " " + t.value.toFixed(2) : undefined, refIcon: lv ? LV_ICON[t.level] : undefined,
         data: [{ x: H(x0), y: t.value }, { x: H(x1), y: t.value }], borderColor: lv ? lvColor(t.level) : t.color, borderWidth: lv ? (t.level >= 3 ? 3 : 2) : 1.5,
         borderDash: lv ? LV_DASH[t.level] : [5, 3], pointRadius: 0, pointHoverRadius: 0 }; });
     sets.push({ label: "Stage (ft)", data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.12)", borderWidth: 2, pointRadius: 0, fill: "origin" });
@@ -952,7 +952,7 @@ function drawCharts(st, now) {
   }
   var seen = {}, key = "", PVk = window.CREEK_STATUS && window.CREEK_STATUS.preview;
   if (!PVk) c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
-    key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
+    key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace(/^Flood | Flood Stage$/g, "")) + "</span>"; } }); });
   $("key").innerHTML = !c.tide ? key : key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
     (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
     (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "") +
@@ -975,15 +975,15 @@ function fillTiles(st, now) {
   function inch(x) { return x < 0.005 ? "0.00" : x.toFixed(2); }
   function set(id, cls, html) { var e = $(id); if (e) { e.className = "tile " + cls; e.innerHTML = html; } }
   st.stages.forEach(function (s, i) {
-    var g = s.g, sig = (sens[g.key] || {}).signals || {}, th = (g.thresholds || []).filter(function (t) { return t.level <= 3; });
+    var g = s.g, sig = (sens[g.key] || {}).signals || {}, th = (g.thresholds || []).filter(function (t) { return t.level >= 1 && t.level <= 4; });
     if (!s.last || s.quiet) { set("tlStage" + i, "off", '<span class="tv">' + (s.last ? s.last.v.toFixed(2) : "–") + '<small> ft</small></span><span class="tw">Not reporting</span>' +
       (s.last ? '<span class="tx">last report ' + esc(ago(s.last.t)) + "</span>" : "")); return; }
     var lv = s.lvl ? Math.min(4, s.lvl.level) : 0, arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[sig.trend] || "";
-    var word = th.length < 3 ? "" : s.lvl ? s.lvl.name.replace("Flood ", "") : LK.text("status_normal");
-    set("tlStage" + i, th.length < 3 ? "" : "l" + lv, '<span class="tv">' + s.last.v.toFixed(2) + "<small> ft " + arrow + "</small></span>" +
+    var word = !th.length ? "" : s.lvl ? s.lvl.name.replace(/^Flood | Flood Stage$/g, "") : LK.text("status_normal");
+    set("tlStage" + i, !th.length ? "" : "l" + lv, '<span class="tv">' + s.last.v.toFixed(2) + "<small> ft " + arrow + "</small></span>" +
       (word ? '<span class="tw">' + (s.lvl ? lvIcon(s.lvl.level) : "") + esc(word) + "</span>" : '<span class="tx">' + esc(LK.text("no_flood_level_title")) + "</span>") +
       (sig.trend === "fast" || sig.rising_fast ? '<span class="tt"><b>' + esc(LK.text("trend_fast")) + "</b>" + (sig.ft_per_hr > 0 ? " · +" + sig.ft_per_hr.toFixed(1) + " ft/hr" : "") + "</span>" : "") +   // same words as the kiosk tile
-      (s.next && th.length >= 3 ? '<span class="tt">' + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) + "</span>" : "") +
+      (s.next && th.length ? '<span class="tt">' + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "")) + "</span>" : "") +
       '<span class="tt">' + esc(ago(s.last.t)) + "</span>");
   });
   st.rains.forEach(function (r, i) {

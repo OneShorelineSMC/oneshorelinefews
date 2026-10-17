@@ -174,7 +174,7 @@
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261016l"></script>
+<script src="lookups.js?v=20261017a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)
@@ -347,7 +347,7 @@ function renderSheet(id) {
     }
     if (s.thresholds) {
       h += '<div class="lvl" style="color:' + (lvl ? LEVEL_HEX[lvl] : "var(--muted)") + '">' + (lvl ? levelName([s], lvl) + " level · " : "") +
-        s.thresholds.map(function (x) { return x.name.replace("Flood ", "") + " " + x.value; }).join(" · ") + " " + esc(s.unit) + '</div>';
+        s.thresholds.map(function (x) { return x.name.replace(/^Flood | Flood Stage$/g, "") + " " + x.value; }).join(" · ") + " " + esc(s.unit) + '</div>';
     }
     if ((s.points && s.points.length > 1) || (s.hourly && s.hourly.length)) {
       h += '<canvas class="spark" id="sp' + i + '"></canvas><div class="glbl"><span>24 hours ago</span><span>' +
