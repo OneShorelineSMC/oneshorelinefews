@@ -1,21 +1,35 @@
 # San Mateo Creek
 
-*Fact sheet generated from the FEWS lookup tables by `scripts/build_creek_factsheets.py`. Don't edit this page; edit the tables and rerun the script.*
+*Draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to the review request. Everything else on the page is background.*
+
+> **What we need you to check**
+>
+> - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
+> - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
+> - [ ] **Flood levels:** FEWS has none. Do you know a creek height at the gauge where the creek leaves its banks or floods a road, or a past flood we could match to a gauge reading?
+> - [ ] Which rain gauge does the San Mateo Creek dashboard color?
+
+> **How to read this page**
+>
+> - **Flood level:** a creek height (or rain amount) tied to an effect downstream, such as how full the channel is or water on a road. Only flood levels say anything about flooding.
+> - **Alert level:** says how unusual the rain is, or how fast the creek is rising. Not tied to flooding.
+> - **Rising fast:** the creek rose at least the set amount (for example 0.5 ft) within an hour.
+> - **Creek heights** are the gauge's own reading in feet (height above the gauge's zero), not an elevation. **Tide heights** are in feet NAVD88, a survey datum. MHHW = the average daily high tide; MLLW = the average daily low tide.
+> - **1-year, 2-year, 5-year storm:** rain that heavy at that gauge has about a 63%, 39% or 18% chance in any year (NOAA Atlas 14).
+> - **Water year (WY):** October 1 to September 30, named for the year it ends.
+> - **OneRain** is the system that runs the gauges and the County's dashboards; FEWS is the public flood warning site built on its data.
 
 ## At a glance
 
 | | |
 |---|---|
-| Creek id | `sanmateo` |
-| On the site | Staff preview only (`preview_only = yes`) |
-| Cities and communities | Hillsborough; San Mateo *(draft - confirm cities and outlet)* |
+| On the FEWS site | Staff preview only (not yet on the public pages) |
+| Cities and communities | Hillsborough; San Mateo *(draft)* |
 | Drains to | San Francisco Bay |
 | Description | Flow below Crystal Springs Reservoir is controlled by SFPUC releases and spills. |
-| Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
-| Tide station | NOAA 9414750 Alameda (MHHW 6.37 ft NAVD88) |
-| Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
-
-**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
+| Flood levels set? | None |
+| Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
+| Rain totals on the FEWS page | 30 min, 1 hr, 3 hr, 24 hr |
 
 ## Creek level gauges
 
@@ -23,62 +37,75 @@
 
 | | |
 |---|---|
-| Gauge key | `smc_stage_11162753` |
-| Source and ID | USGS 11162753 ([page](https://waterdata.usgs.gov/monitoring-location/USGS-11162753/)) |
+| Source and ID | USGS 11162753 ([gauge page](https://waterdata.usgs.gov/monitoring-location/USGS-11162753/)) |
 | Location | 37.52944, -122.35833 |
 | Reports | Every 15 minutes (USGS) |
-| Record | Sep 2008 |
-| Tidal | To confirm (dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide) |
-| Rising fast | 0.5 ft in 60 min |
+| Record starts | Sep 2008 |
+| Affected by the tide? | Not yet confirmed. Dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide |
+| Rising-fast alert | 0.5 ft within an hour |
 | History and known issues | Rises follow Crystal Springs Reservoir releases and spills (reservoir level: USGS 11162750; spill about 294.6 ft). USGS data approved through spring 2026. |
-| Note shown on the site | No flood levels set yet · To check: Confirm whether this gauge reads the tide; Flow below Crystal Springs dam; reservoir level is USGS 11162750 (spill at 294.6 ft) |
 
-**Flood levels:** none. No creek height at this gauge is tied to flooding yet, so the creek's status comes from alert levels only: rain and rising fast ([THRESHOLDS_BASIS.md §10](../THRESHOLDS_BASIS.md)).
+**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast).
 
-**Rising fast (alert level), tested on 18.1 years of history.** Tested against 5.88 ft, the creek's typical yearly high (the median yearly peak, about a 2-year event). **This is not a flood level:** "warned" means an alert came before a typical yearly high, not before flooding.
+<details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
-| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
+Tested on 18.1 years of readings, against 5.88 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means an alert came before a typical yearly high, not before flooding.
+
+| Alert setting (ft within an hour) | Alerts per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
 | 0.25 | 17.6 | 21 of 60 | 1.5 h |
-| 0.5 ◀ current | 7.2 | 11 of 60 | 45 min |
+| 0.5 (current setting) | 7.2 | 11 of 60 | 45 min |
 | 0.75 | 3.1 | 3 of 60 | 75 min |
 | 1.0 | 1.3 | 0 of 60 | – |
 | 1.5 | 0.5 | 0 of 60 | – |
 
-Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
+Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
+
+</details>
 
 ## Rain gauges
 
-| Gauge | OneRain ID | Location | Where | Role |
+| Gauge | OneRain ID | Location | Where | Use in FEWS |
 |---|---|---|---|---|
-| Crystal Springs Cottage (`smc_rain_csc`) | CSC | 37.49600, -122.32900 | nearby | Supporting (counts toward the rain level only) |
+| Crystal Springs Cottage | CSC | 37.49600, -122.32900 | nearby | Counts toward the creek's rain alert only (not shown on the page) |
 
-**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
+<details><summary>Background: rain alert levels at each gauge (no action needed)</summary>
 
-| Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
+The creek's rain alert uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
+
+| Gauge | Level | 30 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|
-| Crystal Springs Cottage | Heavy (1-yr) | 0.257 | 0.505 | 0.931 | 2.12 |
-| Crystal Springs Cottage | Very heavy (2-yr) | 0.31 | 0.61 | 1.11 | 2.73 |
-| Crystal Springs Cottage | Intense (5-yr) | 0.383 | 0.753 | 1.36 | 3.54 |
+| Crystal Springs Cottage | Heavy (1-year) | 0.357 | 0.505 | 0.931 | 2.12 |
+| Crystal Springs Cottage | Very heavy (2-year) | 0.431 | 0.61 | 1.11 | 2.73 |
+| Crystal Springs Cottage | Intense (5-year) | 0.532 | 0.753 | 1.36 | 3.54 |
 
-Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13). Basis: [THRESHOLDS_BASIS.md §8](../THRESHOLDS_BASIS.md).
+Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 
-## Current OneRain dashboard thresholds
+</details>
 
-As set in OneRain on 2026-10-16; source: OneRain admin screenshot (provided by staff). **For reference only:** FEWS doesn't use these; its own levels are above. Dashboard colors are what OneRain's dashboard shows; gauge alarms are thresholds set on the gauge itself.
+## Appendix: OneRain settings (for comparison only)
 
-| Type | Gauge | Window | Color | Range | Name | Compared with NOAA Atlas 14 (in) |
-|---|---|---|---|---|---|---|
-| Dashboard rain color | **to confirm** | 3 hr | Green | 0 – 0.799 in |  | – |
-| Dashboard rain color | **to confirm** | 3 hr | Orange | 0.800 – 0.999 in |  | CSC: below the 1-yr (0.931) |
-| Dashboard rain color | **to confirm** | 3 hr | Red | ≥ 1.000 in |  | CSC: between the 1-yr (0.931) and 2-yr (1.11) |
+These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
 
-- Only window on the San Mateo Creek dashboard. Comparison assumes Crystal Springs Cottage (CSC), the gauge FEWS uses.
+**Rain**
 
-## Open items
+| Gauge | Kind | Rain within | Color | Rain (in) | OneRain name | Also a FEWS level? | How rare at this gauge |
+|---|---|---|---|---|---|---|---|
+| **to confirm** [1] | Dashboard color | 3 hr | Green | 0–0.799 | – | No | – |
+| **to confirm** | Dashboard color | 3 hr | Orange | 0.800–0.999 | – | No | less than a 1-year storm (0.931 in) |
+| **to confirm** | Dashboard color | 3 hr | Red | 1.000 and up | – | No | between a 1- and 2-year storm (0.931–1.11 in) |
 
-- OneRain thresholds: Which rain gauge does the San Mateo Creek dashboard color?
-- `smc_rain_csc`: check they open the Rain Increment sensor
-- `smc_stage_11162753`: Confirm whether this gauge reads the tide; Flow below Crystal Springs dam; reservoir level is USGS 11162750 (spill at 294.6 ft)
-- Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)
-- Link to flooding: find the creek height at each gauge where the creek leaves its banks or floods a road (survey, hydraulic study, or a past flood with gauge readings), then add it to thresholds.csv (THRESHOLDS_BASIS.md, Terms)
+Notes:
+
+1. Only window on the San Mateo Creek dashboard. Comparison assumes Crystal Springs Cottage (CSC), the gauge FEWS uses.
+
+<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
+
+- Crystal Springs Cottage (rain): check they open the Rain Increment sensor
+- Below Crystal Springs Reservoir (stage): Confirm whether this gauge reads the tide; Flow below Crystal Springs dam; reservoir level is USGS 11162750 (spill at 294.6 ft)
+
+</details>
+
+---
+
+*Generated from the FEWS lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*

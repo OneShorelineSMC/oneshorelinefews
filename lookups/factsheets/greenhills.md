@@ -1,21 +1,34 @@
 # Green Hills Creek
 
-*Fact sheet generated from the FEWS lookup tables by `scripts/build_creek_factsheets.py`. Don't edit this page; edit the tables and rerun the script.*
+*Draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to the review request. Everything else on the page is background.*
+
+> **What we need you to check**
+>
+> - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
+> - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
+> - [ ] **Flood levels:** FEWS has none. Do you know a creek height at the gauge where the creek leaves its banks or floods a road, or a past flood we could match to a gauge reading?
+
+> **How to read this page**
+>
+> - **Flood level:** a creek height (or rain amount) tied to an effect downstream, such as how full the channel is or water on a road. Only flood levels say anything about flooding.
+> - **Alert level:** says how unusual the rain is, or how fast the creek is rising. Not tied to flooding.
+> - **Rising fast:** the creek rose at least the set amount (for example 0.5 ft) within an hour.
+> - **Creek heights** are the gauge's own reading in feet (height above the gauge's zero), not an elevation. **Tide heights** are in feet NAVD88, a survey datum. MHHW = the average daily high tide; MLLW = the average daily low tide.
+> - **1-year, 2-year, 5-year storm:** rain that heavy at that gauge has about a 63%, 39% or 18% chance in any year (NOAA Atlas 14).
+> - **Water year (WY):** October 1 to September 30, named for the year it ends.
+> - **OneRain** is the system that runs the gauges and the County's dashboards; FEWS is the public flood warning site built on its data.
 
 ## At a glance
 
 | | |
 |---|---|
-| Creek id | `greenhills` |
-| On the site | Staff preview only (`preview_only = yes`) |
-| Cities and communities | Millbrae *(draft - confirm cities and outlet)* |
+| On the FEWS site | Staff preview only (not yet on the public pages) |
+| Cities and communities | Millbrae *(draft)* |
 | Drains to | Highline Canal, then San Francisco Bay |
 | Description | Small creek through Green Hills Country Club in Millbrae. |
-| Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
-| Tide station | NOAA 9414750 Alameda (MHHW 6.37 ft NAVD88) |
-| Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
-
-**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
+| Flood levels set? | None |
+| Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
+| Rain totals on the FEWS page | 30 min, 1 hr, 3 hr, 24 hr |
 
 ## Creek level gauges
 
@@ -23,53 +36,65 @@
 
 | | |
 |---|---|
-| Gauge key | `gh_stage_41201` |
-| Source and ID | OneRain 41201 ([page](https://oneshorelineearlywarning.onerain.com/sensor/?site_id=47&site=1e070958-e7b5-4329-b29d-eddf7da7df2d&device_id=1&device=aaf1108b-3657-42f4-9459-515d75c3eb7c)) |
+| Source and ID | OneRain 41201 ([gauge page](https://oneshorelineearlywarning.onerain.com/sensor/?site_id=47&site=1e070958-e7b5-4329-b29d-eddf7da7df2d&device_id=1&device=aaf1108b-3657-42f4-9459-515d75c3eb7c)) |
 | Location | 37.60130, -122.40930 |
 | Reports | On change (about hourly in dry weather) |
-| Record | Dec 24, 2024 (public OneRain pages) |
-| Tidal | To confirm (dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide; tidal influence still to confirm) |
-| Rising fast | 0.5 ft in 60 min (default; not calibrated) |
+| Record starts | Dec 24, 2024 (public OneRain pages) |
+| Affected by the tide? | Not yet confirmed. Dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide; tidal influence still to confirm |
+| Rising-fast alert | 0.5 ft within an hour (default; not yet tested on this gauge's history) |
 | History and known issues | Flash flood Nov 17, 2025: 0.20 to 5.66 ft in 70 minutes. |
-| Note shown on the site | No flood levels set yet · To check: check they open the Stage sensor; set reports; Confirm whether this gauge reads the tide |
 
-**Flood levels:** none. No creek height at this gauge is tied to flooding yet, so the creek's status comes from alert levels only: rain and rising fast ([THRESHOLDS_BASIS.md §10](../THRESHOLDS_BASIS.md)).
+**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast).
 
-**Rising fast (alert level), tested on 1.8 years of history.** Tested against 4.5 ft, the creek's typical yearly high (the median yearly peak, about a 2-year event). **This is not a flood level:** "warned" means an alert came before a typical yearly high, not before flooding.
+<details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
-| Threshold (ft in 60 min) | Alerts / yr | Warned before reaching it | Median lead |
+Tested on 1.8 years of readings, against 4.5 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means an alert came before a typical yearly high, not before flooding. Only 1 such rises in the record, so treat these results as rough.
+
+| Alert setting (ft within an hour) | Alerts per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
 | 0.25 | 42.5 | 1 of 1 | 69 min |
-| 0.5 ◀ current | 29.3 | 1 of 1 | 64 min |
+| 0.5 (current setting) | 29.3 | 1 of 1 | 64 min |
 | 0.75 | 21.5 | 1 of 1 | 50 min |
 | 1.0 | 16.6 | 1 of 1 | 31 min |
 | 1.5 | 9.4 | 1 of 1 | 19 min |
 
-Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
+Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
+
+</details>
 
 ## Rain gauges
 
-| Gauge | OneRain ID | Location | Where | Role |
+| Gauge | OneRain ID | Location | Where | Use in FEWS |
 |---|---|---|---|---|
-| Pilarcitos Dam (`gh_rain_pld`) | PLD | 37.54800, -122.42200 | nearby | Supporting (counts toward the rain level only) |
+| Pilarcitos Dam | PLD | 37.54800, -122.42200 | nearby | Counts toward the creek's rain alert only (not shown on the page) |
 
-**Rain alert levels at each gauge** (NOAA Atlas 14 depths, in): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, for the heaviest window of rain. They say how rare the rain is at the gauge, not whether the creek floods.
+<details><summary>Background: rain alert levels at each gauge (no action needed)</summary>
 
-| Gauge | Level | 15 min | 1 hr | 3 hr | 24 hr |
+The creek's rain alert uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
+
+| Gauge | Level | 30 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|
-| Pilarcitos Dam | Heavy (1-yr) | 0.316 | 0.629 | 1.18 | 2.89 |
-| Pilarcitos Dam | Very heavy (2-yr) | 0.383 | 0.763 | 1.41 | 3.66 |
-| Pilarcitos Dam | Intense (5-yr) | 0.473 | 0.942 | 1.73 | 4.68 |
+| Pilarcitos Dam | Heavy (1-year) | 0.444 | 0.629 | 1.18 | 2.89 |
+| Pilarcitos Dam | Very heavy (2-year) | 0.539 | 0.763 | 1.41 | 3.66 |
+| Pilarcitos Dam | Intense (5-year) | 0.665 | 0.942 | 1.73 | 4.68 |
 
-Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13). Basis: [THRESHOLDS_BASIS.md §8](../THRESHOLDS_BASIS.md).
+Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 
-## Current OneRain dashboard thresholds
+</details>
 
-None recorded yet (`onerain_dashboard_thresholds.csv`).
+## Appendix: OneRain settings (for comparison only)
 
-## Open items
+These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
 
-- `gh_stage_41201`: check they open the Stage sensor; set reports; Confirm whether this gauge reads the tide
-- `gh_rain_pld`: check they open the Rain Increment sensor
-- Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)
-- Link to flooding: find the creek height at each gauge where the creek leaves its banks or floods a road (survey, hydraulic study, or a past flood with gauge readings), then add it to thresholds.csv (THRESHOLDS_BASIS.md, Terms)
+None recorded yet.
+
+<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
+
+- Green Hills Country Club (stage): check they open the Stage sensor; set reports; Confirm whether this gauge reads the tide
+- Pilarcitos Dam (rain): check they open the Rain Increment sensor
+
+</details>
+
+---
+
+*Generated from the FEWS lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*
