@@ -42,7 +42,7 @@
   #brand .sep { opacity: .55; }
   /* Alert bar */
   #alertbar { position: absolute; left: 0; top: 20px; width: 800px; height: 48px; box-sizing: border-box;
-    padding: 0 16px; display: flex; align-items: center; gap: 12px; color: #fff; background: var(--green); }
+    padding: 0 16px; display: flex; align-items: center; gap: 12px; color: #fff; background: #2e7d32; }   /* fixed green: white text needs 4.5:1 in the dark theme too */
   #alertbar.warning { background: #b71c1c; }
   #alertbar.watch, #alertbar.advisory { background: #9a5b00; }
   #alertbar.statement { background: #455a75; }
@@ -203,6 +203,22 @@
   .crev { font-size: 12px; font-weight: bold; color: var(--ink); border: 1.5px solid var(--muted); border-radius: 999px; padding: 1px 8px; align-self: flex-start; }
   .lvw { display: inline-flex; align-items: center; gap: 3px; vertical-align: -2px; } .lvw .cs-ic { width: 14px; height: 14px; }
   .lvw .cs-ic-likely { color: var(--lv3); } .lvw .cs-ic-ready { color: var(--lv2); } .lvw .cs-ic-alert { color: var(--lv1); }
+  /* Creek screen tiles (same look as the Creeks page) */
+  .kstat { display: flex; flex-direction: column; gap: 3px; flex: none; }
+  .kstat .cs-verdict { margin: 0; padding: 5px 9px; font-size: 17px; gap: 7px; } .kstat .cs-verdict .cs-ic { width: 18px; height: 18px; }
+  .ktile { border-radius: 8px; padding: 5px 10px; border: 2px solid var(--line); flex: none; }
+  .ktile .klbl { font-size: 12px; } .ktile .kv { font-size: 26px; font-weight: bold; line-height: 1.1; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .ktile .kv small { font-size: 13px; font-weight: normal; } .ktile .kw { font-size: 14px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
+  .ktile .kw .cs-ic { width: 15px; height: 15px; } .ktile .kt { font-size: 12px; line-height: 1.25; }
+  .ktile.two .kv { font-size: 21px; } .ktile.two { padding: 3px 10px; }
+  .ktile.l0 { background: #2e7d32; border-color: #2e7d32; color: #fff; } .ktile.l1 { background: #f2d544; border-color: #f2d544; color: #1a1a1a; }
+  .ktile.l2 { background: #b45a00; border-color: #b45a00; color: #fff; } .ktile.l3, .ktile.l4 { background: #c62828; border-color: #c62828; color: #fff; }
+  .ktile.l0 .cs-ic, .ktile.l2 .cs-ic, .ktile.l3 .cs-ic, .ktile.l4 .cs-ic { color: #fff; } .ktile.l1 .cs-ic { color: #1a1a1a; }
+  .ktile.l2 .cs-ic-ready path { stroke: #b45a00; } .ktile.l2 .cs-ic-ready circle + path + circle { fill: #b45a00; }
+  .ktile.l3 .cs-ic-likely .x, .ktile.l4 .cs-ic-likely .x { stroke: #c62828; fill: #c62828; }
+  .ktile.off { border-style: dashed; border-color: #8a96a3; background: rgba(138,150,163,.10); } .ktile.off .kv { font-size: 20px; color: var(--muted); }
+  .ktile.tide { padding: 4px 10px; } .ktile.tide .kt { font-size: 13px; } .ktile.info { border-color: var(--infob); background: var(--infobg); }
+  .ktile .kt .m { color: inherit; opacity: .85; }
   .mlist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mlist .mi { border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 18px; font-weight: bold; display: flex; flex-direction: column; gap: 4px; }
   .mlist .mi .ms { font-size: 14px; font-weight: normal; color: var(--muted); }
@@ -1506,8 +1522,12 @@ function renderCreek() {
   el("cbody").style.display = all ? "none" : "";
   if (all) { destroyCreekCharts(); renderAllCreeks(states, now); return; }
 
-  // Left column: each gauge's level, rain totals, tide now
-  var h = sm ? '<span class="crev">' + esc(LK.text("method_review")) + "</span>" : "", two = st.stages.length > 1;
+  // Left column, the same look as the Creeks page: the creek's status, then a tile per creek gauge (colored by level),
+  // the accumulated rain table with its triggers, and the Bay tide
+  var CSv = window.CREEK_STATUS && CREEK_STATUS.preview ? CREEK_STATUS.view(C.data, c) : null, h = "", two = st.stages.length > 1;
+  if (CSv) h += '<div class="kstat"><div class="cs-verdict cs-v-' + CSv.key + '">' + CREEK_STATUS.icon(CSv.key) + esc(CSv.word) + "</div>" +
+    (sm ? '<span class="crev">' + esc(LK.text("method_review")) + "</span>" : "") + "</div>";
+  else if (sm) h += '<span class="crev">' + esc(LK.text("method_review")) + "</span>";
   if (st.stages.length > 2 || (sm && !st.stages.some(function (s) { return (s.g.thresholds || []).length; }))) {   // many gauges, or no flood levels: one compact box
     h += '<div class="cbox" data-info="1"><div class="clbl">Creek level (ft, each gauge’s own zero)' + (sm ? " · " + esc(LK.text("no_flood_level_title")) : "") + "</div>" +
       st.stages.map(function (s) {
@@ -1516,6 +1536,15 @@ function renderCreek() {
       }).join("") + "</div>";
   } else st.stages.forEach(function (s, i) {
     var g = s.g, col = s.quiet ? "#6b7a8c" : s.lvl ? s.lvl.color : "#2e7d32";
+    if (CSv) {   // phone-style tile: the number, the level's icon and word, the next level, how long ago
+      var lv = s.lvl ? Math.min(4, s.lvl.level) : 0, ago = s.last ? Math.max(0, Math.round((now - s.last.t) / 60000)) : 0;
+      var agoT = !s.last ? "" : ago < 60 ? ago + " min ago" : ago < 2880 ? Math.round(ago / 60) + " hr ago" : fDay(s.last.t).replace(/^\w+, /, "");
+      h += '<div class="ktile ' + (!s.last || s.quiet ? "off" : "l" + lv) + (two ? " two" : "") + '" data-info="1"><div class="klbl">' + esc(g.label) + (s.last && !s.quiet ? " · " + esc(agoT) : "") + "</div>" +
+        (!s.last || s.quiet ? '<div class="kv">' + (s.last ? s.last.v.toFixed(2) + '<small> ft</small>' : "–") + '</div><div class="kw">Not reporting · ' + esc(agoT) + "</div>"
+          : '<div class="kv">' + s.last.v.toFixed(2) + "<small> ft" + s.arrow + '</small><span class="kw">' + (s.lvl ? lvIcon(s.lvl.level) + esc(s.lvl.name.replace("Flood ", "")) : esc(LK.text("status_normal"))) + "</span></div>" +
+            (s.next ? '<div class="kt">' + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) + "</div>" : "")) + "</div>";
+      return;
+    }
     var sub = !s.last ? "No recent readings" : s.quiet
       ? "<b>⚠ Gauge may be offline</b> · last report " + fDay(s.last.t).replace(/^\w+, /, "") + " " + fTime(s.last.t)
       : "<b class='lvw' style='color:" + (s.lvl ? "var(--lv" + Math.min(3, s.lvl.level) + ")" : "var(--green)") + "'>" + (s.lvl ? lvIcon(s.lvl.level) + esc(s.lvl.name) : esc(LK.text("status_normal"))) + "</b> · " +
@@ -1542,7 +1571,9 @@ function renderCreek() {
       return '<div class="trig' + (x.met ? " met" : "") + '">' + (x.met ? "<b>MET ⚠</b> " : "Trigger: ") + esc(x.text) + "</div>";
     }).join("") + "</div>";
   var ct = creekTide(c, now);
-  if (ct) h += '<div class="cbox tbox slim"><div class="clbl">' + esc(ct.name) + ' · NOAA, ft NAVD88</div><div class="csub"><b>Bay tide</b> ' + ct.html + "</div></div>";
+  if (ct && CSv && !two) h += '<div class="ktile tide' + (ct.v != null && ct.v > tideFor(c).st.mhhw ? " info" : "") + '"><div class="klbl">Bay tide · ' + esc(ct.name) + "</div>" +
+    '<div class="kt">' + ct.html + "</div></div>";
+  else if (ct && !CSv) h += '<div class="cbox tbox slim"><div class="clbl">' + esc(ct.name) + ' · NOAA, ft NAVD88</div><div class="csub"><b>Bay tide</b> ' + ct.html + "</div></div>";
   el("cleft").innerHTML = h;
 
   drawCreekCharts(st, now);
