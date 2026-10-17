@@ -132,7 +132,7 @@ the sensor map. Alameda's is blank because its OneRain tide site isn't public.
 | Setting | Value | Basis | Status | Checked by / on |
 |---|---|---|---|---|
 | Rapidly rising: rise | 0.5 ft in 60 min by default; per gauge in `creek_gauges.csv` `rise_ft` (0.25–1.0 ft, or off); on UTC times; confirmed by the previous reading rising at least half as much (on-change gauges after a quiet spell: by the next report; hourly readings can't be confirmed); comparison reading no more than 15 min late (12 h for on-change gauges); holds 30 min; newest reading < 90 min old | Tested against USGS 2007–2026 and OneRain Oct 2019–2026: [RISING_FAST_BASIS.md](RISING_FAST_BASIS.md) | **Calibrated, not yet signed off** (Pilarcitos above Stone Dam, Pescadero 41151: provisional; Colma, Atherton Alameda, Green Hills: default, not enough record yet) | |
-| Rapidly rising: tidal gauges | only after ≥ 0.10 in rain in 3 hr (San Bruno at First Avenue, `tidal = yes`) | Stops every high tide from counting as a rapid rise; storm backwater not yet measured (RISING_FAST_BASIS.md §7) | **Provisional** | |
+| Rapidly rising: tidal gauges | only after ≥ 0.10 in rain in 3 hr (San Bruno at First Avenue and Colma at Orange Memorial Park, `tidal = yes`) | Stops every high tide from counting as a rapid rise; storm backwater not yet measured (RISING_FAST_BASIS.md §7) | **Provisional** | |
 | Rapidly rising: time to next level | shown if within 3 hr; not shown while the alert is only being held (the rise may have stopped) | Working choice | Provisional | |
 | Gauge offline | 12 hr silent (gauges that report on change), 3 hr (scheduled gauges) | On-change gauges can be silent for hours when the level is steady; set to avoid false "offline" | Working choice, review | |
 | Creek data delayed | 30 min | Data job runs every 5 min; 30 min = several missed runs | Working choice | |
@@ -161,6 +161,11 @@ the sensor map. Alameda's is blank because its OneRain tide site isn't public.
 Each gauge's OneRain ids were copied from its OneRain sensor page in October 2026. Check that each row points to
 the intended sensor (open the link from the creek page's "thresholds & notes" or the sensor map) and that
 `reports` (on change / interval) matches how the gauge logs. Checked by / on: ______
+
+`tidal` (yes / no / blank = to confirm): whether the creek at the gauge rises and falls with the Bay tide. Yes: San Bruno at
+First Avenue; Colma at Orange Memorial Park (Summer, OneShoreline, Oct 16, 2026). A tidal gauge counts as rapidly rising only
+after rain (§5), and its creek card adds the rising-tide line when the next high tide is near and the status is Stay alert or
+higher; a tidal creek at Heavy rain with a rising tide is Stay alert (§10).
 
 ## 8. Rain frequency (creek status layer, in development) — `rain_frequency.csv`
 
@@ -277,4 +282,5 @@ minimum stage, tide subtraction) were not used, and why. Rerun `scripts/evaluate
 | Date | Who | What was checked / changed | Files |
 |---|---|---|---|
 | Oct 16, 2026 | Summer (OneShoreline) | Creek status layer made public on the home page, Creeks page and kiosk (`STATUS_PUBLIC` = 1; set 0 to return to staff-only). Creeks other than Colma, San Bruno, Belmont and Atherton carry a "Methodology under review" tag. The checklist items above are still open | settings.csv, display_text.csv, creek_status.js |
+| Oct 16, 2026 | Summer (OneShoreline) | Colma Creek at Orange Memorial Park is tidal (`col_stage` `tidal` no → yes). Its rapidly-rising check now needs ≥ 0.10 in rain in 3 hr, Heavy rain + a rising tide at Alameda makes it Stay alert, and its card adds the rising-tide line. The dry-weather check (Oct 12–14) saw ≤ 0.04 ft of tidal movement; storm-time backwater is still to be measured. | `creek_gauges.csv`, `gauge_facts.csv` |
 | | | | |

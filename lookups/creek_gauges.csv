@@ -1,5 +1,5 @@
 creek,gauge,type,label,site_name,where,onerain_number,site_id,site,device_id,device,reports,tidal,rise_ft,note,role,usgs_site,source,checked_by,checked_on
-colma,col_stage,stage,Orange Memorial Park,Colma Creek at Orange Memorial Park,,41101,12,32e8ebb1-4c9c-460a-a4cd-58903b96f347,5,dbbbcf6d-6a38-44a5-a90b-7077db13c5c2,interval,no,,,,,,,
+colma,col_stage,stage,Orange Memorial Park,Colma Creek at Orange Memorial Park,,41101,12,32e8ebb1-4c9c-460a-a4cd-58903b96f347,5,dbbbcf6d-6a38-44a5-a90b-7077db13c5c2,interval,yes,,,,,,,
 colma,col_rain,rain,Orange Memorial Park,,lower watershed,41101,12,32e8ebb1-4c9c-460a-a4cd-58903b96f347,4,cc7e3be8-a663-4bb9-9137-fe252166c71f,,,,,,,,,
 colma,col_rain_41200,rain,San Bruno Mountain,,upper watershed,41200,3,e5d4db4f-0a98-4825-aa98-fa327ed9cfa8,2,2a34c20c-eb4e-4337-801c-5341296fcb30,,,,Hillside gauge in the Colma Creek headwaters (same gauge as San Bruno Creek's San Bruno Mountain); counts toward the rain level only,supporting,,,,
 sanbruno,sb_stage_41102,stage,First Avenue,San Bruno Creek at First Avenue,,41102,11,fe06588c-e5e6-4016-8a8f-2ba1f040636e,3,e481d107-65bb-4107-89ab-48484eb0e188,on change,yes,0.5,,,,,,
