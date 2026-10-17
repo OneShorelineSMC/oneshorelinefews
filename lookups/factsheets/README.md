@@ -1,6 +1,6 @@
 # Creek fact sheets
 
-One page per creek, generated from the lookup tables by `scripts/build_creek_factsheets.py`. To change a fact sheet, edit the tables (`creeks.csv`, `creek_gauges.csv`, `thresholds.csv`, `rain_frequency.csv`, `creek_facts.csv`, `gauge_facts.csv`) and rerun the script.
+One page per creek, generated from the lookup tables by `scripts/build_creek_factsheets.py`. To change a fact sheet, edit the tables (`creeks.csv`, `creek_gauges.csv`, `thresholds.csv`, `rain_frequency.csv`, `creek_facts.csv`, `gauge_facts.csv`, `onerain_dashboard_thresholds.csv`) and rerun the script.
 
 **Linked to flooding:** Yes = flood levels at the creek gauge with a recorded meaning; Partly = flood levels whose meaning isn't recorded; No = alert levels only (rain and rising fast). See [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
 

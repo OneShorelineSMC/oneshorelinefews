@@ -12,7 +12,7 @@
 | Drains to | San Francisco Bay |
 | Description | Large creek on the San Mateo / Santa Clara county line; the USGS gauge is at Stanford. |
 | Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
-| Bay tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
+| Tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
@@ -70,6 +70,10 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Trappers Trail (Valley Water) | Intense (5-yr) | 0.485 | 0.956 | 1.77 | 4.25 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13). Basis: [THRESHOLDS_BASIS.md §8](../THRESHOLDS_BASIS.md).
+
+## Current OneRain dashboard thresholds
+
+None recorded yet (`onerain_dashboard_thresholds.csv`).
 
 ## Open items
 

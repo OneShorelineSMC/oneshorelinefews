@@ -12,7 +12,7 @@
 | Drains to | Bayfront Canal, then San Francisco Bay |
 | Description | Channelized creek; thresholds are for the area downstream of the Caltrain crossing. |
 | Linked to flooding | **Yes**: flood levels at the creek gauge (what they mean is below) |
-| Bay tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
+| Tide station | NOAA 9414523 Redwood City (MHHW 7.02 ft NAVD88) |
 | Rain totals shown | 30 min, 1 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
@@ -110,6 +110,10 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Caltrain | Intense (5-yr) | 0.318 | 0.618 | 1.13 | 2.63 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13). Basis: [THRESHOLDS_BASIS.md §8](../THRESHOLDS_BASIS.md).
+
+## Current OneRain dashboard thresholds
+
+None recorded yet (`onerain_dashboard_thresholds.csv`).
 
 ## Open items
 

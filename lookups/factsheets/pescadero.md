@@ -12,7 +12,7 @@
 | Drains to | Pescadero Marsh, then the Pacific Ocean |
 | Description | Rural coastal creek; the town of Pescadero floods from Pescadero and Butano Creeks. |
 | Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
-| Bay tide station | None (coastal creek) |
+| Tide station | None set for this creek in FEWS (coastal creek) |
 | Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
@@ -89,6 +89,10 @@ Method, choices and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | La Honda | Intense (5-yr) | 0.541 | 1.07 | 1.98 | 4.98 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13). Basis: [THRESHOLDS_BASIS.md §8](../THRESHOLDS_BASIS.md).
+
+## Current OneRain dashboard thresholds
+
+None recorded yet (`onerain_dashboard_thresholds.csv`).
 
 ## Open items
 
