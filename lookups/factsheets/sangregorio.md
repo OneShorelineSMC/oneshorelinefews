@@ -73,7 +73,7 @@ How settings were chosen: the highest setting that still warned before all, or a
 |---|---|---|---|---|
 | La Honda | LAH | 37.30530, -122.25390 | nearby | Shown on the 2026 Update page and counts toward the rain indicator |
 
-**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
+**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
 <details><summary>Background: rain indicator levels at each gauge (no action needed)</summary>
 
@@ -91,7 +91,7 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself (OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today (read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; OneRain sends text alerts only through separate alarm rules. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
@@ -101,11 +101,11 @@ On the 2026 Update's public pages this creek shows readings only; its status sho
 | San Gregorio Creek at San Gregorio | Flood Watch | – | 17.70 ft ("Flooding probable with continued rain") | OneRain only (the 2026 Update doesn't use it) |
 | San Gregorio Creek at San Gregorio | Flood Warning | – | 21.00 ft ("Flooding likely in downstream reaches") | OneRain only (the 2026 Update doesn't use it) |
 | San Gregorio Creek at San Gregorio | Major Flood Stage | – | 25.00 ft ("Damaging flooding") | OneRain only (the 2026 Update doesn't use it) |
-| San Gregorio Creek at San Gregorio | Rising fast | 1.0 ft within an hour | nothing comparable | 2026 Update only |
+| San Gregorio Creek at San Gregorio | Rising fast | 1.0 ft within an hour | none | 2026 Update only |
 
 How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Monitoring 15.00 ft: 4 of 19 years (highest 18.74 ft); Flood Watch 17.70 ft: 3 of 19 years (highest 18.74 ft); Flood Warning 21.00 ft: 0 of 19 years (highest 18.74 ft); Major Flood Stage 25.00 ft: 0 of 19 years (highest 18.74 ft).
 
-No OneRain rain thresholds on: La Honda.
+No OneRain rain thresholds or dashboard colors on: La Honda.
 
 <details><summary>Internal to-do for the project team (reviewers can skip)</summary>
 

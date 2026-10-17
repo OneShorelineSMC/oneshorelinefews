@@ -73,7 +73,7 @@ How settings were chosen: the highest setting that still warned before all, or a
 |---|---|---|---|---|
 | Crystal Springs Cottage | CSC | 37.49600, -122.32900 | nearby | Counts toward the creek's rain indicator only (not shown on the page) |
 
-**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
+**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
 <details><summary>Background: rain indicator levels at each gauge (no action needed)</summary>
 
@@ -91,18 +91,22 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself (OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today (read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; OneRain sends text alerts only through separate alarm rules. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
 | Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
 |---|---|---|---|---|
-| San Mateo Creek Below Crystal Springs Reservoir | Flood levels | none set | none set | – |
-| San Mateo Creek Below Crystal Springs Reservoir | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
+| San Mateo Creek Below Crystal Springs Reservoir | – | none | none | – |
+| San Mateo Creek Below Crystal Springs Reservoir | Rising fast | 0.5 ft within an hour | none | 2026 Update only |
 
-No OneRain rain thresholds on: Crystal Springs Cottage.
+No OneRain rain thresholds or dashboard colors on: Crystal Springs Cottage.
 
-**Tide:** the 2026 Update uses NOAA 9414750 Alameda for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 6.37 ft NAVD88). OneRain's tide settings aren't included.
+**Tide**
+
+| | 2026 Update uses | OneRain dashboard color |
+|---|---|---|
+| Tide | NOAA 9414750 Alameda: tide graph and high-tide lines (MHHW 6.37 ft NAVD88) | none recorded |
 
 <details><summary>Internal to-do for the project team (reviewers can skip)</summary>
 
