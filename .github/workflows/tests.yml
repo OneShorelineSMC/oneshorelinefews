@@ -1,7 +1,7 @@
 name: Tests
 
 # Runs the data job's checks whenever the scripts, the lookup tables or the home page change: creek signals and
-# status rules, point times (UTC on every reading and on 'latest'), community flood reports, the lookup tables
+# status rules, point times (UTC on every reading and on 'latest'), community flood reports, creek map drawing, the lookup tables
 # loading cleanly, and the rising-fast parity test (the home page's JavaScript and the data job must agree; needs
 # Node.js). A failure shows as a red X on the commit and in the Actions tab; nothing on the site changes.
 # Can also be run by hand from the Actions tab.
@@ -50,5 +50,7 @@ jobs:
         run: python scripts/test_point_times.py
       - name: Community flood reports
         run: python scripts/test_community_flood_reports.py
+      - name: Creek maps (drawing only)
+        run: python scripts/test_creek_maps.py
       - name: Rising fast, page and data job agree
         run: python scripts/test_rise_parity.py

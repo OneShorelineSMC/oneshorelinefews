@@ -1,0 +1,47 @@
+name: Build creek maps
+
+# Draws the static creek maps at the bottom of each creek's page (img/creekmaps/<creek>.svg) and the watershed
+# boundaries for the sensor map's "Watersheds" switch (data/watersheds.geojson), from USGS (creek lines, watersheds),
+# the US Census (highways) and the gauge locations in sites.json (data branch). See scripts/build_creek_maps.py.
+# Run it by hand from the Actions tab (Build creek maps > Run workflow) when a gauge is added or moved or a creek is
+# added; it also runs when the creek or gauge tables change. Commits only if a map actually changed.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "lookups/creeks.csv"
+      - "lookups/creek_gauges.csv"
+      - "scripts/build_creek_maps.py"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: creek-maps
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Gauge locations (sites.json from the data branch)
+        run: |
+          git fetch -q origin data
+          git show origin/data:sites.json > "$RUNNER_TEMP/sites.json"
+      - name: Build
+        run: python scripts/build_creek_maps.py "$RUNNER_TEMP/sites.json"
+      - name: Commit if anything changed
+        run: |
+          git config user.name  "fews-creek-maps-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add img/creekmaps data/watersheds.geojson
+          if git diff --cached --quiet; then echo "Creek maps already up to date."; exit 0; fi
+          git commit -q -m "Rebuild creek maps"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
