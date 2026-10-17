@@ -24,6 +24,7 @@ the creek line (the script says so).
 """
 import json
 import math
+import time
 import os
 import sys
 import urllib.parse
@@ -64,11 +65,20 @@ NHD_NAMES = {
 
 
 # ---------------------------------------------------------------- downloads
-def get(url, params=None):
+def get(url, params=None, tries=4):
+    """GET with retries: the USGS map services sometimes drop a connection or time out."""
     if params:
         url += ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=90) as r:
-        return r.read().decode("utf-8")
+    for k in range(tries):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=120) as r:
+                return r.read().decode("utf-8")
+        except Exception as e:   # noqa: BLE001
+            if k == tries - 1:
+                raise
+            wait = 10 * (k + 1)
+            print(f"    (retrying in {wait} s: {type(e).__name__}: {str(e)[:80]})")
+            time.sleep(wait)
 
 
 def arcgis(url, where, fields, offset_deg, bbox=COUNTY_BBOX):
@@ -82,7 +92,7 @@ def arcgis(url, where, fields, offset_deg, bbox=COUNTY_BBOX):
         d = json.loads(get(url, p))
         if "error" in d:
             raise RuntimeError(f"{url}: {d['error']}")
-        feats += d.get("features", [])
+        feats += [f for f in d.get("features", []) if f.get("geometry") and (f["geometry"].get("coordinates"))]   # skip shapeless rows
         if not d.get("exceededTransferLimit") and not (d.get("properties") or {}).get("exceededTransferLimit"):
             return feats
         start += len(d.get("features", []))
@@ -108,16 +118,19 @@ def parse_rdb(text):
 
 # ---------------------------------------------------------------- geometry helpers (lon, lat; no extra packages)
 def lines_of(geom):
+    geom = geom or {}
     t, c = geom.get("type"), geom.get("coordinates") or []
     return [c] if t == "LineString" else c if t == "MultiLineString" else []
 
 
 def rings_of(geom):
+    geom = geom or {}
     t, c = geom.get("type"), geom.get("coordinates") or []
     return c if t == "Polygon" else [r for poly in c for r in poly] if t == "MultiPolygon" else []
 
 
 def polys_of(geom):
+    geom = geom or {}
     t, c = geom.get("type"), geom.get("coordinates") or []
     return [c] if t == "Polygon" else c if t == "MultiPolygon" else []
 
@@ -371,12 +384,12 @@ def nldi_basin(g):
     if g.get("usgs_site"):
         src = f"nwissite/USGS-{g['usgs_site']}"
     else:
-        d = json.loads(get(f"{NLDI}/comid/position", {"coords": f"POINT({g['lon']} {g['lat']})"}))
+        d = json.loads(get(f"{NLDI}/comid/position", {"coords": f"POINT({g['lon']} {g['lat']})"}, tries=2))
         feats = d.get("features") or []
         if not feats:
             return None
         src = "comid/" + str((feats[0].get("properties") or {}).get("identifier") or feats[0]["properties"].get("comid"))
-    d = json.loads(get(f"{NLDI}/{src}/basin", {"simplified": "false", "splitCatchment": "true"}))
+    d = json.loads(get(f"{NLDI}/{src}/basin", {"simplified": "false", "splitCatchment": "true"}, tries=2))
     feats = d.get("features") or []
     if not feats or not feats[0].get("geometry"):
         return None
@@ -459,17 +472,29 @@ def main():
         print(f"{len(county)} County watersheds (San Mateo County / C/CAG)")
     except Exception as e:   # noqa: BLE001
         print(f"County watershed layer unavailable ({e}); using USGS")
-    hu = arcgis(WBD, "1=1", "huc12,name", 0.0004)
-    print(f"{len(hu)} subwatersheds (HUC-12)")
+    try:
+        hu = arcgis(WBD, "1=1", "huc12,name", 0.0004)
+        print(f"{len(hu)} subwatersheds (HUC-12)")
+    except Exception as e:   # noqa: BLE001
+        hu = []
+        print(f"USGS HUC-12 unavailable ({type(e).__name__}); not needed where the County layer covers the gauge")
     names = sorted({n for v in NHD_NAMES.values() for n in v})
     where = "gnis_name IN (" + ",".join("'" + n.replace("'", "''") + "'" for n in names) + ")"
-    flow = arcgis(NHD, where, "gnis_name", 0.00015)
-    print(f"{len(flow)} creek line pieces")
+    nhd_ok = True
+    try:
+        flow = arcgis(NHD, where, "gnis_name", 0.00015)
+        print(f"{len(flow)} creek line pieces (USGS NHD)")
+    except Exception as e:   # noqa: BLE001
+        flow, nhd_ok = [], False
+        print(f"USGS NHD unavailable ({type(e).__name__}); creek lines from the County streams layer instead")
     roads = []
     for layer, primary in ((2, True), (5, False)):
-        for f in arcgis(ROADS.format(layer), "1=1", "NAME,MTFCC", 0.0004):
-            f["_primary"] = primary
-            roads.append(f)
+        try:
+            for f in arcgis(ROADS.format(layer), "1=1", "NAME,MTFCC", 0.0004):
+                f["_primary"] = primary
+                roads.append(f)
+        except Exception as e:   # noqa: BLE001
+            print(f"Census highways (layer {layer}) unavailable ({type(e).__name__}); maps without them")
     print(f"{len(roads)} highway pieces")
 
     override = []
@@ -479,56 +504,64 @@ def main():
         print(f"data/creek_watersheds.geojson: {len(override)} polygons (used before NLDI)")
 
     os.makedirs(OUT_DIR, exist_ok=True)
+    failed = []
     for c in CREEKS:
-        want = set(NHD_NAMES.get(c["id"], []))
-        line = [f for f in flow if (f.get("properties") or {}).get("gnis_name") in want]
-        if not line:   # County streams layer by name (Flows to Bay map)
-            try:
-                q = "NAME LIKE '%" + c["name"].replace("'", "''").replace(" Channel", "").replace(" Creek", "") + "%'"
-                line = arcgis(COUNTY_STREAMS, q, "NAME", 0.00015)
-                if line:
-                    print(f"  {c['id']}: creek line from the County streams layer ({len(line)} pieces)")
-            except Exception as e:   # noqa: BLE001
-                print(f"  {c['id']}: County streams lookup failed: {e}")
-        if not line:   # NHD spells it differently: use the named stream(s) right at the creek's level gauges
-            near = {}
-            for g in gauges_for(c, onerain, usgs):
-                if g["kind"] != "stage":
-                    continue
-                d = 0.0025   # about 250 m
-                box = (g["lon"] - d, g["lat"] - d, g["lon"] + d, g["lat"] + d)
+        try:   # one creek's problem never stops the others (or the watershed file)
+            want = set(NHD_NAMES.get(c["id"], []))
+            line = [f for f in flow if (f.get("properties") or {}).get("gnis_name") in want]
+            if not line:   # County streams layer by name (Flows to Bay map)
                 try:
-                    for f in arcgis(NHD, "gnis_name IS NOT NULL", "gnis_name", 0.0002, box):
-                        n = (f.get("properties") or {}).get("gnis_name")
-                        if n:
-                            near[n] = near.get(n, 0) + 1
+                    q = "NAME LIKE '%" + c["name"].replace("'", "''").replace(" Channel", "").replace(" Creek", "") + "%'"
+                    line = arcgis(COUNTY_STREAMS, q, "NAME", 0.00015)
+                    if line:
+                        print(f"  {c['id']}: creek line from the County streams layer ({len(line)} pieces)")
                 except Exception as e:   # noqa: BLE001
-                    print(f"  {c['id']}: NHD lookup near {g['label']} failed: {e}")
-            if near:
-                pick = max(near, key=near.get)
-                print(f"  {c['id']}: NHD has no {sorted(want)}; the stream at its gauge is '{pick}' (add it to NHD_NAMES)")
-                q = "gnis_name = '" + pick.replace("'", "''") + "'"
-                line = arcgis(NHD, q, "gnis_name", 0.00015)
-        if not line:
-            print(f"  {c['id']}: no NHD creek line for {sorted(want) or '(no name set)'}; map without it")
-        gs = gauges_for(c, onerain, usgs)
-        for g in c.get("stages", []):   # NLDI needs each level gauge's location
-            for x in gs:
-                if x["kind"] == "stage" and x["label"] == (g.get("label") or g.get("site_name")):
-                    g["lon"], g["lat"] = x["lon"], x["lat"]
-        basins = basins_for(c, override, county)
-        svg, ws = build_svg(c, line, hu, roads, gs, basins)
-        if not svg:
-            print(f"  {c['id']}: nothing to draw; skipped")
-            continue
-        with open(os.path.join(OUT_DIR, c["id"] + ".svg"), "w", encoding="utf-8") as f:
-            f.write(svg)
-        how = "" if not basins else (basins[0].get("properties") or {}).get("source", "")
-        print(f"  {c['id']}: {len(svg) // 1024} KB; " + ("County watershed: " if how == "county" else "drains to gauge (NLDI): " if how == "USGS NLDI" else "creek_watersheds.geojson: " if basins else "HUC-12: ") + (", ".join(ws) or "-"))
+                    print(f"  {c['id']}: County streams lookup failed: {e}")
+            if not line and nhd_ok:   # NHD spells it differently: use the named stream(s) right at the creek's level gauges
+                near = {}
+                for g in gauges_for(c, onerain, usgs):
+                    if g["kind"] != "stage":
+                        continue
+                    d = 0.0025   # about 250 m
+                    box = (g["lon"] - d, g["lat"] - d, g["lon"] + d, g["lat"] + d)
+                    try:
+                        for f in arcgis(NHD, "gnis_name IS NOT NULL", "gnis_name", 0.0002, box):
+                            n = (f.get("properties") or {}).get("gnis_name")
+                            if n:
+                                near[n] = near.get(n, 0) + 1
+                    except Exception as e:   # noqa: BLE001
+                        print(f"  {c['id']}: NHD lookup near {g['label']} failed: {e}")
+                if near:
+                    pick = max(near, key=near.get)
+                    print(f"  {c['id']}: NHD has no {sorted(want)}; the stream at its gauge is '{pick}' (add it to NHD_NAMES)")
+                    q = "gnis_name = '" + pick.replace("'", "''") + "'"
+                    line = arcgis(NHD, q, "gnis_name", 0.00015)
+            if not line:
+                print(f"  {c['id']}: no NHD creek line for {sorted(want) or '(no name set)'}; map without it")
+            gs = gauges_for(c, onerain, usgs)
+            for g in c.get("stages", []):   # NLDI needs each level gauge's location
+                for x in gs:
+                    if x["kind"] == "stage" and x["label"] == (g.get("label") or g.get("site_name")):
+                        g["lon"], g["lat"] = x["lon"], x["lat"]
+            basins = basins_for(c, override, county)
+            svg, ws = build_svg(c, line, hu, roads, gs, basins)
+            if not svg:
+                print(f"  {c['id']}: nothing to draw; skipped")
+                continue
+            with open(os.path.join(OUT_DIR, c["id"] + ".svg"), "w", encoding="utf-8") as f:
+                f.write(svg)
+            how = "" if not basins else (basins[0].get("properties") or {}).get("source", "")
+            print(f"  {c['id']}: {len(svg) // 1024} KB; " + ("County watershed: " if how == "county" else "drains to gauge (NLDI): " if how == "USGS NLDI" else "creek_watersheds.geojson: " if basins else "HUC-12: ") + (", ".join(ws) or "-"))
 
+        except Exception as e:   # noqa: BLE001
+            failed.append(c["id"])
+            print(f"  {c['id']}: FAILED ({type(e).__name__}: {e}); its old map is kept")
     # watershed boundaries for the sensor map switch: the County's creek watersheds when available, else HUC-12
     os.makedirs(os.path.dirname(WATERSHEDS), exist_ok=True)
     use = county or hu
+    if not use:
+        print("No watershed boundaries this run; data/watersheds.geojson left as it was")
+        return
     fc = {"type": "FeatureCollection", "source": "San Mateo County watersheds (C/CAG, Flows to Bay)" if county else "USGS Watershed Boundary Dataset (WBD), 12-digit HU",
           "features": [{"type": "Feature", "properties": {"name": (f.get("properties") or {}).get("name"),
                                                           "huc12": (f.get("properties") or {}).get("huc12")},
@@ -536,6 +569,8 @@ def main():
     with open(WATERSHEDS, "w", encoding="utf-8") as f:
         json.dump(fc, f, separators=(",", ":"))
     print(f"data/watersheds.geojson: {len(use)} watersheds ({fc['source']}), {os.path.getsize(WATERSHEDS) // 1024} KB")
+    if failed:
+        print(f"Maps not rebuilt: {', '.join(failed)} (see above)")
 
 
 if __name__ == "__main__":
