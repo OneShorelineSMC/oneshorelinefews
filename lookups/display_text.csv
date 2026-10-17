@@ -123,6 +123,7 @@ more_creeks_intro,"Readings from gauges on other San Mateo County creeks. Flood 
 more_creeks_badge,Readings only,"Creeks page, label on each readings-only creek",,,
 more_creeks_note,"Flood levels for this creek haven't been set yet, so these are readings only, with no status. A higher or rising level doesn't by itself mean flooding. In an emergency, call 911.","Creeks page, a readings-only creek's own view (under the graphs)",,,
 no_flood_level_title,Flood levels not set yet,creek status cards: heading of the box where the level bar would be (creeks without thresholds); compact cards: footer,,,
+no_flood_level_many,"OneShoreline is still setting flood levels for these creeks. Until then, their status is based on rain in the hills above and how fast the creek is rising.",Creeks page (staff preview): one note above the cards,"Shown once, with the creeks listed; each card then says ""Flood levels not set yet""",,
 no_flood_level,"OneShoreline is still setting flood levels for this creek. Until then, its status is based on rain in the hills above and how fast the creek is rising, shown below.",creek status cards: box where the level bar would be (creeks without thresholds),Change when a creek gets thresholds in thresholds.csv (the box then disappears on its own),,
 limited_rain,Rain gauges may miss storms here,creek card footer (coverage gaps),,,
 nws_separate,This page shows creek conditions measured by OneShoreline. It is separate from National Weather Service alerts — follow whichever is more serious.,How to read this page,,,
