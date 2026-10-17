@@ -7,7 +7,7 @@ so they never drift from what the pages show. Don't edit the fact sheets by hand
 Reads (lookups/): creeks.csv, creek_gauges.csv, thresholds.csv, rain_frequency.csv, tide_stations.csv,
 settings.csv, creek_facts.csv (cities, outlet, description), gauge_facts.csv (record, reporting, history, quirks),
 rising_fast_results.csv (from scripts/evaluate_rising_fast.py), onerain_dashboard_thresholds.csv (OneRain's own
-dashboard colors and gauge alarms, for reference). Coordinates come from the site table in
+dashboard colors and sensor thresholds, for reference). Coordinates come from the site table in
 scripts/fetch_atlas14.py. Writes lookups/factsheets/<creek>.md and lookups/factsheets/README.md (index).
 """
 
@@ -53,25 +53,36 @@ def lead(m):
 
 
 GLOSSARY = [
-    "> **How to read this page**",
+    "> **Words used on this page** (the same words for both systems)",
     ">",
-    "> - **Flood level:** a creek height (or rain amount) tied to an effect downstream, such as how full the channel is "
-    "or water on a road. Only flood levels say anything about flooding.",
-    "> - **Alert level:** says how unusual the rain is, or how fast the creek is rising. Not tied to flooding.",
-    "> - **Rising fast:** the creek rose at least the set amount (for example 0.5 ft) within an hour.",
-    "> - **Creek heights** are the gauge's own reading in feet (height above the gauge's zero), not an elevation. "
-    "**Tide heights** are in feet NAVD88, a survey datum. MHHW = the average daily high tide; MLLW = the average daily low tide.",
-    "> - **1-year, 2-year, 5-year storm:** rain that heavy at that gauge has about a 63%, 39% or 18% chance in any year "
-    "(NOAA Atlas 14).",
-    "> - **Water year (WY):** October 1 to September 30, named for the year it ends.",
-    "> - **OneRain** is the system that runs the gauges and the County's dashboards; FEWS is the public flood warning site "
-    "built on its data.",
+    "> - **Threshold:** any set value that changes a color or a status, in either system.",
+    "> - **Flood level** (2026 Update): a threshold on creek height (or a rain amount) tied to an effect downstream, such "
+    "as how full the channel is or water on a road. Only flood levels say anything about flooding.",
+    "> - **Alert level** (2026 Update): a rain alert (Heavy, Very heavy, Intense: how rare the rain is) or **rising fast** "
+    "(the creek rose at least a set amount within an hour). Not tied to flooding.",
+    "> - **Status** (2026 Update): the one overall message for a creek: Flooding likely, Be ready, Stay alert or No alerts. "
+    "It comes from the flood levels and alert levels.",
+    "> - **OneRain threshold:** a named level set on a OneRain sensor (for example Flood Watch, 3.25 ft). It colors that "
+    "gauge's readings and graph; it doesn't send a message by itself.",
+    "> - **OneRain dashboard color:** the green, orange or red a OneRain dashboard gives a reading. Set separately from "
+    "the thresholds.",
+    "> - **Notification:** a message sent to people. OneRain sends these through separate *alarm* rules. The 2026 Update "
+    "sends none; it only displays.",
+    ">",
+    "> **Units.** Creek heights are the gauge's own reading in feet (above the gauge's zero), not an elevation. "
+    "Tide heights are in feet NAVD88, a survey datum; MHHW = the average daily high tide, MLLW = the average daily low tide. "
+    "A 1-, 2- or 5-year storm is rain that heavy at that gauge, with about a 63%, 39% or 18% chance in any year (NOAA Atlas 14). "
+    "Water year: October 1 to September 30, named for the year it ends.",
+    ">",
+    "> **Names.** **OneRain** is the County's existing gauge system and dashboards (what many people call \"FEWS\"). "
+    "**FEWS 2026 Update** (\"2026 Update\") is the new public creek and tide status site built on OneRain's data. These "
+    "fact sheets describe the 2026 Update and compare it with OneRain.",
 ]
 
 LINKED = {
     "Yes": "Yes",
     "Partly": "Yes, but what they mean isn't recorded",
-    "OneRain": "None in FEWS (OneRain has some; see Thresholds below)",
+    "OneRain": "None in the 2026 Update (OneRain has some; see Thresholds below)",
     "No": "None",
 }
 
@@ -102,11 +113,19 @@ def plain_rarity(txt):
     return "; ".join(out)
 
 
+def upd(t):
+    """Data tables say 'FEWS' for the new site; on the pages it is 'the 2026 Update'."""
+    t = re.sub(r"\bFEWS's\b", "the 2026 Update's", t or "")
+    t = re.sub(r"\bno FEWS gauge\b", "not a 2026 Update gauge", t)
+    t = re.sub(r"\bFEWS\b", "the 2026 Update", t)
+    return re.sub(r"(^|[.!?]\s+|:\*\*\s+)the 2026 Update", lambda m: m[1] + "The 2026 Update", t)
+
+
 def also_fews(note):
     m = re.match(r"(Same as FEWS \(thresholds.csv\)\.|Not used by FEWS\.|Differs from FEWS \(([^)]*)\)\.)\s*", note or "")
     if not m:
         return "No", note or ""
-    v = "Yes" if m[1].startswith("Same") else "No" if m[1].startswith("Not") else f"Different: {m[2].replace('FEWS: ', 'FEWS uses ')}"
+    v = "Yes" if m[1].startswith("Same") else "No" if m[1].startswith("Not") else f"Different: {m[2].replace('FEWS: ', '2026 Update uses ')}"
     return v, note[m.end():]
 
 
@@ -138,7 +157,7 @@ def main():
         cdash = [d for d in dash if d["creek"] == cid]
         dash_tide = [d for d in cdash if d["kind"] == "dashboard tide color"]
         dash_rain = [d for d in cdash if d["units"] == "in" and d["kind"] != "dashboard tide color"]
-        dash_stage = [d for d in cdash if d["kind"] == "gauge alarm threshold" and d["units"] == "ft"]
+        dash_stage = [d for d in cdash if d["kind"] == "sensor threshold" and d["units"] == "ft"]
         stage_th = [t for t in thresholds if t["creek"] == cid and t["type"] == "stage"]
         triggers = [t for t in thresholds if t["creek"] == cid and t["type"] == "rain"]
         meaning = c.get("note", "") if stage_th and "No flood levels" not in c.get("note", "") else ""
@@ -157,13 +176,13 @@ def main():
                        "or past flood?")
         elif linked == "Partly":
             descr = "; ".join(f"{d['threshold_name']} = \"{d['description']}\"" for d in or_levels if d["description"])
-            ask.append("**Flood levels:** what do these levels mean for people downstream? FEWS has no recorded meaning"
+            ask.append("**Flood levels:** what do these levels mean for people downstream? The 2026 Update has no recorded meaning"
                        + (f"; OneRain describes them as {descr}" if descr else "") + ". Who set them, and from what?")
         elif linked == "OneRain":
-            ask.append(f"**Flood levels:** FEWS has none, but OneRain has its own at {', '.join(or_sites)} (see Thresholds on this page). "
-                       "Do you know who set them and from what? Should FEWS use them?")
+            ask.append(f"**Flood levels:** the 2026 Update has none, but OneRain has its own at {', '.join(or_sites)} (see Thresholds on this page). "
+                       "Do you know who set them and from what? Should the 2026 Update use them?")
         else:
-            ask.append("**Flood levels:** FEWS has none. Do you know a creek height at " + ("any of the gauges" if len(stages) > 1 else "the gauge")
+            ask.append("**Flood levels:** the 2026 Update has none. Do you know a creek height at " + ("any of the gauges" if len(stages) > 1 else "the gauge")
                        + " where the creek leaves its banks or floods a road, or a past flood we could match to a gauge reading?")
         if triggers:
             ask.append("**Rain triggers:** are the amounts and what they show right?")
@@ -178,7 +197,7 @@ def main():
             if q.startswith("[internal]"):
                 todo.append(q[len("[internal]"):].strip())
             elif q:
-                ask.append(esc(q))
+                ask.append(esc(upd(q)))
         for g in cg:
             if "To check:" in g.get("note", ""):
                 todo.append(f"{g['label']} ({g['type']}): " + esc(g["note"].split("To check:", 1)[1].strip()))
@@ -188,7 +207,7 @@ def main():
             todo.append("Add this creek to creek_facts.csv")
 
         L = [f"# {c['name']}", "",
-             "*Draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to "
+             "*FEWS 2026 Update: draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to "
              "the review request. Everything else on the page is background.*", "",
              "> **What we need you to check**", ">"]
         L += [f"> - [ ] {a}" for a in ask]
@@ -197,17 +216,17 @@ def main():
         # ---- at a glance
         tide_txt = (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))} (average daily high tide, MHHW, "
                     f"{tide.get('mhhw_navd88_ft', '?')} ft NAVD88)" if c.get("tide_station") else
-                    "None set for this creek in FEWS (coastal creek)"
+                    "None set for this creek in the 2026 Update (coastal creek)"
                     + (f". OneRain's dashboard uses {esc(dash_tide[0]['onerain_site'])}" if dash_tide else ""))
         L += ["## At a glance", "", "| | |", "|---|---|",
-              f"| On the FEWS site | {'Public pages' if public else 'Staff preview only (not yet on the public pages)'} |",
+              f"| On the 2026 Update site | {'Public pages' if public else 'Staff preview only (not yet on the public pages)'} |",
               f"| Cities and communities | {esc(cf.get('cities', '')) or '**To add**'}"
               + (" *(draft)*" if cf.get("status", "").startswith("draft") else "") + " |",
               f"| Drains to | {esc(cf.get('drains_to', '')) or '**To add**'} |",
               f"| Description | {esc(cf.get('description', '') or c.get('intro', ''))} |",
               f"| Flood levels set? | {LINKED[linked]}" + ("; plus rain triggers" if triggers else "") + " |",
               f"| Tide station | {tide_txt} |",
-              f"| Rain totals on the FEWS page | {', '.join(dur(m) for m in c.get('rain_windows_min', '').split() if m.isdigit())} |",
+              f"| Rain totals on the 2026 Update page | {', '.join(dur(m) for m in c.get('rain_windows_min', '').split() if m.isdigit())} |",
               ""]
 
         # ---- creek level gauges
@@ -225,6 +244,9 @@ def main():
             tidal = ("Yes" if tid == "yes" else "No" if tid == "no" else "Not yet confirmed") + (f". {esc(tc)}" if tc else "")
             note = g.get("note", "").split("To check:", 1)[0].strip(" ·")
             note = "" if note.startswith("No flood levels") or note == gf.get("history_and_issues", "") else note
+            rb = re.sub(r"(Flood )?Monitoring crossings", "rises to Flood Monitoring", gf.get("rise_basis", ""))
+            rst = gf.get("rise_status", "")
+            rst = "Default setting, not yet tested on this gauge" if rst == "Default" else rst
             L += [f"### {esc(g.get('site_name') or nm)}", "", "| | |", "|---|---|",
                   f"| Source and ID | {'USGS' if usgs else 'OneRain'} {num}" + (f" ([gauge page]({link}))" if link else "") + " |",
                   f"| Location | {f'{lat:.5f}, {lon:.5f}' if lat is not None else '**To add**'} |",
@@ -233,11 +255,13 @@ def main():
                   f"| Affected by the tide? | {tidal} |",
                   f"| Rising-fast alert | " + ("Off at this gauge" if rise.lower() == "off" else
                                              f"{rise or default_rise} ft within an hour"
-                                             + ("" if rise else " (default; not yet tested on this gauge's history)")) + " |"]
+                                             + ("" if rise else " (default)")) + (f" · **{esc(rst)}**" if rst else "") + " |"]
+            if rb:
+                L.append(f"| Why this rising-fast setting | {esc(rb)} |")
             if gf.get("history_and_issues"):
                 L.append(f"| History and known issues | {esc(gf['history_and_issues'])} |")
             if note:
-                L.append(f"| Note shown on the FEWS page | {esc(note)} |")
+                L.append(f"| Note shown on the 2026 Update page | {esc(note)} |")
             L.append("")
 
             th = sorted([t for t in stage_th if t["gauge"] == g["gauge"]], key=lambda t: float(t["value"]))
@@ -253,10 +277,15 @@ def main():
                               "Warning means flooding is likely."]
                 else:
                     L += ["What they mean: **not recorded**."]
+                signed = all(t.get("checked_by") for t in th)
+                L += ["", "Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026"
+                      + ". Who set the heights, and from what study, "
+                      "survey or past flood, isn't recorded. " + ("Status: **Confirmed**." if signed else
+                      "Status: **From OneRain, basis unknown; not yet signed off.**")]
                 L += [""]
             else:
                 own = [d for d in or_levels if d["fews_gauge"] == g["gauge"]]
-                L += ["**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast)."
+                L += ["**Flood levels:** none in the 2026 Update, so this creek's status comes from alert levels only (rain and rising fast)."
                       + (" OneRain has its own levels for this gauge: see Thresholds below." if own else ""), ""]
 
             res = [r for r in results if r["gauge"] == g["gauge"]]
@@ -276,32 +305,47 @@ def main():
                     mark = " (current setting)" if r["chosen"] == "True" else ""
                     py = f"{int(r['episodes']) / y:.1f}" if y >= 1 else r["episodes"]
                     L.append(f"| {r['rule_ft']}{mark} | {py} | {r['warned']} of {r['crossings']} | {lead(r['lead_med'])} |")
-                L += ["", "Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).", "", "</details>", ""]
+                L += ["", "How settings were chosen: the highest setting that still warned before all, or all but one, of the "
+                      "big rises, ideally at least 2 hours ahead; on flashy creeks such as Belmont, kept low to protect warning time. "
+                      "Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).", "", "</details>", ""]
 
         # ---- rain
         L += ["## Rain gauges", ""]
         if not rains:
             L += ["None.", ""]
         else:
-            L += ["| Gauge | OneRain ID | Location | Where | Use in FEWS |", "|---|---|---|---|---|"]
+            L += ["| Gauge | OneRain ID | Location | Where | Use in the 2026 Update |", "|---|---|---|---|---|"]
             for g in rains:
                 nm, lat, lon = COORDS.get(g["onerain_number"].upper(), (g["label"], None, None))
                 use = ("Counts toward the creek's rain alert only (not shown on the page)" if g.get("role") == "supporting"
-                       else "Shown on the FEWS page and counts toward the rain alert")
+                       else "Shown on the 2026 Update page and counts toward the rain alert")
                 L.append(f"| {esc(g['label'])} | {g['onerain_number']} | "
                          f"{f'{lat:.5f}, {lon:.5f}' if lat is not None else '**To add**'} | {esc(g.get('where', ''))} | {use} |")
             L.append("")
             if triggers:
                 L += ["**Rain triggers** (flood levels for rain: each one sets the creek to the status shown)", "",
-                      "| Gauge | Rain within | Rain (in) | And the tide is at least | Shows | Source |", "|---|---|---|---|---|---|"]
+                      "| Gauge | Rain within | Rain (in) | And the tide is at least | Shows | Why this number | Status |",
+                      "|---|---|---|---|---|---|---|"]
+
+                def why(t):
+                    src = t.get("source", "")
+                    if "analysis of" in src:
+                        yrs = re.search(r"analysis of ([0-9–-]+ events)", src)
+                        return (f"Rain amount from an analysis of {yrs[1] if yrs else 'past events'}; tide level from OneRain alarm "
+                                "rule #34 (7.5 ft MLLW, converted to NAVD88)")
+                    return f"Copied from {src}; no study recorded"
                 L += [f"| {esc(label.get(t['gauge'], t['gauge']))} | {dur(t['minutes'])} | {t['value']} | "
                       f"{(t['tide_at_least_navd88'] + ' ft NAVD88') if t.get('tide_at_least_navd88') else '–'} | "
-                      f"{esc(t['name'])} | {esc(t['source'])} |" for t in triggers]
+                      f"{esc(t['name'])} | {esc(why(t))} | {'Confirmed' if t.get('checked_by') else 'From OneRain, not yet signed off'} |"
+                      for t in triggers]
                 L += [""]
             wins = set(KEY_MINUTES) | {int(m) for m in c.get("rain_windows_min", "").split() if m.isdigit()} \
                 | {int(d["window_min"]) for d in dash_rain if d["window_min"]}
             avail = {int(r["minutes"]) for g in rains for r in freq.get(g["onerain_number"].upper(), [])}
             wins = sorted(w for w in wins if w in avail)
+            L += ["**Rain alerts** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each "
+                  "gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a "
+                  "starting point, not yet checked against past floods on this creek.", ""]
             L += ["<details><summary>Background: rain alert levels at each gauge (no action needed)</summary>", "",
                   "The creek's rain alert uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, "
                   "Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether "
@@ -316,17 +360,18 @@ def main():
             L += ["", f"Source: {esc(src) or 'NOAA Atlas 14'}.", "", "</details>", ""]
 
         # ---- FEWS (what the site uses today) compared with OneRain
-        L += ["## Thresholds: what FEWS uses compared with OneRain", "",
-              ("FEWS shows this creek's status on its public pages." if public else
-               "On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview.")
-              + " The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself "
-              "(read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* "
-              "are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.", ""]
+        L += ["## Thresholds: the 2026 Update compared with OneRain today", "",
+              ("The 2026 Update shows this creek's status on its public pages." if public else
+               "On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview.")
+              + " The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today "
+              "(read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; "
+              "OneRain sends notifications only through separate alarm rules. The 2026 Update doesn't read any of these; they're "
+              "shown so the two systems can be compared.", ""]
         cmp_notes = []
 
         # creek height
         L += ["**Creek height (ft, gauge height)**", "",
-              "| Gauge | Level | FEWS uses | OneRain alarm | Same? |", "|---|---|---|---|---|"]
+              "| Gauge | Level | 2026 Update uses | OneRain threshold | Same? |", "|---|---|---|---|---|"]
         for g in stages:
             num = g["usgs_site"] if g.get("source", "").lower() == "usgs" else g["onerain_number"]
             name = esc(g.get("site_name") or g["label"])
@@ -337,17 +382,17 @@ def main():
                 fv, od = fews.get(k), orn.get(k)
                 ov = od["from_value"] if od else None
                 same = ("Same" if fv and ov and abs(float(fv) - float(ov)) < 0.005 else "Different" if fv and ov else
-                        "FEWS only" if fv else "OneRain only (FEWS doesn't use it)")
+                        "2026 Update only" if fv else "OneRain only (the 2026 Update doesn't use it)")
                 L.append(f"| {name} | {esc(k)} | {fv + ' ft' if fv else '–'} | "
                          + (f"{ov} ft (\"{esc(od['description'])}\")" if od else "–") + f" | {same} |")
             if not levels:
                 L.append(f"| {name} | – | none | none | – |")
             rise = g.get("rise_ft", "")
             L.append(f"| {name} | Rising fast | " + ("off" if rise.lower() == "off" else f"{rise or default_rise} ft within an hour")
-                     + " | none | FEWS only |")
+                     + " | none | 2026 Update only |")
         for d in dash_stage:
             if d["from_value"] and not d["fews_gauge"]:
-                L.append(f"| {esc(d['onerain_site'])} (not a FEWS gauge) | {esc(d['threshold_name'])} | – | "
+                L.append(f"| {esc(d['onerain_site'])} (not a 2026 Update gauge) | {esc(d['threshold_name'])} | – | "
                          f"{d['from_value']} ft (\"{esc(d['description'])}\") | OneRain only |")
                 n = also_fews(d["notes"])[1]
                 if n and n not in cmp_notes: cmp_notes.append(n)
@@ -388,9 +433,9 @@ def main():
                     lv = lvl_text(num, w)
                     fews = "; ".join(x for x in (fews, lv) if x) or "no rain level for this window"
                 else:
-                    fews = "– (FEWS doesn't use this gauge)"
+                    fews = "– (the 2026 Update doesn't use this gauge)"
                 ds = [d for d in dash_rain if d["onerain_number"].upper() == num and d["from_value"] and str(d["window_min"]) == str(w)]
-                al = [d for d in ds if d["kind"] == "gauge alarm threshold"]
+                al = [d for d in ds if d["kind"] == "sensor threshold"]
                 co = [d for d in ds if d["kind"] == "dashboard rain color" and d["color"] != "green"]
                 al_t = "; ".join(re.sub(r"^(Hourly|30-minute) rainfall intensity ", "", re.sub(r" \(OneRain level: [^)]*\)", "", d["threshold_name"])).capitalize()
                                  + f" {d['from_value']} in" for d in al) or "none"
@@ -398,23 +443,23 @@ def main():
                 rrows.append(f"| {esc(lab)} | {dur(w)} | {fews} | {al_t} | {co_t} |")
         if rrows:
             L += ["**Rain (inches within the time shown)**", "",
-                  "FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over "
-                  "windows from 15 minutes to 48 hours; only the windows OneRain or a FEWS trigger uses are listed here.", "",
-                  "| Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |", "|---|---|---|---|---|"] + rrows + [""]
+                  "The 2026 Update's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over "
+                  "windows from 15 minutes to 48 hours; only the windows OneRain or a 2026 Update trigger uses are listed here.", "",
+                  "| Gauge | Rain within | 2026 Update uses | OneRain threshold | OneRain dashboard color |", "|---|---|---|---|---|"] + rrows + [""]
         none_r = [d["onerain_site"] for d in dash_rain if not d["from_value"]]
         if none_r:
-            L += ["No OneRain rain alarms or dashboard colors on: " + "; ".join(esc(x) for x in dict.fromkeys(none_r)) + ".", ""]
+            L += ["No OneRain rain thresholds or dashboard colors on: " + "; ".join(esc(x) for x in dict.fromkeys(none_r)) + ".", ""]
         for d in dash_rain:
             n = also_fews(d["notes"])[1]
-            n = re.sub(r"(Rain alarms set on the Rain Increment sensor[^.]*\.|Only window on the [^.]*\.|Same values as the gauge[^.]*\.|No rain alarms on this gauge in OneRain\.|A 4th color row[^.]*\.|San Bruno Mountain \(41200\) has no dashboard colors\.|Pescadero and Butano dashboard; only window\.)\s*", "", n).strip()
+            n = re.sub(r"(Rain (alarms|thresholds) set on the Rain Increment sensor[^.]*\.|Only window on the [^.]*\.|Same values as the gauge[^.]*\.|No rain (alarms|thresholds) on this gauge in OneRain\.|A 4th color row[^.]*\.|San Bruno Mountain \(41200\) has no dashboard colors\.|Pescadero and Butano dashboard; only window\.)\s*", "", n).strip()
             if n and n not in cmp_notes: cmp_notes.append(n)
 
         # tide
         if c.get("tide_station") or dash_tide:
-            L += ["**Tide**", "", "| | FEWS uses | OneRain dashboard color |", "|---|---|---|"]
+            L += ["**Tide**", "", "| | 2026 Update uses | OneRain dashboard color |", "|---|---|---|"]
             fews_t = (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))}: tide graph and high-tide lines (MHHW "
                       f"{tide.get('mhhw_navd88_ft', '?')} ft NAVD88)" if c.get("tide_station") else
-                      "not linked to this creek" + (f"; FEWS shows {esc(tides[dash_tide[0]['onerain_number']]['name'])} on its "
+                      "not linked to this creek" + (f"; the 2026 Update shows {esc(tides[dash_tide[0]['onerain_number']]['name'])} on its "
                       f"{esc(tides[dash_tide[0]['onerain_number']]['used_for'])}" if dash_tide and dash_tide[0]['onerain_number'] in tides else ""))
             co = "; ".join(f"{esc(d['onerain_site'])}: {d['color']} from {d['from_value']} ft (datum not shown; assumed MLLW)"
                            for d in dash_tide if d["color"] != "green") or "none recorded"
@@ -423,33 +468,34 @@ def main():
                 n = re.sub(r"^Pescadero and Butano dashboard; ", "", d["notes"]).strip()
                 if n and n not in cmp_notes: cmp_notes.append(n[0].upper() + n[1:])
         if cmp_notes:
-            L += ["Notes:", ""] + [f"- {esc(n)}" for n in cmp_notes] + [""]
+            L += ["Notes:", ""] + [f"- {esc(upd(n))}" for n in cmp_notes] + [""]
 
         # ---- internal to-dos
         if todo:
-            L += ["<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>", ""]
+            L += ["<details><summary>Internal to-do for the project team (reviewers can skip)</summary>", ""]
             L += [f"- {t}" for t in dict.fromkeys(todo)] + ["", "</details>", ""]
-        L += ["---", "", "*Generated from the FEWS lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; "
+        L += ["---", "", "*Generated from the 2026 Update lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; "
               "edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*", ""]
 
         with open(os.path.join(OUT, f"{cid}.md"), "w", encoding="utf-8") as f:
             f.write("\n".join(L))
         index.append((c, cf, stages, rains, public, linked, len(ask)))
 
-    I = ["# Creek fact sheets: draft for review", "",
-         "One page per creek in the flood early warning system (FEWS): where it runs, its gauges, its flood levels and alerts, "
+    I = ["# FEWS 2026 Update: creek fact sheets (draft for review)", "",
+         "One page per creek in the **FEWS 2026 Update**, the new public creek and tide status site built on OneRain's gauge data "
+         "(it is not OneRain's own dashboards; each page compares the two). Each page covers where the creek runs, its gauges, its flood levels and alerts, "
          "and what those are based on. Each page opens with a short **What we need you to check** list; please answer by "
          "replying to the review request. Everything else on a page is background.", "",
          "**Flood levels set?** Yes = creek heights tied to flooding, with a recorded meaning. \"Yes, but what they mean "
-         "isn't recorded\" = heights are set but their meaning isn't written down. \"None in FEWS (OneRain has some)\" = FEWS has "
+         "isn't recorded\" = heights are set but their meaning isn't written down. \"None in the 2026 Update (OneRain has some)\" = the 2026 Update has "
          "none, but OneRain's own system has levels whose basis isn't recorded. None = no creek height is tied to flooding "
          "yet; the creek's status comes from rain and how fast it is rising.", "",
-         "| Creek | On the FEWS site | Cities and communities | Creek gauges | Rain gauges | Flood levels set? | Questions |",
+         "| Creek | On the 2026 Update site | Cities and communities | Creek gauges | Rain gauges | Flood levels set? | Questions |",
          "|---|---|---|---|---|---|---|"]
     for c, cf, stages, rains, public, linked, nq in index:
         I.append(f"| [{c['name']}]({c['creek']}.md) | {'Public pages' if public else 'Staff preview only'} | "
                  f"{esc(cf.get('cities', ''))} | {len(stages)} | {len(rains)} | {LINKED[linked]} | {nq} |")
-    I += ["", "*Generated from the FEWS lookup tables by `scripts/build_creek_factsheets.py`; edit the tables "
+    I += ["", "*Generated from the 2026 Update lookup tables by `scripts/build_creek_factsheets.py`; edit the tables "
           "(`creek_facts.csv`, `gauge_facts.csv`, `thresholds.csv`, `onerain_dashboard_thresholds.csv` and others in `lookups/`), "
           "not these pages.*"]
     with open(os.path.join(OUT, "README.md"), "w", encoding="utf-8") as f:
