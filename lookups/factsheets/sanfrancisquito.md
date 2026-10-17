@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** FEWS has none, but OneRain has its own at San Francisquito Creek at Stanford (see the appendix). Do you know who set them and from what? Should FEWS use them?
+> - [ ] **Flood levels:** FEWS has none, but OneRain has its own at San Francisquito Creek at Stanford (see Thresholds on this page). Do you know who set them and from what? Should FEWS use them?
 
 > **How to read this page**
 >
@@ -26,7 +26,7 @@
 | Cities and communities | Woodside; Portola Valley; Menlo Park; East Palo Alto; Palo Alto; Stanford (unincorporated Santa Clara County) *(draft)* |
 | Drains to | San Francisco Bay |
 | Description | Large creek on the San Mateo / Santa Clara county line; the USGS gauge is at Stanford. |
-| Flood levels set? | None in FEWS (OneRain has some; see the appendix) |
+| Flood levels set? | None in FEWS (OneRain has some; see Thresholds below) |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
 | Rain totals on the FEWS page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -44,7 +44,7 @@
 | Rising-fast alert | 0.5 ft within an hour |
 | History and known issues | USGS data approved through spring 2026, provisional since Apr 2026. |
 
-**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see the appendix.
+**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
 
 <details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
@@ -90,19 +90,28 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-**Creek height**
+**Creek height (ft, gauge height)**
 
-| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
-|---|---|---|---|---|---|
-| San Francisquito Creek at Stanford | Flood Monitoring | Potential flooding | 11.00 | No | 2 of 19 years (highest 13.70 ft) |
-| San Francisquito Creek at Stanford | Flood Watch | Flooding likely | 12.00 | No | 1 of 19 years (highest 13.70 ft) |
-| San Francisquito Creek at Stanford | Flood Warning | Projected flooding in downstream reaches | 12.80 | No | 1 of 19 years (highest 13.70 ft) |
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| San Francisquito Creek at Stanford | Flood Monitoring | – | 11.00 ft ("Potential flooding") | OneRain only (FEWS doesn't use it) |
+| San Francisquito Creek at Stanford | Flood Watch | – | 12.00 ft ("Flooding likely") | OneRain only (FEWS doesn't use it) |
+| San Francisquito Creek at Stanford | Flood Warning | – | 12.80 ft ("Projected flooding in downstream reaches") | OneRain only (FEWS doesn't use it) |
+| San Francisquito Creek at Stanford | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
-No OneRain alarms are set on: Trappers Trail; Wunderlich County Park; Windy Hill Open Space Preserve.
+How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Monitoring 11.00 ft: 2 of 19 years (highest 13.70 ft); Flood Watch 12.00 ft: 1 of 19 years (highest 13.70 ft); Flood Warning 12.80 ft: 1 of 19 years (highest 13.70 ft).
+
+No OneRain rain alarms or dashboard colors on: Trappers Trail; Wunderlich County Park; Windy Hill Open Space Preserve.
+
+**Tide**
+
+| | FEWS uses | OneRain dashboard color |
+|---|---|---|
+| Tide | NOAA 9414523 Redwood City: tide graph and high-tide lines (MHHW 7.02 ft NAVD88) | none recorded |
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

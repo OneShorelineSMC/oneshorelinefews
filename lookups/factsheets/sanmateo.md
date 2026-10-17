@@ -83,23 +83,36 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-**Rain**
+**Creek height (ft, gauge height)**
 
-| Gauge | Kind | Rain within | Color | Rain (in) | OneRain name | Also a FEWS level? | How rare at this gauge |
-|---|---|---|---|---|---|---|---|
-| **to confirm** [1] | Dashboard color | 3 hr | Green | 0–0.799 | – | No | – |
-| **to confirm** | Dashboard color | 3 hr | Orange | 0.800–0.999 | – | No | less than a 1-year storm (0.931 in) |
-| **to confirm** | Dashboard color | 3 hr | Red | 1.000 and up | – | No | between a 1- and 2-year storm (0.931–1.11 in) |
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| San Mateo Creek Below Crystal Springs Reservoir | – | none | none | – |
+| San Mateo Creek Below Crystal Springs Reservoir | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
-No OneRain alarms are set on: Crystal Springs Cottage.
+**Rain (inches within the time shown)**
+
+FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over windows from 15 minutes to 48 hours; only the windows OneRain or a FEWS trigger uses are listed here.
+
+| Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
+|---|---|---|---|---|
+| to confirm | 3 hr | – (FEWS doesn't use this gauge) | none | orange from 0.800 in; red from 1.000 in |
+
+No OneRain rain alarms or dashboard colors on: Crystal Springs Cottage.
+
+**Tide**
+
+| | FEWS uses | OneRain dashboard color |
+|---|---|---|
+| Tide | NOAA 9414750 Alameda: tide graph and high-tide lines (MHHW 6.37 ft NAVD88) | none recorded |
 
 Notes:
 
-1. Only window on the San Mateo Creek dashboard. Comparison assumes Crystal Springs Cottage (CSC), the gauge FEWS uses.
+- Comparison assumes Crystal Springs Cottage (CSC), the gauge FEWS uses.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

@@ -94,23 +94,30 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+FEWS shows this creek's status on its public pages. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-**Creek height**
+**Creek height (ft, gauge height)**
 
-| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
-|---|---|---|---|---|---|
-| San Bruno Creek at First Avenue [1] | Flood Monitoring | Potential flooding | 2.40 | Yes | – |
-| San Bruno Creek at First Avenue [1] | Flood Watch | Flooding likely | 3.60 | Yes | – |
-| San Bruno Creek at First Avenue [1] | Flood Warning | Projected flooding in downstream reaches | 4.80 | Yes | – |
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| San Bruno Creek at First Avenue | Flood Monitoring | 2.40 ft | 2.40 ft ("Potential flooding") | Same |
+| San Bruno Creek at First Avenue | Flood Watch | 3.60 ft | 3.60 ft ("Flooding likely") | Same |
+| San Bruno Creek at First Avenue | Flood Warning | 4.80 ft | 4.80 ft ("Projected flooding in downstream reaches") | Same |
+| San Bruno Creek at First Avenue | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
-No OneRain alarms are set on: San Bruno Creek at First Avenue; San Bruno Mountain.
+No OneRain rain alarms or dashboard colors on: San Bruno Creek at First Avenue; San Bruno Mountain.
+
+**Tide**
+
+| | FEWS uses | OneRain dashboard color |
+|---|---|---|
+| Tide | NOAA 9414750 Alameda: tide graph and high-tide lines (MHHW 6.37 ft NAVD88) | none recorded |
 
 Notes:
 
-1. Sensor shows Out of Service in OneRain.
+- OneRain shows this gauge's creek-level sensor as Out of Service.
 
 ---
 

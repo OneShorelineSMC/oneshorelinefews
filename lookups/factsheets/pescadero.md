@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** FEWS has none, but OneRain has its own at Pescadero Creek near Pescadero, Butano Creek near Cloverdale Road (see the appendix). Do you know who set them and from what? Should FEWS use them?
+> - [ ] **Flood levels:** FEWS has none, but OneRain has its own at Pescadero Creek near Pescadero, Butano Creek near Cloverdale Road (see Thresholds on this page). Do you know who set them and from what? Should FEWS use them?
 > - [ ] **Monterey tide color:** is OneRain's 7 ft measured from MLLW (the average daily low tide)? The screen doesn't say.
 > - [ ] **Butano rain alarm:** OneRain's 6-hour 'Rainfall warning' (1.04 in, OneRain severity 'Critical') fires below the Butano dashboard's orange (1.2 in) and red (1.44 in). Which is intended?
 
@@ -28,7 +28,7 @@
 | Cities and communities | Unincorporated Pescadero; Loma Mar; La Honda area *(draft)* |
 | Drains to | Pescadero Marsh, then the Pacific Ocean |
 | Description | Rural coastal creek; the town of Pescadero floods from Pescadero and Butano Creeks. |
-| Flood levels set? | None in FEWS (OneRain has some; see the appendix) |
+| Flood levels set? | None in FEWS (OneRain has some; see Thresholds below) |
 | Tide station | None set for this creek in FEWS (coastal creek). OneRain's dashboard uses Monterey tide (NOAA 9413450) |
 | Rain totals on the FEWS page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -75,7 +75,7 @@ Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Rising-fast alert | 1.0 ft within an hour |
 | History and known issues | Typical water level has crept up over the record (channel change). |
 
-**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see the appendix.
+**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
 
 <details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
@@ -113,43 +113,46 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-**Rain**
+**Creek height (ft, gauge height)**
 
-| Gauge | Kind | Rain within | Color | Rain (in) | OneRain name | Also a FEWS level? | How rare at this gauge |
-|---|---|---|---|---|---|---|---|
-| Butano Creek near Cloverdale Road [1] | Dashboard color | 6 hr | Green | 0–1.199 | – | No | – |
-| Butano Creek near Cloverdale Road | Dashboard color | 6 hr | Orange | 1.2–1.439 | – | No | less than a 1-year storm (1.46 in) |
-| Butano Creek near Cloverdale Road | Dashboard color | 6 hr | Red | 1.44 and up | – | No | less than a 1-year storm (1.46 in) |
-| Butano Creek near Cloverdale Road [2] | Alarm | 6 hr | Red | 1.04 and up | Rainfall warning | No | less than a 1-year storm (1.46 in) |
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| Pescadero Creek at Stage Road | – | none | none | – |
+| Pescadero Creek at Stage Road | Rising fast | 1.0 ft within an hour | none | FEWS only |
+| Pescadero Creek near Pescadero | Flood Watch | – | 11.20 ft ("Flooding likely") | OneRain only (FEWS doesn't use it) |
+| Pescadero Creek near Pescadero | Flood Warning | – | 13.25 ft ("Projected flooding in downstream reaches") | OneRain only (FEWS doesn't use it) |
+| Pescadero Creek near Pescadero | Rising fast | 1.0 ft within an hour | none | FEWS only |
+| Butano Creek near Cloverdale Road (not a FEWS gauge) | Flood Watch | – | 10.10 ft ("Flooding likely") | OneRain only |
+| Butano Creek near Cloverdale Road (not a FEWS gauge) | Flood Warning | – | 11.80 ft ("Flooding likely in downstream reaches") | OneRain only |
 
-**Creek height**
+How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Watch 11.20 ft: 7 of 19 years (highest 16.93 ft); Flood Warning 13.25 ft: 4 of 19 years (highest 16.93 ft).
 
-| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
-|---|---|---|---|---|---|
-| Pescadero Creek near Pescadero | Flood Watch | Flooding likely | 11.20 | No | 7 of 19 years (highest 16.93 ft) |
-| Pescadero Creek near Pescadero | Flood Warning | Projected flooding in downstream reaches | 13.25 | No | 4 of 19 years (highest 16.93 ft) |
-| Butano Creek near Cloverdale Road [3] | Flood Watch | Flooding likely | 10.10 | No | – |
-| Butano Creek near Cloverdale Road [3] | Flood Warning | Flooding likely in downstream reaches | 11.80 | No | – |
+**Rain (inches within the time shown)**
+
+FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over windows from 15 minutes to 48 hours; only the windows OneRain or a FEWS trigger uses are listed here.
+
+| Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
+|---|---|---|---|---|
+| Butano Creek near Cloverdale Road | 6 hr | – (FEWS doesn't use this gauge) | Rainfall warning 1.04 in | orange from 1.2 in; red from 1.44 in |
+
+No OneRain rain alarms or dashboard colors on: La Honda.
 
 **Tide**
 
-| Station | Color | Range | Note |
-|---|---|---|---|
-| Monterey tide (NOAA 9413450) [4] | Green | -10 to 6.999 ft | Datum not shown in OneRain (assumed MLLW) |
-| Monterey tide (NOAA 9413450) | Orange | 7 ft and up | Datum not shown in OneRain (assumed MLLW) |
-
-No OneRain alarms are set on: La Honda; Pescadero Creek at Stage Road.
+| | FEWS uses | OneRain dashboard color |
+|---|---|---|
+| Tide | not linked to this creek; FEWS shows Monterey on its Coastside Tides (phone page and kiosk tab) | Monterey tide (NOAA 9413450): orange from 7 ft (datum not shown; assumed MLLW) |
 
 Notes:
 
-1. Pescadero and Butano dashboard; only window. The dashboard lists the site as 'Butano'; staff confirmed it is 41152. FEWS uses La Honda for Pescadero, not Butano.
-2. Set on OneRain's rolling 6-hour total sensor. Lower than the Butano dashboard colors (orange 1.2, red 1.44 in / 6 hr).
-3. Butano Creek (no FEWS gauge); sensor is labeled backup.
-4. Pescadero and Butano dashboard; no red level. If the 7 ft is measured from MLLW, it equals about 7.14 ft NAVD88: above the 1-year tide (6.87 ft NAVD88) FEWS uses to mark Coastside King Tides, and close to the highest tide the tide table predicts (7.21 ft NAVD88). The highest tide NOAA has measured at Monterey is 7.88 ft MLLW (Jan 27, 1983).
+- Butano Creek (no FEWS gauge); sensor is labeled backup.
+- The dashboard lists the site as 'Butano'; staff confirmed it is 41152. FEWS uses La Honda for Pescadero, not Butano.
+- Set on OneRain's rolling 6-hour total sensor. Lower than the Butano dashboard colors (orange 1.2, red 1.44 in / 6 hr).
+- No red level. If the 7 ft is measured from MLLW, it equals about 7.14 ft NAVD88: above the 1-year tide (6.87 ft NAVD88) FEWS uses to mark Coastside King Tides, and close to the highest tide the tide table predicts (7.21 ft NAVD88). The highest tide NOAA has measured at Monterey is 7.88 ft MLLW (Jan 27, 1983).
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

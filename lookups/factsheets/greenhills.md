@@ -82,11 +82,24 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-No OneRain alarms are set on: Pilarcitos Dam; Green Hills Creek.
+**Creek height (ft, gauge height)**
+
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| Green Hills Creek at Green Hills Country Club | – | none | none | – |
+| Green Hills Creek at Green Hills Country Club | Rising fast | 0.5 ft within an hour | none | FEWS only |
+
+No OneRain rain alarms or dashboard colors on: Pilarcitos Dam.
+
+**Tide**
+
+| | FEWS uses | OneRain dashboard color |
+|---|---|---|
+| Tide | NOAA 9414750 Alameda: tide graph and high-tide lines (MHHW 6.37 ft NAVD88) | none recorded |
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

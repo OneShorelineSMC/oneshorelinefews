@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** FEWS has none, but OneRain has its own at San Gregorio Creek at San Gregorio (see the appendix). Do you know who set them and from what? Should FEWS use them?
+> - [ ] **Flood levels:** FEWS has none, but OneRain has its own at San Gregorio Creek at San Gregorio (see Thresholds on this page). Do you know who set them and from what? Should FEWS use them?
 
 > **How to read this page**
 >
@@ -26,7 +26,7 @@
 | Cities and communities | Unincorporated San Gregorio; La Honda (upper watershed) *(draft)* |
 | Drains to | Pacific Ocean at San Gregorio State Beach |
 | Description | Rural coastal creek. |
-| Flood levels set? | None in FEWS (OneRain has some; see the appendix) |
+| Flood levels set? | None in FEWS (OneRain has some; see Thresholds below) |
 | Tide station | None set for this creek in FEWS (coastal creek) |
 | Rain totals on the FEWS page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -44,7 +44,7 @@
 | Rising-fast alert | 1.0 ft within an hour |
 | History and known issues | Typical water level rose about 2 ft in 2016-17 and stayed higher for years (channel change). |
 
-**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see the appendix.
+**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
 
 <details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
@@ -82,20 +82,23 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-**Creek height**
+**Creek height (ft, gauge height)**
 
-| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
-|---|---|---|---|---|---|
-| San Gregorio Creek at San Gregorio | Flood Monitoring | Potential flooding | 15.00 | No | 4 of 19 years (highest 18.74 ft) |
-| San Gregorio Creek at San Gregorio | Flood Watch | Flooding probable with continued rain | 17.70 | No | 3 of 19 years (highest 18.74 ft) |
-| San Gregorio Creek at San Gregorio | Flood Warning | Flooding likely in downstream reaches | 21.00 | No | 0 of 19 years (highest 18.74 ft) |
-| San Gregorio Creek at San Gregorio | Major Flood Stage | Damaging flooding | 25.00 | No | 0 of 19 years (highest 18.74 ft) |
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| San Gregorio Creek at San Gregorio | Flood Monitoring | – | 15.00 ft ("Potential flooding") | OneRain only (FEWS doesn't use it) |
+| San Gregorio Creek at San Gregorio | Flood Watch | – | 17.70 ft ("Flooding probable with continued rain") | OneRain only (FEWS doesn't use it) |
+| San Gregorio Creek at San Gregorio | Flood Warning | – | 21.00 ft ("Flooding likely in downstream reaches") | OneRain only (FEWS doesn't use it) |
+| San Gregorio Creek at San Gregorio | Major Flood Stage | – | 25.00 ft ("Damaging flooding") | OneRain only (FEWS doesn't use it) |
+| San Gregorio Creek at San Gregorio | Rising fast | 1.0 ft within an hour | none | FEWS only |
 
-No OneRain alarms are set on: La Honda.
+How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Monitoring 15.00 ft: 4 of 19 years (highest 18.74 ft); Flood Watch 17.70 ft: 3 of 19 years (highest 18.74 ft); Flood Warning 21.00 ft: 0 of 19 years (highest 18.74 ft); Major Flood Stage 25.00 ft: 0 of 19 years (highest 18.74 ft).
+
+No OneRain rain alarms or dashboard colors on: La Honda.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

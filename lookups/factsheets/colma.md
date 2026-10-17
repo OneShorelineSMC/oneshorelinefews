@@ -96,33 +96,35 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+FEWS shows this creek's status on its public pages. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-**Rain**
+**Creek height (ft, gauge height)**
 
-| Gauge | Kind | Rain within | Color | Rain (in) | OneRain name | Also a FEWS level? | How rare at this gauge |
-|---|---|---|---|---|---|---|---|
-| Colma Creek at Orange Memorial Park [1] | Dashboard color | 6 hr | Green | 0–1.499 | – | No | – |
-| Colma Creek at Orange Memorial Park | Dashboard color | 6 hr | Orange | 1.50–1.999 | – | No | between a 2- and 5-year storm (1.38–1.69 in) |
-| Colma Creek at Orange Memorial Park | Dashboard color | 6 hr | Red | 2 and up | – | No | between a 10- and 25-year storm (1.95–2.32 in) |
-| Colma Creek at Orange Memorial Park [2] | Alarm | 1 hr | Orange | 0.80 and up | Hourly rainfall intensity flood warning | No | between a 10- and 25-year storm (0.772–0.918 in) |
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| Colma Creek at Orange Memorial Park | Flood Monitoring | 3.40 ft | 3.40 ft ("Potential flooding") | Same |
+| Colma Creek at Orange Memorial Park | Flood Watch | 5.00 ft | 5.00 ft ("Flooding likely") | Same |
+| Colma Creek at Orange Memorial Park | Flood Warning | 6.75 ft | 6.75 ft ("Flooding likely in downstream reaches") | Same |
+| Colma Creek at Orange Memorial Park | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
-**Creek height**
+**Rain (inches within the time shown)**
 
-| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
-|---|---|---|---|---|---|
-| Colma Creek at Orange Memorial Park | Flood Monitoring | Potential flooding | 3.40 | Yes | – |
-| Colma Creek at Orange Memorial Park | Flood Watch | Flooding likely | 5.00 | Yes | – |
-| Colma Creek at Orange Memorial Park | Flood Warning | Flooding likely in downstream reaches | 6.75 | Yes | – |
+FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over windows from 15 minutes to 48 hours; only the windows OneRain or a FEWS trigger uses are listed here.
 
-No OneRain alarms are set on: San Bruno Mountain.
+| Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
+|---|---|---|---|---|
+| Orange Memorial Park | 1 hr | alerts: Heavy 0.456, Very heavy 0.546, Intense 0.669 in | Flood warning 0.80 in | none |
+| Orange Memorial Park | 6 hr | alerts: Heavy 1.15, Very heavy 1.38, Intense 1.69 in | none | orange from 1.50 in; red from 2 in |
 
-Notes:
+No OneRain rain alarms or dashboard colors on: San Bruno Mountain.
 
-1. Only window on the Colma dashboard. A 4th color row (orange) has From/To blank and colors nothing. San Bruno Mountain (41200) has no dashboard colors.
-2. Rain alarms set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site.
+**Tide**
+
+| | FEWS uses | OneRain dashboard color |
+|---|---|---|
+| Tide | NOAA 9414750 Alameda: tide graph and high-tide lines (MHHW 6.37 ft NAVD88) | none recorded |
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

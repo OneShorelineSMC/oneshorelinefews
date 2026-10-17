@@ -135,36 +135,42 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Appendix: OneRain settings (for comparison only)
+## Thresholds: what FEWS uses compared with OneRain
 
-These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
+FEWS shows this creek's status on its public pages. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
 
-**Rain**
+**Creek height (ft, gauge height)**
 
-| Gauge | Kind | Rain within | Color | Rain (in) | OneRain name | Also a FEWS level? | How rare at this gauge |
-|---|---|---|---|---|---|---|---|
-| Atherton Channel upstream of CalTrain [1] | Dashboard color | 30 min | Green | 0–0.399 | – | No | – |
-| Atherton Channel upstream of CalTrain | Dashboard color | 30 min | Orange | 0.400–0.449 | – | No | between a 2- and 5-year storm (0.343–0.439 in) |
-| Atherton Channel upstream of CalTrain | Dashboard color | 30 min | Red | 0.45 and up | – | No | between a 5- and 10-year storm (0.439–0.518 in) |
-| Atherton Channel upstream of CalTrain [2] | Alarm | 1 hr | Orange | 0.40 and up | Hourly rainfall intensity flood watch | No | between a 1- and 2-year storm (0.383–0.483 in) |
-| Atherton Channel upstream of CalTrain [2] | Alarm | 1 hr | Orange | 0.45 and up | Hourly rainfall intensity flood warning | No | between a 1- and 2-year storm (0.383–0.483 in) |
+| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+|---|---|---|---|---|
+| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | 3.18 ft | 3.18 ft ("Potential flooding") | Same |
+| Atherton Channel at Alameda de las Pulgas | Flood Watch | 4.60 ft | 4.60 ft ("Flooding probable with continued rain") | Same |
+| Atherton Channel at Alameda de las Pulgas | Flood Warning | 5.65 ft | 5.65 ft ("Active flooding likely to occur downstream") | Same |
+| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | 10.40 ft | 10.40 ft ("Water detected on road") | Same |
+| Atherton Channel at Alameda de las Pulgas | Rising fast | 0.5 ft within an hour | none | FEWS only |
+| Atherton Channel upstream of CalTrain | Flood Monitoring | 2.80 ft | 2.80 ft ("Potential flooding") | Same |
+| Atherton Channel upstream of CalTrain | Flood Watch | 4.10 ft | 4.10 ft ("Flooding probable with continued rain") | Same |
+| Atherton Channel upstream of CalTrain | Flood Warning | 5.50 ft | 5.50 ft ("Active flooding likely to occur downstream") | Same |
+| Atherton Channel upstream of CalTrain | Rising fast | 0.5 ft within an hour | none | FEWS only |
 
-**Creek height**
+**Rain (inches within the time shown)**
 
-| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
-|---|---|---|---|---|---|
-| Atherton Channel upstream of CalTrain | Flood Monitoring | Potential flooding | 2.80 | Yes | – |
-| Atherton Channel upstream of CalTrain | Flood Watch | Flooding probable with continued rain | 4.10 | Yes | – |
-| Atherton Channel upstream of CalTrain | Flood Warning | Active flooding likely to occur downstream | 5.50 | Yes | – |
-| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | Potential flooding | 3.18 | Yes | – |
-| Atherton Channel at Alameda de las Pulgas | Flood Watch | Flooding probable with continued rain | 4.60 | Yes | – |
-| Atherton Channel at Alameda de las Pulgas | Flood Warning | Active flooding likely to occur downstream | 5.65 | Yes | – |
-| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | Water detected on road | 10.40 | Yes | – |
+FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over windows from 15 minutes to 48 hours; only the windows OneRain or a FEWS trigger uses are listed here.
+
+| Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
+|---|---|---|---|---|
+| Caltrain | 30 min | alerts: Heavy 0.272, Very heavy 0.343, Intense 0.439 in | none | orange from 0.400 in; red from 0.45 in |
+| Caltrain | 1 hr | alerts: Heavy 0.383, Very heavy 0.483, Intense 0.618 in | Flood watch 0.40 in; Flood warning 0.45 in | none |
+
+**Tide**
+
+| | FEWS uses | OneRain dashboard color |
+|---|---|---|
+| Tide | NOAA 9414523 Redwood City: tide graph and high-tide lines (MHHW 7.02 ft NAVD88) | none recorded |
 
 Notes:
 
-1. Only window on the Atherton dashboard. Same values as the gauge's hourly alarms (0.40 / 0.45 in) but over 30 min.
-2. Rain alarms set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site.
+- 40 / 0.45 in) but over 30 min.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 
