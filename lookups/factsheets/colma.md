@@ -25,7 +25,7 @@
 | On the FEWS site | Public pages |
 | Cities and communities | Daly City; Colma; South San Francisco *(draft)* |
 | Drains to | San Francisco Bay at South San Francisco |
-| Description | Urban creek from San Bruno Mountain and Daly City through Colma to South San Francisco; the gauge is at Orange Memorial Park and the thresholds are for the community downstream. |
+| Description | Urban creek from San Bruno Mountain and Daly City through Colma to South San Francisco; the gauge is at Orange Memorial Park and the flood levels are for the community downstream. |
 | Flood levels set? | Yes |
 | Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
 | Rain totals on the FEWS page | 1 hr, 6 hr, 24 hr |
@@ -40,7 +40,7 @@
 | Location | 37.65379, -122.42669 |
 | Reports | Every 12 hours plus extra readings in some storms until May 2025; hourly plus extra storm readings since Oct 2025 |
 | Record starts | Jun 2020 (public OneRain pages) |
-| Affected by the tide? | Yes. Tidal (staff, Oct 16, 2026): tidally influenced at Orange Memorial Park; dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide; storm-time backwater not yet measured |
+| Affected by the tide? | Yes. Staff (Oct 16, 2026): tidally influenced at Orange Memorial Park. A dry-weather check (Oct 12-14, 2026) saw 0.04 ft or less of movement with the tide, so the tide likely matters mainly in storms, when high tides can back water up the creek; not yet measured |
 | Rising-fast alert | 0.5 ft within an hour (default; not yet tested on this gauge's history) |
 | History and known issues | Outages: Jun 23 - Oct 6, 2020; Nov 24 - Dec 15, 2021; May 29 - Oct 16, 2025. Sensor faults: Jul 15, 2022 (readings to about 16.7 ft); Aug 18, 2022 (one-reading spike to 4.56 ft). When it switches from hourly to faster readings in a storm, the rising-fast check can miss the rise (RISING_FAST_BASIS.md section 8). |
 
@@ -107,10 +107,28 @@ These are set in OneRain itself, on its dashboards (colors) and on the gauges (a
 | Colma Creek at Orange Memorial Park [1] | Dashboard color | 6 hr | Green | 0–1.499 | – | No | – |
 | Colma Creek at Orange Memorial Park | Dashboard color | 6 hr | Orange | 1.50–1.999 | – | No | between a 2- and 5-year storm (1.38–1.69 in) |
 | Colma Creek at Orange Memorial Park | Dashboard color | 6 hr | Red | 2 and up | – | No | between a 10- and 25-year storm (1.95–2.32 in) |
+| Colma Creek at Orange Memorial Park [2] | Alarm | 1 hr | Orange | 0.80 and up | Hourly rainfall intensity flood warning | No | between a 10- and 25-year storm (0.772–0.918 in) |
+
+**Creek height**
+
+| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
+|---|---|---|---|---|---|
+| Colma Creek at Orange Memorial Park | Flood Monitoring | Potential flooding | 3.40 | Yes | – |
+| Colma Creek at Orange Memorial Park | Flood Watch | Flooding likely | 5.00 | Yes | – |
+| Colma Creek at Orange Memorial Park | Flood Warning | Flooding likely in downstream reaches | 6.75 | Yes | – |
+
+No OneRain alarms are set on: San Bruno Mountain.
 
 Notes:
 
 1. Only window on the Colma dashboard. A 4th color row (orange) has From/To blank and colors nothing. San Bruno Mountain (41200) has no dashboard colors.
+2. Rain alarms set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site.
+
+<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
+
+- Ask OneRain how alarms on a Rain Increment sensor are checked: each report on its own, or rain summed over the window in the alarm's name? If each report on its own, these alarms may rarely fire.
+
+</details>
 
 ---
 

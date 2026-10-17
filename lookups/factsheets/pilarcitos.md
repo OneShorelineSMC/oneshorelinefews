@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** FEWS has none. Do you know a creek height at any of the gauges where the creek leaves its banks or floods a road, or a past flood we could match to a gauge reading?
+> - [ ] **Flood levels:** FEWS has none, but OneRain has its own at Pilarcitos Creek at Half Moon Bay (see the appendix). Do you know who set them and from what? Should FEWS use them?
 
 > **How to read this page**
 >
@@ -26,7 +26,7 @@
 | Cities and communities | Half Moon Bay; unincorporated Pilarcitos Canyon (SFPUC lands above Stone Dam) *(draft)* |
 | Drains to | Pacific Ocean at Half Moon Bay |
 | Description | Coastal creek regulated by Pilarcitos Lake and Stone Dam in its upper reaches. |
-| Flood levels set? | None |
+| Flood levels set? | None in FEWS (OneRain has some; see the appendix) |
 | Tide station | None set for this creek in FEWS (coastal creek) |
 | Rain totals on the FEWS page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -132,7 +132,7 @@ Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Affected by the tide? | No |
 | Rising-fast alert | 0.5 ft within an hour |
 
-**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast).
+**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see the appendix.
 
 <details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
@@ -174,7 +174,16 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
 
-None recorded yet.
+**Creek height**
+
+| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
+|---|---|---|---|---|---|
+| Pilarcitos Creek at Half Moon Bay | Flood Monitoring | Potential flooding | 7.50 | No | 16 of 19 years (highest 14.64 ft) |
+| Pilarcitos Creek at Half Moon Bay | Flood Watch | Flooding probable with continued rain | 9.10 | No | 10 of 19 years (highest 14.64 ft) |
+| Pilarcitos Creek at Half Moon Bay | Flood Warning | Flooding likely in downstream reaches | 17.00 | No | 0 of 19 years (highest 14.64 ft) |
+| Pilarcitos Creek at Half Moon Bay | Major Flood Stage | Damaging flooding | 24.00 | No | 0 of 19 years (highest 14.64 ft) |
+
+No OneRain alarms are set on: Pilarcitos Dam.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

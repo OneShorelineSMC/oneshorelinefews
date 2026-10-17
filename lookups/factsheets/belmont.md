@@ -9,7 +9,7 @@
 > - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 > - [ ] **Rain triggers:** are the amounts and what they show right?
 > - [ ] **Flooding likely (rain + tide):** the tide part (6.32 ft NAVD88) is below the average daily high tide at Redwood City (MHHW 7.02 ft), so it is met on most days' higher high tide. Is that the intended tide level?
-> - [ ] FEWS shows 'Flooding likely' at 0.20 in / 30 min (thresholds.csv, citing this dashboard), where the dashboard only turns orange; red starts at 0.25 in. Which should FEWS use?
+> - [ ] **Belmont 30-minute rain trigger:** FEWS shows 'Flooding likely' when 30-minute rain reaches 0.20 in. OneRain calls 0.20 in 'Potential for flooding' (orange) and 0.25 in 'Flooding likely' (red). Should FEWS's trigger be 0.25 in?
 
 > **How to read this page**
 >
@@ -28,7 +28,7 @@
 | On the FEWS site | Public pages |
 | Cities and communities | Belmont; San Carlos; unincorporated Harbor Industrial Area *(draft)* |
 | Drains to | Belmont Slough, then San Francisco Bay |
-| Description | Flashy urban creek; frequent street flooding downstream; thresholds are for the Harbor Industrial Area. |
+| Description | Flashy urban creek; frequent street flooding downstream; flood levels are for the Harbor Industrial Area. |
 | Flood levels set? | Yes; plus rain triggers |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
 | Rain totals on the FEWS page | 30 min, 1 hr, 4 hr, 24 hr |
@@ -43,7 +43,7 @@
 | Location | 37.51719, -122.27125 |
 | Reports | On change: every 12 hours in dry weather, every few minutes in storms |
 | Record starts | Oct 2019 or earlier (pulled from Oct 1, 2019) |
-| Affected by the tide? | No. Dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide |
+| Affected by the tide? | No. Dry-weather check (Oct 12-14, 2026): moved 0.04 ft or less with the tide |
 | Rising-fast alert | 0.5 ft within an hour |
 | History and known issues | 27 single-reading sensor spikes of 1 ft or more from Oct 2019 to 2022 (e.g. 0.09 to 7.97 to 0.08 ft on Oct 17, 2019); none since 2023. |
 
@@ -113,10 +113,29 @@ These are set in OneRain itself, on its dashboards (colors) and on the gauges (a
 | Belmont Creek at Old County Rd [1] | Dashboard color | 30 min | Green | 0–0.199 | – | No | – |
 | Belmont Creek at Old County Rd | Dashboard color | 30 min | Orange | 0.20–0.249 | – | No | less than a 1-year storm (0.305 in) |
 | Belmont Creek at Old County Rd | Dashboard color | 30 min | Red | 0.25 and up | – | No | less than a 1-year storm (0.305 in) |
+| Belmont Creek at Old County Rd [2] | Alarm | 4 hr | Orange | 0.42 and up | Rainfall warning | Yes | not in the NOAA table used here |
+| Belmont Creek at Old County Rd [3] | Alarm | 30 min | Orange | 0.20 and up | 30-minute rainfall intensity flood watch | Different: FEWS uses Flooding likely at 0.20 | less than a 1-year storm (0.305 in) |
+| Belmont Creek at Old County Rd [3] | Alarm | 30 min | Red | 0.25 and up | 30-minute rainfall intensity flood warning | No | less than a 1-year storm (0.305 in) |
+
+**Creek height**
+
+| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
+|---|---|---|---|---|---|
+| Belmont Creek at Old County Rd | Flood Monitoring | Potential flooding | 2.25 | Yes | – |
+| Belmont Creek at Old County Rd | Flood Watch | Flooding probable with continued rain | 3.25 | Yes | – |
+| Belmont Creek at Old County Rd | Flood Warning | Active flooding likely to occur downstream | 4.00 | Yes | – |
 
 Notes:
 
 1. Only window on the Belmont dashboard.
+2. Set on OneRain's rolling 4-hour total sensor. Same rain amount as FEWS's rain + tide trigger (0.42 in / 4 hr); the tide part is OneRain alarm rule #34.
+3. Rain alarms set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site. FEWS shows 'Flooding likely' at 0.20 in / 30 min; OneRain calls 0.20 'Potential for flooding' and 0.25 'Flooding likely'.
+
+<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
+
+- Ask OneRain how alarms on a Rain Increment sensor are checked: each report on its own, or rain summed over the window in the alarm's name? If each report on its own, these alarms may rarely fire.
+
+</details>
 
 ---
 

@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** what do these levels mean for people downstream? FEWS has no recorded meaning. Who set them, and from what?
+> - [ ] **Flood levels:** what do these levels mean for people downstream? FEWS has no recorded meaning; OneRain describes them as Flood Monitoring = "Potential flooding"; Flood Watch = "Flooding likely"; Flood Warning = "Projected flooding in downstream reaches". Who set them, and from what?
 
 > **How to read this page**
 >
@@ -42,7 +42,7 @@
 | Record starts | Sep 2020 (public OneRain pages) |
 | Affected by the tide? | Yes. Rises and falls with the Bay tide |
 | Rising-fast alert | 0.5 ft within an hour |
-| History and known issues | Offline since Jun 3, 2026; the last reading (Jun 3, 2026) is probably a sensor fault. Gauge key renamed from 'stage' to sb_stage_41102 on Oct 15, 2026. Gauge zero in NAVD88 unknown. |
+| History and known issues | Offline since Jun 3, 2026; the last reading (Jun 3, 2026) is probably a sensor fault. Gauge zero in NAVD88 unknown. |
 
 **Flood levels** (gauge height, ft)
 
@@ -98,7 +98,19 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
 
-None recorded yet.
+**Creek height**
+
+| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
+|---|---|---|---|---|---|
+| San Bruno Creek at First Avenue [1] | Flood Monitoring | Potential flooding | 2.40 | Yes | – |
+| San Bruno Creek at First Avenue [1] | Flood Watch | Flooding likely | 3.60 | Yes | – |
+| San Bruno Creek at First Avenue [1] | Flood Warning | Projected flooding in downstream reaches | 4.80 | Yes | – |
+
+No OneRain alarms are set on: San Bruno Creek at First Avenue; San Bruno Mountain.
+
+Notes:
+
+1. Sensor shows Out of Service in OneRain.
 
 ---
 

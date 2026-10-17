@@ -40,7 +40,7 @@
 | Location | 37.60130, -122.40930 |
 | Reports | On change (about hourly in dry weather) |
 | Record starts | Dec 24, 2024 (public OneRain pages) |
-| Affected by the tide? | Not yet confirmed. Dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide; tidal influence still to confirm |
+| Affected by the tide? | Not yet confirmed. Dry-weather check (Oct 12-14, 2026): moved 0.04 ft or less with the tide; tidal influence still to confirm |
 | Rising-fast alert | 0.5 ft within an hour (default; not yet tested on this gauge's history) |
 | History and known issues | Flash flood Nov 17, 2025: 0.20 to 5.66 ft in 70 minutes. |
 
@@ -86,7 +86,7 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them unless the "Also a FEWS level?" column says Yes. Read from OneRain on Oct 16–17, 2026.
 
-None recorded yet.
+No OneRain alarms are set on: Pilarcitos Dam; Green Hills Creek.
 
 <details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
 

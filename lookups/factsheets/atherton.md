@@ -7,7 +7,7 @@
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
 > - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
-> - [ ] Window: dashboard uses 30 min, the gauge alarms use 1 hour for the same amounts. Which is intended?
+> - [ ] **Atherton rain window:** OneRain's Atherton dashboard colors rain over 30 minutes, but its alarms use the same amounts (0.40 / 0.45 in) over 1 hour. Over 30 minutes they are close to a 5-year storm; over 1 hour, between a 1- and 2-year storm. Which window is intended?
 
 > **How to read this page**
 >
@@ -26,7 +26,7 @@
 | On the FEWS site | Public pages |
 | Cities and communities | Woodside (upper watershed); Atherton; unincorporated North Fair Oaks; Redwood City *(draft)* |
 | Drains to | Bayfront Canal, then San Francisco Bay |
-| Description | Channelized creek; thresholds are for the area downstream of the Caltrain crossing. |
+| Description | Channelized creek; flood levels are for the area downstream of the Caltrain crossing. |
 | Flood levels set? | Yes |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
 | Rain totals on the FEWS page | 30 min, 1 hr, 24 hr |
@@ -82,7 +82,7 @@ Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Location | 37.46192, -122.19387 |
 | Reports | On change |
 | Record starts | Oct 2020 (public OneRain pages) |
-| Affected by the tide? | No. Dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide |
+| Affected by the tide? | No. Dry-weather check (Oct 12-14, 2026): moved 0.04 ft or less with the tide |
 | Rising-fast alert | 0.5 ft within an hour |
 | History and known issues | Probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow. |
 | Note shown on the FEWS page | The probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow. |
@@ -146,12 +146,31 @@ These are set in OneRain itself, on its dashboards (colors) and on the gauges (a
 | Atherton Channel upstream of CalTrain [1] | Dashboard color | 30 min | Green | 0–0.399 | – | No | – |
 | Atherton Channel upstream of CalTrain | Dashboard color | 30 min | Orange | 0.400–0.449 | – | No | between a 2- and 5-year storm (0.343–0.439 in) |
 | Atherton Channel upstream of CalTrain | Dashboard color | 30 min | Red | 0.45 and up | – | No | between a 5- and 10-year storm (0.439–0.518 in) |
-| Atherton Channel upstream of CalTrain | Alarm | 1 hr | Orange | 0.40 and up | Hourly rainfall intensity flood watch | No | between a 1- and 2-year storm (0.383–0.483 in) |
-| Atherton Channel upstream of CalTrain | Alarm | 1 hr | Red | 0.45 and up | Hourly rainfall intensity flood warning | No | between a 1- and 2-year storm (0.383–0.483 in) |
+| Atherton Channel upstream of CalTrain [2] | Alarm | 1 hr | Orange | 0.40 and up | Hourly rainfall intensity flood watch | No | between a 1- and 2-year storm (0.383–0.483 in) |
+| Atherton Channel upstream of CalTrain [2] | Alarm | 1 hr | Orange | 0.45 and up | Hourly rainfall intensity flood warning | No | between a 1- and 2-year storm (0.383–0.483 in) |
+
+**Creek height**
+
+| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | Years reached, WY2008–2026 (USGS) |
+|---|---|---|---|---|---|
+| Atherton Channel upstream of CalTrain | Flood Monitoring | Potential flooding | 2.80 | Yes | – |
+| Atherton Channel upstream of CalTrain | Flood Watch | Flooding probable with continued rain | 4.10 | Yes | – |
+| Atherton Channel upstream of CalTrain | Flood Warning | Active flooding likely to occur downstream | 5.50 | Yes | – |
+| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | Potential flooding | 3.18 | Yes | – |
+| Atherton Channel at Alameda de las Pulgas | Flood Watch | Flooding probable with continued rain | 4.60 | Yes | – |
+| Atherton Channel at Alameda de las Pulgas | Flood Warning | Active flooding likely to occur downstream | 5.65 | Yes | – |
+| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | Water detected on road | 10.40 | Yes | – |
 
 Notes:
 
 1. Only window on the Atherton dashboard. Same values as the gauge's hourly alarms (0.40 / 0.45 in) but over 30 min.
+2. Rain alarms set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site.
+
+<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
+
+- Ask OneRain how alarms on a Rain Increment sensor are checked: each report on its own, or rain summed over the window in the alarm's name? If each report on its own, these alarms may rarely fire.
+
+</details>
 
 ---
 

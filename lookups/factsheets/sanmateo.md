@@ -7,7 +7,7 @@
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
 > - [ ] **Flood levels:** FEWS has none. Do you know a creek height at the gauge where the creek leaves its banks or floods a road, or a past flood we could match to a gauge reading?
-> - [ ] Which rain gauge does the San Mateo Creek dashboard color?
+> - [ ] **San Mateo dashboard:** which rain gauge does OneRain's San Mateo Creek dashboard color (3-hour rain)? The comparison here assumes Crystal Springs Cottage.
 
 > **How to read this page**
 >
@@ -41,7 +41,7 @@
 | Location | 37.52944, -122.35833 |
 | Reports | Every 15 minutes (USGS) |
 | Record starts | Sep 2008 |
-| Affected by the tide? | Not yet confirmed. Dry-weather check Oct 12-14, 2026: moved 0.04 ft or less with the tide |
+| Affected by the tide? | Not yet confirmed. Dry-weather check (Oct 12-14, 2026): moved 0.04 ft or less with the tide |
 | Rising-fast alert | 0.5 ft within an hour |
 | History and known issues | Rises follow Crystal Springs Reservoir releases and spills (reservoir level: USGS 11162750; spill about 294.6 ft). USGS data approved through spring 2026. |
 
@@ -94,6 +94,8 @@ These are set in OneRain itself, on its dashboards (colors) and on the gauges (a
 | **to confirm** [1] | Dashboard color | 3 hr | Green | 0–0.799 | – | No | – |
 | **to confirm** | Dashboard color | 3 hr | Orange | 0.800–0.999 | – | No | less than a 1-year storm (0.931 in) |
 | **to confirm** | Dashboard color | 3 hr | Red | 1.000 and up | – | No | between a 1- and 2-year storm (0.931–1.11 in) |
+
+No OneRain alarms are set on: Crystal Springs Cottage.
 
 Notes:
 
