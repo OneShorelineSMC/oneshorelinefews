@@ -66,11 +66,11 @@ def get(url, params=None):
         return r.read().decode("utf-8")
 
 
-def arcgis(url, where, fields, offset_deg):
-    """All features in the county box as GeoJSON (lon/lat), simplified on the server, paging if needed."""
+def arcgis(url, where, fields, offset_deg, bbox=COUNTY_BBOX):
+    """All features in the box (default: the county) as GeoJSON (lon/lat), simplified on the server, paging if needed."""
     feats, start = [], 0
     while True:
-        p = {"where": where, "geometry": ",".join(map(str, COUNTY_BBOX)), "geometryType": "esriGeometryEnvelope",
+        p = {"where": where, "geometry": ",".join(map(str, bbox)), "geometryType": "esriGeometryEnvelope",
              "inSR": 4326, "spatialRel": "esriSpatialRelIntersects", "outFields": fields, "returnGeometry": "true",
              "outSR": 4326, "maxAllowableOffset": offset_deg, "geometryPrecision": 5, "resultOffset": start,
              "resultRecordCount": 1000, "f": "geojson"}
@@ -162,16 +162,23 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
     gauges: [{"label","kind": stage|rain|support,"lon","lat"}]. Returns (svg text, watershed names)."""
     lines = [ln for f in line_feats for ln in lines_of(f["geometry"])]
     probe = [p for ln in lines for p in ln[::3]] + [(g["lon"], g["lat"]) for g in gauges if g["kind"] != "support"]
-    mine = [f for f in hu_feats if any(any(inside(p, poly) for poly in polys_of(f["geometry"])) for p in probe)]
-    pts = [p for ln in lines for p in ln] + [(g["lon"], g["lat"]) for g in gauges] + \
-          [p for f in mine for r in rings_of(f["geometry"]) for p in r]
+    # the creek's subwatersheds: the ones its line or gauges are in, leaving out the open-Bay units (they span the Bay)
+    mine = [f for f in hu_feats if not open_water(f) and
+            any(any(inside(p, poly) for poly in polys_of(f["geometry"])) for p in probe)]
+    # the map shows the creek and its gauges (a subwatershed can be much bigger than a small urban creek)
+    pts = [p for ln in lines for p in ln] + [(g["lon"], g["lat"]) for g in gauges]
     if not pts:
         return None, []
     lo0, lo1 = min(p[0] for p in pts), max(p[0] for p in pts)
     la0, la1 = min(p[1] for p in pts), max(p[1] for p in pts)
     kx = math.cos(math.radians((la0 + la1) / 2))
-    wdeg, hdeg = max((lo1 - lo0) * kx, 0.01), max(la1 - la0, 0.01)
-    pad = 0.08
+    cx, cy, MIN = (lo0 + lo1) / 2, (la0 + la1) / 2, 0.04   # at least ~2.5 mi across (0.04 degrees of latitude)
+    if (la1 - la0) < MIN:
+        la0, la1 = cy - MIN / 2, cy + MIN / 2
+    if (lo1 - lo0) * kx < MIN:
+        lo0, lo1 = cx - MIN / 2 / kx, cx + MIN / 2 / kx
+    wdeg, hdeg = (lo1 - lo0) * kx, la1 - la0
+    pad = 0.15
     lo0, lo1 = lo0 - pad * wdeg / kx, lo1 + pad * wdeg / kx
     la0, la1 = la0 - pad * hdeg, la1 + pad * hdeg
     wdeg, hdeg = (lo1 - lo0) * kx, la1 - la0
@@ -223,6 +230,8 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
             cls, col, wd = ("rd1", COL["road1"], 2.4) if primary else ("rd", COL["road"], 1.5)
             out.append(f'<path class="{cls}" d="{d}" fill="none" stroke="{col}" stroke-width="{wd}" stroke-linecap="round"/>')
             name = road_label((f.get("properties") or {}).get("NAME") or "")
+            if not primary and not (name.startswith("Hwy ") or name in ("El Camino Real", "Skyline Blvd", "Cabrillo Hwy")):
+                name = ""   # other secondary roads: drawn, not labeled
             q = dense([xy(p) for p in ln], 8)
             vis = [p for p in q if 30 < p[0] < W - 30 and 30 < p[1] < H - 30]
             if name and len(vis) >= 2:
@@ -235,8 +244,6 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
         if d:
             out.append(f'<path class="ck" d="{d}" fill="none" stroke="{COL["creek"]}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>')
     out.append("</g>")
-    for name, (L, (x, y)) in best.items():
-        out.append(f'<text class="t h" x="{x:.0f}" y="{y:.0f}" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">{escape(name)}</text>')
     # gauges: creek level = circle, rain = square, supporting rain = open square; a rain gauge at a creek gauge's spot
     # (same site) shows as a small square beside the circle, with one label
     placed, spots = [], {}
@@ -263,6 +270,15 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
         placed.append((x, ty))
         out.append(f'<text class="t h" x="{x + (11 if right else -11):.1f}" y="{ty:.1f}" font-size="14" font-weight="700" '
                    f'text-anchor="{"start" if right else "end"}">{escape(g["label"])}</text>')
+    # highway labels last, skipping any that would sit on another label
+    boxes = [(px - 4, py - 13, px + 150, py + 4) for px, py in placed]
+    for name, (L, (x, y)) in sorted(best.items(), key=lambda kv: -kv[1][0]):
+        w = 7.2 * len(name)
+        b = (x - w / 2 - 3, y - 9, x + w / 2 + 3, y + 7)
+        if any(b[0] < o[2] and o[0] < b[2] and b[1] < o[3] and o[1] < b[3] for o in boxes):
+            continue
+        boxes.append(b)
+        out.append(f'<text class="t h" x="{x:.0f}" y="{y:.0f}" font-size="12.5" font-weight="700" text-anchor="middle" dy="4">{escape(name)}</text>')
     # north arrow and scale bar
     out.append(f'<g transform="translate({W - 26},26)"><path class="na" d="M0,-14 L7,8 L0,3 L-7,8Z" fill="{COL["ink"]}"/>'
                f'<text class="t" y="22" font-size="11" font-weight="700" text-anchor="middle">N</text></g>')
@@ -305,9 +321,18 @@ def dense(q, step):
     return out
 
 
+def open_water(f):
+    """The open-Bay subwatersheds ('San Francisco Bay Estuaries-Frontal San Francisco Bay', 'Oakland Inner Harbor-...')."""
+    n = ((f.get("properties") or {}).get("name") or "")
+    return n.startswith("San Francisco Bay") or "Inner Harbor" in n
+
+
 def road_label(n):
-    """TIGER names -> what people call them: 'US Hwy 101' -> '101', 'I- 280' -> 'I-280', 'State Rte 92' -> 'Hwy 92'."""
+    """TIGER names -> what people call them: 'US Hwy 101' -> '101', 'I- 280' -> 'I-280', 'State Rte 92' -> 'Hwy 92',
+    'S el Camino Real' -> 'El Camino Real'."""
     n = n.strip()
+    n = n[2:] if n[:2] in ("N ", "S ", "E ", "W ") else n
+    n = n[:1].upper() + n[1:]
     if n.startswith("US Hwy "):
         return n[7:]
     if n.startswith("I- "):
@@ -371,6 +396,25 @@ def main():
     for c in CREEKS:
         want = set(NHD_NAMES.get(c["id"], []))
         line = [f for f in flow if (f.get("properties") or {}).get("gnis_name") in want]
+        if not line:   # NHD spells it differently: use the named stream(s) right at the creek's level gauges
+            near = {}
+            for g in gauges_for(c, onerain, usgs):
+                if g["kind"] != "stage":
+                    continue
+                d = 0.0025   # about 250 m
+                box = (g["lon"] - d, g["lat"] - d, g["lon"] + d, g["lat"] + d)
+                try:
+                    for f in arcgis(NHD, "gnis_name IS NOT NULL", "gnis_name", 0.0002, box):
+                        n = (f.get("properties") or {}).get("gnis_name")
+                        if n:
+                            near[n] = near.get(n, 0) + 1
+                except Exception as e:   # noqa: BLE001
+                    print(f"  {c['id']}: NHD lookup near {g['label']} failed: {e}")
+            if near:
+                pick = max(near, key=near.get)
+                print(f"  {c['id']}: NHD has no {sorted(want)}; the stream at its gauge is '{pick}' (add it to NHD_NAMES)")
+                q = "gnis_name = '" + pick.replace("'", "''") + "'"
+                line = arcgis(NHD, q, "gnis_name", 0.00015)
         if not line:
             print(f"  {c['id']}: no NHD creek line for {sorted(want) or '(no name set)'}; map without it")
         svg, ws = build_svg(c, line, hu, roads, gauges_for(c, onerain, usgs))
