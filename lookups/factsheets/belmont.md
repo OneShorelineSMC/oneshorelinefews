@@ -9,7 +9,7 @@
 > - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 > - [ ] **Rain triggers:** are the amounts and what they show right?
 > - [ ] **Flooding likely (rain + tide):** the tide part (6.32 ft NAVD88) is below the average daily high tide at Redwood City (MHHW 7.02 ft), so it is met on most days' higher high tide. Is that the intended tide level?
-> - [ ] **Belmont 30-minute rain trigger:** The 2026 Update shows 'Flooding likely' when 30-minute rain reaches 0.20 in. OneRain calls 0.20 in 'Potential for flooding' (orange) and 0.25 in 'Flooding likely' (red). Should the 2026 Update's trigger be 0.25 in?
+> - [ ] **Belmont 30-minute rain trigger:** The 2026 Update shows 'Flooding likely' when 30-minute rain reaches 0.20 in. OneRain's thresholds on this gauge call 0.20 in 'Potential for flooding' and 0.25 in 'Flooding likely'. Should the 2026 Update's trigger be 0.25 in?
 
 > **Words used on this page** (the same words for both systems)
 >
@@ -92,10 +92,10 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 | Gauge | Rain within | Rain (in) | And the tide is at least | Shows | Why this number | Status |
 |---|---|---|---|---|---|---|
-| Old County Road | 30 min | 0.20 | – | Flooding likely (rain) | Copied from Belmont Creek OneRain dashboard (Oct 2026); no study recorded | From OneRain, not yet signed off |
+| Old County Road | 30 min | 0.20 | – | Flooding likely (rain) | Taken from OneRain's Belmont settings (Oct 2026); it matches OneRain's lower 30-minute threshold on this gauge (0.20 in, which OneRain calls 'Potential for flooding'). No study recorded | From OneRain, not yet signed off |
 | Old County Road | 4 hr | 0.42 | 6.32 ft NAVD88 | Flooding likely (rain + tide) | Rain amount from an analysis of 2022-2025 events; tide level from OneRain alarm rule #34 (7.5 ft MLLW, converted to NAVD88) | From OneRain, not yet signed off |
 
-**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
+**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
 <details><summary>Background: rain indicator levels at each gauge (no action needed)</summary>
 
@@ -113,7 +113,7 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today (read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; OneRain sends text alerts only through separate alarm rules. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are the thresholds set on each OneRain sensor, read from OneRain's own pages on Oct 17, 2026 (creek height from the public sensor pages, rain from the admin sensor pages). A OneRain threshold colors that gauge's readings; it doesn't send a message by itself (OneRain sends text alerts only through separate alarm rules). OneRain's dashboard color settings aren't included. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
@@ -122,22 +122,20 @@ The 2026 Update shows this creek's status on its public pages. The **2026 Update
 | Belmont Creek at Old County Rd | Flood Monitoring | 2.25 ft | 2.25 ft ("Potential flooding") | Same |
 | Belmont Creek at Old County Rd | Flood Watch | 3.25 ft | 3.25 ft ("Flooding probable with continued rain") | Same |
 | Belmont Creek at Old County Rd | Flood Warning | 4.00 ft | 4.00 ft ("Active flooding likely to occur downstream") | Same |
-| Belmont Creek at Old County Rd | Rising fast | 0.5 ft within an hour | none | 2026 Update only |
+| Belmont Creek at Old County Rd | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
 
-**Rain (inches within the time shown)**
+**Rain**
 
-The 2026 Update's rain indicator (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over windows from 15 minutes to 48 hours; only the windows OneRain or a 2026 Update trigger uses are listed here.
+Each row is one length of time ("rain within"). **2026 Update** = the amounts at which its rain indicator turns Heavy, Very heavy and Intense (or a rain trigger shows). **OneRain** = the thresholds set on that gauge's rain sensors for the same length of time. Rows are listed only where OneRain or a 2026 Update trigger uses that length of time; the 2026 Update checks every length from 15 minutes to 48 hours.
 
-| Gauge | Rain within | 2026 Update uses | OneRain threshold | OneRain dashboard color |
-|---|---|---|---|---|
-| Old County Road | 30 min | **Flooding likely (rain)** at 0.20 in; rain indicator: Heavy 0.305, Very heavy 0.366, Intense 0.45 in | Flood watch 0.20 in; Flood warning 0.25 in | orange from 0.20 in; red from 0.25 in |
-| Old County Road | 4 hr | **Flooding likely (rain + tide)** at 0.42 in (and tide ≥ 6.32 ft NAVD88) | Rainfall warning 0.42 in | none |
+| Gauge | Rain within | 2026 Update (inches) | OneRain thresholds (inches) |
+|---|---|---|---|
+| Old County Road | 30 min | **Flooding likely (rain)** at 0.20 in; Heavy from 0.305 in, Very heavy from 0.366 in, Intense from 0.45 in | Flood watch from 0.20 in, Flood warning from 0.25 in *(time window from the threshold's name only; how OneRain applies it is unconfirmed)* |
+| Old County Road | 4 hr | **Flooding likely (rain + tide)** at 0.42 in (and tide ≥ 6.32 ft NAVD88) | Rainfall warning from 0.42 in |
 
-**Tide**
+*Why the 2026 Update uses these amounts:* for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
-| | 2026 Update uses | OneRain dashboard color |
-|---|---|---|
-| Tide | NOAA 9414523 Redwood City: tide graph and high-tide lines (MHHW 7.02 ft NAVD88) | none recorded |
+**Tide:** the 2026 Update uses NOAA 9414523 Redwood City for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 7.02 ft NAVD88). OneRain's tide settings aren't included.
 
 Notes:
 
