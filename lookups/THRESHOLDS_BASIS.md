@@ -30,6 +30,12 @@ Notes:
   Bruno's levels mean, and nobody has recorded who set any of the OneRain levels, or from what study (§1).
 - **Belmont's rain triggers** are flood levels for rain: they set the creek to "Flooding likely". The rain + tide
   value came from an analysis of 2022–2025 events (§2).
+- **OneRain's own levels** (checked Oct 17, 2026 from OneRain's public sensor pages): the Colma, San Bruno, Belmont and
+  Atherton gauges carry the same levels as FEWS. OneRain also sets flood levels on four USGS gauges FEWS shows without
+  levels (San Francisquito at Stanford, Pilarcitos at Half Moon Bay, San Gregorio, Pescadero) and on Butano Creek near
+  Cloverdale Road. Who set them, and from what, isn't recorded; some upper levels were never reached in 2008–2026 (for
+  example Pilarcitos Flood Warning 17.0 ft against a highest reading of 14.64 ft, Dec 31, 2022). Values and how often the
+  USGS record reached each one are in `onerain_dashboard_thresholds.csv` and on the fact sheets.
 - **Big-storm level** is used only to test rising fast ([RISING_FAST_BASIS.md](RISING_FAST_BASIS.md) §5). It is the
   gauge's lowest flood level (Flood Monitoring) where there is one. Otherwise it is the median yearly peak, a typical
   yearly high (about a 2-year event). That is a statistical stand-in, **not** a flood level. On those creeks, "big
@@ -41,7 +47,8 @@ Notes:
 |---|---|---|
 | **Yes** | Flood levels at the creek gauge, with their meaning recorded | Colma, Belmont, Atherton |
 | **Partly** | Flood levels are set, but their meaning isn't recorded | San Bruno |
-| **No** | Alert levels only: status comes from rain and rising fast | San Francisquito, San Mateo, Green Hills, Pilarcitos, San Gregorio, Pescadero |
+| **No (OneRain has levels)** | FEWS has none, but OneRain has flood levels on the USGS gauge (basis not recorded; not used by FEWS) | San Francisquito, Pilarcitos, San Gregorio, Pescadero |
+| **No** | Alert levels only: status comes from rain and rising fast | San Mateo, Green Hills |
 
 **To link a creek to flooding:** find the creek height at each gauge where the creek leaves its banks or floods a
 road. Sources: a survey of the bank and road elevations tied to the gauge's zero, a hydraulic study, or a past flood
