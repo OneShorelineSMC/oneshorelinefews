@@ -33,6 +33,7 @@ KING_TIDE_FT_MRY,6.87,ft NAVD88,"Coastside Tides calendar and graph, kiosk Coast
 TIDE_EXPECTED_HOURS,48,hours,"Tides page calendar, kiosk King Tide line",How far ahead the NOAA projection (NOAA model) is used on the King Tide line and calendar.,,
 TIDE_WEATHER_NOTE_FT,0.25,ft,"Tides page, kiosk King Tide line","On a King Tide day within that window, say 'NOAA projects about X ft higher/lower than the tide table' when the NOAA projection differs from the tide table by at least this much.",,
 MORE_CREEKS_PUBLIC,1,0 or 1,Creeks page,"1 = everyone sees the 'More creeks · readings only' section (creeks with preview_only = yes in creeks.csv: readings and graphs, no status). 0 = only the staff preview (?preview=1).",,
+STATUS_PUBLIC,1,0 or 1,"home page, Creeks page, kiosk","1 = the creek status layer (Flooding likely / Be ready / Stay alert / No alerts) shows to everyone (since Oct 16). 0 = staff only again: it then shows only with ?preview=1 in the address. Creeks other than the four dashboard creeks carry a ""Methodology under review"" tag (method_review in display_text.csv).",,
 REPORTS_PUBLIC,0,0 or 1,"Report page, sensor map",0 = flood reports (the Report page link and the map's Flood reports layer) show only in the staff preview (?preview=1). 1 = everyone.,,
 REPORTS_MAX_AGE_DAYS,180,days,sensor map,Approved flood reports older than this (by the date the flooding was seen) are no longer published.,,
 REPORTS_MAX_PHOTOS,40,photos,sensor map,At most this many approved photos are published at a time (newest reports first).,,

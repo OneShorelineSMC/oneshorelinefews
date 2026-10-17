@@ -276,4 +276,5 @@ minimum stage, tide subtraction) were not used, and why. Rerun `scripts/evaluate
 
 | Date | Who | What was checked / changed | Files |
 |---|---|---|---|
+| Oct 16, 2026 | Summer (OneShoreline) | Creek status layer made public on the home page, Creeks page and kiosk (`STATUS_PUBLIC` = 1; set 0 to return to staff-only). Creeks other than Colma, San Bruno, Belmont and Atherton carry a "Methodology under review" tag. The checklist items above are still open | settings.csv, display_text.csv, creek_status.js |
 | | | | |
