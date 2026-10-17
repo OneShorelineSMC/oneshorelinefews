@@ -6,7 +6,8 @@ so they never drift from what the pages show. Don't edit the fact sheets by hand
 
 Reads (lookups/): creeks.csv, creek_gauges.csv, thresholds.csv, rain_frequency.csv, tide_stations.csv,
 settings.csv, creek_facts.csv (cities, outlet, description), gauge_facts.csv (record, reporting, history, quirks),
-rising_fast_results.csv (from scripts/evaluate_rising_fast.py). Coordinates come from the site table in
+rising_fast_results.csv (from scripts/evaluate_rising_fast.py), onerain_dashboard_thresholds.csv (OneRain's own
+dashboard colors and gauge alarms, for reference). Coordinates come from the site table in
 scripts/fetch_atlas14.py. Writes lookups/factsheets/<creek>.md and lookups/factsheets/README.md (index).
 """
 
@@ -59,6 +60,7 @@ def main():
     cfacts = {r["creek"]: r for r in rows("creek_facts.csv")}
     gfacts = {r["gauge"]: r for r in rows("gauge_facts.csv")}
     results = rows("rising_fast_results.csv")
+    dash = rows("onerain_dashboard_thresholds.csv")
     freq = {}
     for r in rows("rain_frequency.csv"):
         freq.setdefault(r["onerain_number"].upper(), []).append(r)
@@ -74,6 +76,8 @@ def main():
         rains = [g for g in cg if g["type"] == "rain"]
         tide = tides.get(c.get("tide_station", ""), {})
         public = c.get("preview_only", "").lower() != "yes"
+        cdash = [d for d in dash if d["creek"] == cid]
+        dash_tide = next((d for d in cdash if d["kind"] == "dashboard tide color"), None)
         has_levels = any(t["creek"] == cid and t["type"] == "stage" for t in thresholds)
         has_triggers = any(t["creek"] == cid and t["type"] == "rain" for t in thresholds)
         meaning = c.get("note", "") if has_levels and "No flood levels" not in c.get("note", "") else ""
@@ -94,8 +98,11 @@ def main():
              f"| Drains to | {esc(cf.get('drains_to', '')) or '**To add**'} |",
              f"| Description | {esc(cf.get('description', '') or c.get('intro', ''))} |",
              f"| Linked to flooding | {linked_text} |",
-             f"| Bay tide station | " + (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))} (MHHW {tide.get('mhhw_navd88_ft', '?')} ft NAVD88)"
-                                       if c.get("tide_station") else "None (coastal creek)") + " |",
+             f"| Tide station | " + (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))} (MHHW {tide.get('mhhw_navd88_ft', '?')} ft NAVD88)"
+                                       if c.get("tide_station") else "None set for this creek in FEWS (coastal creek)"
+                                       + (f"; the OneRain dashboard uses {esc(dash_tide['onerain_site'])}" if dash_tide else "")
+                                       + (f", which FEWS shows on {esc(tides[dash_tide['onerain_number']]['used_for'])}"
+                                          if dash_tide and dash_tide["onerain_number"] in tides else "")) + " |",
              f"| Rain totals shown | {', '.join(dur(m) for m in c.get('rain_windows_min', '').split() if m.isdigit())} |",
              "",
              "**Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the "
@@ -197,8 +204,31 @@ def main():
                       f"{esc(t['name'])} | {esc(t['source'])} |" for t in trig]
                 L += ["", "Basis: [THRESHOLDS_BASIS.md §2](../THRESHOLDS_BASIS.md).", ""]
 
+        # ---- OneRain's own thresholds, for reference
+        L += ["## Current OneRain dashboard thresholds", ""]
+        if not cdash:
+            L += ["None recorded yet (`onerain_dashboard_thresholds.csv`).", ""]
+        else:
+            L += [f"As set in OneRain on {cdash[0]['captured_on']}; source: {esc(cdash[0]['source'])}. **For reference only:** FEWS "
+                  "doesn't use these; its own levels are above. Dashboard colors are what OneRain's dashboard shows; gauge "
+                  "alarms are thresholds set on the gauge itself.", "",
+                  "| Type | Gauge | Window | Color | Range | Name | Compared with NOAA Atlas 14 (in) |", "|---|---|---|---|---|---|---|"]
+            for d in cdash:
+                gname = d["onerain_site"] or "**to confirm**"
+                if d["onerain_number"] and d["onerain_number"] not in gname:
+                    gname += f" ({d['onerain_number']})"
+                rng = (f"≥ {d['from_value']}" if d["to_value"] in ("", "999") else f"{d['from_value']} – {d['to_value']}") + f" {d['units']}"
+                cmpx = d["atlas14_comparison"].replace("NOAA Atlas 14 at ", "")
+                L.append(f"| {d['kind'].replace('dashboard ', 'Dashboard ').replace('gauge alarm threshold', 'Gauge alarm')} | {esc(gname)} | "
+                         f"{dur(d['window_min']) if d['window_min'] else '–'} | {d['color'].capitalize()} | {esc(rng)} | "
+                         f"{esc(d['threshold_name'])} | {esc(cmpx) or '–'} |")
+            notes = [d["notes"] for d in cdash if d["notes"]]
+            if notes:
+                L += [""] + [f"- {esc(n)}" for n in notes]
+            L.append("")
+
         # ---- open items
-        opens = []
+        opens = [f"OneRain thresholds: {esc(d['to_confirm'])}" for d in cdash if d["to_confirm"]]
         for g in cg:
             if "To check:" in g.get("note", ""):
                 opens.append(f"`{g['gauge']}`: " + esc(g["note"].split("To check:", 1)[1].strip()))
@@ -223,7 +253,7 @@ def main():
     I = ["# Creek fact sheets", "",
          "One page per creek, generated from the lookup tables by `scripts/build_creek_factsheets.py`. To change a "
          "fact sheet, edit the tables (`creeks.csv`, `creek_gauges.csv`, `thresholds.csv`, `rain_frequency.csv`, "
-         "`creek_facts.csv`, `gauge_facts.csv`) and rerun the script.", "",
+         "`creek_facts.csv`, `gauge_facts.csv`, `onerain_dashboard_thresholds.csv`) and rerun the script.", "",
          "**Linked to flooding:** Yes = flood levels at the creek gauge with a recorded meaning; Partly = flood levels "
          "whose meaning isn't recorded; No = alert levels only (rain and rising fast). See "
          "[THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).", "",
