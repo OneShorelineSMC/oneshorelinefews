@@ -144,12 +144,15 @@
   nav button.on { color: var(--ink); font-weight: bold; }
   nav button .dot { display: none; width: 9px; height: 9px; border-radius: 50%; position: absolute; margin-left: 22px; }
   /* Bayside | Coastside switch (two pages, one file: ?side=coast) */
-  .side { display: flex; margin: 12px 0 2px; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--card); }
-  .side a { flex: 1; text-align: center; padding: 8px 6px; min-height: 40px; box-sizing: border-box; font-weight: 700; color: var(--ink); text-decoration: none; font-size: 15px; }
-  .side a + a { border-left: 2px solid var(--ink); }
-  .side a[aria-current="page"] { background: var(--ink); color: var(--card); }
-  .side a[aria-current="page"]::before { content: "✓ "; }
-  .side a:focus-visible { outline: 3px solid var(--blue); outline-offset: -5px; }
+  /* in the title bar: a small Bay | Coast pill (the page's full name is the title) */
+  header > div:nth-of-type(1) { flex: 1; min-width: 0; }
+  .side { display: flex; flex: none; border: 2px solid #fff; border-radius: 999px; overflow: hidden; }
+  .side a { padding: 5px 11px; min-height: 30px; min-width: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #fff; text-decoration: none; font-size: 14px; }
+  .side a + a { border-left: 2px solid #fff; }
+  .side a[aria-current="page"] { background: #fff; color: #0A5587; }
+  .side a:focus-visible { outline: 3px solid #fff; outline-offset: -6px; }
+  @media (max-width: 360px) { header .sub { display: none; } }   /* very narrow phones: title and switch only */
   body.embed .side { display: none; }
   /* Bayside / Coastside Tides: one sentence first, the week next, details behind taps (same as the kiosk tab) */
   .tcard .th { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -288,8 +291,9 @@
   <img class="hmark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="38" height="38">
   <div>
   <h1 id="h1">Bayside Tides</h1>
-  <div class="sub" id="hsub">OneShoreline Early Warning · San Francisco Bay, San Mateo County</div>
+  <div class="sub" id="hsub">OneShoreline Early Warning · San Mateo County</div>
   </div>
+  <div class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html" id="sideBay" aria-label="Bayside Tides">Bay</a><a href="Tides.html?side=coast" id="sideCoast" aria-label="Coastside Tides">Coast</a></div>
 </header>
 
 <div id="alert" class="unknown" role="button" tabindex="0" aria-expanded="false">
@@ -300,7 +304,6 @@
 <div id="alertList"></div>
 
 <main>
-  <div class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html" id="sideBay">Bayside</a><a href="Tides.html?side=coast" id="sideCoast">Coastside</a></div>
   <div class="intro" id="intro">When the Bay at the NOAA tide gauge in Redwood City is expected to rise above MHHW in the next 7 days.</div>
   <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
     <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
@@ -348,8 +351,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261016f"></script>
-<script src="tide_season.js?v=20261016f"></script>
+<script src="lookups.js?v=20261016g"></script>
+<script src="tide_season.js?v=20261016g"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -464,7 +467,7 @@ if (EMBED) document.body.classList.add("embed");
 // Coastside: titles and wording (lookups keys ending in _coast); the switch shows which page this is
 (function () {
   document.title = SIDE.name + " – OneShoreline";
-  $("h1").textContent = SIDE.name; $("hsub").textContent = "OneShoreline Early Warning · " + SIDE.sub;
+  $("h1").textContent = SIDE.name;
   var am = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (am) am.setAttribute("content", SIDE.name);
   $(COAST ? "sideCoast" : "sideBay").setAttribute("aria-current", "page");
   if (!COAST) return;
