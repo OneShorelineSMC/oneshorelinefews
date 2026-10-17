@@ -71,7 +71,7 @@ GLOSSARY = [
 LINKED = {
     "Yes": "Yes",
     "Partly": "Yes, but what they mean isn't recorded",
-    "OneRain": "None in FEWS (OneRain has some; see the appendix)",
+    "OneRain": "None in FEWS (OneRain has some; see Thresholds below)",
     "No": "None",
 }
 
@@ -160,7 +160,7 @@ def main():
             ask.append("**Flood levels:** what do these levels mean for people downstream? FEWS has no recorded meaning"
                        + (f"; OneRain describes them as {descr}" if descr else "") + ". Who set them, and from what?")
         elif linked == "OneRain":
-            ask.append(f"**Flood levels:** FEWS has none, but OneRain has its own at {', '.join(or_sites)} (see the appendix). "
+            ask.append(f"**Flood levels:** FEWS has none, but OneRain has its own at {', '.join(or_sites)} (see Thresholds on this page). "
                        "Do you know who set them and from what? Should FEWS use them?")
         else:
             ask.append("**Flood levels:** FEWS has none. Do you know a creek height at " + ("any of the gauges" if len(stages) > 1 else "the gauge")
@@ -257,7 +257,7 @@ def main():
             else:
                 own = [d for d in or_levels if d["fews_gauge"] == g["gauge"]]
                 L += ["**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast)."
-                      + (" OneRain has its own levels for this gauge: see the appendix." if own else ""), ""]
+                      + (" OneRain has its own levels for this gauge: see Thresholds below." if own else ""), ""]
 
             res = [r for r in results if r["gauge"] == g["gauge"]]
             if res:
@@ -315,58 +315,115 @@ def main():
             src = next((r["source"] for g in rains for r in freq.get(g["onerain_number"].upper(), [])), "")
             L += ["", f"Source: {esc(src) or 'NOAA Atlas 14'}.", "", "</details>", ""]
 
-        # ---- appendix: OneRain's own settings
-        L += ["## Appendix: OneRain settings (for comparison only)", "",
-              "These are set in OneRain itself, on its dashboards (colors) and on the gauges (alarms). FEWS doesn't use them "
-              "unless the \"Also a FEWS level?\" column says Yes. Read from OneRain on Oct 16–17, 2026.", ""]
-        notes = []
+        # ---- FEWS (what the site uses today) compared with OneRain
+        L += ["## Thresholds: what FEWS uses compared with OneRain", "",
+              ("FEWS shows this creek's status on its public pages." if public else
+               "On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview.")
+              + " The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself "
+              "(read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* "
+              "are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.", ""]
+        cmp_notes = []
 
-        def mark(n):
-            if not n:
-                return ""
-            if n not in notes:
-                notes.append(n)
-            return f" [{notes.index(n) + 1}]"
+        # creek height
+        L += ["**Creek height (ft, gauge height)**", "",
+              "| Gauge | Level | FEWS uses | OneRain alarm | Same? |", "|---|---|---|---|---|"]
+        for g in stages:
+            num = g["usgs_site"] if g.get("source", "").lower() == "usgs" else g["onerain_number"]
+            name = esc(g.get("site_name") or g["label"])
+            fews = {t["name"]: t["value"] for t in stage_th if t["gauge"] == g["gauge"]}
+            orn = {d["threshold_name"]: d for d in dash_stage if d["fews_gauge"] == g["gauge"] and d["from_value"]}
+            levels = sorted(set(fews) | set(orn), key=lambda k: float(fews.get(k) or orn[k]["from_value"]))
+            for k in levels:
+                fv, od = fews.get(k), orn.get(k)
+                ov = od["from_value"] if od else None
+                same = ("Same" if fv and ov and abs(float(fv) - float(ov)) < 0.005 else "Different" if fv and ov else
+                        "FEWS only" if fv else "OneRain only (FEWS doesn't use it)")
+                L.append(f"| {name} | {esc(k)} | {fv + ' ft' if fv else '–'} | "
+                         + (f"{ov} ft (\"{esc(od['description'])}\")" if od else "–") + f" | {same} |")
+            if not levels:
+                L.append(f"| {name} | – | none | none | – |")
+            rise = g.get("rise_ft", "")
+            L.append(f"| {name} | Rising fast | " + ("off" if rise.lower() == "off" else f"{rise or default_rise} ft within an hour")
+                     + " | none | FEWS only |")
+        for d in dash_stage:
+            if d["from_value"] and not d["fews_gauge"]:
+                L.append(f"| {esc(d['onerain_site'])} (not a FEWS gauge) | {esc(d['threshold_name'])} | – | "
+                         f"{d['from_value']} ft (\"{esc(d['description'])}\") | OneRain only |")
+                n = also_fews(d["notes"])[1]
+                if n and n not in cmp_notes: cmp_notes.append(n)
+        L.append("")
+        for d in dash_stage:
+            if "Out of Service" in d.get("notes", "") and "OneRain shows this gauge's creek-level sensor as Out of Service." not in cmp_notes:
+                cmp_notes.append("OneRain shows this gauge's creek-level sensor as Out of Service.")
+        usgs_hits = [d for d in dash_stage if d["from_value"] and d["atlas14_comparison"].startswith("USGS")]
+        if usgs_hits:
+            L += ["How often the creek reached OneRain's levels (USGS record, water years 2008–2026): "
+                  + "; ".join(f"{d['threshold_name']} {d['from_value']} ft: {plain_rarity(d['atlas14_comparison'])}" for d in usgs_hits) + ".", ""]
 
-        rain_rows = [d for d in dash_rain if d["from_value"]]
-        none_rain = [d for d in dash_rain if not d["from_value"]]
-        if rain_rows:
-            L += ["**Rain**", "", "| Gauge | Kind | Rain within | Color | Rain (in) | OneRain name | Also a FEWS level? | "
-                  "How rare at this gauge |", "|---|---|---|---|---|---|---|---|"]
-            for d in rain_rows:
-                yes, rest = also_fews(d["notes"])
-                if d["kind"].startswith("dashboard"):
-                    yes = "No"
-                rng = f"{d['from_value']} and up" if d["to_value"] in ("", "999") else f"{d['from_value']}–{d['to_value']}"
-                name = re.sub(r" \(OneRain level: [^)]*\)", "", d["threshold_name"])
-                L.append(f"| {esc(d['onerain_site'] or '**to confirm**')}{mark(rest)} | "
-                         f"{'Dashboard color' if d['kind'].startswith('dashboard') else 'Alarm'} | "
-                         f"{dur(d['window_min']) if d['window_min'] else '–'} | {d['color'].capitalize()} | {rng} | "
-                         f"{esc(name) or '–'} | {yes} | {esc(plain_rarity(d['atlas14_comparison']))} |")
-            L.append("")
-        stage_rows = [d for d in dash_stage if d["from_value"]]
-        if stage_rows:
-            L += ["**Creek height**", "", "| Gauge | OneRain name | OneRain description | Height (ft) | Also a FEWS level? | "
-                  "Years reached, WY2008–2026 (USGS) |", "|---|---|---|---|---|---|"]
-            for d in stage_rows:
-                yes, rest = also_fews(d["notes"])
-                L.append(f"| {esc(d['onerain_site'])}{mark(rest)} | {esc(d['threshold_name'])} | {esc(d['description'])} | "
-                         f"{d['from_value']} | {yes} | {esc(plain_rarity(d['atlas14_comparison']))} |")
-            L.append("")
-        if dash_tide:
-            L += ["**Tide**", "", "| Station | Color | Range | Note |", "|---|---|---|---|"]
+        # rain: one row per gauge and time window used by FEWS triggers or by OneRain
+        def lvl_text(num, w):
+            fr = freq.get(num.upper(), [])
+            v = {r["level"]: r["value_in"] for r in fr if r["minutes"] == str(w)}
+            return (f"alerts: Heavy {v['1']}, Very heavy {v['2']}, Intense {v['3']} in" if all(k in v for k in "123") else "")
+        gauge_rows = {}
+        for g in rains:
+            num = g["onerain_number"].upper()
+            ws = {int(t["minutes"]) for t in triggers if t["gauge"] == g["gauge"]} | \
+                 {int(d["window_min"]) for d in dash_rain if d["onerain_number"].upper() == num and d["window_min"] and d["from_value"]}
+            gauge_rows[(num, g["label"], True)] = sorted(ws)
+        for d in dash_rain:
+            num = d["onerain_number"].upper()
+            if d["from_value"] and d["window_min"] and not any(k[0] == num for k in gauge_rows):
+                gauge_rows.setdefault((num, d["onerain_site"] or "to confirm", False), [])
+                if int(d["window_min"]) not in gauge_rows[(num, d["onerain_site"] or "to confirm", False)]:
+                    gauge_rows[(num, d["onerain_site"] or "to confirm", False)].append(int(d["window_min"]))
+        rrows = []
+        for (num, lab, is_fews), ws in gauge_rows.items():
+            for w in ws:
+                trig = [t for t in triggers if t["gauge"] in [g["gauge"] for g in rains if g["onerain_number"].upper() == num]
+                        and int(t["minutes"]) == w]
+                fews = "; ".join(f"**{esc(t['name'])}** at {t['value']} in" + (f" (and tide ≥ {t['tide_at_least_navd88']} ft NAVD88)"
+                                 if t.get("tide_at_least_navd88") else "") for t in trig)
+                if is_fews:
+                    lv = lvl_text(num, w)
+                    fews = "; ".join(x for x in (fews, lv) if x) or "no rain level for this window"
+                else:
+                    fews = "– (FEWS doesn't use this gauge)"
+                ds = [d for d in dash_rain if d["onerain_number"].upper() == num and d["from_value"] and str(d["window_min"]) == str(w)]
+                al = [d for d in ds if d["kind"] == "gauge alarm threshold"]
+                co = [d for d in ds if d["kind"] == "dashboard rain color" and d["color"] != "green"]
+                al_t = "; ".join(re.sub(r"^(Hourly|30-minute) rainfall intensity ", "", re.sub(r" \(OneRain level: [^)]*\)", "", d["threshold_name"])).capitalize()
+                                 + f" {d['from_value']} in" for d in al) or "none"
+                co_t = "; ".join(f"{d['color']} from {d['from_value']} in" for d in co) or "none"
+                rrows.append(f"| {esc(lab)} | {dur(w)} | {fews} | {al_t} | {co_t} |")
+        if rrows:
+            L += ["**Rain (inches within the time shown)**", "",
+                  "FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over "
+                  "windows from 15 minutes to 48 hours; only the windows OneRain or a FEWS trigger uses are listed here.", "",
+                  "| Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |", "|---|---|---|---|---|"] + rrows + [""]
+        none_r = [d["onerain_site"] for d in dash_rain if not d["from_value"]]
+        if none_r:
+            L += ["No OneRain rain alarms or dashboard colors on: " + "; ".join(esc(x) for x in dict.fromkeys(none_r)) + ".", ""]
+        for d in dash_rain:
+            n = also_fews(d["notes"])[1]
+            n = re.sub(r"(Rain alarms set on the Rain Increment sensor[^.]*\.|Only window on the [^.]*\.|Same values as the gauge[^.]*\.|No rain alarms on this gauge in OneRain\.|A 4th color row[^.]*\.|San Bruno Mountain \(41200\) has no dashboard colors\.|Pescadero and Butano dashboard; only window\.)\s*", "", n).strip()
+            if n and n not in cmp_notes: cmp_notes.append(n)
+
+        # tide
+        if c.get("tide_station") or dash_tide:
+            L += ["**Tide**", "", "| | FEWS uses | OneRain dashboard color |", "|---|---|---|"]
+            fews_t = (f"NOAA {c['tide_station']} {esc(tide.get('name', ''))}: tide graph and high-tide lines (MHHW "
+                      f"{tide.get('mhhw_navd88_ft', '?')} ft NAVD88)" if c.get("tide_station") else
+                      "not linked to this creek" + (f"; FEWS shows {esc(tides[dash_tide[0]['onerain_number']]['name'])} on its "
+                      f"{esc(tides[dash_tide[0]['onerain_number']]['used_for'])}" if dash_tide and dash_tide[0]['onerain_number'] in tides else ""))
+            co = "; ".join(f"{esc(d['onerain_site'])}: {d['color']} from {d['from_value']} ft (datum not shown; assumed MLLW)"
+                           for d in dash_tide if d["color"] != "green") or "none recorded"
+            L += [f"| Tide | {fews_t} | {co} |", ""]
             for d in dash_tide:
-                rng = f"{d['from_value']} ft and up" if d["to_value"] in ("", "999") else f"{d['from_value']} to {d['to_value']} ft"
-                L.append(f"| {esc(d['onerain_site'])}{mark(d['notes'])} | {d['color'].capitalize()} | {rng} | "
-                         "Datum not shown in OneRain (assumed MLLW) |")
-            L.append("")
-        nones = list(dict.fromkeys(d["onerain_site"] for d in none_rain + [x for x in dash_stage if not x["from_value"]]))
-        if nones:
-            L += ["No OneRain alarms are set on: " + "; ".join(esc(x) for x in nones) + ".", ""]
-        if not cdash:
-            L += ["None recorded yet.", ""]
-        if notes:
-            L += ["Notes:", ""] + [f"{i + 1}. {esc(n)}" for i, n in enumerate(notes)] + [""]
+                n = re.sub(r"^Pescadero and Butano dashboard; ", "", d["notes"]).strip()
+                if n and n not in cmp_notes: cmp_notes.append(n[0].upper() + n[1:])
+        if cmp_notes:
+            L += ["Notes:", ""] + [f"- {esc(n)}" for n in cmp_notes] + [""]
 
         # ---- internal to-dos
         if todo:
