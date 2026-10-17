@@ -12,11 +12,11 @@
 >
 > - **Threshold:** any set value that changes a color or a status, in either system.
 > - **Flood level** (2026 Update): a threshold on creek height (or a rain amount) tied to an effect downstream, such as how full the channel is or water on a road. Only flood levels say anything about flooding.
-> - **Indicator** (2026 Update): something the page shows in color or words, not a message. Two kinds: the **rain indicator** (Heavy, Very heavy, Intense: how rare the rain is) and **rising fast** (the creek rose at least a set amount within an hour). Not tied to flooding.
-> - **Status** (2026 Update): the one overall message shown for a creek (currently worded Flooding likely, Be ready, Stay alert or No alerts). It comes from the flood levels and indicators.
+> - **Alert level** (2026 Update): a rain alert (Heavy, Very heavy, Intense: how rare the rain is) or **rising fast** (the creek rose at least a set amount within an hour). Not tied to flooding.
+> - **Status** (2026 Update): the one overall message for a creek: Flooding likely, Be ready, Stay alert or No alerts. It comes from the flood levels and alert levels.
 > - **OneRain threshold:** a named level set on a OneRain sensor (for example Flood Watch, 3.25 ft). It colors that gauge's readings and graph; it doesn't send a message by itself.
 > - **OneRain dashboard color:** the green, orange or red a OneRain dashboard gives a reading. Set separately from the thresholds.
-> - **Text alert:** a text message sent to people. Only OneRain sends these, to Public Works and emergency responders, through its *alarm* rules. The 2026 Update sends no text alerts; it only shows colors and words on the page.
+> - **Notification:** a message sent to people. OneRain sends these through separate *alarm* rules. The 2026 Update sends none; it only displays.
 >
 > **Units.** Creek heights are the gauge's own reading in feet (above the gauge's zero), not an elevation. Tide heights are in feet NAVD88, a survey datum; MHHW = the average daily high tide, MLLW = the average daily low tide. A 1-, 2- or 5-year storm is rain that heavy at that gauge, with about a 63%, 39% or 18% chance in any year (NOAA Atlas 14). Water year: October 1 to September 30, named for the year it ends.
 >
@@ -45,7 +45,7 @@
 | Reports | On change (typically every 1-5 hours in dry weather, minutes in storms) |
 | Record starts | Sep 2020 (public OneRain pages) |
 | Affected by the tide? | Yes. Rises and falls with the Bay tide |
-| Rising-fast indicator | 0.5 ft within an hour · **Tested on past data (6 yr)** |
+| Rising-fast alert | 0.5 ft within an hour · **Tested on past data (6 yr)** |
 | Why this rising-fast setting | 25 of 28 rises to Flood Monitoring warned, about 1¾ h ahead (0.25 ft: 27 of 28, but shown 57 times a year). Tidal gauge: the live site also requires rain, which this test doesn't apply, so it will show less often on the live site. One of the 28 is probably a sensor fault (Jun 3, 2026, the gauge's last day). The gauge has been offline since June 3, 2026. |
 | History and known issues | Offline since Jun 3, 2026; the last reading (Jun 3, 2026) is probably a sensor fault. Gauge zero in NAVD88 unknown. |
 
@@ -61,11 +61,11 @@ What they mean: **not recorded**.
 
 Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
 
-<details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>
+<details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
-Tested on 5.8 years of readings, against the lowest flood level (Flood Monitoring, 2.4 ft): "warned" means the indicator came on before the creek reached it.
+Tested on 5.8 years of readings, against the lowest flood level (Flood Monitoring, 2.4 ft): "warned" means an alert came before the creek reached it.
 
-| Setting (ft within an hour) | Times shown per year | Warned before reaching it | Typical warning time |
+| Alert setting (ft within an hour) | Alerts per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
 | 0.25 | 57.2 | 27 of 28 | 3.4 h |
 | 0.5 (current setting) | 31.3 | 25 of 28 | 1.8 h |
@@ -81,14 +81,14 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 | Gauge | OneRain ID | Location | Where | Use in the 2026 Update |
 |---|---|---|---|---|
-| San Bruno Mountain | 41200 | 37.69222, -122.44833 | upper watershed | Shown on the 2026 Update page and counts toward the rain indicator |
-| First Avenue | 41102 | 37.62273, -122.40671 | lower watershed | Shown on the 2026 Update page and counts toward the rain indicator |
+| San Bruno Mountain | 41200 | 37.69222, -122.44833 | upper watershed | Shown on the 2026 Update page and counts toward the rain alert |
+| First Avenue | 41102 | 37.62273, -122.40671 | lower watershed | Shown on the 2026 Update page and counts toward the rain alert |
 
-**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
+**Rain alerts** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
-<details><summary>Background: rain indicator levels at each gauge (no action needed)</summary>
+<details><summary>Background: rain alert levels at each gauge (no action needed)</summary>
 
-The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
+The creek's rain alert uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
 | Gauge | Level | 15 min | 30 min | 1 hr | 3 hr | 24 hr |
 |---|---|---|---|---|---|---|
@@ -105,7 +105,7 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Thresholds: the 2026 Update compared with OneRain today
 
-The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today (read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; OneRain sends text alerts only through separate alarm rules. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
+The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today (read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; OneRain sends notifications only through separate alarm rules. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
