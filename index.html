@@ -102,6 +102,13 @@
   .tide .tn { display: block; font-size: 14px; color: var(--muted); margin-top: 4px; }
   .tide .tn { color: var(--text); font-size: 15px; }
   .tide .ts { display: block; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  /* Bayside and Coastside: one box each, stacked on phones, side by side on wider screens; short text, details one tap away */
+  .tides2 { display: grid; gap: 8px; } @media (min-width: 640px) { .tides2 { grid-template-columns: 1fr 1fr; } }
+  .tides2 .box { padding: 9px 12px; position: relative; padding-right: 28px; }
+  .tides2 .th { font-size: 16px; }
+  .tide .sd { display: block; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .tides2 .tn { font-size: 14px; margin-top: 2px; }
+  .tides2 .go2 { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 22px; color: var(--muted); }
   .tide .go { display: block; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--link); }
 
   /* Rapidly rising */
@@ -176,8 +183,11 @@
   <div class="rising" id="rising"></div>
   <div class="calm" id="calm"></div></div>
 
-  <h2 class="sec"><span id="hTide">Bayside tides</span> <a href="Tides.html">Tide details ›</a> <a href="Tides.html?side=coast">Coastside ›</a></h2>
-  <a class="box tide gray" id="tide" href="Tides.html"><span class="th">Loading tides…</span></a>
+  <h2 class="sec"><span id="hTide">Tides</span> <a href="Tides.html">Tide details ›</a></h2>
+  <div class="tides2">
+    <a class="box tide gray" id="tide" href="Tides.html"><span class="th"><span class="sd">Bayside</span> Loading…</span></a>
+    <a class="box tide gray" id="tideCoast" href="Tides.html?side=coast"><span class="th"><span class="sd">Coastside</span> Loading…</span></a>
+  </div>
 
   <div id="secMore"><h2 class="sec">More</h2>
   <div class="grid">
@@ -249,7 +259,6 @@ if (HOME_PREVIEW) (function () {
   main.insertBefore(document.getElementById("secCreeks"), nws);
   main.insertBefore(document.getElementById("csBanner"), document.getElementById("secCreeks"));
   document.getElementById("hCreeks").textContent = "Creeks right now";
-  document.getElementById("hTide").textContent = "Bayside tide";
   document.getElementById("secMore").hidden = true;
   var sys = document.getElementById("secSys"), d = document.createElement("details");
   d.className = "sysfold"; d.innerHTML = "<summary>System status and data sources</summary>";
@@ -569,16 +578,20 @@ function creeks() {
   });
 }
 
-/* ---------- Bay tide at Redwood City (same rule as the Tides page and the kiosk) ---------- */
-// Heights in ft NAVD88 from one series: measured for what has happened, then NOAA's model forecast
-// (ofs_water_level, about 2 days), then the astronomical prediction. MHHW is the threshold for now.
-var TIDE_STATION = "9414523", TIDE_DAYS = 7;
-var TD = { obs: null, ofs: null, pred: null, t: 0 };
+/* ---------- Tides: Bayside (Redwood City) and Coastside (Monterey), same rule as the Tides page and the kiosk ---------- */
+// Heights in ft NAVD88 from one series: measured (Bayside only) for what has happened, then NOAA's model forecast
+// (ofs_water_level, about 2 days), then the tide table. Short text here; the Tides page has the rest.
+var TIDE_DAYS = 7;
+var TSIDES = [
+  { el: "tide", id: "9414523", name: "Bayside", water: "Bay", red: "TIDE_RED_FT_RWC", king: "KING_TIDE_FT_RWC", obs: true },
+  { el: "tideCoast", id: "9413450", name: "Coastside", water: "ocean", red: null, king: "KING_TIDE_FT_MRY", obs: false }
+];
+TSIDES.forEach(function (T) { T.d = { obs: null, ofs: null, pred: null }; });
 function ymd(ms) { var d = new Date(ms); return d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCDate()).padStart(2, "0"); }
 function dayStart(ms) { var d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); }
 function relDay(ms, now) { var d = Math.round((dayStart(ms) - dayStart(now)) / 864e5); return d === 0 ? "Today" : d === 1 ? "Tomorrow" : fmt(ms, { weekday: "short", month: "short", day: "numeric" }); }
-function noaaURL(product, b, e) {
-  return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=" + TIDE_STATION + "&product=" + product + "&begin_date=" + b + "&end_date=" + e +
+function noaaURL(station, product, b, e) {
+  return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?station=" + station + "&product=" + product + "&begin_date=" + b + "&end_date=" + e +
     "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
 }
 function toPts(a) { return (a || []).map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); }); }
@@ -596,59 +609,54 @@ function findWindows(pts, lvl) {
 }
 function loadTide() {
   var now = nowLocal(), y = ymd(now - 864e5), t0 = ymd(now), t6 = ymd(now + 6 * 864e5), t3 = ymd(now + 3 * 864e5);
-  return Promise.all([
-    getJSON(noaaURL("predictions", t0, t6)).then(function (j) { TD.pred = toPts(j.predictions); }),
-    getJSON(noaaURL("water_level", y, t0)).then(function (j) { TD.obs = toPts(j.data); }).catch(function () {}),
-    getJSON(noaaURL("ofs_water_level", y, t3)).then(function (j) { var p = toPts(j.data || j.predictions); TD.ofs = p.length ? p : null; }).catch(function () { TD.ofs = null; })
-  ]).then(function () { TD.t = Date.now(); renderTide(); }).catch(function () { renderTide(); });
+  TSIDES.forEach(function (T) {
+    var D = T.d;
+    Promise.all([
+      getJSON(noaaURL(T.id, "predictions", t0, t6)).then(function (j) { D.pred = toPts(j.predictions); }),
+      T.obs ? getJSON(noaaURL(T.id, "water_level", y, t0)).then(function (j) { D.obs = toPts(j.data); }).catch(function () {}) : null,
+      getJSON(noaaURL(T.id, "ofs_water_level", y, t3)).then(function (j) { var p = toPts(j.data || j.predictions); D.ofs = p.length ? p : null; }).catch(function () { D.ofs = null; })
+    ]).then(function () { D.tried = true; renderTide(T); }).catch(function () { D.tried = true; renderTide(T); });
+  });
 }
 function sgn(v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
-function renderTide() {
-  var el = $("tide"), now = nowLocal(), m = LK.mhhw(TIDE_STATION);
-  if (!TD.pred || !TD.pred.length) { el.className = "box tide gray"; el.innerHTML = '<span class="th">Bay tide data unavailable right now</span><span class="go">Tide details ›</span>'; return; }
-  var ser = [], tail = -Infinity, fe = null;
-  (TD.obs || []).forEach(function (o) { ser.push({ t: o.t, v: o.v, src: "measured" }); tail = o.t; });
-  if (TD.ofs && TD.ofs[TD.ofs.length - 1].t >= now + MODEL_MIN_AHEAD_HOURS * 36e5) { fe = TD.ofs[TD.ofs.length - 1].t; TD.ofs.forEach(function (o) { if (o.t > tail) ser.push({ t: o.t, v: o.v, src: "forecast" }); }); tail = Math.max(tail, fe); }
-  TD.pred.forEach(function (p) { if (p.t > tail) ser.push({ t: p.t, v: p.v, src: "predicted" }); });
+function renderTide(T) {
+  if (!T) { TSIDES.forEach(function (x) { renderTide(x); }); return; }
+  if (!T.d.tried) return;   // still loading
+  var el = $(T.el), D = T.d, now = nowLocal(), m = LK.mhhw(T.id), sd = '<span class="sd">' + esc(T.name) + "</span>", go = '<span class="go2" aria-hidden="true">›</span>';
+  if (!D.pred || !D.pred.length) { el.className = "box tide gray"; el.innerHTML = '<span class="th">' + sd + "Tide data unavailable right now</span>" + go; return; }
+  var ser = [], tail = -Infinity;
+  (D.obs || []).forEach(function (o) { ser.push({ t: o.t, v: o.v, src: "measured" }); tail = o.t; });
+  if (D.ofs && D.ofs[D.ofs.length - 1].t >= now + MODEL_MIN_AHEAD_HOURS * 36e5) { D.ofs.forEach(function (o) { if (o.t > tail) ser.push({ t: o.t, v: o.v, src: "forecast" }); }); tail = Math.max(tail, D.ofs[D.ofs.length - 1].t); }
+  D.pred.forEach(function (p) { if (p.t > tail) ser.push({ t: p.t, v: p.v, src: "predicted" }); });
   ser = ser.filter(function (p) { return p.t >= now - 12 * 36e5 && p.t <= dayStart(now) + TIDE_DAYS * 864e5; });
   var ups = findWindows(ser, m).filter(function (w) { return w.end > now; });
-
-  // Plain English, still precise: rounded times, "average high tide" (MHHW, named and defined in the small print)
   function r15(t) { return Math.round(t / 9e5) * 9e5; }
   function clock(t) { return fTime(r15(t)).replace(":00", ""); }
   function span(w) { var a = clock(w.start), b = clock(w.end); return (a.slice(-2) === b.slice(-2) ? a.slice(0, -3) : a) + "–" + b; }
-  function dayWord(t) {
-    var d = Math.round((dayStart(t) - dayStart(now)) / 864e5);
-    return d === 0 ? "today" : d === 1 ? "tomorrow" : fmt(t, { weekday: "long" });
-  }
-  function feet(x) { var r = Math.round(x * 10) / 10; return r < 0.1 ? "just" : Math.abs(r - 0.5) < 0.05 ? "about half a foot" : "about " + r.toFixed(1) + " ft"; }
-  var head, sub = "";
-  if (!ups.length) { el.className = "box tide ok"; head = "No tides higher than an average high tide expected in the next " + TIDE_DAYS + " days."; }
+  function dayWord(t) { var d = Math.round((dayStart(t) - dayStart(now)) / 864e5); return d === 0 ? "today" : d === 1 ? "tomorrow" : fmt(t, { weekday: "long" }); }
+  var redLvl = T.red ? LK.num(T.red) : Infinity, kingLvl = LK.num(T.king), head, bits = [];
+  if (!ups.length) { el.className = "box tide ok"; head = "No higher-than-usual tides in the next " + TIDE_DAYS + " days"; }
   else {
-    // blue (information) above MHHW; red at the Redwood City flood level (TIDE_RED_FT_RWC, provisional)
-    var redLvl = TIDE_STATION === "9414523" ? LK.num("TIDE_RED_FT_RWC") : Infinity;
-    el.className = "box tide " + (ups.some(function (w) { return w.peak >= redLvl; }) ? "red" : "info");
-    var on = ups[0].start <= now, list = on ? ups.slice(1) : ups;
-    if (on) head = "The tide is higher than an average high tide right now, until about " + clock(ups[0].end) + "." +
-      (list.length ? " Next: " + dayWord(list[0].start) + " about " + span(list[0]) + "." : "");
-    else head = "Tides higher than an average high tide: " + list.slice(0, 2).map(function (w) { return dayWord(w.start) + " about " + span(w); }).join(" and ") +
-      (list.length > 2 ? ", and " + (list.length - 2) + " more time" + (list.length > 3 ? "s" : "") + " this week" : "") + ".";
+    var red = ups.filter(function (w) { return w.peak >= redLvl; }), first = red[0] || ups[0], more = ups.length - 1;
+    el.className = "box tide " + (red.length ? "red" : "info");
+    head = (red.length ? "High enough to flood low areas " : "Higher than usual ") +
+      (first.start <= now ? "now, until about " + clock(first.end) : dayWord(first.start) + " about " + span(first)) +
+      (more > 0 ? " (+" + more + " more this week)" : "");
     var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
-    sub = (top.peakT <= now ? "It reached " : "At its highest, ") + feet(top.peak - m) + " above an average high tide (" + dayWord(top.peakT) + " around " + clock(top.peakT) + ").";
-    if (top.peak >= redLvl) sub += " " + LK.text("tide_red_home", { ft: redLvl.toFixed(1) });
-    else if (isFinite(redLvl)) sub += " " + LK.text("tide_below_red_home", { ft: redLvl.toFixed(1) });
+    bits.push("Peak " + top.peak.toFixed(1) + " ft, " + (top.peak - m).toFixed(1) + " ft above an average high tide");
+    if (isFinite(redLvl)) bits.push((top.peak >= redLvl ? "at or above" : "below") + " the " + redLvl.toFixed(1) + " ft flood level");
+    // King Tide (the 1-year tide) in the coming week: the tide table reaching it, as on the Tides page calendar
+    var k = null; D.pred.forEach(function (p) { if (!k && p.v >= kingLvl && p.t >= dayStart(now) && p.t < dayStart(now) + TIDE_DAYS * 864e5) k = p; });
+    if (k) bits.push("★ King Tide " + dayWord(k.t));
   }
-  var last = TD.obs && TD.obs.length ? TD.obs[TD.obs.length - 1] : null, nowTxt = "";
+  // Bayside only: say so when the Bay is running well above the tide table (storms, wind, runoff)
+  var last = D.obs && D.obs.length ? D.obs[D.obs.length - 1] : null;
   if (last && now - last.t < 36e5) {
-    var pv = null; TD.pred.forEach(function (p) { if (Math.abs(p.t - last.t) <= 3e5) pv = p.v; });
-    if (pv != null) nowTxt = Math.abs(last.v - pv) < OFFSET_NOTE_FT ? "Right now the Bay is about where the tide table says."
-      : "Right now the Bay is " + feet(Math.abs(last.v - pv)) + " " + (last.v > pv ? "higher" : "lower") + " than the tide table" +
-        (last.v > pv ? ". " + LK.text("tide_causes") : ".");
+    var pv = null; D.pred.forEach(function (p) { if (Math.abs(p.t - last.t) <= 3e5) pv = p.v; });
+    if (pv != null && last.v - pv >= OFFSET_NOTE_FT) bits.push("The " + T.water + " is running " + (last.v - pv).toFixed(1) + " ft above the tide table");
   }
-  el.innerHTML = '<span class="th">' + esc(head) + "</span>" + (sub ? '<span class="tn">' + esc(sub) + "</span>" : "") +
-    (nowTxt ? '<span class="tn">' + esc(nowTxt) + "</span>" : "") +
-    '<span class="ts">' + esc(LK.text("mhhw_definition_home", { station: LK.station(TIDE_STATION).name, mhhw: m.toFixed(2) })) + "</span>" +
-    '<span class="go">Tide details ›</span>';
+  el.setAttribute("aria-label", T.name + " tides: " + head + (bits.length ? ". " + bits.join(". ") : "") + ". Tide details.");
+  el.innerHTML = '<span class="th">' + sd + esc(head) + "</span>" + (bits.length ? '<span class="tn">' + esc(bits.join(" · ")) + "</span>" : "") + go;
 }
 
 /* ---------- Monitoring network ---------- */
@@ -672,10 +680,10 @@ function sites() {
 }
 
 function all() { nws(); creeks(); sites(); loadTide(); }
-LK.onChange(function () { applyLookups(); lookStatus(); if (C.data) renderCreeks(); if (TD.pred) renderTide(); });   // edited lookups/ files
+LK.onChange(function () { applyLookups(); lookStatus(); if (C.data) renderCreeks(); renderTide(); });   // edited lookups/ files
 all();
 setInterval(all, 5 * 60000);
-setInterval(function () { if (C.data) renderCreeks(); if (TD.pred) renderTide(); }, 60000);
+setInterval(function () { if (C.data) renderCreeks(); renderTide(); }, 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) all(); });
 // Report tab in the bottom bar: staff preview, or everyone once REPORTS_PUBLIC = 1 (lookups/settings.csv)
 function reportNav() {
