@@ -3,7 +3,8 @@
 Static creek maps for the Creeks page, and watershed boundaries for the sensor map's "Watersheds" switch.
 
 Writes
-  img/creekmaps/<creek>.svg   one small map per creek in lookups/creeks.csv: the creek line, its watershed, the creek's
+  img/creekmaps/<creek>.svg   one small map per creek in lookups/creeks.csv: the creek line, the area draining to its
+                              level gauge (USGS NLDI; or data/creek_watersheds.geojson when it has the creek), the creek's
                               gauges (creek level, rain, supporting rain) labeled as on the Creeks page, the main
                               highways, a north arrow and a scale bar. Shown at the bottom of each creek's page;
                               tapping it opens SiteMap.html zoomed to that creek.
@@ -38,6 +39,10 @@ WATERSHEDS = os.path.join(ROOT, "data", "watersheds.geojson")
 UA = {"User-Agent": "OneShoreline FEWS creek maps (github.com/OneShorelineSMC/oneshorelinefews)"}
 
 COUNTY_BBOX = (-122.56, 37.10, -122.08, 37.72)   # San Mateo County plus a margin (lon, lat)
+# San Mateo County's own watershed layer (the Flows to Bay watershed map; C/CAG's countywide stormwater program):
+# creek-level watersheds, far finer than HUC-12. Public feature services on the County's ArcGIS Online.
+COUNTY_WS = "https://services.arcgis.com/yq3FgOI44hYHAFVZ/arcgis/rest/services/Watersheds_Public_View/FeatureServer/0/query"
+COUNTY_STREAMS = "https://services.arcgis.com/yq3FgOI44hYHAFVZ/arcgis/rest/services/Streams_Watersheds/FeatureServer/0/query"
 WBD = "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/FeatureServer/6/query"
 NHD = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6/query"
 ROADS = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/Transportation/MapServer/{}/query"
@@ -157,16 +162,22 @@ DARK = """@media (prefers-color-scheme: dark){.bg{fill:#121a22}.hu{stroke:#3a465
 .gr{fill:#a3b0bd;stroke:#121a22}.gp{fill:#121a22;stroke:#a3b0bd}.na{fill:#e6edf5}.sb{stroke:#e6edf5}}"""
 
 
-def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
+def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None):
     """creek: {"id","name"}; line_feats/hu_feats/road_feats: GeoJSON features (lon/lat);
-    gauges: [{"label","kind": stage|rain|support,"lon","lat"}]. Returns (svg text, watershed names)."""
+    gauges: [{"label","kind": stage|rain|support,"lon","lat"}]; basins: GeoJSON polygons of the area draining to the
+    creek's level gauges (NLDI or data/creek_watersheds.geojson), used instead of the HUC-12 units when given.
+    Returns (svg text, watershed names)."""
     lines = [ln for f in line_feats for ln in lines_of(f["geometry"])]
     probe = [p for ln in lines for p in ln[::3]] + [(g["lon"], g["lat"]) for g in gauges if g["kind"] != "support"]
-    # the creek's subwatersheds: the ones its line or gauges are in, leaving out the open-Bay units (they span the Bay)
-    mine = [f for f in hu_feats if not open_water(f) and
-            any(any(inside(p, poly) for poly in polys_of(f["geometry"])) for p in probe)]
-    # the map shows the creek and its gauges (a subwatershed can be much bigger than a small urban creek)
-    pts = [p for ln in lines for p in ln] + [(g["lon"], g["lat"]) for g in gauges]
+    if basins:
+        mine, hu_feats = basins, []   # the gauge's own drainage area; the HUC-12 units stay off the map
+    else:   # the creek's subwatersheds: the ones its line or gauges are in, leaving out the open-Bay units (they span the Bay)
+        mine = [f for f in hu_feats if not open_water(f) and
+                any(any(inside(p, poly) for poly in polys_of(f["geometry"])) for p in probe)]
+    # the map shows the creek and its gauges, plus the gauge's own drainage area when we have it
+    # (a HUC-12 subwatershed can be much bigger than a small urban creek, so it never sets the extent)
+    pts = [p for ln in lines for p in ln] + [(g["lon"], g["lat"]) for g in gauges] + \
+          ([p for f in basins for r in rings_of(f["geometry"]) for p in r] if basins else [])
     if not pts:
         return None, []
     lo0, lo1 = min(p[0] for p in pts), max(p[0] for p in pts)
@@ -247,6 +258,7 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
     # gauges: creek level = circle, rain = square, supporting rain = open square; a rain gauge at a creek gauge's spot
     # (same site) shows as a small square beside the circle, with one label
     placed, spots = [], {}
+    legend_box = (0, 0, 190, 22 + 16 * 5)   # the legend (top left) is drawn later; labels move below it
     for g in sorted(gauges, key=lambda g: {"stage": 0, "rain": 1, "support": 2}[g["kind"]]):
         spots.setdefault((round(g["lon"], 4), round(g["lat"], 4)), []).append(g)
     for gs in spots.values():
@@ -264,8 +276,10 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
             out.append(f'<rect class="gp" x="{x - 6:.1f}" y="{y - 6:.1f}" width="12" height="12" fill="#fff" stroke="{COL["rain"]}" stroke-width="2.5"/>')
         right = x < W - 150
         ty = y + 4
-        for _ in range(4):   # nudge a label down if another sits on top of it
-            if any(abs(ty - py) < 15 and abs(x - px) < 150 for px, py in placed):
+        lx0 = x + 11 if right else x - 11 - 7 * len(g["label"])
+        for _ in range(6):   # nudge a label down if another label or the legend sits on top of it
+            if any(abs(ty - py) < 15 and abs(x - px) < 150 for px, py in placed) or \
+               (ty - 12 < legend_box[3] and lx0 < legend_box[2]):
                 ty += 16
         placed.append((x, ty))
         out.append(f'<text class="t h" x="{x + (11 if right else -11):.1f}" y="{ty:.1f}" font-size="14" font-weight="700" '
@@ -290,16 +304,20 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
     # legend, bottom right: only the symbols this map uses
     kinds = {g["kind"] for g in gauges}
     leg = [("ck", "Creek", None)] if lines else []
+    src = (mine[0].get("properties") or {}).get("source", "") if mine else ""
+    leg += [("ws", "Watershed (San Mateo County)" if src == "county" else "Drains to the creek gauge" if basins else "Watershed (USGS HUC-12)", "w")] if mine else []
     leg += [("gs", "Creek level gauge", "c")] if "stage" in kinds else []
     leg += [("gr", "Rain gauge", "r")] if "rain" in kinds else []
     leg += [("gp", "Hillside rain gauge", "p")] if "support" in kinds else []
-    lx, ly = W - 140, H - 12 - 16 * (len(leg) - 1)
+    lx, ly = 14, 22
     if leg:
-        out.append(f'<rect class="bg" x="{lx - 8}" y="{ly - 13}" width="146" height="{16 * len(leg) + 6}" rx="6" fill="{COL["bg"]}" opacity="0.92"/>')
+        out.append(f'<rect class="bg" x="{lx - 8}" y="{ly - 13}" width="176" height="{16 * len(leg) + 6}" rx="6" fill="{COL["bg"]}" opacity="0.92"/>')
     for i, (cls, txt, sym) in enumerate(leg):
         y = ly + 16 * i
         if sym is None:
             out.append(f'<path class="ck" d="M{lx},{y - 4} h16" stroke="{COL["creek"]}" stroke-width="3" stroke-linecap="round"/>')
+        elif sym == "w":
+            out.append(f'<rect class="ws" x="{lx + 2}" y="{y - 10}" width="13" height="12" fill="{COL["ws"]}" stroke="{COL["wsl"]}" stroke-width="1.2"/>')
         elif sym == "c":
             out.append(f'<circle class="gs" cx="{lx + 8}" cy="{y - 4}" r="5.5" fill="{COL["stage"]}" stroke="#fff" stroke-width="1.5"/>')
         elif sym == "r":
@@ -308,7 +326,7 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges):
             out.append(f'<rect class="gp" x="{lx + 3}" y="{y - 9}" width="10" height="10" fill="#fff" stroke="{COL["rain"]}" stroke-width="2"/>')
         out.append(f'<text class="t" x="{lx + 22}" y="{y}" font-size="12">{txt}</text>')
     out.append("</svg>")
-    names = sorted({(f.get("properties") or {}).get("name") for f in mine} - {None})
+    names = sorted({(f.get("properties") or {}).get("name") for f in mine} - {None, ""})
     return "\n".join(out) + "\n", names
 
 
@@ -340,6 +358,60 @@ def road_label(n):
     if n.startswith("State Rte "):
         return "Hwy " + n[10:]
     return n
+
+
+# ---------------------------------------------------------------- drainage area above each creek level gauge
+NLDI = "https://api.water.usgs.gov/nldi/linked-data"
+OVERRIDE = os.path.join(ROOT, "data", "creek_watersheds.geojson")   # optional: {"creek": "<id>"} per polygon, wins over NLDI
+
+
+def nldi_basin(g):
+    """The area draining to a gauge, from USGS NLDI: a USGS gauge by its site number, otherwise the NHDPlus flowline
+    nearest the gauge, with the catchment split at the gauge. Returns a GeoJSON feature or None."""
+    if g.get("usgs_site"):
+        src = f"nwissite/USGS-{g['usgs_site']}"
+    else:
+        d = json.loads(get(f"{NLDI}/comid/position", {"coords": f"POINT({g['lon']} {g['lat']})"}))
+        feats = d.get("features") or []
+        if not feats:
+            return None
+        src = "comid/" + str((feats[0].get("properties") or {}).get("identifier") or feats[0]["properties"].get("comid"))
+    d = json.loads(get(f"{NLDI}/{src}/basin", {"simplified": "false", "splitCatchment": "true"}))
+    feats = d.get("features") or []
+    if not feats or not feats[0].get("geometry"):
+        return None
+    f = feats[0]
+    f["properties"] = {"name": g.get("label") or "", "source": "USGS NLDI", "gauge": g.get("usgs_site") or g.get("number")}
+    return f
+
+
+def basins_for(c, override, county=()):
+    """Polygons to shade for a creek, first that works: data/creek_watersheds.geojson if it has this creek; the County
+    watershed(s) a creek level gauge sits in; NLDI's drainage area above each level gauge (biggest first, so nested
+    areas draw in order). [] if none works; the map then falls back to HUC-12."""
+    mine = [f for f in override if (f.get("properties") or {}).get("creek") == c["id"]]
+    if mine:
+        return mine
+    pts = [(g["lon"], g["lat"]) for g in c.get("stages", []) if "lon" in g]
+    mine = [f for f in county if any(any(inside(p, poly) for poly in polys_of(f["geometry"])) for p in pts)]
+    if mine:
+        return mine
+    out = []
+    for g in c.get("stages", []):
+        if "lon" not in g and not g.get("usgs_site"):
+            continue
+        try:
+            f = nldi_basin(g)
+        except Exception as e:   # noqa: BLE001
+            print(f"  {c['id']}: NLDI failed for {g.get('label')}: {e}")
+            continue
+        if f:
+            out.append(f)
+        else:
+            print(f"  {c['id']}: NLDI has no basin for {g.get('label')} ({g.get('usgs_site') or g.get('number')})")
+    def area(f):
+        return sum(abs(sum(r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1] for i in range(len(r) - 1))) for r in rings_of(f["geometry"]))
+    return sorted(out, key=area, reverse=True)
 
 
 # ---------------------------------------------------------------- main
@@ -379,6 +451,14 @@ def main():
                 pass
     print(f"{len(onerain)} OneRain sites, {len(usgs)} of {len(usgs_ids)} USGS gauges located")
 
+    county = []
+    try:   # the County's creek-level watersheds (Flows to Bay map); names in WATERSHED
+        for f in arcgis(COUNTY_WS, "1=1", "WATERSHED", 0.0002):
+            f["properties"] = {"name": (f.get("properties") or {}).get("WATERSHED") or "", "source": "county"}
+            county.append(f)
+        print(f"{len(county)} County watersheds (San Mateo County / C/CAG)")
+    except Exception as e:   # noqa: BLE001
+        print(f"County watershed layer unavailable ({e}); using USGS")
     hu = arcgis(WBD, "1=1", "huc12,name", 0.0004)
     print(f"{len(hu)} subwatersheds (HUC-12)")
     names = sorted({n for v in NHD_NAMES.values() for n in v})
@@ -392,10 +472,24 @@ def main():
             roads.append(f)
     print(f"{len(roads)} highway pieces")
 
+    override = []
+    if os.path.exists(OVERRIDE):
+        with open(OVERRIDE) as f:
+            override = json.load(f).get("features", [])
+        print(f"data/creek_watersheds.geojson: {len(override)} polygons (used before NLDI)")
+
     os.makedirs(OUT_DIR, exist_ok=True)
     for c in CREEKS:
         want = set(NHD_NAMES.get(c["id"], []))
         line = [f for f in flow if (f.get("properties") or {}).get("gnis_name") in want]
+        if not line:   # County streams layer by name (Flows to Bay map)
+            try:
+                q = "NAME LIKE '%" + c["name"].replace("'", "''").replace(" Channel", "").replace(" Creek", "") + "%'"
+                line = arcgis(COUNTY_STREAMS, q, "NAME", 0.00015)
+                if line:
+                    print(f"  {c['id']}: creek line from the County streams layer ({len(line)} pieces)")
+            except Exception as e:   # noqa: BLE001
+                print(f"  {c['id']}: County streams lookup failed: {e}")
         if not line:   # NHD spells it differently: use the named stream(s) right at the creek's level gauges
             near = {}
             for g in gauges_for(c, onerain, usgs):
@@ -417,23 +511,31 @@ def main():
                 line = arcgis(NHD, q, "gnis_name", 0.00015)
         if not line:
             print(f"  {c['id']}: no NHD creek line for {sorted(want) or '(no name set)'}; map without it")
-        svg, ws = build_svg(c, line, hu, roads, gauges_for(c, onerain, usgs))
+        gs = gauges_for(c, onerain, usgs)
+        for g in c.get("stages", []):   # NLDI needs each level gauge's location
+            for x in gs:
+                if x["kind"] == "stage" and x["label"] == (g.get("label") or g.get("site_name")):
+                    g["lon"], g["lat"] = x["lon"], x["lat"]
+        basins = basins_for(c, override, county)
+        svg, ws = build_svg(c, line, hu, roads, gs, basins)
         if not svg:
             print(f"  {c['id']}: nothing to draw; skipped")
             continue
         with open(os.path.join(OUT_DIR, c["id"] + ".svg"), "w", encoding="utf-8") as f:
             f.write(svg)
-        print(f"  {c['id']}: {len(svg) // 1024} KB; watershed: {', '.join(ws) or '-'}")
+        how = "" if not basins else (basins[0].get("properties") or {}).get("source", "")
+        print(f"  {c['id']}: {len(svg) // 1024} KB; " + ("County watershed: " if how == "county" else "drains to gauge (NLDI): " if how == "USGS NLDI" else "creek_watersheds.geojson: " if basins else "HUC-12: ") + (", ".join(ws) or "-"))
 
-    # watershed boundaries for the sensor map switch: names and outlines only, 5 decimals (~1 m)
+    # watershed boundaries for the sensor map switch: the County's creek watersheds when available, else HUC-12
     os.makedirs(os.path.dirname(WATERSHEDS), exist_ok=True)
-    fc = {"type": "FeatureCollection", "source": "USGS Watershed Boundary Dataset (WBD), 12-digit HU",
+    use = county or hu
+    fc = {"type": "FeatureCollection", "source": "San Mateo County watersheds (C/CAG, Flows to Bay)" if county else "USGS Watershed Boundary Dataset (WBD), 12-digit HU",
           "features": [{"type": "Feature", "properties": {"name": (f.get("properties") or {}).get("name"),
                                                           "huc12": (f.get("properties") or {}).get("huc12")},
-                        "geometry": f["geometry"]} for f in hu]}
+                        "geometry": f["geometry"]} for f in use]}
     with open(WATERSHEDS, "w", encoding="utf-8") as f:
         json.dump(fc, f, separators=(",", ":"))
-    print(f"data/watersheds.geojson: {len(hu)} subwatersheds, {os.path.getsize(WATERSHEDS) // 1024} KB")
+    print(f"data/watersheds.geojson: {len(use)} watersheds ({fc['source']}), {os.path.getsize(WATERSHEDS) // 1024} KB")
 
 
 if __name__ == "__main__":

@@ -52,4 +52,22 @@ svg2, _ = B.build_svg(creek, [], [], [], [])
 check(svg2 is None, "nothing to draw: no map")
 svg3, _ = B.build_svg(creek, [], hu, roads, gauges[:1])
 check(svg3 and 'class="ck"' not in svg3, "no creek line found: map without it (and no 'Creek' in the legend)")
+# drainage area above the gauge (NLDI or data/creek_watersheds.geojson) replaces the HUC-12 shading and sets the extent
+basin = poly(-122.44, 37.66, 0.015, "Stage Gauge")
+svg4, ws4 = B.build_svg(creek, line, hu, roads, gauges, [basin])
+check(ws4 == ["Stage Gauge"] and "Drains to the creek gauge" in svg4 and svg4.count('class="hu"') == 0, "basin shading, no HUC-12 units")
+check("Watershed (USGS HUC-12)" in svg, "HUC-12 legend when there is no basin")
+B.get = lambda url, params=None: ('{"features":[{"properties":{"identifier":"77"}}]}' if "position" in url
+                                  else '{"features":[{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-122.45,37.65],[-122.43,37.65],[-122.43,37.67],[-122.45,37.65]]]}}]}')
+got = B.basins_for({"id": "t", "stages": [{"label": "A", "lon": -122.44, "lat": 37.66}, {"label": "B", "usgs_site": "11162630"}, {"label": "C"}]}, [])
+check(len(got) == 2 and all(f["properties"]["source"] == "USGS NLDI" for f in got), f"NLDI: one basin per locatable level gauge: {len(got)}")
+check(B.basins_for({"id": "t", "stages": []}, [{"type": "Feature", "properties": {"creek": "t"}, "geometry": basin["geometry"]}])[0]["properties"]["creek"] == "t",
+      "data/creek_watersheds.geojson wins over NLDI")
+
+cty = poly(-122.44, 37.66, 0.02, "Colma Creek"); cty["properties"]["source"] = "county"
+got = B.basins_for({"id": "t", "stages": [{"label": "A", "lon": -122.44, "lat": 37.66}]}, [], [cty, poly(-122.3, 37.5, 0.02, "Elsewhere")])
+check(len(got) == 1 and got[0]["properties"]["name"] == "Colma Creek", "County watershed containing the level gauge wins over NLDI")
+svg5, _ = B.build_svg(creek, line, hu, roads, gauges, got)
+check("Watershed (San Mateo County)" in svg5, "County watershed named in the legend")
+
 print(f"creek maps: {checks} checks passed")
