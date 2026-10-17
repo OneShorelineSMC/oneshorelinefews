@@ -61,7 +61,7 @@
   .box.gray { border-color: var(--gray); }
 
   /* NWS alerts, shown in full */
-  .alerts { display: grid; gap: 10px; }
+  .alerts { display: grid; gap: 10px; margin-bottom: 8px; }
   .al h3 { margin: 0; font-size: 18px; color: var(--ink); }
   .al.red h3 { color: var(--red); } .al.amber h3 { color: #a35f00; }
   @media (prefers-color-scheme: dark) { .al.amber h3 { color: var(--amber); } }
@@ -73,6 +73,16 @@
   .al.none { display: flex; align-items: center; gap: 10px; font-size: 15.5px; }
   .al.none .ck { color: var(--ok); font-size: 20px; }
   .al.none b { color: var(--ink); }
+  /* National Weather Service alerts in the creek section's style (boxes from creek_status.js) */
+  .nwsg { padding-bottom: 12px; } .nwsg h3 { margin: 0; font-size: inherit; color: inherit; }
+  .nwsg.cs-hg-info { border: 2px solid var(--gray); }
+  .cs-v-info { background: rgba(138,150,163,.15); }
+  details.nwsg > summary { list-style: none; cursor: pointer; display: block; }
+  details.nwsg > summary::-webkit-details-marker { display: none; }
+  details.nwsg > summary:focus-visible { outline: 3px solid var(--blue, #1e6fd9); outline-offset: -3px; }
+  .nwsmore { display: inline-block; margin: 4px 14px 0; font-size: 14px; font-weight: 600; color: var(--link, #0b5cad); text-decoration: underline; }
+  details.nwsg[open] .nwsmore { display: none; }
+  .nwsb { padding: 6px 14px 0; }
 
   /* Creek status cards */
   .creeks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -172,8 +182,8 @@
 
 <main class="wrap">
   <div id="csBanner"></div>
-  <h2 class="sec" id="hNws">National Weather Service · San Mateo County <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">NWS forecast ↗</a></h2>
-  <div class="alerts" id="alerts" aria-live="polite"><div class="box al none gray"><span>Checking NWS alerts…</span></div></div>
+  <h2 class="sec" id="hNws">National Weather Service <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">Forecast ↗</a></h2>
+  <div class="alerts" id="alerts" aria-live="polite"><div class="box al none gray"><span>Checking National Weather Service alerts…</span></div></div>
 
   <div id="secCreeks"><h2 class="sec"><span id="hCreeks">Creeks</span> <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
   <div id="csPreview"></div>
@@ -246,18 +256,18 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261017a"></script>
-<script src="creek_status.js?v=20261017a"></script>
+<script src="lookups.js?v=20261017b"></script>
+<script src="creek_status.js?v=20261017b"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
-// Creeks first, then NWS, Bayside tide, sign-up; the sensor map card goes (the creek list links to the map);
+// National Weather Service first, then creeks, tides, sign-up; the sensor map card goes (the creek list links to the map);
 // System status and the OneRain card fold away at the bottom.
 var HOME_PREVIEW = !!(window.CREEK_STATUS && window.CREEK_STATUS.preview);
 var PV_Q = window.CREEK_STATUS && window.CREEK_STATUS.staff ? "?preview=1" : "";   // keep the staff view on the pages it links to
 if (HOME_PREVIEW) (function () {
+  // National Weather Service first (Summer, Oct 17), then the creeks; a creek's "call 911" banner stays above both
   var main = document.querySelector("main"), nws = document.getElementById("hNws");
-  main.insertBefore(document.getElementById("secCreeks"), nws);
-  main.insertBefore(document.getElementById("csBanner"), document.getElementById("secCreeks"));
+  main.insertBefore(document.getElementById("csBanner"), nws);
   document.getElementById("hCreeks").textContent = "Creeks right now";
   document.getElementById("secMore").hidden = true;
   var sys = document.getElementById("secSys"), d = document.createElement("details");
@@ -353,18 +363,28 @@ function nws() {
         p.status === "Actual" && p.messageType !== "Cancel";
     }).sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
     if (!list.length) {
-      $("alerts").innerHTML = '<div class="box al none ok"><span class="ck">✓</span><span><b>No watches, warnings or advisories</b> for San Mateo County.</span></div>';
+      $("alerts").innerHTML = nwsNone();
       return;
     }
+    // Same look as the creek section: a box per alert, colored like the creek statuses (warning red, watch orange,
+    // advisory yellow, statement gray), the event as its headline; details open with a tap on the status-layer page
     $("alerts").innerHTML = list.map(function (p, i) {
-      var c = classify(p.event), cls = c === "warning" ? "red" : c === "statement" ? "gray" : "amber";
-      var head = "<h3>" + esc(p.event) + "</h3><div class='when'>" + esc(untilText(p.ends || p.expires)) + " · NWS San Francisco Bay Area</div>";
-      if (i < (HOME_PREVIEW ? 0 : MAX_ALERTS_OPEN)) return '<div class="box al ' + cls + '">' + head + alertBody(p) + "</div>";
-      return '<details class="box al ' + cls + '"><summary>' + head + "</summary>" + alertBody(p) + "</details>";
+      var c = classify(p.event), k = { warning: "likely", watch: "ready", advisory: "alert", statement: "info" }[c];
+      var ic = window.CREEK_STATUS ? CREEK_STATUS.icon(k === "info" ? "none" : k) : "";
+      var head = '<div class="cs-verdict cs-v-' + k + '">' + ic + "<h3>" + esc(p.event) + "</h3></div>" +
+        '<p class="cs-hscope">' + esc(untilText(p.ends || p.expires)) + " · National Weather Service San Francisco Bay Area</p>";
+      if (i < (HOME_PREVIEW ? 0 : MAX_ALERTS_OPEN)) return '<section class="cs-hg cs-hg-' + k + ' nwsg">' + head + '<div class="nwsb al">' + alertBody(p) + "</div></section>";
+      return '<details class="cs-hg cs-hg-' + k + ' nwsg"><summary>' + head + '<span class="nwsmore">Details</span></summary><div class="nwsb al">' + alertBody(p) + "</div></details>";
     }).join("");
   }).catch(function () {
-    $("alerts").innerHTML = '<div class="box al none gray"><span>NWS alerts are unavailable right now. Check <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">weather.gov</a>.</span></div>';
+    $("alerts").innerHTML = '<section class="cs-hg nwsg cs-hg-info"><div class="cs-verdict cs-v-none">' + (window.CREEK_STATUS ? CREEK_STATUS.icon("offline") : "") +
+      'National Weather Service alerts are unavailable right now</div><p class="cs-hscope">Check <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">weather.gov</a>.</p></section>';
   });
+}
+// No alerts: the same box as "No alerts at OneShoreline's creek gauges right now"
+function nwsNone() {
+  return '<section class="cs-hg cs-hg-none nwsg"><div class="cs-verdict cs-v-none">' + (window.CREEK_STATUS ? CREEK_STATUS.icon("none") : "") +
+    'No watches, warnings or advisories</div><p class="cs-hscope">For San Mateo County.</p></section>';
 }
 
 /* ---------- Creeks: the same status as the creek page's tiles ---------- */

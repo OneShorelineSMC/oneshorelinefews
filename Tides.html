@@ -309,7 +309,7 @@
 
 <div id="alert" class="unknown" role="button" tabindex="0" aria-expanded="false">
   <span class="ic" id="aIc">…</span>
-  <span class="tx"><span class="main" id="aMain">Checking NWS alerts…</span><br><span class="sub" id="aSub">San Mateo County</span></span>
+  <span class="tx"><span class="main" id="aMain">Checking National Weather Service alerts…</span><br><span class="sub" id="aSub">San Mateo County</span></span>
   <span class="more" id="aMore" style="display:none"></span>
 </div>
 <div id="alertList"></div>
@@ -363,8 +363,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261017a"></script>
-<script src="tide_season.js?v=20261017a"></script>
+<script src="lookups.js?v=20261017b"></script>
+<script src="tide_season.js?v=20261017b"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -402,7 +402,7 @@ function loadAlerts() {
       .filter(function (p) { return ((p.geocode && p.geocode.SAME) || []).indexOf(COUNTY_SAME) >= 0 && p.status === "Actual" && p.messageType !== "Cancel"; })
       .sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
     renderAlerts();
-  }).catch(function () { if (!D.alerts) { $("aMain").textContent = "NWS alerts unavailable"; $("aSub").textContent = "Retrying…"; $("aIc").textContent = "?"; } });
+  }).catch(function () { if (!D.alerts) { $("aMain").textContent = "National Weather Service alerts unavailable"; $("aSub").textContent = "Retrying…"; $("aIc").textContent = "?"; } });
 }
 
 /* ---------- NWS alerts ---------- */
@@ -425,14 +425,14 @@ function formatDesc(text) {
 function renderAlerts() {
   var a = D.alerts, bar = $("alert");
   if (!a.length) {
-    bar.className = "none"; $("aIc").textContent = "✓"; $("aMain").textContent = "No active NWS alerts";
-    $("aSub").textContent = "San Mateo County · National Weather Service"; $("aMore").style.display = "none";
+    bar.className = "none"; $("aIc").textContent = "✓"; $("aMain").textContent = "No active National Weather Service alerts";
+    $("aSub").textContent = "San Mateo County"; $("aMore").style.display = "none";
     $("alertList").innerHTML = ""; $("alertList").classList.remove("open"); return;
   }
   var top = a[0], cls = classify(top.event);
   bar.className = cls; $("aIc").textContent = cls === "statement" ? "ℹ" : "⚠";
   $("aMain").textContent = top.event.toUpperCase();
-  $("aSub").textContent = untilText(top.ends || top.expires) + " · NWS";
+  $("aSub").textContent = untilText(top.ends || top.expires) + " · National Weather Service";
   $("aMore").style.display = ""; $("aMore").textContent = (a.length > 1 ? "+" + (a.length - 1) + " · " : "") + "details";
   $("alertList").innerHTML = a.map(function (p) {
     return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + untilText(p.ends || p.expires) + "</div>" +
@@ -727,11 +727,11 @@ function render() {
     var afd = afdFresh() ? AFD.lines : null, box = q(".afd");
     if (afd && afd.length) {
       box.style.display = ""; box.className = "afd";
-      box.innerHTML = "<details><summary><b>NWS forecasters on " + (COAST ? "tides and surf" : "tides") + ":</b> " + esc(afd[0]) + "</summary>" +
+      box.innerHTML = "<details><summary><b>National Weather Service forecasters on " + (COAST ? "tides and surf" : "tides") + ":</b> " + esc(afd[0]) + "</summary>" +
         afd.slice(1).map(function (x) { return "<p>" + esc(x) + "</p>"; }).join("") +
-        '<div class="when">From the NWS San Francisco Bay Area office’s forecast discussion, issued ' +
+        '<div class="when">From the National Weather Service San Francisco Bay Area office’s forecast discussion, issued ' +
         esc(new Date(AFD.issued).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" })) + ".</div></details>";
-    } else if (afd) { box.style.display = ""; box.className = "afd ok"; box.textContent = COAST ? LK.text("tide_afd_none_coast") : "NWS forecasters aren’t mentioning high tides or coastal flooding."; }
+    } else if (afd) { box.style.display = ""; box.className = "afd ok"; box.textContent = COAST ? LK.text("tide_afd_none_coast") : "National Weather Service forecasters aren’t mentioning high tides or coastal flooding."; }
     else box.style.display = "none";
 
     // Times above MHHW (tap)
@@ -741,7 +741,7 @@ function render() {
           '<span class="lbl">' + esc(srcWord(w.src)) + '</span> <span class="' + (w.peak >= redFor(st) ? "red" : "amb") + '">' + sgn(w.peak - st.mhhw) + "</span></td></tr>"; }).join("") + "</table>"
       : '<p class="lbl">None in the next ' + DAYS + " days.</p>") +
       '<p class="lbl" style="margin-top:8px">' + (useModel ? "Measured so far, then the NOAA projection through " + esc(fmt(fe, { weekday: "short" })) + " " + esc(fTime(fe)) +
-        ", then the tide table. The NOAA projection is model guidance, not an official forecast; NWS advisories take precedence."
+        ", then the tide table. The NOAA projection is model guidance, not an official forecast; National Weather Service advisories take precedence."
         : "Tide table only; the NOAA projection isn’t available right now.") + " MHHW = " + st.mhhw.toFixed(2) + " ft NAVD88.</p>";
 
     // Now and the past 7 days (tap)

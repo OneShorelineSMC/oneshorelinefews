@@ -396,7 +396,7 @@
   <div id="alertbar" class="unknown">
     <div id="alertIcon">…</div>
     <div id="alertText">
-      <div id="alertMain">Loading NWS alerts…</div>
+      <div id="alertMain">Loading National Weather Service alerts…</div>
       <div id="alertSub">San Mateo County</div>
     </div>
     <div id="alertMore" style="display:none"></div>
@@ -416,7 +416,7 @@
       <div id="tchart"><canvas id="tchartc" role="img" aria-label="Graph of the Bay tide for the last 24 hours and the next 48 hours. The same heights are listed day by day above."></canvas></div>
       <div id="tkey"></div>
     </div>
-    <div id="tnws" class="unknown"><span class="ni" id="tnwsi">…</span><div class="nt"><div class="nm" id="tnwsm">Checking NWS coastal flood information…</div>
+    <div id="tnws" class="unknown"><span class="ni" id="tnwsi">…</span><div class="nt"><div class="nm" id="tnwsm">Checking National Weather Service coastal flood information…</div>
       <div class="ns" id="tnwss"></div></div><span class="nmore" id="tnwsmore"></span></div>
     <div id="tseason" class="hide"><span class="chip" id="tschip">KING TIDE</span><span class="st"><b id="tsmain"></b><span id="tssub"></span></span>
       <span class="src" id="tssrc">NOAA · Redwood City ›</span></div>
@@ -436,7 +436,7 @@
       <h3>About this screen</h3>
       <p><b>Bayside Tides:</b> NOAA's Redwood City gauge. Cards show each day's highest tide (NOAA projection for about 2 days, then the
         tide table); blue = above MHHW, the average daily high (higher than usual), red = the provisional flood level. The line under the
-        NWS row names the next King Tide (the tide table reaches the 1-year tide) or a tide expected to reach the flood level.</p>
+        The National Weather Service row names the next King Tide (the tide table reaches the 1-year tide) or a tide expected to reach the flood level.</p>
       <p><b>Coastside Tides:</b> the same for the ocean at NOAA's Monterey gauge, the nearest with live readings on the open coast south of
         San Francisco. No coastside flood level yet; King Tide level provisional. Waves are not included and can push water much farther up a beach.</p>
       <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline.</p>
@@ -488,9 +488,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261017a"></script>
-<script src="tide_season.js?v=20261017a"></script>
-<script src="creek_status.js?v=20261017a"></script>
+<script src="lookups.js?v=20261017b"></script>
+<script src="tide_season.js?v=20261017b"></script>
+<script src="creek_status.js?v=20261017b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1087,15 +1087,15 @@ function renderAlerts() {
       sub = document.getElementById("alertSub"), icon = document.getElementById("alertIcon"),
       more = document.getElementById("alertMore");
   renderNws();
-  if (A.list == null) { bar.className = "unknown"; icon.textContent = "?"; main.textContent = "NWS alerts unavailable"; sub.textContent = "Retrying…"; return; }
+  if (A.list == null) { bar.className = "unknown"; icon.textContent = "?"; main.textContent = "National Weather Service alerts unavailable"; sub.textContent = "Retrying…"; return; }
   if (!A.list.length) {
-    bar.className = ""; icon.textContent = "✓"; main.textContent = "No active NWS alerts";
-    sub.textContent = "San Mateo County · National Weather Service"; more.style.display = "none"; return;
+    bar.className = ""; icon.textContent = "✓"; main.textContent = "No active National Weather Service alerts";
+    sub.textContent = "San Mateo County"; more.style.display = "none"; return;
   }
   var top = A.list[0], cls = classify(top.event);
   bar.className = cls; icon.textContent = cls === "statement" ? "ℹ" : "⚠";
   main.textContent = top.event.toUpperCase();
-  sub.textContent = untilText(top.ends || top.expires) + " · NWS San Francisco Bay Area";
+  sub.textContent = untilText(top.ends || top.expires) + " · National Weather Service San Francisco Bay Area";
   if (A.list.length > 1) { more.style.display = ""; more.textContent = "+" + (A.list.length - 1) + " more · tap"; }
   else { more.style.display = ""; more.textContent = "Tap for details"; }
 }
@@ -1146,8 +1146,8 @@ function alertsHtml(list) {
 }
 document.getElementById("alertbar").addEventListener("click", function () {
   if (!A.list) return;
-  if (!A.list.length) { openDetail("NWS alerts – San Mateo County", "<p>There are no active watches, warnings, or advisories.</p>"); return; }
-  openDetail("NWS alerts – San Mateo County", alertsHtml(A.list) + '<div id="dnote">Source: National Weather Service (api.weather.gov)</div>');
+  if (!A.list.length) { openDetail("National Weather Service alerts – San Mateo County", "<p>There are no active watches, warnings, or advisories.</p>"); return; }
+  openDetail("National Weather Service alerts – San Mateo County", alertsHtml(A.list) + '<div id="dnote">Source: National Weather Service (api.weather.gov)</div>');
 });
 
 /* ---------- NWS coastal flood information for the Bay Tides tab ---------- */
@@ -1220,34 +1220,34 @@ function renderNws() {
     $t("tnwsmore").textContent = "Tap ›";
   } else if (afd && afd.length) {
     box.className = "afd"; $t("tnwsi").textContent = "ℹ";
-    $t("tnwsm").textContent = COAST ? "NWS forecasters on tides and surf:" : "NWS forecasters on tides:";
+    $t("tnwsm").textContent = COAST ? "National Weather Service forecasters on tides and surf:" : "National Weather Service forecasters on tides:";
     $t("tnwss").textContent = afd.slice(0, 2).join(" ");
     $t("tnwsmore").textContent = "Tap ›";
   } else if (all.length) {   // the coastal alert is in the top bar and the discussion adds nothing
     var t0 = all[0];
     box.className = "afd"; $t("tnwsi").textContent = "ℹ";
-    $t("tnwsm").textContent = "What to expect (NWS):";
+    $t("tnwsm").textContent = "What to expect (National Weather Service):";
     $t("tnwss").textContent = descField(t0.description, "WHAT") || descField(t0.description, "IMPACTS") || "See the alert bar above for details.";
     $t("tnwsmore").textContent = "Tap ›";
   } else if (A.list != null) {
     box.className = ""; $t("tnwsi").textContent = "✓";
-    $t("tnwsm").textContent = COAST ? "No NWS coastal or surf alerts" : "No NWS coastal flood alerts";
+    $t("tnwsm").textContent = COAST ? "No National Weather Service coastal or surf alerts" : "No National Weather Service coastal flood alerts";
     $t("tnwss").textContent = afd ? (COAST ? "and forecasters aren't mentioning high tides or high surf." : "and forecasters aren't mentioning high tides.") : "";
     $t("tnwsmore").textContent = "";
   } else {
     box.className = "unknown"; $t("tnwsi").textContent = "?";
-    $t("tnwsm").textContent = "NWS information unavailable"; $t("tnwss").textContent = "Retrying…"; $t("tnwsmore").textContent = "";
+    $t("tnwsm").textContent = "National Weather Service information unavailable"; $t("tnwss").textContent = "Retrying…"; $t("tnwsmore").textContent = "";
   }
 }
 $t("tnws").addEventListener("click", function () {
   var ca = coastalAlerts(), afd = afdFresh() ? AFD.lines : null, html = "";
   if (ca.length) html += alertsHtml(ca);
-  if (afd && afd.length) html += "<h3 style='margin:4px 0 6px;font-size:18px'>What NWS forecasters are saying about tides</h3><div class='when' style='font-size:14px;color:var(--muted);margin-bottom:6px'>From the NWS San Francisco Bay Area office's forecast discussion, issued " +
+  if (afd && afd.length) html += "<h3 style='margin:4px 0 6px;font-size:18px'>What National Weather Service forecasters are saying about tides</h3><div class='when' style='font-size:14px;color:var(--muted);margin-bottom:6px'>From the NWS San Francisco Bay Area office's forecast discussion, issued " +
     esc(afdWhen()) + "</div>" + afd.map(function (x) { return "<p style='margin:0 0 8px'>" + esc(x) + "</p>"; }).join("");
-  if (!html) html = "<p>No NWS coastal flood alerts for San Mateo County, and NWS forecasters aren't currently mentioning high tides or coastal flooding.</p>";
+  if (!html) html = "<p>No National Weather Service coastal flood alerts for San Mateo County, and its forecasters aren't currently mentioning high tides or coastal flooding.</p>";
   html += '<div id="dnote">Source: National Weather Service (api.weather.gov), San Francisco Bay Area office. Predicted tides do not include storm surge; ' +
-    "NWS coastal flood advisories account for expected surge and wind.</div>";
-  openDetail("NWS – tides and coastal flooding", html);
+    "National Weather Service coastal flood advisories account for expected surge and wind.</div>";
+  openDetail("National Weather Service – tides and coastal flooding", html);
 });
 
 function showLookAhead() {

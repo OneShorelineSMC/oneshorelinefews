@@ -17,10 +17,10 @@
 <style>
   :root {
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587;
-    --ok: #2e7d32; --l1: #e6c200; --l2: #e07b00; --l3: #c62828; --off: #8a96a3; --rain: #1e6fd9;
+    --ok: #2e7d32; --l1: #e6c200; --l2: #e07b00; --l3: #c62828; --off: #8a96a3; --rain: #1e6fd9; --slink: #0A5587;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542; --rain: #6ea8fe; }
+    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --muted: #9aa8b8; --line: #2a3542; --rain: #6ea8fe; --slink: #8ec0ff; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
@@ -69,11 +69,13 @@
   .mapbtn button { border: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 13px; padding: 7px 10px;
     border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
   .mapbtn button.on { background: var(--rain); color: #fff; }
+  .mapbtn #wsBtn[aria-pressed="true"] { background: #2f6b3a; color: #fff; }
   /* Rain totals switch: Off | 1 h | 3 h | 6 h | 24 h (the labels on the map show the chosen window) */
   .rwin { display: flex; align-items: center; background: var(--card); border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.3); overflow: hidden; }
   .rwin .rwl { font-size: 13px; font-weight: 700; color: var(--ink); padding: 0 6px 0 10px; }
   .mapbtn .rwin button { box-shadow: none; border-radius: 0; padding: 7px 8px; min-width: 36px; min-height: 32px; }
   .mapbtn .rwin button[aria-pressed="true"] { background: var(--rain); color: #fff; font-weight: 700; }
+  @media (prefers-color-scheme: dark) { .mapbtn .rwin button[aria-pressed="true"], .mapbtn button.on { color: #0e1319; } }   /* dark text on the light blue */
   .rwins { display: flex; gap: 4px 12px; flex-wrap: wrap; font-size: 14px; margin-top: 2px; } .rwins b { font-size: 15px; }
 
   /* site card */
@@ -99,12 +101,18 @@
   .sval { font-size: 22px; font-weight: 700; white-space: nowrap; }
   .sval small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 2px; }
   .sage { font-size: 12.5px; color: var(--muted); }
-  .sage.old { color: var(--l2); }
+  .sage.old { color: #a35200; }
+  @media (prefers-color-scheme: dark) { .sage.old { color: #f0a050; } }
   .lvl { font-size: 12.5px; font-weight: 700; }
   canvas.spark { width: 100%; height: 54px; display: block; margin-top: 6px; }
   .glbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
   .olink { display: block; text-align: center; margin: 12px 0 4px; padding: 11px; border-radius: 10px; background: var(--brand);
     color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .olink.sec { background: none; color: var(--slink); text-decoration: underline; font-weight: 600; font-size: 14px; padding: 8px; margin-top: 6px; }
+  .clink { display: block; margin: 10px 0 0; padding: 11px 14px; border-radius: 10px; background: var(--brand); color: #fff;
+    text-decoration: none; font-weight: 700; font-size: 15.5px; }
+  .clink + .clink { margin-top: 6px; }
+  .clink:focus-visible, .olink:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
   .fine { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
   .fine a { color: inherit; }
 
@@ -160,6 +168,7 @@
       <span class="rwl" aria-hidden="true">Rain</span><button data-w="0" aria-pressed="true">Off</button><button data-w="1" aria-pressed="false" aria-label="1 hour">1 h</button><button data-w="3" aria-pressed="false" aria-label="3 hours">3 h</button><button data-w="6" aria-pressed="false" aria-label="6 hours">6 h</button><button data-w="24" aria-pressed="false" aria-label="24 hours">24 h</button></div>
     <button id="rpBtn" title="Show flood reports reviewed by OneShoreline staff" hidden>Flood reports</button>
     <button id="allBtn" title="Zoom to all sites">All sites</button>
+    <button id="wsBtn" aria-pressed="false" title="Show watershed boundaries (USGS)" hidden>Watersheds</button>
   </div>
   <div id="list"></div>
   <div id="sheet"></div>
@@ -174,7 +183,7 @@
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261017a"></script>
+<script src="lookups.js?v=20261017b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)
@@ -320,6 +329,12 @@ function openSite(id, fly) {
   else map.panTo([site.lat, site.lon]);
   history.replaceState(null, "", "#site=" + encodeURIComponent(site.number || site.site_id));
 }
+// Badge text must be readable on the marker color (WCAG 4.5:1): darker gray for "not reporting", dark text on yellow
+function badgeStyle(c) {
+  var m = { "#8a96a3": "#5f6b78", "#e07b00": "#a35200", "#2e7d32": "#2e7d32", "#c62828": "#c62828" };
+  if (/^#e6c200$/i.test(c)) return "background:#e6c200;color:#1a1a1a";
+  return "background:" + (m[String(c).toLowerCase()] || c);
+}
 function closeSite() {
   selected = null; selectedReport = null;
   document.getElementById("sheet").classList.remove("show");
@@ -332,7 +347,12 @@ function renderSheet(id) {
   var now = nowLocal(), st = siteStatus(site, now);
   var h = '<div class="grab"></div><div class="shead"><div><div class="sname">' + esc(site.name) + '</div>' +
     '<div class="snum">Site ' + esc(site.number) + '</div></div><button class="x" aria-label="Close" onclick="closeSite()">✕</button></div>' +
-    '<span class="badge" style="background:' + st.color + '">' + esc(st.label) + '</span>';
+    '<span class="badge" style="' + badgeStyle(st.color) + '">' + esc(st.label) + '</span>' +
+    // the creek page first (status, what to do, rising fast, tide, triggers); a rain gauge that only feeds a creek's status says so
+    (site.creeks || []).map(function (c) {
+      return '<a class="clink" href="' + CREEK_PAGE + (PREVIEW ? "?preview=1" : "") + "#" + encodeURIComponent(c.id) + '">' +
+        (c.role === "support" ? "Counts toward " + esc(c.name) : esc(c.name) + " conditions") + " ›</a>";
+    }).join("");
   site.sensors.forEach(function (s, i) {
     var t = s.time ? parseLocal(s.time) : null, old = t && now - t > OLD_READING_HOURS * 36e5;
     var lvl = sensorLevel(s, now), rainish = s.kind === "increment" || s.kind === "accumulation";
@@ -355,7 +375,7 @@ function renderSheet(id) {
     }
     h += '</div>';
   });
-  h += '<a class="olink" href="' + esc(site.url) + '" target="_blank" rel="noopener">Full data on OneRain ↗</a>' +
+  h += '<a class="olink' + ((site.creeks || []).length ? " sec" : "") + '" href="' + esc(site.url) + '" target="_blank" rel="noopener">Full data on OneRain ↗</a>' +
     '<div class="fine">' + esc(LK.text("disclaimer_short_map")) + ' ' +
     '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · ' + esc(LK.text("e911")) + '</div>';
   var sh = document.getElementById("sheet");
@@ -463,6 +483,27 @@ Array.prototype.forEach.call(document.querySelectorAll("#rainWin button"), funct
 });
 (function () { try { var w = +localStorage.getItem("fews_rain_win"); if ([1, 3, 6, 24].indexOf(w) >= 0) { rainWin = w; showRain = true;
   Array.prototype.forEach.call(document.querySelectorAll("#rainWin button"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.w === w)); }); } } catch (e) {} })();
+/* ---------- Watershed boundaries (USGS WBD subwatersheds, data/watersheds.geojson from .github/workflows/creek_maps.yml).
+   Phone map only (not the kiosk). The switch appears once the file exists; the boundaries load on first use. */
+var WS = { layer: null, on: false };
+fetch("data/watersheds.geojson", { method: "HEAD" }).then(function (r) { if (r.ok) document.getElementById("wsBtn").hidden = false; }).catch(function () {});
+document.getElementById("wsBtn").addEventListener("click", function () {
+  var b = this; WS.on = !WS.on; b.setAttribute("aria-pressed", String(WS.on));
+  if (!WS.on) { if (WS.layer) map.removeLayer(WS.layer); return; }
+  if (WS.layer) { WS.layer.addTo(map); return; }
+  fetch("data/watersheds.geojson").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (gj) {
+    WS.layer = L.geoJSON(gj, {
+      style: { color: "#2f6b3a", weight: 1.6, opacity: 0.9, fillColor: "#2f6b3a", fillOpacity: 0.04, dashArray: "5 4" },
+      onEachFeature: function (f, l) { if (f.properties && f.properties.name) l.bindTooltip(esc(f.properties.name), { sticky: true }); },
+      attribution: "Watersheds: USGS"
+    });
+    if (WS.on) WS.layer.addTo(map);
+  }).catch(function () {
+    WS.on = false; b.setAttribute("aria-pressed", "false");
+    var msg = document.getElementById("msg"); msg.style.display = ""; msg.textContent = "Watershed boundaries couldn't load. Try again later.";
+    setTimeout(function () { msg.style.display = "none"; }, 4000);
+  });
+});
 document.getElementById("allBtn").addEventListener("click", function () {
   if (!DATA) return;
   map.fitBounds(DATA.sites.map(function (s) { return [s.lat, s.lon]; }), { padding: [24, 24] });
@@ -556,6 +597,9 @@ function load() {
       var picked = null; try { picked = localStorage.getItem("fews_rain_win"); } catch (e) {}
       if (picked == null && !autoRain && DATA.sites.some(function (x) { return x.sensors.some(function (z) { return (rainOver(z, 1) || 0) >= 0.05; }); })) { autoRain = true; rainWin = 1; showRain = true;
         Array.prototype.forEach.call(document.querySelectorAll("#rainWin button"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.w === 1)); }); }
+      var cm = location.hash.match(/creek=([a-z0-9_-]+)/);
+      var cs = cm ? DATA.sites.filter(function (x) { return (x.creeks || []).some(function (c) { return c.id === cm[1]; }); }) : [];
+      if (cs.length && firstFit) { firstFit = false; map.fitBounds(cs.map(function (x) { return [x.lat, x.lon]; }), { padding: [60, 60], maxZoom: 13 }); }
       draw();
       var m = location.hash.match(/site=([^&]+)/);
       if (m && !selected) {

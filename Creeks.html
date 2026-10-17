@@ -82,6 +82,30 @@
   .pick button.on { border-color: var(--ink); background: var(--soft); box-shadow: inset 0 0 0 1px var(--ink); }
   .two.stack { grid-template-columns: 1fr; }
   /* All creeks summary */
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  /* city picker: which creeks we measure in or near a city (lookups/creek_facts.csv "cities") */
+  .cp { margin: 0 0 12px; }
+  .cp details { background: var(--card); border-radius: 12px; border: 2px solid var(--line); }
+  .cp details[open] { border-color: #0A5587; }
+  .cp summary { cursor: pointer; padding: 12px 14px; font-weight: 700; font-size: 17px; color: var(--ink); min-height: 44px; }
+  .cp summary:focus-visible, .cp select:focus-visible, .cp a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
+  .cp select { display: block; margin: 0 14px 10px; width: calc(100% - 28px); font: inherit; font-size: 16px; padding: 10px; border-radius: 8px;
+    border: 2px solid var(--line); background: var(--card); color: var(--ink); min-height: 44px; }
+  #cpOut { padding: 0 14px 6px; }
+  #cpOut:empty { display: none; }
+  .cp-h { margin: 0 0 6px; font-size: 14px; font-weight: 700; color: var(--muted); }
+  .cp-list { list-style: none; margin: 0; padding: 0; }
+  .cp-list li + li { border-top: 1px solid var(--line); }
+  .cp-list a { display: flex; align-items: center; gap: 10px; padding: 10px 0; min-height: 44px; text-decoration: none; color: var(--ink); }
+  .cp-list .cp-n { flex: 1; font-weight: 700; font-size: 16px; }
+  .cp-list .cs-verdict { margin: 0; padding: 3px 9px; font-size: 14px; gap: 6px; } .cp-list .cs-verdict .cs-ic { width: 16px; height: 16px; }
+  .cp-note { margin: 4px 0 8px; font-size: 14.5px; line-height: 1.4; }
+  /* static creek map (img/creekmaps/<creek>.svg, built by .github/workflows/creek_maps.yml) */
+  .cmap { margin: 12px 0 0; padding: 12px 14px; }
+  .cmap .cmh { margin: 0 0 8px; font-size: 16px; color: var(--ink); }
+  .cmap img { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); }
+  .cmap a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 3px; display: block; border-radius: 8px; }
+  .cmap figcaption { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
   .back { display: inline-block; font-size: 14px; color: var(--muted); text-decoration: none; margin: 0 2px 6px; }
   .acard { border-left: 6px solid var(--green); cursor: pointer; }
   .ah { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
@@ -209,7 +233,7 @@
 
 <div id="alert" class="unknown" role="button" aria-expanded="false">
   <span class="ic" id="aIc">…</span>
-  <span class="tx"><span class="main" id="aMain">Checking NWS alerts…</span><br><span class="sub" id="aSub">San Mateo County</span></span>
+  <span class="tx"><span class="main" id="aMain">Checking National Weather Service alerts…</span><br><span class="sub" id="aSub">San Mateo County</span></span>
   <span class="more" id="aMore" style="display:none"></span>
 </div>
 <div id="alertList"></div>
@@ -219,6 +243,14 @@
 <main>
   <!-- ===================== CREEK ===================== -->
   <div id="creekView">
+    <div id="cpBanner"></div>
+    <section class="cp" id="cityPick" hidden>
+      <details id="cpD"><summary><span id="cpH" data-text="city_title">Find your city</span></summary>
+        <label class="vh" for="cpSel" data-text="city_choose">Choose a city or community</label>
+        <select id="cpSel"></select>
+        <div id="cpOut" aria-live="polite"></div>
+      </details>
+    </section>
     <div id="allView"></div>
     <div id="one">
     <a class="back" href="#all" id="backAll">‹ All creeks</a>
@@ -237,6 +269,11 @@
     <div style="height:12px"></div>
     <div class="card" id="graphs"></div>
     <details class="card fold" id="csNotes" style="display:none"><summary>Thresholds and notes</summary><div id="csNotesB"></div></details>
+    <figure class="card cmap" id="cmap" hidden>
+      <h2 class="cmh">Where this creek is</h2>
+      <a id="cmapA" href="SiteMap.html"><img id="cmapI" alt="" width="420" height="320"></a>
+      <figcaption>Tap the map to open the sensor map. Creek line and watershed: USGS. Highways: US Census.</figcaption>
+    </figure>
     </div>
     <div class="note"><span data-text="disclaimer_short"></span>
       <a href="#about" id="discLink">Read the disclaimer</a></div>
@@ -297,8 +334,8 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261017a"></script>
-<script src="creek_status.js?v=20261017a"></script>
+<script src="lookups.js?v=20261017b"></script>
+<script src="creek_status.js?v=20261017b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -389,7 +426,7 @@ function loadAlerts() {
       .filter(function (p) { return ((p.geocode && p.geocode.SAME) || []).indexOf(COUNTY_SAME) >= 0 && p.status === "Actual" && p.messageType !== "Cancel"; })
       .sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
     renderAlerts();
-  }).catch(function () { if (!D.alerts) { $("aMain").textContent = "NWS alerts unavailable"; $("aSub").textContent = "Retrying…"; $("aIc").textContent = "?"; } });
+  }).catch(function () { if (!D.alerts) { $("aMain").textContent = "National Weather Service alerts unavailable"; $("aSub").textContent = "Retrying…"; $("aIc").textContent = "?"; } });
 }
 
 /* ---------- NWS alerts ---------- */
@@ -412,14 +449,14 @@ function formatDesc(text) {
 function renderAlerts() {
   var a = D.alerts, bar = $("alert");
   if (!a.length) {
-    bar.className = "none"; $("aIc").textContent = "✓"; $("aMain").textContent = "No active NWS alerts";
-    $("aSub").textContent = "San Mateo County · National Weather Service"; $("aMore").style.display = "none";
+    bar.className = "none"; $("aIc").textContent = "✓"; $("aMain").textContent = "No active National Weather Service alerts";
+    $("aSub").textContent = "San Mateo County"; $("aMore").style.display = "none";
     $("alertList").innerHTML = ""; $("alertList").classList.remove("open"); return;
   }
   var top = a[0], cls = classify(top.event);
   bar.className = cls; $("aIc").textContent = cls === "statement" ? "ℹ" : "⚠";
   $("aMain").textContent = top.event.toUpperCase();
-  $("aSub").textContent = untilText(top.ends || top.expires) + " · NWS";
+  $("aSub").textContent = untilText(top.ends || top.expires) + " · National Weather Service";
   $("aMore").style.display = ""; $("aMore").textContent = (a.length > 1 ? "+" + (a.length - 1) + " · " : "") + "details";
   $("alertList").innerHTML = a.map(function (p) {
     return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + untilText(p.ends || p.expires) + "</div>" +
@@ -518,6 +555,92 @@ function triggerTide(tr, st, now) {
   return { high: v >= lvl, v: v, txt: v.toFixed(2) + " of " + lvl.toFixed(2) + " ft NAVD88" };
 }
 
+/* ---------- City picker: creeks in or near a city (lookups/creek_facts.csv "cities"; Summer, Oct 17) ---------- */
+// Prominent (open) when any creek has an alert or a city was chosen; otherwise one folded line.
+// Wording never says a city is safe: only which creeks OneShoreline measures in or near it.
+var CITY = { list: null, sel: "" };
+function citySlug(n) { return n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+function cityClean(raw) {   // "unincorporated North Fair Oaks" -> "North Fair Oaks"; "Woodside (upper watershed)" -> "Woodside"
+  return raw.replace(/\([^)]*\)/g, "").replace(/^\s*unincorporated\s+/i, "").replace(/\s+area\s*$/, "").replace(/\s+/g, " ").trim();
+}
+function cityInit() {
+  if (!window.LK || !LK.csv) return;
+  LK.csv("creek_facts.csv").then(function (rows) {
+    var map = {}; CITY.facts = {}; rows.forEach(function (r) { CITY.facts[r.creek] = r; });
+    rows.forEach(function (r) {
+      String(r.cities || "").split(";").forEach(function (x) {
+        var n = cityClean(x); if (!n) return;
+        var k = citySlug(n); (map[k] = map[k] || { name: n, creeks: [] }).creeks.indexOf(r.creek) < 0 && map[k].creeks.push(r.creek);
+      });
+    });
+    CITY.list = Object.keys(map).map(function (k) { return { slug: k, name: map[k].name, creeks: map[k].creeks }; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name); });
+    var sel = $("cpSel");
+    sel.innerHTML = '<option value="">' + esc(LK.text("city_choose")) + "</option>" +
+      CITY.list.map(function (x) { return '<option value="' + esc(x.slug) + '">' + esc(x.name) + "</option>"; }).join("") +
+      '<option value="_other">' + esc(LK.text("city_other")) + "</option>";
+    var q = (location.search.match(/[?&]city=([a-z0-9-]+)/) || [])[1], saved = "";
+    try { saved = localStorage.getItem("fews_city") || ""; } catch (e) {}
+    CITY.sel = q || saved;
+    if (CITY.sel && CITY.sel !== "_other" && !CITY.list.some(function (x) { return x.slug === CITY.sel; })) CITY.sel = "";
+    sel.value = CITY.sel;
+    sel.addEventListener("change", function () {
+      CITY.sel = sel.value; try { localStorage.setItem("fews_city", CITY.sel); } catch (e) {}
+      renderCity();
+    });
+    if (D.creek) render();
+  }).catch(function () { /* no picker without the table */ });
+}
+function renderCity() {
+  if (!CITY.list || !D.creek) return;
+  $("cityPick").hidden = false;
+  var CS = window.CREEK_STATUS, all = (D.creek.creeks || []).concat(D.creek.creeks_preview || []);
+  var views = all.map(function (c) { return { c: c, v: CS ? CS.view(D.creek, c) : null }; });
+  var storm = views.some(function (x) { return x.v && x.v.rank >= 2; }), d = $("cpD");
+  if (!CITY.opened && (storm || CITY.sel)) { d.open = true; CITY.opened = true; }   // once: the viewer can still fold it
+  var out = $("cpOut"), h = "";
+  if (CITY.sel === "_other") h = '<p class="cp-note">' + esc(LK.text("city_other_note")) + "</p>";
+  else if (CITY.sel) {
+    var city = CITY.list.filter(function (x) { return x.slug === CITY.sel; })[0];
+    var mine = views.filter(function (x) { return city.creeks.indexOf(x.c.id) >= 0; }).sort(function (a, b) { return (b.v ? b.v.rank : 0) - (a.v ? a.v.rank : 0); });
+    h = '<p class="cp-h">' + esc(LK.text("city_creeks", { city: city.name })) + "</p>";
+    if (!mine.some(function (x) { return x.v && x.v.rank >= 2; })) h += '<p class="cp-note">' + esc(LK.text("city_none", { city: city.name })) + "</p>";
+    h += '<ul class="cp-list">' + mine.map(function (x) {
+      var v = x.v;
+      return '<li><a href="#' + encodeURIComponent(x.c.id) + '"><span class="cp-n">' + esc(x.c.name) + "</span>" +
+        (v ? '<span class="cs-verdict cs-v-' + v.key + '">' + CS.icon(v.key) + esc(v.word) + "</span>" : "") + '<span aria-hidden="true">›</span></a></li>';
+    }).join("") + "</ul>";
+  }
+  if (out.innerHTML !== h) out.innerHTML = h;   // a live region: rewrite only when it changes
+}
+
+/* ---------- Static creek map at the bottom of a creek's page; tap = sensor map zoomed to the creek ---------- */
+function mapAlt(c) {
+  function names(list) { var u = []; list.forEach(function (g) { var n = g.label || g.site_name; if (n && u.indexOf(n) < 0) u.push(n); }); return u; }
+  function and(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
+  var st = names(c.stages || []), rn = names(c.rain || []), sp = names(c.rain_support || []), f = (CITY.facts || {})[c.id];
+  var t = "Map of " + c.name + " and its watershed";
+  var parts = [];
+  if (st.length) parts.push("the creek level gauge" + (st.length > 1 ? "s" : "") + " at " + and(st));
+  if (rn.length) parts.push("rain gauge" + (rn.length > 1 ? "s" : "") + " at " + and(rn));
+  if (sp.length) parts.push((sp.length > 1 ? "hillside rain gauges" : "a hillside rain gauge") + " at " + and(sp));
+  if (parts.length) t += ", showing " + and(parts);
+  t += ".";
+  if (f && f.drains_to) t += " It drains to " + f.drains_to + ".";
+  return t;
+}
+function showCreekMap(c) {
+  var fig = $("cmap"), img = $("cmapI");
+  if (fig.dataset.id === c.id) { img.alt = mapAlt(c); return; }
+  fig.dataset.id = c.id; fig.hidden = true;
+  img.onload = function () { fig.hidden = false; };
+  img.onerror = function () { fig.hidden = true; };   // no map built yet for this creek
+  img.alt = mapAlt(c);
+  img.src = "img/creekmaps/" + encodeURIComponent(c.id) + ".svg";
+  $("cmapA").href = "SiteMap.html" + (window.CREEK_STATUS && CREEK_STATUS.staff ? "?preview=1" : "") + "#creek=" + encodeURIComponent(c.id);
+  $("cmapA").setAttribute("aria-label", "Open the sensor map for " + c.name);
+}
+
 function render() {
   var now = nowLocal();
   if (!D.creek) {
@@ -541,10 +664,16 @@ function render() {
   $("navDot").style.display = worst ? "inline-block" : "none";
   if (worst) $("navDot").style.background = worst.top.color;
   $("allView").style.display = c ? "none" : "";
+  $("cpBanner").style.display = c ? "none" : "";
+  $("cityPick").hidden = !!c || !CITY.list;
+  if (!c) renderCity();
   $("one").style.display = c ? "" : "none";
   if (!c) {
     document.title = "Creek Conditions – OneShoreline";
     if (PV) $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); }, { previewLinks: true, compactNotes: true });
+    // a "call 911" banner stays first, above the city picker
+    var bn = $("allView").querySelector(".cs-banner"); $("cpBanner").innerHTML = "";
+    if (bn) $("cpBanner").appendChild(bn);
     else renderAll(states, now);
     if (!PV) renderMore(now);
     var gen0 = states.length && states[0].gen;
@@ -552,6 +681,7 @@ function render() {
     return;
   }
   document.title = c.name + " – OneShoreline";
+  showCreekMap(c);
   $("intro").textContent = c.intro;
   $("csOne").innerHTML = PV ? CS.badge() + CS.card(D.creek, c, { compact: true }) : "";
   ["intro", "stages", "rainBox"].forEach(function (id) { $(id).style.display = PV ? "none" : ""; });
@@ -1044,6 +1174,7 @@ $("discLink").addEventListener("click", function (e) {
 /* ---------- refresh schedule (also refresh when the phone comes back to this page) ---------- */
 function refreshAll() { loadAlerts(); loadCreek(); }
 LK.onChange(function () { applyLookups(); render(); });   // edited lookups/ files
+cityInit();
 refreshAll();
 setInterval(loadAlerts, 3 * 60000);
 setInterval(loadCreek, 3 * 60000);
