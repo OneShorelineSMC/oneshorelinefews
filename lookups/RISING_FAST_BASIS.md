@@ -1,5 +1,8 @@
 # Rapidly rising: basis, method and results
 
+> **Wording note (Oct 17, 2026):** in this file an "alert" is the **rising-fast indicator** shown on the 2026 Update's
+> pages ("alerts per year" = how often it would be shown). It is never a text message; only OneRain sends text alerts.
+
 This file explains the "rising fast" alert on the FEWS pages: what it is for, the rule, how each gauge's setting
 was chosen from its record, the choices behind the method, and its limits. The numbers live in
 `creek_gauges.csv` (`rise_ft`) and `settings.csv` (`RISE_*`). The code is `rise_check` in

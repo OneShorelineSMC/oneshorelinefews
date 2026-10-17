@@ -19,13 +19,15 @@ and compare it with OneRain.
 
 **Shared vocabulary** (fact sheets, review workbook and meetings):
 - **Threshold:** any set value that changes a color or a status, in either system.
-- **Flood level** and **alert level:** the two kinds of 2026 Update threshold (defined below).
+- **Flood level** and **indicator:** the two kinds of 2026 Update threshold. An indicator is shown on the page (the
+  rain indicator Heavy / Very heavy / Intense, and rising fast); below and in RISING_FAST_BASIS.md it is sometimes still
+  called an "alert" or "alert level". It is never a text message.
 - **Status:** the 2026 Update's one overall message per creek (Flooding likely, Be ready, Stay alert, No alerts).
 - **OneRain threshold:** a named level on a OneRain sensor (e.g. Flood Watch, 3.25 ft); it colors that gauge's readings
   and graph and has a OneRain severity (Informational, Warning, Alert, Critical). It sends nothing by itself.
 - **OneRain dashboard color:** a green/orange/red range on a OneRain dashboard reading, set separately from thresholds.
-- **Notification:** a message sent to people. OneRain sends these through *alarm* rules (Administration > Alarms), which
-  may use thresholds; the 2026 Update sends none.
+- **Text alert:** a text message sent to people. Only OneRain sends these (to Public Works and emergency responders),
+  through *alarm* rules (Administration > Alarms), which may use thresholds. The 2026 Update sends no text alerts.
 
 FEWS uses "threshold" for three different kinds of value. Only the first says anything about flooding.
 
