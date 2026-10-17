@@ -48,9 +48,9 @@ Notes:
 - **Belmont's rain triggers** are flood levels for rain: they set the creek to "Flooding likely". The rain + tide
   value came from an analysis of 2022–2025 events (§2).
 - **OneRain's own levels** (checked Oct 17, 2026 from OneRain's public sensor pages): the Colma, San Bruno, Belmont and
-  Atherton gauges carry the same levels as FEWS. OneRain also sets flood levels on four USGS gauges FEWS shows without
-  levels (San Francisquito at Stanford, Pilarcitos at Half Moon Bay, San Gregorio, Pescadero) and on Butano Creek near
-  Cloverdale Road. Who set them, and from what, isn't recorded; some upper levels were never reached in 2008–2026 (for
+  Atherton gauges carry the same levels as FEWS. OneRain also set flood levels on four USGS gauges that FEWS had no
+  levels for (San Francisquito at Stanford, Pilarcitos at Half Moon Bay, San Gregorio, Pescadero); FEWS adopted them
+  on Oct 17, 2026 (§1). Butano Creek near Cloverdale Road has OneRain levels too, but isn't a FEWS gauge. Who set them, and from what, isn't recorded; some upper levels were never reached in 2008–2026 (for
   example Pilarcitos Flood Warning 17.0 ft against a highest reading of 14.64 ft, Dec 31, 2022). Values and how often the
   USGS record reached each one are in `onerain_dashboard_thresholds.csv` and on the fact sheets.
 - **Big-storm level** is used only to test rising fast ([RISING_FAST_BASIS.md](RISING_FAST_BASIS.md) §5). It is the
@@ -64,8 +64,8 @@ Notes:
 |---|---|---|
 | **Yes** | Flood levels at the creek gauge, with their meaning recorded | Colma, Belmont, Atherton |
 | **Partly** | Flood levels are set, but their meaning isn't recorded | San Bruno |
-| **No (OneRain has levels)** | FEWS has none, but OneRain has flood levels on the USGS gauge (basis not recorded; not used by FEWS) | San Francisquito, Pilarcitos, San Gregorio, Pescadero |
-| **No** | Alert levels only: status comes from rain and rising fast | San Mateo, Green Hills |
+| **Yes (OneRain's levels, Oct 17)** | Flood levels copied from OneRain, with OneRain's own descriptions; basis not recorded | San Francisquito, Pilarcitos, San Gregorio, Pescadero, San Mateo (converted from flow) |
+| **No** | Indicators only: status comes from rain and rising fast | Green Hills |
 
 **To link a creek to flooding:** find the creek height at each gauge where the creek leaves its banks or floods a
 road. Sources: a survey of the bank and road elevations tied to the gauge's zero, a hydraulic study, or a past flood
@@ -78,7 +78,10 @@ with their meaning and source, and the creek's status will use them ahead of the
 ## 1. Creek flood levels (stage, ft) — `thresholds.csv`
 
 All stage values are **gauge height in feet at each OneRain sensor** (the gauge's own zero), not a tidal datum.
-Source for all rows: the OneRain sensor threshold settings, copied October 2026.
+Source for all rows: the OneRain sensor threshold settings, copied October 2026. The four USGS-gauge rows were added
+on Oct 17, 2026 so the 2026 Update matches OneRain where it had no levels of its own (staff decision); they apply to
+those creeks' status, which is staff preview only for now. Green Hills and Pescadero at Stage Road have no OneRain levels;
+San Mateo's are on flow and are converted (row below). For USGS gauges, gauge height is the USGS gauge height, the same number OneRain shows.
 
 | Creek · gauge | Monitoring | Watch | Warning | Above Warning | Meaning of the levels | Status | Checked by / on |
 |---|---|---|---|---|---|---|---|
@@ -87,6 +90,11 @@ Source for all rows: the OneRain sensor threshold settings, copied October 2026.
 | Belmont · Old County Rd (41104) | 2.25 | 3.25 | 4.00 | — | 50% / 75% / 100% channel capacity exceedance downstream | From source, not yet signed off | |
 | Atherton · Alameda de las Pulgas (41107) | 3.18 | 4.60 | 5.65 | 10.40 "Roadway Flooded" (water detected on road) | 50% / 75% / 100% channel capacity downstream of Caltrain | From source, not yet signed off | |
 | Atherton · upstream of Caltrain (41106) | 2.80 | 4.10 | 5.50 | — | same as above; probe is 0.37 ft above channel bottom | From source, not yet signed off | |
+| San Francisquito · Stanford (USGS 11164500) | 11.00 | 12.00 | 12.80 | — | OneRain's descriptions: potential flooding / flooding likely / projected flooding in downstream reaches | From OneRain, added Oct 17, 2026; not yet signed off | |
+| Pilarcitos · Half Moon Bay (USGS 11162630) | 7.50 | 9.10 | 17.00 | 24.00 "Major Flood Stage" (damaging flooding) | OneRain's descriptions: potential flooding / flooding probable with continued rain / flooding likely in downstream reaches. Flood Warning and Major were never reached in WY2008–2026 (highest 14.64 ft, Dec 31, 2022) | From OneRain, added Oct 17, 2026; **check the upper levels** | |
+| San Gregorio · San Gregorio (USGS 11162570) | 15.00 | 17.70 | 21.00 | 25.00 "Major Flood Stage" (damaging flooding) | OneRain's descriptions, as for Pilarcitos. Flood Warning and Major never reached in WY2008–2026 (highest 18.74 ft) | From OneRain, added Oct 17, 2026; **check the upper levels** | |
+| Pescadero · near Pescadero (USGS 11162500) | — | 11.20 | 13.25 | — | OneRain's descriptions: Watch = flooding likely; Warning = projected flooding in downstream reaches. OneRain has no Monitoring level here | From OneRain, added Oct 17, 2026; not yet signed off | |
+| San Mateo · below Crystal Springs Reservoir (USGS 11162753) | — | 6.70 | 7.00 | — | OneRain sets these on **flow**: Watch = 200 cfs ("flooding probable with continued rain"), Warning = 250 cfs ("active flooding likely to occur downstream"). Converted to gauge height from paired USGS readings, 2023–2026 (200 cfs ≈ 6.70 ft, 250 cfs ≈ 6.98 ft). The rating can shift; recheck after big storms. Flow reached 200 cfs in 3 and 250 cfs in 2 of 19 water years (highest 326 cfs, WY2017) | From OneRain, converted; added Oct 17, 2026; not yet signed off | |
 
 Open questions:
 - Who set the OneRain thresholds and from what analysis (hydraulic model, surveyed bank/road elevations,

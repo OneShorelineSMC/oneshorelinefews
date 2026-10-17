@@ -2,6 +2,10 @@
 
 > **Wording note (Oct 17, 2026):** in this file an "alert" is the **rising-fast indicator** shown on the 2026 Update's
 > pages ("alerts per year" = how often it would be shown). It is never a text message; only OneRain sends text alerts.
+>
+> **Flood levels added (Oct 17, 2026):** San Francisquito, Pilarcitos at Half Moon Bay, San Gregorio, Pescadero
+> (USGS) and San Mateo below Crystal Springs now have OneRain's flood levels. Their results below were tested against the typical yearly high (median
+> yearly peak), not those levels; rerun `scripts/evaluate_rising_fast.py` to test against the new levels.
 
 This file explains the "rising fast" alert on the FEWS pages: what it is for, the rule, how each gauge's setting
 was chosen from its record, the choices behind the method, and its limits. The numbers live in
