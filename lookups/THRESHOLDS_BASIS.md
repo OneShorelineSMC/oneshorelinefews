@@ -159,6 +159,31 @@ datums page:
 `mllw_to_navd88_ft` (−1.18 for Redwood City) also converts OneRain's Redwood City tide readings (MLLW) to NAVD88 on
 the sensor map. Alameda's is blank because its OneRain tide site isn't public.
 
+**FYI: NOAA's derived high tide flood thresholds (reference only; not used by the pages).** NOAA's Coastal
+Inundation Dashboard shows "minor / moderate / major flooding" lines at each tide station (Alameda: minor flooding
+at 8.5 ft MLLW). Where the National Weather Service has not set official coastal flood levels, these come from
+*Patterns and Projections of High Tide Flooding Along the U.S. Coastline Using a Common Impact Threshold* (Sweet et
+al., NOAA Technical Report NOS CO-OPS 086, 2018), which fitted official NOAA thresholds at tide gauges against each
+gauge's tide range (GT = MHHW − MLLW):
+
+- **Minor:** 1.04 × GT + 0.50 m above MLLW, i.e. about 0.5 m (1.6 ft) plus 4% of the tide range above MHHW
+  (§2.0, Figure 3, p. 8; fitted at 66 gauges, ±0.19 m). This is the threshold NOAA uses to count high tide flood days.
+- **Moderate / major:** the report gives 0.80 m (±0.25) and 1.17 m (±0.39) plus a "3–4%" tide-range factor; the
+  exact factors weren't in the text we read, so the values below use 1.03 and 1.04 and are **approximate**.
+- The report says derived thresholds are "not to supplant knowledge about local flood risk"; NWS levels, where set,
+  are for emergency response and can differ.
+
+| Station | GT | Minor | Moderate (approx.) | Major (approx.) |
+|---|---|---|---|---|
+| Redwood City 9414523 | 8.20 ft (MHHW, from this table) | 10.2 ft MLLW = **9.0 ft NAVD88** (2.0 ft above MHHW) | 11.1 ft MLLW = 9.9 ft NAVD88 | 12.4 ft MLLW = 11.2 ft NAVD88 |
+| Alameda 9414750 | about 6.6 ft (backed out of NOAA's 8.5; to verify on the NOAA datums page) | 8.5 ft MLLW (NOAA dashboard) = about 8.3 ft NAVD88 | about 9.4 ft MLLW | about 10.7 ft MLLW |
+
+Our provisional Redwood City flood level (`TIDE_RED_FT_RWC`, 8.5 ft NAVD88, §5) is about 0.5 ft below NOAA's derived
+minor threshold there. That can be right (it is a staff working level for low spots near the Bay), but it is worth
+weighing when the level is confirmed against known flooding. The official values can be read from NOAA's metadata API
+(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/<id>/floodlevels.json`: `nos_minor`,
+`nos_moderate`, `nos_major`, `nws_minor` …; datum not stated in the docs, to confirm); not yet read here.
+
 ## 5. Page logic settings — `settings.csv`
 
 | Setting | Value | Basis | Status | Checked by / on |
@@ -169,7 +194,7 @@ the sensor map. Alameda's is blank because its OneRain tide site isn't public.
 | Gauge offline | 12 hr silent (gauges that report on change), 3 hr (scheduled gauges) | On-change gauges can be silent for hours when the level is steady; set to avoid false "offline" | Working choice, review | |
 | Creek data delayed | 30 min | Data job runs every 5 min; 30 min = several missed runs | Working choice | |
 | Map site not reporting / old reading / data late | 24 hr / 3 hr / 45 min | Map data refreshes every 15 min | Working choice | |
-| High tide flood level (red), Redwood City | 8.5 ft NAVD88 (`TIDE_RED_FT_RWC`) | Staff working level ("about 8.5 and we're in the red", Oct 2026). Just under the highest astronomical tide (8.53), so the tide table alone almost never reaches it: red mostly means storms or ocean conditions (such as El Niño) are pushing a high tide up. Above MHHW (7.02) and below this = blue, "higher than usual" (information, not a hazard color: MHHW is a tidal reference, not a flood level; Oct 15) | **Provisional** — confirm against known flooding (low points, past events) | |
+| High tide flood level (red), Redwood City | 8.5 ft NAVD88 (`TIDE_RED_FT_RWC`) | Staff working level ("about 8.5 and we're in the red", Oct 2026). Just under the highest astronomical tide (8.53), so the tide table alone almost never reaches it: red mostly means storms or ocean conditions (such as El Niño) are pushing a high tide up. Above MHHW (7.02) and below this = blue, "higher than usual" (information, not a hazard color: MHHW is a tidal reference, not a flood level; Oct 15) | **Provisional** — confirm against known flooding (low points, past events); NOAA's derived minor flood threshold here is 9.0 ft NAVD88 (FYI in §4) | |
 | King Tide (label only, ★) | A day whose tide-table high tide at Redwood City reaches **8.3 ft NAVD88** (`KING_TIDE_FT_RWC`), the **1-year tide** | Staff were told to use the 1-year tidal condition for "King Tide" (Oct 16). 8.3 ft NAVD88 = the 1-year (100% annual chance) extreme tide at the Redwood City shoreline points in the 760s of the *San Francisco Bay Tidal Datums and Extreme Tides Study* (AECOM for BCDC, 2016, Appendix B); same datum as the pages, so no conversion. Tide table only, so stars are known months ahead. 2026-27 season (NOAA tide table, ft NAVD88): Nov 25 (8.36), Dec 23 (8.40), Dec 24 (8.43); Nov 24 (8.28) and Jan 22 (8.29) just miss. Replaces "highest tide of the month in Nov, Dec and Jan" (Oct 15–16). Gives no color or alert by itself (8.3 is above MHHW, so these days are blue; red only at 8.5) | Working choice — confirm which 760s point (or average) represents the gauge | |
 | King Tide, Coastside (label only, ★) | A day whose tide-table high tide at Monterey 9413450 reaches **6.87 ft NAVD88** (`KING_TIDE_FT_MRY`), the 1-year tide (99% annual chance) | Given by OneShoreline staff (Oct 16) for the Coastside Tides page. Monterey is the nearest NOAA gauge with live readings on the open coast south of San Francisco; tides along the San Mateo coast are close to it, but waves (not included) add to the water level at the shore. No coastside flood level (red) yet | **Provisional** — record the source and confirm the gauge choice (Monterey vs San Francisco 9414290 or Half Moon Bay predictions 9414131) | |
 | NOAA projection | next 48 hr (`TIDE_EXPECTED_HOURS`); "NOAA projects about X ft higher/lower than the tide table" on a King Tide day when ≥ 0.25 ft from the tide table (`TIDE_WEATHER_NOTE_FT`) | NOAA model reaches about 2 days | Working choice | |
