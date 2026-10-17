@@ -1556,24 +1556,16 @@ function renderCreek() {
   });
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
   var wins = rainWindows(c);
-  if (st.rains.length === 1) {   // one gauge: its name on top, one column per time window
-    h += '<div class="cbox"><div class="clbl">Accumulated rain (in)</div><table class="rain one"><tr>' +
-      wins.map(function (m) { return "<th>" + winLabel(m) + "</th>"; }).join("") + "</tr><tr>" +
-      st.rains[0].w.map(function (v) { return "<td>" + inch(v) + "</td>"; }).join("") + "</tr></table>";
-  } else {
-    // several gauges: one row per time window, one column per gauge (colors match the rain graph)
-    var RC = ["#7e57c2", "#1e88e5", "#00897b"];
-    h += '<div class="cbox"><div class="clbl">Accumulated rain (in)</div><table class="rain multi"><tr><th></th>' + st.rains.map(function (r, i) {
+  // one row per time window, one column per gauge (colors match the rain graph)
+  var RC = ["#7e57c2", "#1e88e5", "#00897b"];
+  h += '<div class="cbox"><div class="clbl">Accumulated rain (in)</div><table class="rain multi"><tr><th></th>' + st.rains.map(function (r, i) {
         return "<th><span style='color:" + RC[i % RC.length] + "'>■</span> " + esc(r.g.label) + "</th>"; }).join("") + "</tr>" +
       wins.map(function (m, k) { return "<tr><th>" + winLabel(m) + "</th>" + st.rains.map(function (r) { return "<td>" + inch(r.w[k]) + "</td>"; }).join("") + "</tr>"; }).join("") + "</table>";
-  }
   h += (triggerLines(st, true) || []).map(function (x) {
       return '<div class="trig' + (x.met ? " met" : "") + '">' + (x.met ? "<b>MET ⚠</b> " : "Trigger: ") + esc(x.text) + "</div>";
     }).join("") + "</div>";
   var ct = creekTide(c, now);
-  if (ct && CSv && !two) h += '<div class="ktile tide' + (ct.v != null && ct.v > tideFor(c).st.mhhw ? " info" : "") + '"><div class="klbl">Bay tide · ' + esc(ct.name) + "</div>" +
-    '<div class="kt">' + ct.html + "</div></div>";
-  else if (ct && !CSv) h += '<div class="cbox tbox slim"><div class="clbl">' + esc(ct.name) + ' · NOAA, ft NAVD88</div><div class="csub"><b>Bay tide</b> ' + ct.html + "</div></div>";
+  if (ct && !CSv) h += '<div class="cbox tbox slim"><div class="clbl">' + esc(ct.name) + ' · NOAA, ft NAVD88</div><div class="csub"><b>Bay tide</b> ' + ct.html + "</div></div>";
   el("cleft").innerHTML = h;
 
   drawCreekCharts(st, now);
