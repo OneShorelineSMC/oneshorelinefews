@@ -356,7 +356,7 @@
   </div>
 
   <div id="tides">
-    <div class="th"><span class="tname">Redwood City · Bay tide</span><span class="tid" id="tid">NOAA 9414523 · ft NAVD88</span>
+    <div class="th"><span class="tname" id="tname">Redwood City · Bay tide</span><span class="tid" id="tid">NOAA 9414523 · ft NAVD88</span>
 </div>
     <div id="thead" class="unknown"><div class="hm" id="thm">Loading tides…</div><div class="hnow" id="thnow"></div></div>
     <div id="tright">
@@ -383,18 +383,14 @@
   <div id="about">
     <div id="aboutText">
       <h3>About this screen</h3>
-      <p><b>Bay Tides:</b> the NOAA tide gauge in Redwood City. The next 7 days show each day's highest tide from the tide table
-        (for about the first 2 days, the NOAA projection, which adds storms, wind, air pressure, river flow and ocean conditions such as El Niño); blue marks tides above
-        Mean Higher High Water (MHHW), the average height of the highest tide each day (higher than usual, not flooding), and red marks tides at or above the provisional flood level.
-        Tap "Now" for how measured tides compared with the tide table over the past week. The bottom row shows
-        NWS coastal flood alerts or forecast notes about tides. The line under it names the next
-        King Tide (a day when the tide table reaches the 1-year tide, mostly in November, December and January), or warns when a high tide is expected to reach the
-        Redwood City flood level in the NOAA projection or the tide table.</p>
-      <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline. Tap the creek buttons to switch creeks, and "thresholds &amp; notes" for what each level means.</p>
+      <p><b>Bayside Tides:</b> NOAA's Redwood City gauge. Cards show each day's highest tide (NOAA projection for about 2 days, then the
+        tide table); blue = above MHHW, the average daily high (higher than usual), red = the provisional flood level. The line under the
+        NWS row names the next King Tide (the tide table reaches the 1-year tide) or a tide expected to reach the flood level.</p>
+      <p><b>Coastside Tides:</b> the same for the ocean at NOAA's Monterey gauge, the nearest with live readings on the open coast south of
+        San Francisco. No coastside flood level yet; King Tide level provisional. Waves are not included and can push water much farther up a beach.</p>
+      <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline.</p>
       <p data-text="tide_words" data-lead></p>
-      <p><b>Running higher than the tide table</b> means storms, wind, runoff or ocean conditions such as El Niño are pushing water higher than the tide
-        alone. Upcoming high tides will likely run higher too.</p>
-      <p class="emerg" data-text="e911"></p>
+     <p class="emerg" data-text="e911"></p>
       <p class="src">Data: NOAA Tides &amp; Currents, National Weather Service, and the OneShoreline Early Warning
         System (OneRain). The tide table does not include storm surge. Data refreshes automatically.</p>
     </div>
@@ -403,7 +399,7 @@
       <div class="orgsub" data-text="contact_district"></div>
       <div class="line big" data-text="contact_phone"></div>
       <div class="line" data-text="contact_email"></div>
-      <div class="line" data-text="contact_website"></div>
+      <div class="line"><span data-text="contact_website"></span> <span class="tab" data-tab="disclaimer" style="display:inline-block;padding:2px 10px;margin-left:8px;border:2px solid var(--line);font-size:14px">Disclaimer ›</span></div>
       <div class="line addr" style="font-size:13px;color:var(--muted)"><span data-text="contact_address_1"></span><br><span data-text="contact_address_2"></span></div>
       <div class="qrs">
         <div class="qr"><div class="code" id="qrContact"></div>Contact OneShoreline</div>
@@ -426,11 +422,11 @@
   <div id="footer">
     <span id="clock">--:--</span>
     <div id="tabs">
-      <span class="tab on" data-tab="tides">Bay Tides</span>
+      <span class="tab on" data-tab="tides">Bayside Tides</span>
+      <span class="tab" data-tab="coast">Coastside Tides</span>
       <span class="tab" data-tab="creek">Creeks</span>
       <span class="tab" data-tab="map">Map</span>
       <span class="tab" data-tab="about">About</span>
-      <span class="tab" data-tab="disclaimer">Disclaimer</span>
     </div>
     <span id="footright"><span id="stale"></span><span id="updated"></span></span>
   </div>
@@ -441,17 +437,19 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261016e"></script>
-<script src="tide_season.js?v=20261016e"></script>
-<script src="creek_status.js?v=20261016e"></script>
+<script src="lookups.js?v=20261016f"></script>
+<script src="tide_season.js?v=20261016f"></script>
+<script src="creek_status.js?v=20261016f"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
 // files, not this page (see lookups/README.md). The rest below are kiosk display settings.
 var LK = window.LOOKUPS;
 var STATIONS = [LK.station("9414523"),   // MHHW in ft NAVD88 from lookups/tide_stations.csv
-                LK.station("9414750")];  // Alameda: used only by the Creeks tab (San Bruno, Colma)
-var TIDE_STATION = "9414523";      // the Bay Tides tab shows this station only (Redwood City)
+                LK.station("9414750"),   // Alameda: used only by the Creeks tab (San Bruno, Colma)
+                LK.station("9413450")];  // Monterey: the Coastside Tides tab (NOAA's nearest open-coast gauge with live readings)
+var TIDE_STATION = "9414523";      // the tides tab's station: Redwood City (Bayside Tides) or Monterey (Coastside Tides); see setSide()
+var COAST = false;                 // true while the Coastside Tides tab is showing
 var COUNTY_SAME = "006081";        // San Mateo County
 var DAYS = 7;                      // days looked ahead (headline, day list, King Tide line)
 var GRAPH_BACK_H = 24, GRAPH_AHEAD_H = 48;   // the graph: the last 24 hours and the next 48 (about as far as the NOAA projection goes)
@@ -499,14 +497,14 @@ function applyLookups() {
 }
 applyLookups();
 var CREEK_RETURN_MIN = 5;          // a single creek returns to the "All creeks" summary after this long (0 = stay)
-var ABOUT_RETURN_SEC = 120;        // the About tab returns to Bay Tides on its own after this long
+var ABOUT_RETURN_SEC = 120;        // the About tab returns to Bayside Tides on its own after this long
 var PIXEL_SHIFT_MIN = 10;          // screen-burn protection: nudge the picture this often (0 = off)
 var PIXEL_SHIFT_PX = 2;            // ...by up to this many pixels
 var ROTATE_SECONDS = 0;            // 0 = stay on the chosen tab; e.g. 30 = switch tabs every 30 seconds
 var TAB_RETURN_MIN = 0;            // 0 = stay; e.g. 10 = return to Bay Tides after 10 min on the creek tab
 
 // URL options: ?theme=dark  ?cursor=1 (always show the mouse pointer; otherwise it shows while a mouse moves)
-//              ?tab=creek (start on the Creeks tab; also tab=map, tab=about, tab=disclaimer)
+//              ?tab=creek (start on the Creeks tab; also tab=coast for Coastside Tides, tab=map, tab=about, tab=disclaimer)
 //              ?creek=atherton (which creek the Creeks tab shows first)  ?rotate=30 (switch tabs every 30 s)
 var params = new URLSearchParams(location.search);
 if (params.get("theme") === "dark") document.documentElement.dataset.theme = "dark";
@@ -1078,10 +1076,11 @@ document.getElementById("alertbar").addEventListener("click", function () {
 /* ---------- NWS coastal flood information for the Bay Tides tab ---------- */
 // 1) any active NWS coastal flood / storm surge / tsunami alert for the county;
 // 2) otherwise, what the latest NWS Bay Area forecast discussion says about tides and coastal flooding.
-var COASTAL_RE = /coastal flood|storm surge|tsunami/i;
-var TIDE_WORDS_RE = /\b(tides?|tidal|coastal flood\w*|king tides?|storm surge|water levels?|inundation)\b/i;
+var COASTAL_RE = /coastal flood|storm surge|tsunami/i, COASTAL_RE_COAST = /coastal flood|storm surge|tsunami|high surf|beach hazard|sneaker wave|rip current/i;
+var TIDE_WORDS_RE = /\b(tides?|tidal|coastal flood\w*|king tides?|storm surge|water levels?|inundation)\b/i,
+  TIDE_WORDS_RE_COAST = /\b(tides?|tidal|coastal flood\w*|king tides?|storm surge|water levels?|inundation|high surf|surf|swells?|breakers?|sneaker waves?|rip currents?|beach hazards?|run-?up)\b/i;
 var AFD = { id: null, issued: null, lines: null, t: 0 };
-function coastalAlerts() { return (A.list || []).filter(function (p) { return COASTAL_RE.test(p.event || ""); }); }
+function coastalAlerts() { var re = COAST ? COASTAL_RE_COAST : COASTAL_RE; return (A.list || []).filter(function (p) { return re.test(p.event || ""); }); }
 function descField(text, name) {
   var m = String(text || "").match(new RegExp("\\*\\s+" + name + "\\.\\.\\.([\\s\\S]*?)(?=\\n\\s*\\n|\\n\\*\\s|$)"));
   return m ? unwrap(m[1]) : "";
@@ -1096,7 +1095,7 @@ function afdTideLines(text) {
     body.split(/\n\s*[-*\u2022]\s+|\n\s*\n/).forEach(function (chunk) {
       unwrap(chunk).split(/(?<=[.!?])\s+(?=[A-Z])/).forEach(function (x) {
         x = x.trim();
-        if (x.length < 12 || !TIDE_WORDS_RE.test(x) || seen[x]) return;
+        if (x.length < 12 || !(COAST ? TIDE_WORDS_RE_COAST : TIDE_WORDS_RE).test(x) || seen[x]) return;
         seen[x] = 1; out.push(x.length > 240 ? x.slice(0, 237) + "…" : x);
       });
     });
@@ -1109,11 +1108,22 @@ function loadAFD() {
     if (!g || !g.id) throw new Error("no AFD");
     if (g.id === AFD.id) { AFD.t = Date.now(); return; }
     return getJSON("https://api.weather.gov/products/" + encodeURIComponent(g.id)).then(function (p) {
-      AFD.id = g.id; AFD.issued = p.issuanceTime || g.issuanceTime; AFD.lines = afdTideLines(p.productText); AFD.t = Date.now();
+      AFD.id = g.id; AFD.issued = p.issuanceTime || g.issuanceTime; AFD.text = p.productText; AFD.lines = afdTideLines(p.productText); AFD.t = Date.now();
     });
   }).then(renderNws).catch(function () { renderNws(); });
 }
 function afdFresh() { return AFD.lines && AFD.issued && Date.now() - new Date(AFD.issued) < AFD_MAX_AGE_HOURS * 3600000; }
+// Bayside Tides / Coastside Tides: the same panel, a different NOAA gauge, King Tide level and NWS wording
+function setSide(coast) {
+  if (coast === COAST) return;
+  COAST = coast; TIDE_STATION = coast ? "9413450" : "9414523";
+  TSN = coast ? window.TIDE_SEASON_COAST : window.TIDE_SEASON;
+  if (AFD.text) AFD.lines = afdTideLines(AFD.text);
+  var st = tideS().st;
+  $t("tname").textContent = st.name + (coast ? " · Ocean tide" : " · Bay tide");
+  $t("tssrc").textContent = "NOAA · " + st.name + " ›";
+  renderSeason(); renderNws();
+}
 function afdWhen() {
   return new Date(AFD.issued).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
 }
@@ -1133,7 +1143,7 @@ function renderNws() {
     $t("tnwsmore").textContent = "Tap ›";
   } else if (afd && afd.length) {
     box.className = "afd"; $t("tnwsi").textContent = "ℹ";
-    $t("tnwsm").textContent = "NWS forecasters on tides:";
+    $t("tnwsm").textContent = COAST ? "NWS forecasters on tides and surf:" : "NWS forecasters on tides:";
     $t("tnwss").textContent = afd.slice(0, 2).join(" ");
     $t("tnwsmore").textContent = "Tap ›";
   } else if (all.length) {   // the coastal alert is in the top bar and the discussion adds nothing
@@ -1144,8 +1154,8 @@ function renderNws() {
     $t("tnwsmore").textContent = "Tap ›";
   } else if (A.list != null) {
     box.className = ""; $t("tnwsi").textContent = "✓";
-    $t("tnwsm").textContent = "No NWS coastal flood alerts";
-    $t("tnwss").textContent = afd ? "and forecasters aren't mentioning high tides." : "";
+    $t("tnwsm").textContent = COAST ? "No NWS coastal or surf alerts" : "No NWS coastal flood alerts";
+    $t("tnwss").textContent = afd ? (COAST ? "and forecasters aren't mentioning high tides or high surf." : "and forecasters aren't mentioning high tides.") : "";
     $t("tnwsmore").textContent = "";
   } else {
     box.className = "unknown"; $t("tnwsi").textContent = "?";
@@ -1244,7 +1254,7 @@ $t("tseason").addEventListener("click", function () {
   var ks = Object.keys(kd).sort().filter(function (d) { return d >= today; });
   if (ks.length) html += "<table><tr><th>" + esc(LK.text("tide_day_king")) + "</th><th>" + esc(LK.text("lbl_tide_table")) + "</th></tr>" + ks.map(function (d) {
     return "<tr><td><b>" + esc(tsDay(d)) + "</b></td><td>" + esc(TSN.ft(kd[d].v)) + " at " + esc(TSN.clock(kd[d].t)) + "</td></tr>"; }).join("") + "</table>";
-  html += '<div id="dnote">' + esc(LK.text("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: TSN.king().toFixed(1) })) + " " + esc(LK.text("noaa_forecast_note")) + "</div>";
+  html += '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) })) + " " + esc(TSN.txt("noaa_forecast_note")) + "</div>";
   openDetail(st.cls === "red" ? LK.text("tide_red_chip") : LK.text("tide_day_king"), html);
 });
 
@@ -1728,7 +1738,8 @@ setInterval(fitAbout, 3000);   // re-check when the alert strip comes or goes
 
 function showTab(name) {
   currentTab = name; tabChangedAt = Date.now();
-  var creek = name === "creek", about = name === "about", tides = name === "tides";
+  var creek = name === "creek", about = name === "about", tides = name === "tides" || name === "coast";
+  setSide(name === "coast");
   document.getElementById("creek").classList.toggle("show", creek);
   document.getElementById("about").classList.toggle("show", about);
   document.getElementById("disclaimer").classList.toggle("show", name === "disclaimer");
@@ -1752,7 +1763,7 @@ setInterval(function () {
   if (ROTATE_SECONDS > 0 && currentTab !== "about" && currentTab !== "disclaimer" && secs >= ROTATE_SECONDS && !document.getElementById("detail").classList.contains("show")) {
     showTab(currentTab === "tides" ? "creek" : "tides"); return;
   }
-  if (TAB_RETURN_MIN > 0 && currentTab === "creek" && secs >= TAB_RETURN_MIN * 60) showTab("tides");
+  if (TAB_RETURN_MIN > 0 && (currentTab === "creek" || currentTab === "coast") && secs >= TAB_RETURN_MIN * 60) showTab("tides");
   // a single creek goes back to the "All creeks" summary after a while
   if (CREEK_RETURN_MIN > 0 && C.sel !== "all" && Date.now() - C.selAt > CREEK_RETURN_MIN * 60000 && !document.getElementById("detail").classList.contains("show")) {
     C.sel = "all"; destroyCreekCharts(); if (currentTab === "creek") renderCreek();
@@ -1765,10 +1776,12 @@ function drawQRs() {
     document.getElementById(q[0]).innerHTML = "";
     new QRCode(document.getElementById(q[0]), { text: q[1], width: 224, height: 224,
       colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+    Array.prototype.forEach.call(document.getElementById(q[0]).querySelectorAll("img, canvas"), function (e) {   // QR code: text alternative (WCAG 1.1.1)
+      e.setAttribute(e.tagName === "IMG" ? "alt" : "aria-label", "QR code: " + q[1]); if (e.tagName === "CANVAS") e.setAttribute("role", "img"); });
   });
   qrDrawn = true;
 }
-if (["creek", "map", "about", "disclaimer"].indexOf(params.get("tab")) >= 0) showTab(params.get("tab"));
+if (["coast", "creek", "map", "about", "disclaimer"].indexOf(params.get("tab")) >= 0) showTab(params.get("tab"));
 
 /* ---------- Map tab ---------- */
 var M = { data: null, map: null, markers: [], sel: null, timer: null };
@@ -1933,10 +1946,11 @@ function every(min, fn) { fn(); setInterval(fn, min * 60000); }
 every(ALERTS_EVERY_MIN, loadAlerts);
 every(AFD_EVERY_MIN, loadAFD);
 every(MODEL_EVERY_MIN, loadModel);
-if (TSN) {   // Redwood City tide table (6 months ahead, twice a day) and the NOAA projection (hourly)
-  every(12 * 60, function () { TSN.loadTable().then(renderSeason); });
-  every(MODEL_EVERY_MIN, function () { TSN.loadModel().then(renderSeason); });
-}
+[window.TIDE_SEASON, window.TIDE_SEASON_COAST].forEach(function (T) {   // Redwood City and Monterey: tide table (6 months ahead, twice a day) and NOAA projection (hourly)
+  if (!T) return;
+  every(12 * 60, function () { T.loadTable().then(renderSeason); });
+  every(MODEL_EVERY_MIN, function () { T.loadModel().then(renderSeason); });
+});
 S.forEach(function (_, i) {
   renderPanel(i);
   every(PREDICTIONS_EVERY_MIN, function () { loadPredictions(i).then(function () { loadObserved(i); }); });

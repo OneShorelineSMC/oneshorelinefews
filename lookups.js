@@ -31,13 +31,14 @@
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
    
-    TIDE_RED_FT_RWC: [8.5, 6, 15], KING_TIDE_FT_RWC: [8.3, 6, 15], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
+    TIDE_RED_FT_RWC: [8.5, 6, 15], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
     MORE_CREEKS_PUBLIC: [1, 0, 1],
     REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
   };
   var TIDES = {
     "9414523": { id: "9414523", name: "Redwood City", mhhw: 7.02 },
-    "9414750": { id: "9414750", name: "Alameda", mhhw: 6.37 }
+    "9414750": { id: "9414750", name: "Alameda", mhhw: 6.37 },
+    "9413450": { id: "9413450", name: "Monterey", mhhw: 5.48 }   // Coastside Tides
   };
   var TEXT = {
     e911: "In an emergency, call 911.",
@@ -113,6 +114,12 @@
     tide_words: "Tide table and NOAA projection. The tide table is the normal tide from the moon and sun, worked out years ahead. The NOAA projection adds storms, wind, runoff and ocean conditions such as El Niño, from NOAA’s model, about 2 days ahead.",
     lbl_tide_table: "Tide table",
     lbl_expected: "NOAA projection",
+    coast_intro: "When the ocean at NOAA’s Monterey tide gauge is expected to rise above MHHW in the next 7 days. Monterey is the nearest NOAA gauge with live readings on the open coast south of San Francisco; tides along the San Mateo coast are close to it in timing and height, but waves add to the water level at the shore.",
+    noaa_forecast_note_coast: "NOAA projection: NOAA’s computer model of the West Coast ocean (WCOFS) starts from the tide table and adds what it leaves out: storms, wind, air pressure and ocean conditions such as the higher sea levels of an El Niño winter. It runs about 2 days ahead. It doesn’t include waves, which can push water much farther up a beach. It’s guidance, not an official forecast; follow National Weather Service advisories.",
+    king_tide_intro_coast: "Here a “King Tide” is a day when the tide table at Monterey reaches the 1-year tide (provisional): a tide so high the ocean reaches it only about once a year on average. These come when the sun and moon line up, mostly in November, December and January. They’re worked out years ahead, so they don’t include storms, waves or ocean conditions. The colors show how high each day’s highest tide reaches at Monterey.",
+    king_tide_what_coast: "Around high tide, expect water higher up beaches and around coastal trails, creek mouths and harbors. Waves can reach farther than usual: stay off rocks and jetties and never turn your back on the ocean.",
+    tide_cal_source_coast: "Heights at NOAA’s Monterey tide gauge (9413450), ft NAVD88: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions but not waves. Blue = above MHHW ({mhhw} ft), the average high tide: higher than usual. No coastside flood level has been set yet. ★ King Tide = the tide table reaches the 1-year tide ({king} ft, provisional).",
+    tide_afd_none_coast: "NWS forecasters aren’t mentioning high tides, high surf or coastal flooding.",
     king_tide_intro: "Here a “King Tide” is a day when the tide table reaches the 1-year tide at Redwood City: a tide so high the Bay reaches it only about once a year on average. These come when the sun and moon line up, mostly in November, December and January. They’re worked out years ahead, so it doesn’t include storms or ocean conditions: a King Tide on a calm day may only wet low paths, while a storm or an El Niño winter can push an ordinary high tide higher. The colors show how high each day’s highest tide reaches at Redwood City.",
     king_tide_what: "Around high tide, expect water on low shoreline paths, marshes and some low roads and parking lots near the Bay. Never drive or walk through floodwater.",
     tide_day_king: "King Tide (1-year tide)",

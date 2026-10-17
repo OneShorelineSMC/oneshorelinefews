@@ -1,4 +1,7 @@
-/* High tides at Redwood City for the King Tide line (kiosk), the Tides page card and its calendar.
+/* High tides for the King Tide line (kiosk), the Tides page card and its calendar, at two NOAA gauges:
+ *   window.TIDE_SEASON        Bayside: Redwood City 9414523 (flood level TIDE_RED_FT_RWC, King Tide KING_TIDE_FT_RWC)
+ *   window.TIDE_SEASON_COAST  Coastside: Monterey 9413450 (no flood level yet; King Tide KING_TIDE_FT_MRY, 1-year tide, provisional)
+ * Redwood City details below; Monterey works the same way without the red level.
  *
  * Everything comes from NOAA at the Redwood City tide gauge (9414523), ft NAVD88, so nothing needs a yearly update:
  *   - the tide table (predicted high tides) from the start of this month through the next 6 months
@@ -14,8 +17,12 @@
  */
 (function () {
   "use strict";
-  var LK = window.LOOKUPS, STATION = "9414523", MATCH_MIN = 90, MONTHS_AHEAD = 6;
+  var LK = window.LOOKUPS, MATCH_MIN = 90, MONTHS_AHEAD = 6;
+  // cfg: { station, red: settings key or null (no flood level), king: settings key, sfx: wording suffix ("" Bayside, "_coast" Coastside) }
+  function make(cfg) {
+  var STATION = cfg.station, SFX = cfg.sfx || "";
   var S = { highs: null, tHighs: 0, ofs: null, tOfs: 0, from: null };
+  function txt(k, v) { var t = SFX ? LK.text(k + SFX, v) : ""; return t || LK.text(k, v); }   // the Coastside wording where there is one
 
   function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
   function nowLocal() {
@@ -63,8 +70,8 @@
   }
 
   function mhhw() { return LK.mhhw(STATION); }
-  function red() { return LK.num("TIDE_RED_FT_RWC"); }
-  function king() { return LK.num("KING_TIDE_FT_RWC"); }
+  function red() { return cfg.red ? LK.num(cfg.red) : Infinity; }
+  function king() { return LK.num(cfg.king); }
   function level(v) { return v == null ? 0 : v >= red() ? 2 : v > mhhw() ? 1 : 0; }
 
   /* Each day's highest tide-table high tide: {date: {t, v}} */
@@ -125,10 +132,13 @@
     var d = ks[0], k = kd[d], x = ex[d], v = x ? x.v : k.v;
     return { cls: "king", chip: LK.text("tide_king_chip"), date: d,
       main: LK.text("tide_king_line", { day: label(d), time: clock(k.t), ft: ft(k.v) }),
-      sub: [weatherNote(x), level(v) === 1 ? LK.text("tide_level_amber") : ""].filter(Boolean).join(" · "), what: LK.text("king_tide_what") };
+      sub: [weatherNote(x), level(v) === 1 ? LK.text("tide_level_amber") : ""].filter(Boolean).join(" · "), what: txt("king_tide_what") };
   }
 
-  window.TIDE_SEASON = { load: function () { return Promise.all([loadTable(), loadModel()]); }, loadTable: loadTable, loadModel: loadModel,
-    dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote,
+  return { load: function () { return Promise.all([loadTable(), loadModel()]); }, loadTable: loadTable, loadModel: loadModel,
+    dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote, txt: txt,
     clock: clock, ft: ft, mhhw: mhhw, red: red, king: king, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };
+  }
+  window.TIDE_SEASON = make({ station: "9414523", red: "TIDE_RED_FT_RWC", king: "KING_TIDE_FT_RWC" });
+  window.TIDE_SEASON_COAST = make({ station: "9413450", red: null, king: "KING_TIDE_FT_MRY", sfx: "_coast" });
 })();

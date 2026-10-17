@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0A5587">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Bay Tides">
+<meta name="apple-mobile-web-app-title" content="Bayside Tides">
 <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<title>Bay Tides – OneShoreline</title>
+<title>Bayside Tides – OneShoreline</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
   integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -143,7 +143,15 @@
   nav button .i { font-size: 21px; line-height: 1.1; }
   nav button.on { color: var(--ink); font-weight: bold; }
   nav button .dot { display: none; width: 9px; height: 9px; border-radius: 50%; position: absolute; margin-left: 22px; }
-  /* Bay Tides: one sentence first, the week next, details behind taps (same as the kiosk tab) */
+  /* Bayside | Coastside switch (two pages, one file: ?side=coast) */
+  .side { display: flex; margin: 12px 0 2px; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--card); }
+  .side a { flex: 1; text-align: center; padding: 8px 6px; min-height: 40px; box-sizing: border-box; font-weight: 700; color: var(--ink); text-decoration: none; font-size: 15px; }
+  .side a + a { border-left: 2px solid var(--ink); }
+  .side a[aria-current="page"] { background: var(--ink); color: var(--card); }
+  .side a[aria-current="page"]::before { content: "✓ "; }
+  .side a:focus-visible { outline: 3px solid var(--blue); outline-offset: -5px; }
+  body.embed .side { display: none; }
+  /* Bayside / Coastside Tides: one sentence first, the week next, details behind taps (same as the kiosk tab) */
   .tcard .th { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .tn { font-size: 20px; font-weight: 700; color: var(--ink); }
   .head { margin-top: 8px; border: 3px solid #8a96a3; border-radius: 10px; padding: 8px 12px; background: rgba(138,150,163,.08); }
@@ -279,8 +287,8 @@
 <header>
   <img class="hmark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="38" height="38">
   <div>
-  <h1>Bay Tides</h1>
-  <div class="sub">OneShoreline Early Warning · San Francisco Bay, San Mateo County</div>
+  <h1 id="h1">Bayside Tides</h1>
+  <div class="sub" id="hsub">OneShoreline Early Warning · San Francisco Bay, San Mateo County</div>
   </div>
 </header>
 
@@ -292,6 +300,7 @@
 <div id="alertList"></div>
 
 <main>
+  <div class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html" id="sideBay">Bayside</a><a href="Tides.html?side=coast" id="sideCoast">Coastside</a></div>
   <div class="intro" id="intro">When the Bay at the NOAA tide gauge in Redwood City is expected to rise above MHHW in the next 7 days.</div>
   <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
     <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
@@ -339,8 +348,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261016e"></script>
-<script src="tide_season.js?v=20261016e"></script>
+<script src="lookups.js?v=20261016f"></script>
+<script src="tide_season.js?v=20261016f"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -428,7 +437,11 @@ $("alert").addEventListener("click", function () {
 /* ===================== CONFIG ===================== */
 // MHHW, the settings marked (lookups) and the wording come from the lookups/ folder through lookups.js (lookups/README.md)
 var LK = window.LOOKUPS;
-var STATIONS = [LK.station("9414523")];   // Redwood City only; MHHW (ft NAVD88) from lookups/tide_stations.csv
+// Bayside (Redwood City 9414523) or, with ?side=coast, Coastside (Monterey 9413450, NOAA's nearest open-coast gauge with live readings)
+var COAST = /[?&]side=coast\b/.test(location.search);
+var STATIONS = [LK.station(COAST ? "9413450" : "9414523")];   // MHHW (ft NAVD88) from lookups/tide_stations.csv
+var SIDE = COAST ? { name: "Coastside Tides", sub: "Pacific coast, San Mateo County", water: "ocean", tide: "Ocean tide" }
+  : { name: "Bayside Tides", sub: "San Francisco Bay, San Mateo County", water: "Bay", tide: "Bay tide" };
 var COUNTY_SAME = "006081";        // San Mateo County, for NWS alerts
 var PAST_DAYS = 7;                 // days of measured water level loaded (past-week comparison)
 var DAYS = 7;                      // days of predictions
@@ -439,7 +452,7 @@ var MODEL_MAX_AGE_HOURS, MODEL_MIN_AHEAD_HOURS;   // (lookups)
 // Flood level (red) at the Redwood City gauge: TIDE_RED_FT_RWC in settings.csv (provisional 8.5 ft NAVD88); other gauges have none yet
 function redFor(st) { return st.id === "9414523" ? LK.num("TIDE_RED_FT_RWC") : Infinity; }
 // King Tide (1-year tide) at the Redwood City gauge: KING_TIDE_FT_RWC (8.3 ft NAVD88); a label, drawn as a purple dashed line
-function kingFor(st) { return st.id === "9414523" ? LK.num("KING_TIDE_FT_RWC") : Infinity; }
+function kingFor(st) { return st.id === "9414523" ? LK.num("KING_TIDE_FT_RWC") : st.id === "9413450" ? LK.num("KING_TIDE_FT_MRY") : Infinity; }   // Monterey: KING_TIDE_FT_MRY (6.87, provisional)
 function applyLookups() {
   OFFSET_RECENT_HIGHS = LK.num("OFFSET_RECENT_HIGHS"); OFFSET_NOTE_FT = LK.num("OFFSET_NOTE_FT");
   MODEL_MAX_AGE_HOURS = LK.num("MODEL_MAX_AGE_HOURS"); MODEL_MIN_AHEAD_HOURS = LK.num("MODEL_MIN_AHEAD_HOURS");
@@ -448,6 +461,17 @@ applyLookups();
 var EMBED = /[?&]embed=1\b/.test(location.search);   // ?embed=1: no title bar, alert banner or bottom bar (for dashboards)
 /* ================================================== */
 if (EMBED) document.body.classList.add("embed");
+// Coastside: titles and wording (lookups keys ending in _coast); the switch shows which page this is
+(function () {
+  document.title = SIDE.name + " – OneShoreline";
+  $("h1").textContent = SIDE.name; $("hsub").textContent = "OneShoreline Early Warning · " + SIDE.sub;
+  var am = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (am) am.setAttribute("content", SIDE.name);
+  $(COAST ? "sideCoast" : "sideBay").setAttribute("aria-current", "page");
+  if (!COAST) return;
+  $("intro").setAttribute("data-text", "coast_intro");
+  Array.prototype.forEach.call(document.querySelectorAll('[data-text="king_tide_intro"],[data-text="noaa_forecast_note"]'), function (e) { e.setAttribute("data-text", e.getAttribute("data-text") + "_coast"); });
+  var rk = document.querySelector('.ckey [data-text="tide_day_red"]'); if (rk) rk.parentNode.style.display = "none";   // no coastside flood level yet
+})();
 
 var D = { alerts: null, charts: {} };
 var S = STATIONS.map(function (st) { return { st: st, pred: null, highs: null, obs: null, wins: [], ofs: null, tOfs: 0 }; });
@@ -583,7 +607,8 @@ function highResiduals(s, now) {   // each past high tide: measured peak (within
 }
 
 /* ---------- NWS forecasters on tides (forecast discussion), the same as the kiosk's NWS row ---------- */
-var TIDE_WORDS_RE = /\b(tides?|tidal|coastal flood\w*|king tides?|storm surge|water levels?|inundation)\b/i;
+var TIDE_WORDS_RE = COAST ? /\b(tides?|tidal|coastal flood\w*|king tides?|storm surge|water levels?|inundation|high surf|surf|swells?|breakers?|sneaker waves?|rip currents?|beach hazards?|run-?up)\b/i
+  : /\b(tides?|tidal|coastal flood\w*|king tides?|storm surge|water levels?|inundation)\b/i;   // Coastside also: surf, swell, sneaker waves, rip currents
 var AFD = { id: null, issued: null, lines: null };
 function afdTideLines(text) {
   var out = [], seen = {};
@@ -616,14 +641,14 @@ function afdFresh() { return AFD.lines && AFD.issued && Date.now() - new Date(AF
 /* ---------- page ---------- */
 $("cards").innerHTML = S.map(function (s, i) {
   return '<div class="card tcard" id="st' + i + '">' +
-    '<div class="th"><span class="tn">' + esc(s.st.name) + ' · Bay tide</span><span class="lbl">NOAA ' + esc(s.st.id) + " · ft NAVD88</span></div>" +
+    '<div class="th"><span class="tn">' + esc(s.st.name) + " · " + esc(SIDE.tide) + '</span><span class="lbl">NOAA ' + esc(s.st.id) + " · ft NAVD88</span></div>" +
     '<div class="head unknown"><div class="hm">Loading tides…</div></div>' +
     '<details class="mhhwq"><summary>What is MHHW?</summary><p>' + esc(LK.text("mhhw_info")) + "</p></details>" +
     '<div class="nowl"></div>' +
     '<div class="sec"><b class="dhead">Next 7 days</b> · <span class="hint">highest tide each day (tide table)</span></div>' +
     '<div class="days"></div>' +
     '<div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div>' +
-    '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the Bay tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
+    '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
     '<div class="afd" style="display:none"></div>' +
     '<details class="all"><summary>Times above MHHW</summary><div class="wl"></div></details>' +
@@ -678,11 +703,11 @@ function render() {
     var afd = afdFresh() ? AFD.lines : null, box = q(".afd");
     if (afd && afd.length) {
       box.style.display = ""; box.className = "afd";
-      box.innerHTML = "<details><summary><b>NWS forecasters on tides:</b> " + esc(afd[0]) + "</summary>" +
+      box.innerHTML = "<details><summary><b>NWS forecasters on " + (COAST ? "tides and surf" : "tides") + ":</b> " + esc(afd[0]) + "</summary>" +
         afd.slice(1).map(function (x) { return "<p>" + esc(x) + "</p>"; }).join("") +
         '<div class="when">From the NWS San Francisco Bay Area office’s forecast discussion, issued ' +
         esc(new Date(AFD.issued).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" })) + ".</div></details>";
-    } else if (afd) { box.style.display = ""; box.className = "afd ok"; box.textContent = "NWS forecasters aren’t mentioning high tides or coastal flooding."; }
+    } else if (afd) { box.style.display = ""; box.className = "afd ok"; box.textContent = COAST ? LK.text("tide_afd_none_coast") : "NWS forecasters aren’t mentioning high tides or coastal flooding."; }
     else box.style.display = "none";
 
     // Times above MHHW (tap)
@@ -910,7 +935,7 @@ function tsToday() {
 function tsAdd(iso, n) { return new Date(Date.parse(iso + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10); }
 function tsFmt(iso, o) { return new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
 function tsDay(iso) { return tsFmt(iso, { weekday: "short" }) + " " + tsFmt(iso, { month: "short", day: "numeric" }); }
-var TSN = window.TIDE_SEASON;
+var TSN = COAST ? window.TIDE_SEASON_COAST : window.TIDE_SEASON;   // Monterey or Redwood City high tides, King Tides and calendar
 function renderSeason() {
   var st = TSN ? TSN.line(tsDay) : null, el = $("season"), ok = !!(TSN && TSN.state.highs);
   $("calcard").classList.toggle("hide", !ok);
@@ -956,7 +981,7 @@ function renderCalendar() {
   $("calfc").classList.toggle("hide", !xs.length);
   $("fckey").classList.toggle("hide", !xs.length);
   $("calfc").innerHTML = xs.map(function (d) { return "<div>" + esc(dayWords(d)) + "</div>"; }).join("") +
-    (xs.length ? '<div class="lbl" style="margin-top:4px">' + esc(LK.text("noaa_forecast_note")) + "</div>" : "");
+    (xs.length ? '<div class="lbl" style="margin-top:4px">' + esc(LK.text(COAST ? "noaa_forecast_note_coast" : "noaa_forecast_note")) + "</div>" : "");
   var months = [], m0 = new Date(S0.from);
   for (var k = 0; k <= TSN.months; k++) months.push(new Date(Date.UTC(m0.getUTCFullYear(), m0.getUTCMonth() + k, 1)).toISOString().slice(0, 10));
   closeDay(false);   // take the summary box out before the months are rebuilt
@@ -988,7 +1013,7 @@ function renderCalendar() {
       (d < today ? ' <span class="lbl">(past)</span>' : "") + "</li>";
   }).join("");
   if (!document.querySelector('.mgrid .d[tabindex="0"]')) { var f0 = document.querySelector(".mgrid .d"); if (f0) f0.tabIndex = 0; }
-  $("calsrc").textContent = LK.text("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: TSN.king().toFixed(1) });
+  $("calsrc").textContent = LK.text(COAST ? "tide_cal_source_coast" : "tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) });
 }
 // Keyboard: Enter or Space acts like a tap on anything marked role="button" (calendar days, the King Tide card, the alert bar)
 document.addEventListener("keydown", function (e) {

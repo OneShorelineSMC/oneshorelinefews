@@ -18,7 +18,7 @@ Options you can add to the end of the URL:
 | `?zoom=0`     | Use the older picture scaling instead of CSS zoom (only if a screen looks wrong) |
 | `?tab=creek`  | Start on the Creeks tab (add `&creek=belmont` etc. to choose the creek) |
 | `?preview=1`  | Creek status layer (staff preview): the Dashboard Creeks view shows a status tile for each dashboard creek, plus any preview-only creek that has a status (up to 6 tiles; quiet ones listed underneath). Used on the EOC kiosk during the first storms; combine with other options using `&`, e.g. `?tab=creek&preview=1` |
-| `?rotate=30`  | Switch between Bay Tides and Creeks every 30 seconds |
+| `?rotate=30`  | Switch between Bayside Tides and Creeks every 30 seconds |
 | `?tab=map`    | Start on the Map tab                                      |
 | `?tab=about`  | Start on the About tab                                    |
 | `?tab=disclaimer` | Start on the Disclaimer tab                           |
@@ -26,7 +26,7 @@ Options you can add to the end of the URL:
 ## Preview on a computer first
 
 Open the kiosk URL in any browser; the mouse pointer appears when you move the mouse. The layout scales to fit the window, so it looks the
-same as on the 7" screen. Click the alert bar or a part of the Bay Tides panel to see the touch screens.
+same as on the 7" screen. Click the alert bar or a part of the Bayside Tides panel to see the touch screens.
 
 ## What you need
 
@@ -166,7 +166,16 @@ own map:
   (see below), so the map can lag OneRain by up to about 20 minutes.
 - **Alert levels** on the map come from the creek gauges and thresholds in `lookups/creek_gauges.csv` and `lookups/thresholds.csv`.
 
-## Bay Tides tab
+## Bayside Tides tab (and Coastside Tides)
+
+**Coastside Tides** (added Oct 16; `?tab=coast` opens it) is the same panel for NOAA's Monterey gauge (9413450), the
+nearest NOAA gauge with live readings on the open coast south of San Francisco: MHHW 5.48 ft NAVD88, NOAA projection from
+NOAA's West Coast model, King Tide = the tide table reaches 6.87 ft NAVD88 (`KING_TIDE_FT_MRY`, provisional), no red level
+yet. Its NWS row also picks up High Surf, Beach Hazards, Sneaker Wave and Rip Current alerts and forecast lines about surf.
+It returns to Bayside Tides after `TAB_RETURN_MIN` like the Creeks tab. The **Disclaimer** is now a button on the About tab
+(`?tab=disclaimer` still works).
+
+Bayside Tides:
 
 Redwood City only (NOAA 9414523, ft NAVD88). Built for a responder walking in at shift change: one sentence first,
 the week next, details behind a tap.
@@ -215,13 +224,13 @@ San Mateo County**, above the NWS alert bar.
 
 The **About** button shows what each tab means, an "in an emergency, call 911" reminder, OneShoreline's
 contact details (phone, email, website, address), and two QR codes people can scan with their phones:
-**Contact OneShoreline** and **Get alerts: SMC Alert**. It returns to Bay Tides on its own after 2 minutes.
+**Contact OneShoreline** and **Get alerts: SMC Alert**. It returns to Bayside Tides on its own after 2 minutes.
 `?tab=about` at the end of the kiosk URL opens it directly (handy for checking the QR codes).
 
 ## Disclaimer tab
 
 The **Disclaimer** button shows OneShoreline's data disclaimer (informational purposes only; thresholds are
-approximate; actual conditions may vary) and "In an emergency, call 911". Like About, it returns to Bay Tides
+approximate; actual conditions may vary) and "In an emergency, call 911". Like About, it returns to Bayside Tides
 on its own after 2 minutes and isn't part of the automatic tab rotation.
 
 ## Creeks tab
@@ -329,7 +338,7 @@ in `ShorelineKiosk.html`:
 
 | Setting               | Default | Meaning                                        |
 |-----------------------|---------|------------------------------------------------|
-| `TIDE_STATION`        | 9414523 | The station on the Bay Tides tab (Redwood City) |
+| `TIDE_STATION`        | 9414523 | The tides tab's station: Redwood City on Bayside Tides; the Coastside Tides tab switches it to Monterey (9413450) |
 | `PAST_DAYS`           | 7       | Days of measured water level compared with predictions |
 | `MODEL_EVERY_MIN`     | 60      | How often the NOAA model forecast is downloaded |
 | `NWS_OFFICE`          | MTR     | NWS office whose forecast discussion is checked for tide notes |
@@ -348,5 +357,5 @@ in `ShorelineKiosk.html`:
 | `PIXEL_SHIFT_MIN`     | 10      | How often the picture shifts slightly (burn-in protection; 0 = off) |
 | `PIXEL_SHIFT_PX`      | 2       | How far it shifts, in pixels                    |
 | `ROTATE_SECONDS`      | 0       | Switch tabs automatically (0 = off)             |
-| `TAB_RETURN_MIN`      | 0       | Return to Bay Tides after this long on the creek tab (0 = off) |
-| `ABOUT_RETURN_SEC`    | 120     | About tab returns to Bay Tides after this long  |
+| `TAB_RETURN_MIN`      | 0       | Return to Bayside Tides after this long on the Creeks or Coastside Tides tab (0 = off) |
+| `ABOUT_RETURN_SEC`    | 120     | About tab returns to Bayside Tides after this long  |
