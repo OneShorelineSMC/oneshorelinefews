@@ -168,7 +168,7 @@
       <span class="rwl" aria-hidden="true">Rain</span><button data-w="0" aria-pressed="true">Off</button><button data-w="1" aria-pressed="false" aria-label="1 hour">1 h</button><button data-w="3" aria-pressed="false" aria-label="3 hours">3 h</button><button data-w="6" aria-pressed="false" aria-label="6 hours">6 h</button><button data-w="24" aria-pressed="false" aria-label="24 hours">24 h</button></div>
     <button id="rpBtn" title="Show flood reports reviewed by OneShoreline staff" hidden>Flood reports</button>
     <button id="allBtn" title="Zoom to all sites">All sites</button>
-    <button id="wsBtn" aria-pressed="false" title="Show watershed boundaries (USGS)" hidden>Watersheds</button>
+    <button id="wsBtn" aria-pressed="false" title="Show watershed boundaries" hidden>Watersheds</button>
   </div>
   <div id="list"></div>
   <div id="sheet"></div>
@@ -495,7 +495,7 @@ document.getElementById("wsBtn").addEventListener("click", function () {
     WS.layer = L.geoJSON(gj, {
       style: { color: "#2f6b3a", weight: 1.6, opacity: 0.9, fillColor: "#2f6b3a", fillOpacity: 0.04, dashArray: "5 4" },
       onEachFeature: function (f, l) { if (f.properties && f.properties.name) l.bindTooltip(esc(f.properties.name), { sticky: true }); },
-      attribution: "Watersheds: USGS"
+      attribution: "Watersheds: " + (/County/.test(gj.source || "") ? "San Mateo County (C/CAG)" : "USGS")
     });
     if (WS.on) WS.layer.addTo(map);
   }).catch(function () {
