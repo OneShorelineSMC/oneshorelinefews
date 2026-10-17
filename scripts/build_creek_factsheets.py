@@ -58,16 +58,17 @@ GLOSSARY = [
     "> - **Threshold:** any set value that changes a color or a status, in either system.",
     "> - **Flood level** (2026 Update): a threshold on creek height (or a rain amount) tied to an effect downstream, such "
     "as how full the channel is or water on a road. Only flood levels say anything about flooding.",
-    "> - **Alert level** (2026 Update): a rain alert (Heavy, Very heavy, Intense: how rare the rain is) or **rising fast** "
+    "> - **Indicator** (2026 Update): something the page shows in color or words, not a message. Two kinds: the **rain "
+    "indicator** (Heavy, Very heavy, Intense: how rare the rain is) and **rising fast** "
     "(the creek rose at least a set amount within an hour). Not tied to flooding.",
-    "> - **Status** (2026 Update): the one overall message for a creek: Flooding likely, Be ready, Stay alert or No alerts. "
-    "It comes from the flood levels and alert levels.",
+    "> - **Status** (2026 Update): the one overall message shown for a creek (currently worded Flooding likely, Be ready, "
+    "Stay alert or No alerts). It comes from the flood levels and indicators.",
     "> - **OneRain threshold:** a named level set on a OneRain sensor (for example Flood Watch, 3.25 ft). It colors that "
     "gauge's readings and graph; it doesn't send a message by itself.",
     "> - **OneRain dashboard color:** the green, orange or red a OneRain dashboard gives a reading. Set separately from "
     "the thresholds.",
-    "> - **Notification:** a message sent to people. OneRain sends these through separate *alarm* rules. The 2026 Update "
-    "sends none; it only displays.",
+    "> - **Text alert:** a text message sent to people. Only OneRain sends these, to Public Works and emergency responders, "
+    "through its *alarm* rules. The 2026 Update sends no text alerts; it only shows colors and words on the page.",
     ">",
     "> **Units.** Creek heights are the gauge's own reading in feet (above the gauge's zero), not an elevation. "
     "Tide heights are in feet NAVD88, a survey datum; MHHW = the average daily high tide, MLLW = the average daily low tide. "
@@ -253,7 +254,7 @@ def main():
                   f"| Reports | {esc(gf.get('reporting', '')) or g.get('reports', '')} |",
                   f"| Record starts | {esc(gf.get('record_start', '')) or '**To add**'} |",
                   f"| Affected by the tide? | {tidal} |",
-                  f"| Rising-fast alert | " + ("Off at this gauge" if rise.lower() == "off" else
+                  f"| Rising-fast indicator | " + ("Off at this gauge" if rise.lower() == "off" else
                                              f"{rise or default_rise} ft within an hour"
                                              + ("" if rise else " (default)")) + (f" · **{esc(rst)}**" if rst else "") + " |"]
             if rb:
@@ -285,21 +286,21 @@ def main():
                 L += [""]
             else:
                 own = [d for d in or_levels if d["fews_gauge"] == g["gauge"]]
-                L += ["**Flood levels:** none in the 2026 Update, so this creek's status comes from alert levels only (rain and rising fast)."
+                L += ["**Flood levels:** none in the 2026 Update, so this creek's status comes from indicators only (rain and rising fast)."
                       + (" OneRain has its own levels for this gauge: see Thresholds below." if own else ""), ""]
 
             res = [r for r in results if r["gauge"] == g["gauge"]]
             if res:
                 y = float(res[0]["years"]); n = int(res[0]["crossings"])
-                L += ["<details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>", ""]
+                L += ["<details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>", ""]
                 L += [(f"Tested on {y:.1f} years of readings, against the lowest flood level ({th[0]['name']}, "
-                       f"{res[0]['big_storm_level_ft']} ft): \"warned\" means an alert came before the creek reached it."
+                       f"{res[0]['big_storm_level_ft']} ft): \"warned\" means the indicator came on before the creek reached it."
                        if th else
                        f"Tested on {y:.1f} years of readings, against {res[0]['big_storm_level_ft']} ft, the creek's typical "
-                       "yearly high (about a 2-year event). That is **not** a flood level: \"warned\" means an alert came "
+                       "yearly high (about a 2-year event). That is **not** a flood level: \"warned\" means the indicator came on "
                        "before a typical yearly high, not before flooding.")
                       + (f" Only {n} such rises in the record, so treat these results as rough." if n < 10 else ""), "",
-                      f"| Alert setting (ft within an hour) | {'Alerts per year' if y >= 1 else 'Alerts (total)'} | "
+                      f"| Setting (ft within an hour) | {'Times shown per year' if y >= 1 else 'Times shown (total)'} | "
                       "Warned before reaching it | Typical warning time |", "|---|---|---|---|"]
                 for r in res:
                     mark = " (current setting)" if r["chosen"] == "True" else ""
@@ -317,8 +318,8 @@ def main():
             L += ["| Gauge | OneRain ID | Location | Where | Use in the 2026 Update |", "|---|---|---|---|---|"]
             for g in rains:
                 nm, lat, lon = COORDS.get(g["onerain_number"].upper(), (g["label"], None, None))
-                use = ("Counts toward the creek's rain alert only (not shown on the page)" if g.get("role") == "supporting"
-                       else "Shown on the 2026 Update page and counts toward the rain alert")
+                use = ("Counts toward the creek's rain indicator only (not shown on the page)" if g.get("role") == "supporting"
+                       else "Shown on the 2026 Update page and counts toward the rain indicator")
                 L.append(f"| {esc(g['label'])} | {g['onerain_number']} | "
                          f"{f'{lat:.5f}, {lon:.5f}' if lat is not None else '**To add**'} | {esc(g.get('where', ''))} | {use} |")
             L.append("")
@@ -343,11 +344,11 @@ def main():
                 | {int(d["window_min"]) for d in dash_rain if d["window_min"]}
             avail = {int(r["minutes"]) for g in rains for r in freq.get(g["onerain_number"].upper(), [])}
             wins = sorted(w for w in wins if w in avail)
-            L += ["**Rain alerts** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each "
+            L += ["**Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each "
                   "gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a "
                   "starting point, not yet checked against past floods on this creek.", ""]
-            L += ["<details><summary>Background: rain alert levels at each gauge (no action needed)</summary>", "",
-                  "The creek's rain alert uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, "
+            L += ["<details><summary>Background: rain indicator levels at each gauge (no action needed)</summary>", "",
+                  "The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, "
                   "Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether "
                   "the creek floods.", "",
                   "| Gauge | Level | " + " | ".join(dur(m) for m in wins) + " |", "|---|---|" + "---|" * len(wins)]
@@ -365,7 +366,7 @@ def main():
                "On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview.")
               + " The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today "
               "(read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; "
-              "OneRain sends notifications only through separate alarm rules. The 2026 Update doesn't read any of these; they're "
+              "OneRain sends text alerts only through separate alarm rules. The 2026 Update doesn't read any of these; they're "
               "shown so the two systems can be compared.", ""]
         cmp_notes = []
 
@@ -409,7 +410,7 @@ def main():
         def lvl_text(num, w):
             fr = freq.get(num.upper(), [])
             v = {r["level"]: r["value_in"] for r in fr if r["minutes"] == str(w)}
-            return (f"alerts: Heavy {v['1']}, Very heavy {v['2']}, Intense {v['3']} in" if all(k in v for k in "123") else "")
+            return (f"rain indicator: Heavy {v['1']}, Very heavy {v['2']}, Intense {v['3']} in" if all(k in v for k in "123") else "")
         gauge_rows = {}
         for g in rains:
             num = g["onerain_number"].upper()
@@ -443,7 +444,7 @@ def main():
                 rrows.append(f"| {esc(lab)} | {dur(w)} | {fews} | {al_t} | {co_t} |")
         if rrows:
             L += ["**Rain (inches within the time shown)**", "",
-                  "The 2026 Update's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over "
+                  "The 2026 Update's rain indicator (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over "
                   "windows from 15 minutes to 48 hours; only the windows OneRain or a 2026 Update trigger uses are listed here.", "",
                   "| Gauge | Rain within | 2026 Update uses | OneRain threshold | OneRain dashboard color |", "|---|---|---|---|---|"] + rrows + [""]
         none_r = [d["onerain_site"] for d in dash_rain if not d["from_value"]]
@@ -483,7 +484,7 @@ def main():
 
     I = ["# FEWS 2026 Update: creek fact sheets (draft for review)", "",
          "One page per creek in the **FEWS 2026 Update**, the new public creek and tide status site built on OneRain's gauge data "
-         "(it is not OneRain's own dashboards; each page compares the two). Each page covers where the creek runs, its gauges, its flood levels and alerts, "
+         "(it is not OneRain's own dashboards; each page compares the two). Each page covers where the creek runs, its gauges, its flood levels and indicators, "
          "and what those are based on. Each page opens with a short **What we need you to check** list; please answer by "
          "replying to the review request. Everything else on a page is background.", "",
          "**Flood levels set?** Yes = creek heights tied to flooding, with a recorded meaning. \"Yes, but what they mean "
