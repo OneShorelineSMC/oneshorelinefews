@@ -69,6 +69,12 @@
   .mapbtn button { border: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 13px; padding: 7px 10px;
     border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.3); cursor: pointer; }
   .mapbtn button.on { background: var(--rain); color: #fff; }
+  /* Rain totals switch: Off | 1 h | 3 h | 6 h | 24 h (the labels on the map show the chosen window) */
+  .rwin { display: flex; align-items: center; background: var(--card); border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.3); overflow: hidden; }
+  .rwin .rwl { font-size: 13px; font-weight: 700; color: var(--ink); padding: 0 6px 0 10px; }
+  .mapbtn .rwin button { box-shadow: none; border-radius: 0; padding: 7px 8px; min-width: 36px; min-height: 32px; }
+  .mapbtn .rwin button[aria-pressed="true"] { background: var(--rain); color: #fff; font-weight: 700; }
+  .rwins { display: flex; gap: 4px 12px; flex-wrap: wrap; font-size: 14px; margin-top: 2px; } .rwins b { font-size: 15px; }
 
   /* site card */
   #sheet { position: absolute; z-index: 1100; left: 0; right: 0; bottom: 0; max-height: 62%; overflow-y: auto;
@@ -150,7 +156,8 @@
 <div id="main">
   <div id="map"></div>
   <div class="mapbtn" id="mapbtns">
-    <button id="rainBtn" title="Show 24-hour rain totals">Rain 24 h</button>
+    <div class="rwin" id="rainWin" role="group" aria-label="Rain totals on the map">
+      <span class="rwl" aria-hidden="true">Rain</span><button data-w="0" aria-pressed="true">Off</button><button data-w="1" aria-pressed="false" aria-label="1 hour">1 h</button><button data-w="3" aria-pressed="false" aria-label="3 hours">3 h</button><button data-w="6" aria-pressed="false" aria-label="6 hours">6 h</button><button data-w="24" aria-pressed="false" aria-label="24 hours">24 h</button></div>
     <button id="rpBtn" title="Show flood reports reviewed by OneShoreline staff" hidden>Flood reports</button>
     <button id="allBtn" title="Zoom to all sites">All sites</button>
   </div>
@@ -244,7 +251,7 @@ function siteStatus(site, now) {
   site.sensors.forEach(function (s) {
     if (s.time) newest = Math.max(newest, parseLocal(s.time));
     level = Math.max(level, sensorLevel(s, now));
-    if (s.kind === "increment" || s.kind === "accumulation") { if (s.rain24 != null) rain = Math.max(rain || 0, s.rain24); }
+    if (s.kind === "increment" || s.kind === "accumulation") { var r = rainOver(s, rainWin || 24); if (r != null) rain = Math.max(rain || 0, r); }
     else rainOnly = false;
   });
   var off = !newest || now - newest > NOT_REPORTING_HOURS * 36e5;
@@ -260,7 +267,15 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 map.attributionControl.setPrefix(false);
 
-var DATA = null, markers = {}, selected = null, showRain = false, firstFit = true;
+var DATA = null, markers = {}, selected = null, showRain = false, rainWin = 0, firstFit = true, autoRain = false;   // rainWin: 1, 3, 6 or 24 hours; 0 = off
+// A rain sensor's total over the last h hours (rain1 / rain3 / rain6 / rain24 from the data job; older files: from the hourly bars)
+function rainOver(s, h) {
+  if (s["rain" + h] != null) return s["rain" + h];
+  if (h === 24 || !s.hourly || !s.hourly.length) return h === 24 ? s.rain24 : null;
+  var now = nowLocal(), t0 = now - h * 36e5, sum = 0;
+  s.hourly.forEach(function (x) { var t = parseLocal(x[0]); if (t + 36e5 > t0) sum += x[1]; });
+  return Math.round(sum * 100) / 100;
+}
 
 function markerIcon(site, st) {
   var big = st.level > 0 && !st.off;
@@ -324,8 +339,8 @@ function renderSheet(id) {
     h += '<div class="sens"><div class="srow"><div class="slbl">' + esc(s.name) + '</div>';
     if (rainish && s.rain24 != null) {
       h += '<div class="sval">' + s.rain24.toFixed(2) + '<small>in / 24 h</small></div></div>';
-      h += '<div class="sage' + (old ? " old" : "") + '">' + (s.rain1 != null ? "Past hour: " + s.rain1.toFixed(2) + " in · " : "") +
-        (t ? "last report " + ago(now - t) : "no recent report") + '</div>';
+      h += '<div class="rwins">' + [1, 3, 6, 24].map(function (w) { var r = rainOver(s, w); return r == null ? "" : "<span>" + w + " h <b>" + r.toFixed(2) + "</b></span>"; }).join("") + " <span>in</span></div>";
+      h += '<div class="sage' + (old ? " old" : "") + '">' + (t ? "last report " + ago(now - t) : "no recent report") + '</div>';
     } else {
       h += '<div class="sval">' + num(s.value, s.unit) + '<small>' + esc(s.unit) + '</small></div></div>';
       h += '<div class="sage' + (old ? " old" : "") + '">' + (t ? fWhen(t) + " · " + ago(now - t) : "no recent report") + '</div>';
@@ -407,7 +422,8 @@ function drawList(now) {
     h += '<div class="grp">' + titles[gi] + " (" + g.length + ")</div>";
     g.forEach(function (o) {
       var site = o.site, vals = site.sensors.slice(0, 3).map(function (s) {
-        if ((s.kind === "increment" || s.kind === "accumulation") && s.rain24 != null) return "Rain " + s.rain24.toFixed(2) + " in/24 h";
+        if ((s.kind === "increment" || s.kind === "accumulation") && s.rain24 != null) {
+          var r1 = rainOver(s, 1); return "Rain " + (r1 != null ? r1.toFixed(2) + " in/1 h · " : "") + s.rain24.toFixed(2) + " in/24 h"; }
         return esc(s.name) + " " + num(s.value, s.unit) + " " + esc(s.unit);
       }).join(" · ");
       h += '<div class="row" data-id="' + esc(site.site) + '"><i class="ld' + (o.st.rainOnly ? " sq" : "") + '" style="background:' + o.st.color + '"></i>' +
@@ -436,9 +452,17 @@ function setView(v) {
 Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
   b.addEventListener("click", function () { setView(b.dataset.view); });
 });
-document.getElementById("rainBtn").addEventListener("click", function () {
-  showRain = !showRain; this.classList.toggle("on", showRain); draw();
+function setRainWin(w) {
+  rainWin = w; showRain = w > 0;
+  Array.prototype.forEach.call(document.querySelectorAll("#rainWin button"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.w === w)); });
+  try { localStorage.setItem("fews_rain_win", String(w)); } catch (e) {}
+  draw();
+}
+Array.prototype.forEach.call(document.querySelectorAll("#rainWin button"), function (b) {
+  b.addEventListener("click", function () { setRainWin(+b.dataset.w); });
 });
+(function () { try { var w = +localStorage.getItem("fews_rain_win"); if ([1, 3, 6, 24].indexOf(w) >= 0) { rainWin = w; showRain = true;
+  Array.prototype.forEach.call(document.querySelectorAll("#rainWin button"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.w === w)); }); } } catch (e) {} })();
 document.getElementById("allBtn").addEventListener("click", function () {
   if (!DATA) return;
   map.fitBounds(DATA.sites.map(function (s) { return [s.lat, s.lon]; }), { padding: [24, 24] });
@@ -528,6 +552,10 @@ function load() {
       document.getElementById("msg").style.display = "none";
       var gen = parseLocal(d.generated), late = nowLocal() - gen > DATA_LATE_MIN * 6e4;
       document.getElementById("sub").textContent = DATA.sites.length + " sites · updated " + fWhen(gen) + (late ? " ⚠ data delayed" : "");
+      // first visit while it's raining: show the past hour's rain on the map (the viewer's own choice is kept after that)
+      var picked = null; try { picked = localStorage.getItem("fews_rain_win"); } catch (e) {}
+      if (picked == null && !autoRain && DATA.sites.some(function (x) { return x.sensors.some(function (z) { return (rainOver(z, 1) || 0) >= 0.05; }); })) { autoRain = true; rainWin = 1; showRain = true;
+        Array.prototype.forEach.call(document.querySelectorAll("#rainWin button"), function (b) { b.setAttribute("aria-pressed", String(+b.dataset.w === 1)); }); }
       draw();
       var m = location.hash.match(/site=([^&]+)/);
       if (m && !selected) {
