@@ -3,6 +3,7 @@ Checks for the static creek maps (scripts/build_creek_maps.py) with made-up shap
 Run from the repo:  python scripts/test_creek_maps.py
 """
 import math
+import re
 import os
 import sys
 import xml.dom.minidom
@@ -94,5 +95,11 @@ svg7, _ = B.build_svg(creek, [piece(460, 46006, -122.45), piece(420, 42001, -122
 check('stroke-dasharray="0.1 5"' in svg7 and "Creek underground (culvert or pipe)" in svg7 and "dry part of the year" not in svg7,
       "underground stretch dotted and in the legend; no dashed entry when none is drawn")
 check(svg7.index('stroke-dasharray="0.1 5"') < svg7.index('stroke-width="3" stroke-linecap="round"'), "open creek draws over the culvert")
+
+# a long label that fits on neither side of its marker goes under it, inside the map
+lg = [{"label": "Below Crystal Springs Reservoir Spillway", "kind": "stage", "lon": -122.44, "lat": 37.66}]
+svg8, _ = B.build_svg(creek, line, [], roads, lg)
+m = re.search(r'x="([0-9.]+)" y="[0-9.]+" font-size="14"[^>]*>Below Crystal', svg8)
+check(m and float(m.group(1)) >= 2 and float(m.group(1)) + 7.6 * len(lg[0]["label"]) <= 420, "long gauge label stays inside the map")
 
 print(f"creek maps: {checks} checks passed")

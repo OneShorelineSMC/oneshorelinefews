@@ -349,21 +349,29 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
         else:
             out.append(f'<rect class="gp" x="{x - 6:.1f}" y="{y - 6:.1f}" width="12" height="12" fill="#fff" stroke="{COL["rain"]}" stroke-width="2.5"/>')
         lw = 7.6 * len(g["label"])
-        fits_r, fits_l = x + 11 + lw < W - 4, x - 11 - lw > 4
+        # where the label can start: beside the marker (right, then left), or, when neither side has room, under
+        # or over it, slid in from the map's edge
+        under = min(max(4, x - lw / 2), W - 4 - lw)
+        starts = [x + 11, x - 11 - lw]
+        if not (x + 11 + lw < W - 4) and x - 11 - lw > 4:
+            starts.reverse()
 
-        def free(rt, ty):   # the label's box is clear of the legend, the edges and every label placed so far
-            b = (x + 11, ty - 13, x + 11 + lw, ty + 4) if rt else (x - 11 - lw, ty - 13, x - 11, ty + 4)
+        def box(x0, ty):
+            return (x0, ty - 13, x0 + lw, ty + 4)
+
+        def free(x0, ty, others=True):   # inside the map and clear of the legend and earlier labels
+            b = box(x0, ty)
             if b[0] < 2 or b[2] > W - 2 or b[1] < 2 or b[3] > H - 2:
                 return False
-            return not any(b[0] < o[2] and o[0] < b[2] and b[1] < o[3] and o[1] < b[3] for o in placed + [legend_box])
-        sides = [True, False] if (fits_r or not fits_l) else [False, True]
-        tries = [(rt, y + 4 + dy) for dy in (0, 16, -16, 32, -32, 48, -48, 64) for rt in sides]   # beside it first, then nudged
-        right, ty = next((t for t in tries if free(*t)), tries[0])
-        placed.append((x + 11, ty - 13, x + 11 + lw, ty + 4) if right else (x - 11 - lw, ty - 13, x - 11, ty + 4))
-        out.append(f'<text class="t h" x="{x + (11 if right else -11):.1f}" y="{ty:.1f}" font-size="14" font-weight="700" '
-                   f'text-anchor="{"start" if right else "end"}">{escape(g["label"])}</text>')
+            return not others or not any(b[0] < o[2] and o[0] < b[2] and b[1] < o[3] and o[1] < b[3] for o in placed + [legend_box])
+        tries = [(x0, y + 4 + dy) for dy in (0, 16, -16, 32, -32, 48, -48, 64) for x0 in starts]   # beside it, then nudged
+        tries += [(under, y + 24), (under, y - 12), (under, y + 40), (under, y - 28)]
+        x0, ty = next((t for t in tries if free(*t)), next((t for t in tries if free(*t, False)), tries[0]))   # never off the edge
+        placed.append(box(x0, ty))
+        out.append(f'<text class="t h" x="{x0:.1f}" y="{ty:.1f}" font-size="14" font-weight="700" '
+                   f'text-anchor="start">{escape(g["label"])}</text>')
     # highway labels last, skipping any that would sit on another label
-    boxes = [(b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3) for b in placed]
+    boxes = [(b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3) for b in placed] + [legend_box]
     for name, (L, (x, y)) in sorted(best.items(), key=lambda kv: -kv[1][0]):
         w = 7.2 * len(name)
         b = (x - w / 2 - 3, y - 9, x + w / 2 + 3, y + 7)
