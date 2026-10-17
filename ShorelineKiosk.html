@@ -210,7 +210,11 @@
   .ktile .klbl { font-size: 12px; } .ktile .kv { font-size: 26px; font-weight: bold; line-height: 1.1; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .ktile .kv small { font-size: 13px; font-weight: normal; } .ktile .kw { font-size: 14px; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; }
   .ktile .kw .cs-ic { width: 15px; height: 15px; } .ktile .kt { font-size: 12px; line-height: 1.25; }
-  .ktile.two .kv { font-size: 21px; } .ktile.two { padding: 3px 10px; }
+  .ktile.two .kv { font-size: 21px; }
+  .kstat .kwhy { font-size: 14px; font-weight: bold; padding: 0 2px; line-height: 1.2; }
+  #cleft.two { width: 236px; gap: 5px; }
+  .ktile.two .klbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ktile.two { padding: 3px 10px; }
+  .ktile .kfast { font-size: 14px; font-weight: bold; text-transform: none; } .ktile.two { padding: 3px 10px; }
   .ktile.l0 { background: #2e7d32; border-color: #2e7d32; color: #fff; } .ktile.l1 { background: #f2d544; border-color: #f2d544; color: #1a1a1a; }
   .ktile.l2 { background: #b45a00; border-color: #b45a00; color: #fff; } .ktile.l3, .ktile.l4 { background: #c62828; border-color: #c62828; color: #fff; }
   .ktile.l0 .cs-ic, .ktile.l2 .cs-ic, .ktile.l3 .cs-ic, .ktile.l4 .cs-ic { color: #fff; } .ktile.l1 .cs-ic { color: #1a1a1a; }
@@ -312,10 +316,10 @@
   table.rain th:first-child { text-align: left; }
   table.rain td { padding: 1px 0 1px 8px; text-align: right; font-weight: bold; font-size: 16px; }
   table.rain td:first-child { text-align: left; font-weight: normal; font-size: 13px; white-space: nowrap; }
-  table.rain.multi tr:first-child th { white-space: normal; text-align: center; line-height: 1.15; vertical-align: bottom; padding-left: 4px; }
+  table.rain.multi thead th { white-space: normal; text-align: center; line-height: 1.15; vertical-align: bottom; padding-left: 4px; }
   table.rain.multi td, table.rain.multi th { text-align: center; font-size: 14px; padding: 0 0 0 4px; line-height: 1.1; }
   table.rain.multi th { font-size: 12px; text-align: left; }
-  table.rain.multi tr:first-child th { font-size: 11.5px; }
+  table.rain.multi thead th { font-size: 11.5px; }
   table.rain.multi th:first-child { padding-left: 0; }
   #cright { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .ctitle { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; height: 15px; white-space: nowrap; }
@@ -1423,9 +1427,12 @@ function creekState(c, now) {
     var quietH = g.reports === "interval" ? GAUGE_QUIET_HOURS_INTERVAL : GAUGE_QUIET_HOURS;
     var quiet = !last || (now - last.t) > quietH * 3600000, prev = null;
     for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
-    var arrow = quiet || !prev ? "" : (last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "");
+    // trend: the data job's (same rapidly-rising rule as the Creeks page and the board); our own two-reading guess only without it
+    var sig = (C.data.sensors[g.key] || {}).signals || {}, fast = !quiet && (sig.trend === "fast" || !!sig.rising_fast);
+    var arrow = quiet ? "" : fast ? " ↑↑" : sig.trend ? { rising: " ↑", falling: " ↓" }[sig.trend] || ""
+      : !prev ? "" : (last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "");
     var lvl = last && !quiet ? stageLevel(g, last.v) : null;
-    var s = { g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl,
+    var s = { g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl, fast: fast, rate: fast && sig.ft_per_hr > 0 ? sig.ft_per_hr : null,
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null };
     st.stages.push(s);
     // the creek's level for the alert strip: only from a current reading in current data
@@ -1526,6 +1533,7 @@ function renderCreek() {
   // the accumulated rain table with its triggers, and the Bay tide
   var CSv = window.CREEK_STATUS && CREEK_STATUS.preview ? CREEK_STATUS.view(C.data, c) : null, h = "", two = st.stages.length > 1;
   if (CSv) h += '<div class="kstat"><div class="cs-verdict cs-v-' + CSv.key + '">' + CREEK_STATUS.icon(CSv.key) + esc(CSv.word) + "</div>" +
+    (CSv.key !== "none" && c.status && CREEK_STATUS.brief ? '<div class="kwhy">' + esc(CREEK_STATUS.brief(c.status, CSv.key)) + "</div>" : "") +
     (sm ? '<span class="crev">' + esc(LK.text("method_review")) + "</span>" : "") + "</div>";
   else if (sm) h += '<span class="crev">' + esc(LK.text("method_review")) + "</span>";
   if (st.stages.length > 2 || (sm && !st.stages.some(function (s) { return (s.g.thresholds || []).length; }))) {   // many gauges, or no flood levels: one compact box
@@ -1539,10 +1547,12 @@ function renderCreek() {
     if (CSv) {   // phone-style tile: the number, the level's icon and word, the next level, how long ago
       var lv = s.lvl ? Math.min(4, s.lvl.level) : 0, ago = s.last ? Math.max(0, Math.round((now - s.last.t) / 60000)) : 0;
       var agoT = !s.last ? "" : ago < 60 ? ago + " min ago" : ago < 2880 ? Math.round(ago / 60) + " hr ago" : fDay(s.last.t).replace(/^\w+, /, "");
-      h += '<div class="ktile ' + (!s.last || s.quiet ? "off" : "l" + lv) + (two ? " two" : "") + '" data-info="1"><div class="klbl">' + esc(g.label) + (s.last && !s.quiet ? " · " + esc(agoT) : "") + "</div>" +
+      h += '<div class="ktile ' + (!s.last || s.quiet ? "off" : "l" + lv) + (two ? " two" : "") + '" data-info="1"><div class="klbl">' + esc(g.label) + (s.last && !s.quiet && !two ? " · " + esc(agoT) : "") + "</div>" +
         (!s.last || s.quiet ? '<div class="kv">' + (s.last ? s.last.v.toFixed(2) + '<small> ft</small>' : "–") + '</div><div class="kw">Not reporting · ' + esc(agoT) + "</div>"
           : '<div class="kv">' + s.last.v.toFixed(2) + "<small> ft" + s.arrow + '</small><span class="kw">' + (s.lvl ? lvIcon(s.lvl.level) + esc(s.lvl.name.replace("Flood ", "")) : esc(LK.text("status_normal"))) + "</span></div>" +
-            (s.next ? '<div class="kt">' + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) + "</div>" : "")) + "</div>";
+            (s.fast ? '<div class="kfast">↑↑ ' + esc(LK.text("trend_fast")) + (s.rate ? " · +" + s.rate.toFixed(1) + " ft/hr" : "") + "</div>" : "") +
+            (s.next || two ? '<div class="kt">' + (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) : "") +
+              (two ? (s.next ? " · " : "") + esc(agoT) : "") + "</div>" : "")) + "</div>";   // two gauges: "how long ago" moves here to save a line
       return;
     }
     var sub = !s.last ? "No recent readings" : s.quiet
@@ -1558,8 +1568,10 @@ function renderCreek() {
   var wins = rainWindows(c);
   // one row per time window, one column per gauge (colors match the rain graph)
   var RC = ["#7e57c2", "#1e88e5", "#00897b"];
-  h += '<div class="cbox"><div class="clbl">Accumulated rain (in)</div><table class="rain multi"><tr><th></th>' + st.rains.map(function (r, i) {
-        return "<th><span style='color:" + RC[i % RC.length] + "'>■</span> " + esc(r.g.label) + "</th>"; }).join("") + "</tr>" +
+  var one = st.rains.length === 1;   // one gauge: its name goes on the title line (saves a row)
+  h += '<div class="cbox"><div class="clbl" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rain (in)' + (one ? " · <span style='color:" + RC[0] + "'>■</span> " + esc(st.rains[0].g.label) : "") +
+    '</div><table class="rain multi">' + (one ? "" : "<thead><tr><th></th>" + st.rains.map(function (r, i) {
+        return "<th><span style='color:" + RC[i % RC.length] + "'>■</span> " + esc(r.g.label) + "</th>"; }).join("") + "</tr></thead>") +
       wins.map(function (m, k) { return "<tr><th>" + winLabel(m) + "</th>" + st.rains.map(function (r) { return "<td>" + inch(r.w[k]) + "</td>"; }).join("") + "</tr>"; }).join("") + "</table>";
   h += (triggerLines(st, true) || []).map(function (x) {
       return '<div class="trig' + (x.met ? " met" : "") + '">' + (x.met ? "<b>MET ⚠</b> " : "Trigger: ") + esc(x.text) + "</div>";
@@ -1567,6 +1579,7 @@ function renderCreek() {
   var ct = creekTide(c, now);
   if (ct && !CSv) h += '<div class="cbox tbox slim"><div class="clbl">' + esc(ct.name) + ' · NOAA, ft NAVD88</div><div class="csub"><b>Bay tide</b> ' + ct.html + "</div></div>";
   el("cleft").innerHTML = h;
+  el("cleft").classList.toggle("two", two);   // two creek gauges: a wider column so each line fits
 
   drawCreekCharts(st, now);
 }
