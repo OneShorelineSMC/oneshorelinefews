@@ -459,9 +459,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261016h"></script>
-<script src="tide_season.js?v=20261016h"></script>
-<script src="creek_status.js?v=20261016h"></script>
+<script src="lookups.js?v=20261016i"></script>
+<script src="tide_season.js?v=20261016i"></script>
+<script src="creek_status.js?v=20261016i"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1005,6 +1005,8 @@ function loadModel() {   // every station: Redwood City for the Bay Tides tab, a
         var rows = r.data || r.predictions || [];
         var p = rows.map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); });
         if (p.length) { s.ofs = p; s.tOfs = Date.now(); }
+        // the King Tide line and calendar use the same projection: hand it over instead of downloading it again
+        [window.TIDE_SEASON, window.TIDE_SEASON_COAST].forEach(function (T) { if (T && T.station === s.st.id) T.setModel(p, s.tOfs); });
       }).catch(function () {});   // no model: the graphs show the predictions as before
   })).then(function () { renderTides(); if (currentTab === "creek" && C.data) renderCreek(); });
 }
@@ -1290,8 +1292,12 @@ function calLine(day) {
   return tsDay(day) + ": highest tide " + TSN.ft(h.v) + " at " + TSN.clock(h.t) + " (tide table)" + (x ? "; NOAA projects " + TSN.ft(x.v) : "") +
     (k ? " · " + LK.text("tide_day_king") : "") + (lv ? " · " + LK.text(lv === 2 ? "tide_level_red" : "tide_level_amber") : "") + ".";
 }
+function calWaiting() { return document.getElementById("detail").classList.contains("show") && !!document.getElementById("kcalwait"); }   // calendar opened before the tide table arrived
 function showCalendar() {
-  if (!TSN || !TSN.state.highs) { openDetail("High tides calendar", "<p>Loading the tide table…</p>"); return; }
+  if (!TSN || !TSN.state.highs) {   // not loaded yet (NOAA slow): say so, ask again now, and fill in when it arrives
+    openDetail("High tides calendar", '<p id="kcalwait">Loading the tide table from NOAA… If NOAA is slow this can take a minute; it fills in on its own.</p>');
+    if (TSN) TSN.loadTable(); return;
+  }
   var today = TSN.iso(TSN.now()), dh = TSN.dayHighs(), kd = TSN.kingDays(), ex = TSN.expected(), m0 = new Date(TSN.state.from), html = "";
   var red = isFinite(TSN.red());
   html += '<div id="kckey"><span><i style="background:var(--infobg);box-shadow:inset 0 -3px 0 var(--infob)"></i>' + esc(LK.text("tide_day_amber")) + "</span>" +
@@ -2013,8 +2019,8 @@ every(AFD_EVERY_MIN, loadAFD);
 every(MODEL_EVERY_MIN, loadModel);
 [window.TIDE_SEASON, window.TIDE_SEASON_COAST].forEach(function (T) {   // Redwood City and Monterey: tide table (6 months ahead, twice a day) and NOAA projection (hourly)
   if (!T) return;
-  every(12 * 60, function () { T.loadTable().then(renderSeason); });
-  every(MODEL_EVERY_MIN, function () { T.loadModel().then(renderSeason); });
+  T.onUpdate(function () { renderSeason(); if (T === TSN && calWaiting()) showCalendar(); });   // also after a retry succeeds
+  every(12 * 60, T.loadTable);   // the projection comes from loadModel() above
 });
 S.forEach(function (_, i) {
   renderPanel(i);

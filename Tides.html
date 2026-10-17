@@ -353,8 +353,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261016h"></script>
-<script src="tide_season.js?v=20261016h"></script>
+<script src="lookups.js?v=20261016i"></script>
+<script src="tide_season.js?v=20261016i"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -548,7 +548,7 @@ function loadObserved(s) {
 function loadModel(s) {
   var now = nowLocal();
   return getJSON(noaa(s.st, "ofs_water_level", ymd(now - 86400000), ymd(now + 3 * 86400000)))
-    .then(function (r) { var p = toPts(r.data || r.predictions); if (p.length) { s.ofs = p; s.tOfs = Date.now(); } render(); })
+    .then(function (r) { var p = toPts(r.data || r.predictions); if (p.length) { s.ofs = p; s.tOfs = Date.now(); if (TSN && TSN.station === s.st.id) TSN.setModel(p, s.tOfs); } render(); })
     .catch(function () { render(); });   // no model: the page shows the predictions as before
 }
 function modelOK(s, now) {
@@ -1091,9 +1091,9 @@ if (!EMBED) { loadAFD(); setInterval(loadAFD, 30 * 60000); }
 setInterval(function () { S.forEach(loadModel); }, 60 * 60000);   // the model runs 4 times a day
 if (TSN) {   // Redwood City tide table (6 months ahead, twice a day) and the NOAA projection (hourly)
   function seasonAndGraph() { renderSeason(); render(); }   // the graph's King Tide line depends on the tide table's King Tide days
-  TSN.load().then(seasonAndGraph);
-  setInterval(function () { TSN.loadTable().then(seasonAndGraph); }, 12 * 3600000);
-  setInterval(function () { TSN.loadModel().then(renderSeason); }, 60 * 60000);
+  TSN.onUpdate(seasonAndGraph);   // the tide table (and any retry), and the projection handed over by loadModel()
+  TSN.loadTable();
+  setInterval(TSN.loadTable, 12 * 3600000);
 }
 setInterval(renderSeason, 60000);   // rolls over at midnight (Pacific)
 setInterval(function () { if (!EMBED) loadAlerts(); }, 3 * 60000);

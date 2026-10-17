@@ -38,8 +38,9 @@
     return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product + "&station=" + STATION +
       "&begin_date=" + begin + "&end_date=" + end + "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS" + (extra || "");
   }
-  function get(u) {
-    return fetch(u, { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  function get(u) {   // gives up after 30 s so a slow NOAA reply can't hold the calendar forever
+    var ac = typeof AbortController !== "undefined" ? new AbortController() : null, tm = ac ? setTimeout(function () { ac.abort(); }, 30000) : 0;
+    return fetch(u, ac ? { cache: "no-cache", signal: ac.signal } : { cache: "no-cache" }).finally(function () { clearTimeout(tm); }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (j) { if (j.error) throw new Error(j.error.message || "error"); return j; });
   }
   function pts(arr, onlyHigh) {
@@ -47,22 +48,29 @@
       .map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; }).filter(function (p) { return !isNaN(p.v); });
   }
 
-  /* The tide table one month per request (keeps each request small), and the model forecast */
+  /* The tide table: this month and the next MONTHS_AHEAD in one request (NOAA allows a year of high/low tides per request).
+     If it fails (NOAA slow or down), try again in 5 minutes until it works, keeping the last good copy meanwhile. */
+  var listeners = [], retry = 0, pending = null;
+  function changed() { listeners.forEach(function (fn) { try { fn(); } catch (e) {} }); }
   function loadTable() {
-    var n = nowLocal(), d = new Date(n), y = d.getUTCFullYear(), m = d.getUTCMonth(), reqs = [];
-    for (var k = 0; k <= MONTHS_AHEAD; k++) {
-      var a = monthStart(y, m + k), b = monthStart(y, m + k + 1) - 86400000;
-      reqs.push(get(url("predictions", ymd(a), ymd(b), "&interval=hilo")).then(function (j) { return pts(j.predictions, true); }));
-    }
-    return Promise.all(reqs).then(function (parts) {
-      var all = [].concat.apply([], parts).sort(function (p, q) { return p.t - q.t; });
-      if (all.length) { S.highs = all; S.tHighs = Date.now(); S.from = monthStart(y, m); }
-    }).catch(function () { /* keep the last good copy */ });
+    if (pending) return pending;
+    var n = nowLocal(), d = new Date(n), y = d.getUTCFullYear(), m = d.getUTCMonth();
+    var a = monthStart(y, m), b = monthStart(y, m + MONTHS_AHEAD + 1) - 86400000;
+    clearTimeout(retry);
+    pending = get(url("predictions", ymd(a), ymd(b), "&interval=hilo")).then(function (j) {
+      var all = pts(j.predictions, true).sort(function (p, q) { return p.t - q.t; });
+      if (!all.length) throw new Error("empty");
+      S.highs = all; S.tHighs = Date.now(); S.from = a; changed();
+    }).catch(function () { retry = setTimeout(loadTable, 5 * 60000); })
+      .then(function () { pending = null; });
+    return pending;
   }
+  // The NOAA projection: pages that already download it for their graph hand it over (setModel), so it's fetched once
+  function setModel(p, t) { if (p && p.length) { S.ofs = p; S.tOfs = t || Date.now(); changed(); } }
   function loadModel() {
     var n = nowLocal();
     return get(url("ofs_water_level", ymd(n - 86400000), ymd(n + 3 * 86400000)))
-      .then(function (j) { var p = pts(j.data || j.predictions); if (p.length) { S.ofs = p; S.tOfs = Date.now(); } }).catch(function () {});
+      .then(function (j) { setModel(pts(j.data || j.predictions)); }).catch(function () {});
   }
   function modelOK(now) {
     return !!(S.ofs && S.ofs.length && Date.now() - S.tOfs < LK.num("MODEL_MAX_AGE_HOURS") * 3600000 &&
@@ -135,7 +143,8 @@
       sub: [weatherNote(x), level(v) === 1 ? LK.text("tide_level_amber") : ""].filter(Boolean).join(" · "), what: txt("king_tide_what") };
   }
 
-  return { load: function () { return Promise.all([loadTable(), loadModel()]); }, loadTable: loadTable, loadModel: loadModel,
+  return { load: function () { return Promise.all([loadTable(), loadModel()]); }, loadTable: loadTable, loadModel: loadModel, setModel: setModel,
+    onUpdate: function (fn) { listeners.push(fn); },
     dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote, txt: txt,
     clock: clock, ft: ft, mhhw: mhhw, red: red, king: king, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };
   }
