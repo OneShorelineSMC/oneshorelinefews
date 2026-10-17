@@ -437,9 +437,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261016g"></script>
-<script src="tide_season.js?v=20261016g"></script>
-<script src="creek_status.js?v=20261016g"></script>
+<script src="lookups.js?v=20261016h"></script>
+<script src="tide_season.js?v=20261016h"></script>
+<script src="creek_status.js?v=20261016h"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1395,7 +1395,7 @@ function renderCreek() {
     return '<span class="cbtn' + (on ? " on" : "") + '" data-creek="' + esc(x.c.id) + '"' +
       (col ? ' style="background:' + fillOf(col) + ";border-color:" + fillOf(col) + ";color:" + inkOn(x.top) + '"' : "") + ">" +
       (col ? "▲ " : "") + esc(shortName(x.c)) + "</span>";
-  }).join("") + (all ? '<span class="cinfo">' + (window.CREEK_STATUS && CREEK_STATUS.preview ? "preview · " : "") + 'tap a creek for graphs</span>' : '<span class="cinfo" data-info="1">ⓘ thresholds &amp; notes</span>');
+  }).join("") + (all ? '<span class="cinfo">' + (window.CREEK_STATUS && CREEK_STATUS.staff ? "staff view · " : "") + 'tap a creek for graphs</span>' : '<span class="cinfo" data-info="1">ⓘ thresholds &amp; notes</span>');
   el("call").style.display = all ? "" : "none";
   el("cbody").style.display = all ? "none" : "";
   if (all) { destroyCreekCharts(); renderAllCreeks(states, now); return; }
@@ -1444,7 +1444,7 @@ function creekStatus(st) {
   return { w: LK.text("status_normal"), col: "#2e7d32", ink: "#fff", ok: true };
 }
 function renderAllCreeks(states, now) {
-  if (window.CREEK_STATUS && CREEK_STATUS.preview) {   // ?preview=1: status board (staff preview), one row per creek, worst first; tap a dashboard creek's row for its graphs
+  if (window.CREEK_STATUS && CREEK_STATUS.preview) {   // status board (STATUS_PUBLIC, or ?preview=1), one row per creek, worst first; tap a dashboard creek's row for its graphs
     var el = document.getElementById("call");
     el.style.gridTemplateColumns = "1fr"; el.style.gridTemplateRows = "1fr";
     el.innerHTML = CREEK_STATUS.board(C.data);

@@ -236,12 +236,14 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261016g"></script>
-<script src="creek_status.js?v=20261016g"></script>
+<script src="lookups.js?v=20261016h"></script>
+<script src="creek_status.js?v=20261016h"></script>
 <script>
-// ?preview=1: the proposed home page (staff preview). Creeks first, then NWS, Bayside tide, sign-up; the sensor map card
-// goes (the creek list links to the map); System status and the OneRain card fold away at the bottom.
-var HOME_PREVIEW = /[?&]preview=1\b/.test(location.search);
+// The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
+// Creeks first, then NWS, Bayside tide, sign-up; the sensor map card goes (the creek list links to the map);
+// System status and the OneRain card fold away at the bottom.
+var HOME_PREVIEW = !!(window.CREEK_STATUS && window.CREEK_STATUS.preview);
+var PV_Q = window.CREEK_STATUS && window.CREEK_STATUS.staff ? "?preview=1" : "";   // keep the staff view on the pages it links to
 if (HOME_PREVIEW) (function () {
   var main = document.querySelector("main"), nws = document.getElementById("hNws");
   main.insertBefore(document.getElementById("secCreeks"), nws);
@@ -516,14 +518,14 @@ function renderCreeks() {
   }).join("");
   var anyLate = states.some(function (s) { return s.late; });
   var CS = window.CREEK_STATUS;
-  if (CS && CS.preview) {   // ?preview=1: creek status layer (staff preview) in place of the creek cards and rapid-rise cards
-    var HM = CS.home(C.data, function (c) { return "Creeks.html?preview=1#" + encodeURIComponent(c.id); });
+  if (CS && CS.preview) {   // creek status layer (STATUS_PUBLIC, or ?preview=1) in place of the creek cards and rapid-rise cards
+    var HM = CS.home(C.data, function (c) { return "Creeks.html" + PV_Q + "#" + encodeURIComponent(c.id); });
     $("csPreview").innerHTML = HM.html;
     $("csBanner").innerHTML = HM.banner;
     document.querySelector(".e911").hidden = !!HM.banner;   // 911 once: the red banner carries it when flooding is likely
     $("creeks").style.display = $("rising").style.display = $("calm").style.display = "none";
-    $("creeksLink").href = "Creeks.html?preview=1";
-    document.querySelector('nav a[href="Creeks.html"]').href = "Creeks.html?preview=1";
+    $("creeksLink").href = "Creeks.html" + PV_Q;
+    var nc = document.querySelector('nav a[href^="Creeks.html"]'); if (nc) nc.href = "Creeks.html" + PV_Q;
   }
   $("calm").textContent = rising.length ? "" : anyLate ? "Rapid-rise check paused: creek data is delayed." :
     "No creek gauges rising rapidly.";

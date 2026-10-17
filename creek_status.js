@@ -1,4 +1,6 @@
-/* FEWS creek status layer: STAFF PREVIEW ONLY (pages show it with ?preview=1 in the address).
+/* FEWS creek status layer: public since Oct 16 (STATUS_PUBLIC = 1 in lookups/settings.csv; 0 = staff preview only again).
+ * ?preview=1 in the address = staff view: the STAFF PREVIEW badge and the staff table. Creeks other than the four
+ * dashboard creeks (preview_only in creeks.csv) carry a "Methodology under review" tag (method_review).
  *
  * The data job works out one status per creek (scripts/creek_signals.py, rules in lookups/THRESHOLDS_BASIS.md §10)
  * and writes it into creeks.json with reason codes. This file turns that into cards, a summary, a staff table and
@@ -9,7 +11,9 @@
 (function () {
   "use strict";
   var LK = window.LOOKUPS;
-  var PREVIEW = /[?&]preview=1\b/.test(location.search);
+  var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view
+  function shown() { return STAFF || LK.num("STATUS_PUBLIC") === 1; }   // status layer on this page (read each time: settings.csv can switch it off)
+  function review(c, short) { return c && c.preview_only ? '<span class="cs-review" title="' + esc(T("method_review")) + '">' + esc(T(short ? "method_review_short" : "method_review")) + "</span>" : ""; }
   var COL = { likely: "#c62828", ready: "#e07b00", alert: "#e6c200", offline: "#66717d", delayed: "#66717d", none: "#66717d" };   // grays dark enough for text (4.5:1)
   var TINT = { likely: "#c62828", ready: "rgba(224,123,0,.16)", alert: "rgba(230,194,0,.20)", offline: "rgba(138,150,163,.14)",
     delayed: "rgba(138,150,163,.14)", none: "rgba(138,150,163,.10)" };
@@ -122,8 +126,7 @@
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
     var noLv = (c.stages || []).length && (c.stages || []).every(function (g) {
       return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; });
-    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + (c.preview_only ? '<span class="cs-sm">New creek, preview only' +
-      (opts.lvlTag && noLv ? " · " + esc(T("no_flood_level_title")) : "") + "</span>" : opts.lvlTag && noLv ? '<span class="cs-sm">' + esc(T("no_flood_level_title")) + "</span>" : "") + "</div>";
+    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + review(c) + (opts.lvlTag && noLv ? '<span class="cs-sm">' + esc(T("no_flood_level_title")) + "</span>" : "") + "</div>";
     h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div>";
     if (v.since) h += '<p class="cs-since">' + esc(v.since) + "</p>";
     v.reasons.forEach(function (r) { h += '<p class="cs-why">' + esc(r) + "</p>"; });
@@ -221,10 +224,11 @@
         " with no alerts — " + esc(list(quiet.map(function (x) { return x.c.short || x.c.name; }))) + '</summary><div class="cs-grid">' +
         quiet.map(function (x) { return card(data, x.c, co(x.c)); }).join("") + "</div></details>";
     }
-    return h + (opts.staff === false ? "" : staffTable(data));
+    return h + (opts.staff === false || !STAFF ? "" : staffTable(data));
   }
   function badge() {
-    return '<div class="cs-badge">STAFF PREVIEW · creek status layer in testing · not shown to the public</div>';
+    if (!STAFF) return "";
+    return '<div class="cs-badge">STAFF VIEW · ' + (LK.num("STATUS_PUBLIC") === 1 ? "staff table below" : "creek status layer in testing · not shown to the public") + "</div>";
   }
 
   /* Staff table: everything behind each status */
@@ -237,7 +241,7 @@
         : '<span class="cs-dim">—</span>';
       var notes = (st.staff_notes || []).concat((r.silent || []).map(function (s) { return s.label + " silent since " + (s.since ? dated(s.since) : "?"); }));
       if (st.trigger) notes.unshift("Trigger: " + st.trigger.label + " " + st.trigger.amount + " of " + st.trigger.value + " in");
-      return "<tr><td><b>" + esc(c.name) + "</b>" + (c.preview_only ? '<span class="cs-sm">preview only</span>' : "") + "</td><td><span class=\"cs-tag\"><i style=\"background:" + v.color + "\"></i>" + esc(v.word) + "</span>" +
+      return "<tr><td><b>" + esc(c.name) + "</b>" + review(c) + "</td><td><span class=\"cs-tag\"><i style=\"background:" + v.color + "\"></i>" + esc(v.word) + "</span>" +
         (st.since ? '<span class="cs-sm">since ' + esc(dated(st.since)) + (st.prev && st.prev !== st.key ? "; was " + esc(T("verdict_" + st.prev)) : "") + "</span>" : "") +
         (v.eoc ? '<span class="cs-sm"><b>EOC:</b> ' + esc(v.eoc) + "</span>" : "") + "</td>" +
         "<td>" + lvl + '<span class="cs-sm">' + trendText(st.trend) + "</span></td><td>" + chip(r.level) + "</td><td>" + heavy + "</td>" +
@@ -260,7 +264,7 @@
   /* Kiosk: large tiles, nothing to tap */
   function tile(data, c) {
     var v = view(data, c), st = v.st, r = st.rain || {};
-    return '<div class="cs-tile cs-' + v.key + '"><div class="cs-tn">' + esc(c.name) + "</div>" +
+    return '<div class="cs-tile cs-' + v.key + '"><div class="cs-tn">' + esc(c.name) + review(c) + "</div>" +
       '<div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div>" +
       (v.since ? '<div class="cs-ts">' + esc(v.since) + "</div>" : "") +
       (v.reasons[0] ? '<div class="cs-tr">' + esc(v.reasons[0]) + "</div>" : "") +
@@ -312,7 +316,7 @@
         '<ul class="cs-hrows">' + g.rows.map(function (r) {
           var href = linkFor ? linkFor(r.c) : "";
           return "<li>" + (href ? '<a class="cs-hrow" href="' + esc(href) + '">' : '<span class="cs-hrow">') + '<span class="cs-hx"><span class="cs-hn">' + esc(r.c.name) +
-            '</span><span class="cs-hy">' + esc(plain(r.v.st)) + "</span></span>" + (href ? '<span class="cs-hc" aria-hidden="true">›</span></a>' : "</span>") + "</li>";
+            "</span>" + review(r.c) + '<span class="cs-hy">' + esc(plain(r.v.st)) + "</span></span>" + (href ? '<span class="cs-hc" aria-hidden="true">›</span></a>' : "</span>") + "</li>";
         }).join("") + "</ul>" +
         '<p class="cs-hdo"><span class="cs-hdo-l">What to do</span>' + esc(T("verdict_" + g.k + "_todo")) + "</p></section>";
     });
@@ -367,7 +371,7 @@
       var r = '<div class="cs-brow cs-b-' + x.k + '"' + (x.dash ? ' data-creek="' + esc(x.c.id) + '"' : "") + '><i class="cs-bbar" style="background:' + COL[x.k] + '"></i>' +
         '<span class="cs-bname">' + esc(x.c.short || x.c.name) + "</span>" +
         '<span class="cs-bword cs-v-' + x.k + '">' + icon(x.k) + esc(T("verdict_" + x.k)) + "</span>" +
-        '<span class="cs-bwhy">' + esc(brief(st, x.k)) + "</span>" +
+        '<span class="cs-bwhy">' + review(x.c, true) + esc(brief(st, x.k)) + "</span>" +   // the tag goes with the reason: the name column is narrow
         '<span class="cs-brain">' + (rl ? chip(rl) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
         '<span class="cs-bsince">' + (st.since && !off ? "since " + esc(clock(st.since)) : "") + "</span></div>";
       if (n === 0 && x.v.eoc) r += '<div class="cs-beoc"><b>EOC:</b> ' + esc(x.v.eoc) + "</div>";
@@ -378,6 +382,9 @@
   }
 
   var css = [
+    ".cs-review{display:inline-block;margin-left:6px;padding:1px 8px;border:1.5px solid #5b6877;border-radius:999px;font-size:11.5px;font-weight:700;line-height:1.5;" +
+    "color:#3d4957;background:rgba(138,150,163,.12);vertical-align:middle;white-space:nowrap;letter-spacing:0;text-transform:none}",
+    "@media (prefers-color-scheme:dark){.cs-review{color:#c3ccd6;border-color:#9aa8b8}}:root[data-theme=dark] .cs-review{color:#c3ccd6;border-color:#9aa8b8}",
     ".cs-badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.03em;background:#003B5C;color:#fff;border-radius:6px;padding:3px 8px;margin:4px 0 8px}",
     ".cs-banner{background:#c62828;color:#fff;border-radius:10px;padding:12px 14px;font-size:17px;font-weight:700;line-height:1.4;margin:0 0 10px}",
     ".cs-glance{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:10px;padding:12px 14px;margin:0 0 12px}",
@@ -451,7 +458,7 @@
     ".cs-hg-none .cs-verdict{background:rgba(46,125,50,.1)}.cs-hg-none .cs-ic-none{color:#2e7d32}",
     ".cs-hrows{list-style:none;margin:0;padding:4px 14px 0}.cs-hrows li+li{border-top:1px solid var(--line,#e3e8ee)}",
     ".cs-hrow{display:flex;align-items:center;gap:10px;padding:9px 0;min-height:44px;text-decoration:none;color:inherit}",
-    ".cs-hx{flex:1;display:flex;flex-direction:column;gap:1px}.cs-hn{font-weight:700;font-size:16px;color:var(--ink,#16202b)}",
+    ".cs-hx{flex:1;display:flex;flex-direction:column;gap:1px}.cs-hx .cs-review{align-self:flex-start;margin:2px 0}.cs-bwhy .cs-review{margin:0 6px 0 0;font-size:11px}.cs-hn{font-weight:700;font-size:16px;color:var(--ink,#16202b)}",
     ".cs-hy{font-size:14px;line-height:1.35;color:var(--text,var(--ink,#16202b))}.cs-hc{color:var(--muted,#556274);font-size:20px;flex:none}",
     "a.cs-hrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:2px;border-radius:4px}",
     ".cs-hdo{margin:0;padding:9px 14px 11px;font-size:14px;line-height:1.4;border-top:1px solid var(--line,#e3e8ee)}",
@@ -492,5 +499,6 @@
         quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.short || c.name; })) : ""].filter(Boolean).join(" · ") };
   }
 
-  window.CREEK_STATUS = { preview: PREVIEW, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief };
+  window.CREEK_STATUS = { staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief };
+  Object.defineProperty(window.CREEK_STATUS, "preview", { get: shown });   // true when the status layer shows on this page
 })();

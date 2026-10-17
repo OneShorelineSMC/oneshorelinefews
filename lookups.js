@@ -32,7 +32,7 @@
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
    
     TIDE_RED_FT_RWC: [8.5, 6, 15], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
-    MORE_CREEKS_PUBLIC: [1, 0, 1],
+    MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1],
     REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
   };
   var TIDES = {
@@ -162,6 +162,8 @@
     more_creeks_badge: "Readings only",
     more_creeks_note: "Flood levels for this creek haven't been set yet, so these are readings only, with no status. A higher or rising level doesn't by itself mean flooding. In an emergency, call 911.",
     no_flood_level_title: "Flood levels not set yet",
+    method_review: "Methodology under review",
+    method_review_short: "Under review",
     no_flood_level_many: "OneShoreline is still setting flood levels for these creeks. Until then, their status is based on rain in the hills above and how fast the creek is rising.",
     no_flood_level: "OneShoreline is still setting flood levels for this creek. Until then, its status is based on rain in the hills above and how fast the creek is rising, shown below.",
     limited_rain: "Rain gauges may miss storms here",
