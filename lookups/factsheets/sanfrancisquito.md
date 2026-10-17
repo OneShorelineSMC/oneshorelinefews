@@ -1,34 +1,38 @@
 # San Francisquito Creek
 
-*Draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to the review request. Everything else on the page is background.*
+*FEWS 2026 Update: draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to the review request. Everything else on the page is background.*
 
 > **What we need you to check**
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** FEWS has none. Do you know a creek height at the gauge where the creek leaves its banks or floods a road, or a past flood we could match to a gauge reading?
+> - [ ] **Flood levels:** the 2026 Update has none, but OneRain has its own at San Francisquito Creek at Stanford (see Thresholds on this page). Do you know who set them and from what? Should the 2026 Update use them?
 
-> **How to read this page**
+> **Words used on this page** (the same words for both systems)
 >
-> - **Flood level:** a creek height (or rain amount) tied to an effect downstream, such as how full the channel is or water on a road. Only flood levels say anything about flooding.
-> - **Alert level:** says how unusual the rain is, or how fast the creek is rising. Not tied to flooding.
-> - **Rising fast:** the creek rose at least the set amount (for example 0.5 ft) within an hour.
-> - **Creek heights** are the gauge's own reading in feet (height above the gauge's zero), not an elevation. **Tide heights** are in feet NAVD88, a survey datum. MHHW = the average daily high tide; MLLW = the average daily low tide.
-> - **1-year, 2-year, 5-year storm:** rain that heavy at that gauge has about a 63%, 39% or 18% chance in any year (NOAA Atlas 14).
-> - **Water year (WY):** October 1 to September 30, named for the year it ends.
-> - **OneRain** is the system that runs the gauges and the County's dashboards; FEWS is the public flood warning site built on its data.
+> - **Threshold:** any set value that changes a color or a status, in either system.
+> - **Flood level** (2026 Update): a threshold on creek height (or a rain amount) tied to an effect downstream, such as how full the channel is or water on a road. Only flood levels say anything about flooding.
+> - **Alert level** (2026 Update): a rain alert (Heavy, Very heavy, Intense: how rare the rain is) or **rising fast** (the creek rose at least a set amount within an hour). Not tied to flooding.
+> - **Status** (2026 Update): the one overall message for a creek: Flooding likely, Be ready, Stay alert or No alerts. It comes from the flood levels and alert levels.
+> - **OneRain threshold:** a named level set on a OneRain sensor (for example Flood Watch, 3.25 ft). It colors that gauge's readings and graph; it doesn't send a message by itself.
+> - **OneRain dashboard color:** the green, orange or red a OneRain dashboard gives a reading. Set separately from the thresholds.
+> - **Notification:** a message sent to people. OneRain sends these through separate *alarm* rules. The 2026 Update sends none; it only displays.
+>
+> **Units.** Creek heights are the gauge's own reading in feet (above the gauge's zero), not an elevation. Tide heights are in feet NAVD88, a survey datum; MHHW = the average daily high tide, MLLW = the average daily low tide. A 1-, 2- or 5-year storm is rain that heavy at that gauge, with about a 63%, 39% or 18% chance in any year (NOAA Atlas 14). Water year: October 1 to September 30, named for the year it ends.
+>
+> **Names.** **OneRain** is the County's existing gauge system and dashboards (what many people call "FEWS"). **FEWS 2026 Update** ("2026 Update") is the new public creek and tide status site built on OneRain's data. These fact sheets describe the 2026 Update and compare it with OneRain.
 
 ## At a glance
 
 | | |
 |---|---|
-| On the FEWS site | Staff preview only (not yet on the public pages) |
+| On the 2026 Update site | Staff preview only (not yet on the public pages) |
 | Cities and communities | Woodside; Portola Valley; Menlo Park; East Palo Alto; Palo Alto; Stanford (unincorporated Santa Clara County) *(draft)* |
 | Drains to | San Francisco Bay |
 | Description | Large creek on the San Mateo / Santa Clara county line; the USGS gauge is at Stanford. |
-| Flood levels set? | None |
+| Flood levels set? | None in the 2026 Update (OneRain has some; see Thresholds below) |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
-| Rain totals on the FEWS page | 30 min, 1 hr, 3 hr, 24 hr |
+| Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
 
 ## Creek level gauges
 
@@ -41,10 +45,11 @@
 | Reports | Every 15 minutes (USGS) |
 | Record starts | Oct 2007 (pulled from Oct 1, 2007; USGS record is longer) |
 | Affected by the tide? | Not yet confirmed. Dry-weather check (Oct 12-14, 2026): moved 0.04 ft or less with the tide |
-| Rising-fast alert | 0.5 ft within an hour |
+| Rising-fast alert | 0.5 ft within an hour · **Tested on past data (19 yr)** |
+| Why this rising-fast setting | 20 of 20 big storms warned, about 3 h ahead; 9.5 alerts/yr. At 0.75 ft: 17 of 20. |
 | History and known issues | USGS data approved through spring 2026, provisional since Apr 2026. |
 
-**Flood levels:** none in FEWS, so this creek's status comes from alert levels only (rain and rising fast).
+**Flood levels:** none in the 2026 Update, so this creek's status comes from alert levels only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
 
 <details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
@@ -58,17 +63,19 @@ Tested on 19.0 years of readings, against 6.0 ft, the creek's typical yearly hig
 | 1.0 | 3.0 | 12 of 20 | 60 min |
 | 1.5 | 0.9 | 5 of 20 | 30 min |
 
-Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
+How settings were chosen: the highest setting that still warned before all, or all but one, of the big rises, ideally at least 2 hours ahead; on flashy creeks such as Belmont, kept low to protect warning time. Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 
 </details>
 
 ## Rain gauges
 
-| Gauge | OneRain ID | Location | Where | Use in FEWS |
+| Gauge | OneRain ID | Location | Where | Use in the 2026 Update |
 |---|---|---|---|---|
-| Wunderlich County Park | A08363E2 | 37.40243, -122.27486 | upper watershed | Shown on the FEWS page and counts toward the rain alert |
+| Wunderlich County Park | A08363E2 | 37.40243, -122.27486 | upper watershed | Shown on the 2026 Update page and counts toward the rain alert |
 | Windy Hill Open Space Preserve | A0839DB4 | 37.35799, -122.23990 | upper watershed | Counts toward the creek's rain alert only (not shown on the page) |
 | Trappers Trail (Valley Water) | A08204FE | 37.34611, -122.18083 | upper watershed | Counts toward the creek's rain alert only (not shown on the page) |
+
+**Rain alerts** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
 <details><summary>Background: rain alert levels at each gauge (no action needed)</summary>
 
@@ -90,30 +97,30 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Thresholds: what FEWS uses compared with OneRain
+## Thresholds: the 2026 Update compared with OneRain today
 
-On the public FEWS pages this creek shows readings only; its status (below) shows only in the staff preview. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
+On the 2026 Update's public pages this creek shows readings only; its status shows only in the staff preview. The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today (read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; OneRain sends notifications only through separate alarm rules. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
-| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+| Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
 |---|---|---|---|---|
-| San Francisquito Creek at Stanford | – | none | none | – |
-| San Francisquito Creek at Stanford | Rising fast | 0.5 ft within an hour | none | FEWS only |
+| San Francisquito Creek at Stanford | Flood Monitoring | – | 11.00 ft ("Potential flooding") | OneRain only (the 2026 Update doesn't use it) |
+| San Francisquito Creek at Stanford | Flood Watch | – | 12.00 ft ("Flooding likely") | OneRain only (the 2026 Update doesn't use it) |
+| San Francisquito Creek at Stanford | Flood Warning | – | 12.80 ft ("Projected flooding in downstream reaches") | OneRain only (the 2026 Update doesn't use it) |
+| San Francisquito Creek at Stanford | Rising fast | 0.5 ft within an hour | none | 2026 Update only |
 
-No OneRain rain alarms or dashboard colors on: Trappers Trail; Wunderlich County Park; Windy Hill Open Space Preserve.
+How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Monitoring 11.00 ft: 2 of 19 years (highest 13.70 ft); Flood Watch 12.00 ft: 1 of 19 years (highest 13.70 ft); Flood Warning 12.80 ft: 1 of 19 years (highest 13.70 ft).
+
+No OneRain rain thresholds or dashboard colors on: Trappers Trail; Wunderlich County Park; Windy Hill Open Space Preserve.
 
 **Tide**
 
-| | FEWS uses | OneRain dashboard color |
+| | 2026 Update uses | OneRain dashboard color |
 |---|---|---|
 | Tide | NOAA 9414523 Redwood City: tide graph and high-tide lines (MHHW 7.02 ft NAVD88) | none recorded |
 
-Notes:
-
-- No rain thresholds on this gauge in OneRain.
-
-<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
+<details><summary>Internal to-do for the project team (reviewers can skip)</summary>
 
 - Stanford (stage): USGS 11164500; OneRain site SFC shows the same gauge, so read it from USGS. Confirm whether this gauge reads the tide
 - Wunderlich County Park (rain): check they open the Rain Increment sensor; pick one for the card
@@ -124,4 +131,4 @@ Notes:
 
 ---
 
-*Generated from the FEWS lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*
+*Generated from the 2026 Update lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*

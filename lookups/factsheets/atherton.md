@@ -1,6 +1,6 @@
 # Atherton Channel
 
-*Draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to the review request. Everything else on the page is background.*
+*FEWS 2026 Update: draft fact sheet for staff review (October 2026). Please answer the questions in the box below by replying to the review request. Everything else on the page is background.*
 
 > **What we need you to check**
 >
@@ -9,27 +9,31 @@
 > - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 > - [ ] **Atherton rain window:** OneRain's Atherton dashboard colors rain over 30 minutes, but the thresholds on its rain sensor use the same amounts (0.40 / 0.45 in) over 1 hour. Over 30 minutes they are close to a 5-year storm; over 1 hour, between a 1- and 2-year storm. Which window is intended?
 
-> **How to read this page**
+> **Words used on this page** (the same words for both systems)
 >
-> - **Flood level:** a creek height (or rain amount) tied to an effect downstream, such as how full the channel is or water on a road. Only flood levels say anything about flooding.
-> - **Alert level:** says how unusual the rain is, or how fast the creek is rising. Not tied to flooding.
-> - **Rising fast:** the creek rose at least the set amount (for example 0.5 ft) within an hour.
-> - **Creek heights** are the gauge's own reading in feet (height above the gauge's zero), not an elevation. **Tide heights** are in feet NAVD88, a survey datum. MHHW = the average daily high tide; MLLW = the average daily low tide.
-> - **1-year, 2-year, 5-year storm:** rain that heavy at that gauge has about a 63%, 39% or 18% chance in any year (NOAA Atlas 14).
-> - **Water year (WY):** October 1 to September 30, named for the year it ends.
-> - **OneRain** is the system that runs the gauges and the County's dashboards; FEWS is the public flood warning site built on its data.
+> - **Threshold:** any set value that changes a color or a status, in either system.
+> - **Flood level** (2026 Update): a threshold on creek height (or a rain amount) tied to an effect downstream, such as how full the channel is or water on a road. Only flood levels say anything about flooding.
+> - **Alert level** (2026 Update): a rain alert (Heavy, Very heavy, Intense: how rare the rain is) or **rising fast** (the creek rose at least a set amount within an hour). Not tied to flooding.
+> - **Status** (2026 Update): the one overall message for a creek: Flooding likely, Be ready, Stay alert or No alerts. It comes from the flood levels and alert levels.
+> - **OneRain threshold:** a named level set on a OneRain sensor (for example Flood Watch, 3.25 ft). It colors that gauge's readings and graph; it doesn't send a message by itself.
+> - **OneRain dashboard color:** the green, orange or red a OneRain dashboard gives a reading. Set separately from the thresholds.
+> - **Notification:** a message sent to people. OneRain sends these through separate *alarm* rules. The 2026 Update sends none; it only displays.
+>
+> **Units.** Creek heights are the gauge's own reading in feet (above the gauge's zero), not an elevation. Tide heights are in feet NAVD88, a survey datum; MHHW = the average daily high tide, MLLW = the average daily low tide. A 1-, 2- or 5-year storm is rain that heavy at that gauge, with about a 63%, 39% or 18% chance in any year (NOAA Atlas 14). Water year: October 1 to September 30, named for the year it ends.
+>
+> **Names.** **OneRain** is the County's existing gauge system and dashboards (what many people call "FEWS"). **FEWS 2026 Update** ("2026 Update") is the new public creek and tide status site built on OneRain's data. These fact sheets describe the 2026 Update and compare it with OneRain.
 
 ## At a glance
 
 | | |
 |---|---|
-| On the FEWS site | Public pages |
+| On the 2026 Update site | Public pages |
 | Cities and communities | Woodside (upper watershed); Atherton; unincorporated North Fair Oaks; Redwood City *(draft)* |
 | Drains to | Bayfront Canal, then San Francisco Bay |
 | Description | Channelized creek; flood levels are for the area downstream of the Caltrain crossing. |
 | Flood levels set? | Yes |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
-| Rain totals on the FEWS page | 30 min, 1 hr, 24 hr |
+| Rain totals on the 2026 Update page | 30 min, 1 hr, 24 hr |
 
 ## Creek level gauges
 
@@ -42,7 +46,8 @@
 | Reports | Hourly, with extra readings in storms |
 | Record starts | Jan 27, 2026 (public OneRain pages) |
 | Affected by the tide? | No |
-| Rising-fast alert | 0.5 ft within an hour (default; not yet tested on this gauge's history) |
+| Rising-fast alert | 0.5 ft within an hour (default) · **Default setting, not yet tested on this gauge** |
+| Why this rising-fast setting | Record starts Jan 2026; no Monitoring crossing yet |
 | History and known issues | Short record: no Flood Monitoring crossing yet. |
 
 **Flood levels** (gauge height, ft)
@@ -58,6 +63,8 @@ What they mean: Flood Monitoring = potential for 50% channel capacity exceedance
 
 By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 
+Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
+
 <details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
 Tested on 0.7 years of readings, against the lowest flood level (Flood Monitoring, 3.18 ft): "warned" means an alert came before the creek reached it. Only 0 such rises in the record, so treat these results as rough.
@@ -70,7 +77,7 @@ Tested on 0.7 years of readings, against the lowest flood level (Flood Monitorin
 | 1.0 | 2 | 0 of 0 | – |
 | 1.5 | 0 | 0 of 0 | – |
 
-Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
+How settings were chosen: the highest setting that still warned before all, or all but one, of the big rises, ideally at least 2 hours ahead; on flashy creeks such as Belmont, kept low to protect warning time. Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 
 </details>
 
@@ -83,9 +90,10 @@ Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 | Reports | On change |
 | Record starts | Oct 2020 (public OneRain pages) |
 | Affected by the tide? | No. Dry-weather check (Oct 12-14, 2026): moved 0.04 ft or less with the tide |
-| Rising-fast alert | 0.5 ft within an hour |
+| Rising-fast alert | 0.5 ft within an hour · **Tested on past data (6 yr)** |
+| Why this rising-fast setting | 24 of 25 rises to Flood Monitoring warned, about 2 h ahead; 28 alerts/yr |
 | History and known issues | Probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow. |
-| Note shown on the FEWS page | The probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow. |
+| Note shown on the 2026 Update page | The probe is 0.37 ft above the channel bottom; readings below about 0.4 ft mean very low or no flow. |
 
 **Flood levels** (gauge height, ft)
 
@@ -99,6 +107,8 @@ What they mean: Flood Monitoring = potential for 50% channel capacity exceedance
 
 By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 
+Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
+
 <details><summary>Background: how the rising-fast alert performed on past data (no action needed)</summary>
 
 Tested on 6.0 years of readings, against the lowest flood level (Flood Monitoring, 2.8 ft): "warned" means an alert came before the creek reached it.
@@ -111,15 +121,17 @@ Tested on 6.0 years of readings, against the lowest flood level (Flood Monitorin
 | 1.0 | 16.4 | 22 of 25 | 58 min |
 | 1.5 | 8.6 | 15 of 25 | 38 min |
 
-Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
+How settings were chosen: the highest setting that still warned before all, or all but one, of the big rises, ideally at least 2 hours ahead; on flashy creeks such as Belmont, kept low to protect warning time. Method and limits: [RISING_FAST_BASIS.md](../RISING_FAST_BASIS.md).
 
 </details>
 
 ## Rain gauges
 
-| Gauge | OneRain ID | Location | Where | Use in FEWS |
+| Gauge | OneRain ID | Location | Where | Use in the 2026 Update |
 |---|---|---|---|---|
-| Caltrain | 41106 | 37.46192, -122.19387 | upstream of Caltrain | Shown on the FEWS page and counts toward the rain alert |
+| Caltrain | 41106 | 37.46192, -122.19387 | upstream of Caltrain | Shown on the 2026 Update page and counts toward the rain alert |
+
+**Rain alerts** (Heavy, Very heavy, Intense). Why these numbers: they are the 1-, 2- and 5-year storm at each gauge from NOAA Atlas 14, a standard way to say how rare rain is at that exact spot. Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
 <details><summary>Background: rain alert levels at each gauge (no action needed)</summary>
 
@@ -135,45 +147,44 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 </details>
 
-## Thresholds: what FEWS uses compared with OneRain
+## Thresholds: the 2026 Update compared with OneRain today
 
-FEWS shows this creek's status on its public pages. The **FEWS** columns are what the FEWS site uses today. The **OneRain** columns are what is set in OneRain itself (read Oct 16–17, 2026): *alarms* are thresholds set on a gauge, which send OneRain notifications; *dashboard colors* are how OneRain's dashboard colors a reading. FEWS doesn't read either; they're shown so the two can be compared.
+The 2026 Update shows this creek's status on its public pages. The **2026 Update** columns are what the new site uses. The **OneRain** columns are what is set in OneRain today (read Oct 16–17, 2026): *thresholds* set on each sensor, and *dashboard colors*. Neither sends a message by itself; OneRain sends notifications only through separate alarm rules. The 2026 Update doesn't read any of these; they're shown so the two systems can be compared.
 
 **Creek height (ft, gauge height)**
 
-| Gauge | Level | FEWS uses | OneRain alarm | Same? |
+| Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
 |---|---|---|---|---|
-| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | 3.18 ft | – | FEWS only |
-| Atherton Channel at Alameda de las Pulgas | Flood Watch | 4.60 ft | – | FEWS only |
-| Atherton Channel at Alameda de las Pulgas | Flood Warning | 5.65 ft | – | FEWS only |
-| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | 10.40 ft | – | FEWS only |
-| Atherton Channel at Alameda de las Pulgas | Rising fast | 0.5 ft within an hour | none | FEWS only |
-| Atherton Channel upstream of CalTrain | Flood Monitoring | 2.80 ft | – | FEWS only |
-| Atherton Channel upstream of CalTrain | Flood Watch | 4.10 ft | – | FEWS only |
-| Atherton Channel upstream of CalTrain | Flood Warning | 5.50 ft | – | FEWS only |
-| Atherton Channel upstream of CalTrain | Rising fast | 0.5 ft within an hour | none | FEWS only |
+| Atherton Channel at Alameda de las Pulgas | Flood Monitoring | 3.18 ft | 3.18 ft ("Potential flooding") | Same |
+| Atherton Channel at Alameda de las Pulgas | Flood Watch | 4.60 ft | 4.60 ft ("Flooding probable with continued rain") | Same |
+| Atherton Channel at Alameda de las Pulgas | Flood Warning | 5.65 ft | 5.65 ft ("Active flooding likely to occur downstream") | Same |
+| Atherton Channel at Alameda de las Pulgas | Roadway Flooded | 10.40 ft | 10.40 ft ("Water detected on road") | Same |
+| Atherton Channel at Alameda de las Pulgas | Rising fast | 0.5 ft within an hour | none | 2026 Update only |
+| Atherton Channel upstream of CalTrain | Flood Monitoring | 2.80 ft | 2.80 ft ("Potential flooding") | Same |
+| Atherton Channel upstream of CalTrain | Flood Watch | 4.10 ft | 4.10 ft ("Flooding probable with continued rain") | Same |
+| Atherton Channel upstream of CalTrain | Flood Warning | 5.50 ft | 5.50 ft ("Active flooding likely to occur downstream") | Same |
+| Atherton Channel upstream of CalTrain | Rising fast | 0.5 ft within an hour | none | 2026 Update only |
 
 **Rain (inches within the time shown)**
 
-FEWS's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over windows from 15 minutes to 48 hours; only the windows OneRain or a FEWS trigger uses are listed here.
+The 2026 Update's rain alerts (Heavy, Very heavy, Intense) are the 1-, 2- and 5-year storm at the gauge, checked over windows from 15 minutes to 48 hours; only the windows OneRain or a 2026 Update trigger uses are listed here.
 
-| Gauge | Rain within | FEWS uses | OneRain alarm | OneRain dashboard color |
+| Gauge | Rain within | 2026 Update uses | OneRain threshold | OneRain dashboard color |
 |---|---|---|---|---|
 | Caltrain | 30 min | alerts: Heavy 0.272, Very heavy 0.343, Intense 0.439 in | none | orange from 0.400 in; red from 0.45 in |
-| Caltrain | 1 hr | alerts: Heavy 0.383, Very heavy 0.483, Intense 0.618 in | none | none |
+| Caltrain | 1 hr | alerts: Heavy 0.383, Very heavy 0.483, Intense 0.618 in | Flood watch 0.40 in; Flood warning 0.45 in | none |
 
 **Tide**
 
-| | FEWS uses | OneRain dashboard color |
+| | 2026 Update uses | OneRain dashboard color |
 |---|---|---|
 | Tide | NOAA 9414523 Redwood City: tide graph and high-tide lines (MHHW 7.02 ft NAVD88) | none recorded |
 
 Notes:
 
 - 40 / 0.45 in) but over 30 min.
-- Rain thresholds set on the Rain Increment sensor (rain since the gauge's last report); not published on the public site.
 
-<details><summary>Internal to-do for the FEWS team (reviewers can skip)</summary>
+<details><summary>Internal to-do for the project team (reviewers can skip)</summary>
 
 - Ask OneRain how thresholds on a Rain Increment sensor are checked, and which alarm rules (notifications) use them: each report on its own, or rain summed over the window in the threshold's name? If each report on its own, these thresholds may rarely be reached.
 
@@ -181,4 +192,4 @@ Notes:
 
 ---
 
-*Generated from the FEWS lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*
+*Generated from the 2026 Update lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*
