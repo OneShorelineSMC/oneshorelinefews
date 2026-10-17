@@ -142,12 +142,6 @@ Notes:
 - Set on OneRain's rolling 4-hour total sensor. Same rain amount as the 2026 Update's rain + tide trigger (0.42 in / 4 hr); the tide part is OneRain alarm rule #34.
 - The 2026 Update shows 'Flooding likely' at 0.20 in / 30 min; OneRain calls 0.20 'Potential for flooding' and 0.25 'Flooding likely'.
 
-<details><summary>Internal to-do for the project team (reviewers can skip)</summary>
-
-- Ask OneRain how thresholds on a Rain Increment sensor are checked, and which alarm rules (text alerts) use them: each report on its own, or rain summed over the window in the threshold's name? If each report on its own, these thresholds may rarely be reached.
-
-</details>
-
 ---
 
 *Generated from the 2026 Update lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*

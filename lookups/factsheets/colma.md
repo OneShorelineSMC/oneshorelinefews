@@ -132,12 +132,6 @@ No OneRain rain thresholds on: San Bruno Mountain.
 
 **Tide:** the 2026 Update uses NOAA 9414750 Alameda for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 6.37 ft NAVD88). OneRain's tide settings aren't included.
 
-<details><summary>Internal to-do for the project team (reviewers can skip)</summary>
-
-- Ask OneRain how thresholds on a Rain Increment sensor are checked, and which alarm rules (text alerts) use them: each report on its own, or rain summed over the window in the threshold's name? If each report on its own, these thresholds may rarely be reached.
-
-</details>
-
 ---
 
 *Generated from the 2026 Update lookup tables (`lookups/`) by `scripts/build_creek_factsheets.py`; edit the tables, not this page. Basis for every number: [THRESHOLDS_BASIS.md](../THRESHOLDS_BASIS.md).*

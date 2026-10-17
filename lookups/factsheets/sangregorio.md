@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** the 2026 Update has none, but OneRain has its own at San Gregorio Creek at San Gregorio (see Thresholds on this page). Do you know who set them and from what? Should the 2026 Update use them?
+> - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 
 > **Words used on this page** (the same words for both systems)
 >
@@ -30,7 +30,7 @@
 | Cities and communities | Unincorporated San Gregorio; La Honda (upper watershed) *(draft)* |
 | Drains to | Pacific Ocean at San Gregorio State Beach |
 | Description | Rural coastal creek. |
-| Flood levels set? | None in the 2026 Update (OneRain has some; see Thresholds below) |
+| Flood levels set? | Yes |
 | Tide station | None set for this creek in the 2026 Update (coastal creek) |
 | Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -49,11 +49,22 @@
 | Why this rising-fast setting | 18 of 18 warned, about 3¾ h ahead; shown 3.8 times a year vs 8.5 at 0.5 ft |
 | History and known issues | Typical water level rose about 2 ft in 2016-17 and stayed higher for years (channel change). |
 
-**Flood levels:** none in the 2026 Update, so this creek's status comes from indicators only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
+**Flood levels** (gauge height, ft)
+
+| Level | Name | Height (ft) | Source | Notes |
+|---|---|---|---|---|
+| 1 | Flood Monitoring | 15.00 | OneRain sensor thresholds (Oct 2026) | OneRain: Potential flooding |
+| 2 | Flood Watch | 17.70 | OneRain sensor thresholds (Oct 2026) | OneRain: Flooding probable with continued rain |
+| 3 | Flood Warning | 21.00 | OneRain sensor thresholds (Oct 2026) | OneRain: Flooding likely in downstream reaches |
+| 4 | Major Flood Stage | 25.00 | OneRain sensor thresholds (Oct 2026) | OneRain: Damaging flooding |
+
+What they mean: Flood levels at San Gregorio are OneRain's (Oct 2026): Flood Monitoring = potential flooding; Flood Watch = flooding probable with continued rain; Flood Warning = flooding likely in downstream reaches; Major Flood Stage = damaging flooding. Not yet reviewed by staff.
+
+Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
 
 <details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>
 
-Tested on 19.0 years of readings, against 13.53 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means the indicator came on before a typical yearly high, not before flooding.
+Tested on 19.0 years of readings, against the lowest flood level (Flood Monitoring, 13.53 ft): "warned" means the indicator came on before the creek reached it.
 
 | Setting (ft within an hour) | Times shown per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
@@ -97,10 +108,10 @@ On the 2026 Update's public pages this creek shows readings only; its status sho
 
 | Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
 |---|---|---|---|---|
-| San Gregorio Creek at San Gregorio | Flood Monitoring | – | 15.00 ft ("Potential flooding") | OneRain only (the 2026 Update doesn't use it) |
-| San Gregorio Creek at San Gregorio | Flood Watch | – | 17.70 ft ("Flooding probable with continued rain") | OneRain only (the 2026 Update doesn't use it) |
-| San Gregorio Creek at San Gregorio | Flood Warning | – | 21.00 ft ("Flooding likely in downstream reaches") | OneRain only (the 2026 Update doesn't use it) |
-| San Gregorio Creek at San Gregorio | Major Flood Stage | – | 25.00 ft ("Damaging flooding") | OneRain only (the 2026 Update doesn't use it) |
+| San Gregorio Creek at San Gregorio | Flood Monitoring | 15.00 ft | 15.00 ft ("Potential flooding") | Same |
+| San Gregorio Creek at San Gregorio | Flood Watch | 17.70 ft | 17.70 ft ("Flooding probable with continued rain") | Same |
+| San Gregorio Creek at San Gregorio | Flood Warning | 21.00 ft | 21.00 ft ("Flooding likely in downstream reaches") | Same |
+| San Gregorio Creek at San Gregorio | Major Flood Stage | 25.00 ft | 25.00 ft ("Damaging flooding") | Same |
 | San Gregorio Creek at San Gregorio | Rising fast | 1.0 ft within an hour | nothing comparable | 2026 Update only |
 
 How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Monitoring 15.00 ft: 4 of 19 years (highest 18.74 ft); Flood Watch 17.70 ft: 3 of 19 years (highest 18.74 ft); Flood Warning 21.00 ft: 0 of 19 years (highest 18.74 ft); Major Flood Stage 25.00 ft: 0 of 19 years (highest 18.74 ft).

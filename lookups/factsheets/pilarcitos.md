@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** the 2026 Update has none, but OneRain has its own at Pilarcitos Creek at Half Moon Bay (see Thresholds on this page). Do you know who set them and from what? Should the 2026 Update use them?
+> - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 
 > **Words used on this page** (the same words for both systems)
 >
@@ -30,7 +30,7 @@
 | Cities and communities | Half Moon Bay; unincorporated Pilarcitos Canyon (SFPUC lands above Stone Dam) *(draft)* |
 | Drains to | Pacific Ocean at Half Moon Bay |
 | Description | Coastal creek regulated by Pilarcitos Lake and Stone Dam in its upper reaches. |
-| Flood levels set? | None in the 2026 Update (OneRain has some; see Thresholds below) |
+| Flood levels set? | Yes |
 | Tide station | None set for this creek in the 2026 Update (coastal creek) |
 | Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -140,11 +140,22 @@ How settings were chosen: the highest setting that still warned before all, or a
 | Rising-fast indicator | 0.5 ft within an hour · **Tested on past data (19 yr)** |
 | Why this rising-fast setting | 21 of 21 warned, about 3½ h ahead; shown 10 times a year |
 
-**Flood levels:** none in the 2026 Update, so this creek's status comes from indicators only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
+**Flood levels** (gauge height, ft)
+
+| Level | Name | Height (ft) | Source | Notes |
+|---|---|---|---|---|
+| 1 | Flood Monitoring | 7.50 | OneRain sensor thresholds (Oct 2026) | OneRain: Potential flooding |
+| 2 | Flood Watch | 9.10 | OneRain sensor thresholds (Oct 2026) | OneRain: Flooding probable with continued rain |
+| 3 | Flood Warning | 17.00 | OneRain sensor thresholds (Oct 2026) | OneRain: Flooding likely in downstream reaches |
+| 4 | Major Flood Stage | 24.00 | OneRain sensor thresholds (Oct 2026) | OneRain: Damaging flooding |
+
+What they mean: Flood levels at Half Moon Bay are OneRain's (Oct 2026): Flood Monitoring = potential flooding; Flood Watch = flooding probable with continued rain; Flood Warning = flooding likely in downstream reaches; Major Flood Stage = damaging flooding. Not yet reviewed by staff. The other Pilarcitos gauges have none.
+
+Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
 
 <details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>
 
-Tested on 19.0 years of readings, against 9.17 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means the indicator came on before a typical yearly high, not before flooding.
+Tested on 19.0 years of readings, against the lowest flood level (Flood Monitoring, 9.17 ft): "warned" means the indicator came on before the creek reached it.
 
 | Setting (ft within an hour) | Times shown per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
@@ -194,10 +205,10 @@ On the 2026 Update's public pages this creek shows readings only; its status sho
 | Pilarcitos Creek above Stone Dam | Rising fast | 0.25 ft within an hour | nothing comparable | 2026 Update only |
 | Pilarcitos Creek below Stone Dam | Flood levels | none set | none set | – |
 | Pilarcitos Creek below Stone Dam | Rising fast | off | nothing comparable | 2026 Update only |
-| Pilarcitos Creek at Half Moon Bay | Flood Monitoring | – | 7.50 ft ("Potential flooding") | OneRain only (the 2026 Update doesn't use it) |
-| Pilarcitos Creek at Half Moon Bay | Flood Watch | – | 9.10 ft ("Flooding probable with continued rain") | OneRain only (the 2026 Update doesn't use it) |
-| Pilarcitos Creek at Half Moon Bay | Flood Warning | – | 17.00 ft ("Flooding likely in downstream reaches") | OneRain only (the 2026 Update doesn't use it) |
-| Pilarcitos Creek at Half Moon Bay | Major Flood Stage | – | 24.00 ft ("Damaging flooding") | OneRain only (the 2026 Update doesn't use it) |
+| Pilarcitos Creek at Half Moon Bay | Flood Monitoring | 7.50 ft | 7.50 ft ("Potential flooding") | Same |
+| Pilarcitos Creek at Half Moon Bay | Flood Watch | 9.10 ft | 9.10 ft ("Flooding probable with continued rain") | Same |
+| Pilarcitos Creek at Half Moon Bay | Flood Warning | 17.00 ft | 17.00 ft ("Flooding likely in downstream reaches") | Same |
+| Pilarcitos Creek at Half Moon Bay | Major Flood Stage | 24.00 ft | 24.00 ft ("Damaging flooding") | Same |
 | Pilarcitos Creek at Half Moon Bay | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
 
 How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Monitoring 7.50 ft: 16 of 19 years (highest 14.64 ft); Flood Watch 9.10 ft: 10 of 19 years (highest 14.64 ft); Flood Warning 17.00 ft: 0 of 19 years (highest 14.64 ft); Major Flood Stage 24.00 ft: 0 of 19 years (highest 14.64 ft).

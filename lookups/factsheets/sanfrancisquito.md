@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** the 2026 Update has none, but OneRain has its own at San Francisquito Creek at Stanford (see Thresholds on this page). Do you know who set them and from what? Should the 2026 Update use them?
+> - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 
 > **Words used on this page** (the same words for both systems)
 >
@@ -30,7 +30,7 @@
 | Cities and communities | Woodside; Portola Valley; Menlo Park; East Palo Alto; Palo Alto; Stanford (unincorporated Santa Clara County) *(draft)* |
 | Drains to | San Francisco Bay |
 | Description | Large creek on the San Mateo / Santa Clara county line; the USGS gauge is at Stanford. |
-| Flood levels set? | None in the 2026 Update (OneRain has some; see Thresholds below) |
+| Flood levels set? | Yes |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
 | Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -49,11 +49,21 @@
 | Why this rising-fast setting | 20 of 20 big storms warned, about 3 h ahead; shown 9.5 times a year. At 0.75 ft: 17 of 20. |
 | History and known issues | USGS data approved through spring 2026, provisional since Apr 2026. |
 
-**Flood levels:** none in the 2026 Update, so this creek's status comes from indicators only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
+**Flood levels** (gauge height, ft)
+
+| Level | Name | Height (ft) | Source | Notes |
+|---|---|---|---|---|
+| 1 | Flood Monitoring | 11.00 | OneRain sensor thresholds (Oct 2026) | OneRain: Potential flooding |
+| 2 | Flood Watch | 12.00 | OneRain sensor thresholds (Oct 2026) | OneRain: Flooding likely |
+| 3 | Flood Warning | 12.80 | OneRain sensor thresholds (Oct 2026) | OneRain: Projected flooding in downstream reaches |
+
+What they mean: Flood levels at Stanford are OneRain's (Oct 2026): Flood Monitoring = potential flooding; Flood Watch = flooding likely; Flood Warning = projected flooding in downstream reaches. Not yet reviewed by staff. Tide station to confirm.
+
+Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
 
 <details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>
 
-Tested on 19.0 years of readings, against 6.0 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means the indicator came on before a typical yearly high, not before flooding.
+Tested on 19.0 years of readings, against the lowest flood level (Flood Monitoring, 6.0 ft): "warned" means the indicator came on before the creek reached it.
 
 | Setting (ft within an hour) | Times shown per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
@@ -105,9 +115,9 @@ On the 2026 Update's public pages this creek shows readings only; its status sho
 
 | Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
 |---|---|---|---|---|
-| San Francisquito Creek at Stanford | Flood Monitoring | – | 11.00 ft ("Potential flooding") | OneRain only (the 2026 Update doesn't use it) |
-| San Francisquito Creek at Stanford | Flood Watch | – | 12.00 ft ("Flooding likely") | OneRain only (the 2026 Update doesn't use it) |
-| San Francisquito Creek at Stanford | Flood Warning | – | 12.80 ft ("Projected flooding in downstream reaches") | OneRain only (the 2026 Update doesn't use it) |
+| San Francisquito Creek at Stanford | Flood Monitoring | 11.00 ft | 11.00 ft ("Potential flooding") | Same |
+| San Francisquito Creek at Stanford | Flood Watch | 12.00 ft | 12.00 ft ("Flooding likely") | Same |
+| San Francisquito Creek at Stanford | Flood Warning | 12.80 ft | 12.80 ft ("Projected flooding in downstream reaches") | Same |
 | San Francisquito Creek at Stanford | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
 
 How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Monitoring 11.00 ft: 2 of 19 years (highest 13.70 ft); Flood Watch 12.00 ft: 1 of 19 years (highest 13.70 ft); Flood Warning 12.80 ft: 1 of 19 years (highest 13.70 ft).

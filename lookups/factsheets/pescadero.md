@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** the 2026 Update has none, but OneRain has its own at Pescadero Creek near Pescadero, Butano Creek near Cloverdale Road (see Thresholds on this page). Do you know who set them and from what? Should the 2026 Update use them?
+> - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 
 > **Words used on this page** (the same words for both systems)
 >
@@ -30,7 +30,7 @@
 | Cities and communities | Unincorporated Pescadero; Loma Mar; La Honda area *(draft)* |
 | Drains to | Pescadero Marsh, then the Pacific Ocean |
 | Description | Rural coastal creek; the town of Pescadero floods from Pescadero and Butano Creeks. |
-| Flood levels set? | None in the 2026 Update (OneRain has some; see Thresholds below) |
+| Flood levels set? | Yes |
 | Tide station | None set for this creek in the 2026 Update (coastal creek) |
 | Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -79,11 +79,20 @@ How settings were chosen: the highest setting that still warned before all, or a
 | Why this rising-fast setting | 18 of 18 warned, about 2½ h ahead, shown half as often as at 0.5 ft (2.7/yr vs 5.3/yr) |
 | History and known issues | Typical water level has crept up over the record (channel change). |
 
-**Flood levels:** none in the 2026 Update, so this creek's status comes from indicators only (rain and rising fast). OneRain has its own levels for this gauge: see Thresholds below.
+**Flood levels** (gauge height, ft)
+
+| Level | Name | Height (ft) | Source | Notes |
+|---|---|---|---|---|
+| 2 | Flood Watch | 11.20 | OneRain sensor thresholds (Oct 2026) | OneRain: Flooding likely |
+| 3 | Flood Warning | 13.25 | OneRain sensor thresholds (Oct 2026) | OneRain: Projected flooding in downstream reaches |
+
+What they mean: Flood levels near Pescadero (USGS gauge) are OneRain's (Oct 2026): Flood Watch = flooding likely; Flood Warning = projected flooding in downstream reaches. OneRain sets no Flood Monitoring level here, and none at Stage Road. Not yet reviewed by staff.
+
+Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
 
 <details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>
 
-Tested on 19.0 years of readings, against 10.41 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means the indicator came on before a typical yearly high, not before flooding.
+Tested on 19.0 years of readings, against the lowest flood level (Flood Watch, 10.41 ft): "warned" means the indicator came on before the creek reached it.
 
 | Setting (ft within an hour) | Times shown per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
@@ -129,8 +138,8 @@ On the 2026 Update's public pages this creek shows readings only; its status sho
 |---|---|---|---|---|
 | Pescadero Creek at Stage Road | Flood levels | none set | none set | – |
 | Pescadero Creek at Stage Road | Rising fast | 1.0 ft within an hour | nothing comparable | 2026 Update only |
-| Pescadero Creek near Pescadero | Flood Watch | – | 11.20 ft ("Flooding likely") | OneRain only (the 2026 Update doesn't use it) |
-| Pescadero Creek near Pescadero | Flood Warning | – | 13.25 ft ("Projected flooding in downstream reaches") | OneRain only (the 2026 Update doesn't use it) |
+| Pescadero Creek near Pescadero | Flood Watch | 11.20 ft | 11.20 ft ("Flooding likely") | Same |
+| Pescadero Creek near Pescadero | Flood Warning | 13.25 ft | 13.25 ft ("Projected flooding in downstream reaches") | Same |
 | Pescadero Creek near Pescadero | Rising fast | 1.0 ft within an hour | nothing comparable | 2026 Update only |
 | Butano Creek near Cloverdale Road (not a 2026 Update gauge) | Flood Watch | – | 10.10 ft ("Flooding likely") | OneRain only |
 | Butano Creek near Cloverdale Road (not a 2026 Update gauge) | Flood Warning | – | 11.80 ft ("Flooding likely in downstream reaches") | OneRain only |

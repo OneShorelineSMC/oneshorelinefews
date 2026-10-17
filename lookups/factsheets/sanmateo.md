@@ -6,7 +6,7 @@
 >
 > - [ ] **Cities and outlet** (At a glance): are the cities and communities, and where the creek drains, right?
 > - [ ] **Gauges:** are the locations, record dates, reporting pattern and known issues right? Anything missing?
-> - [ ] **Flood levels:** the 2026 Update has none. Do you know a creek height at the gauge where the creek leaves its banks or floods a road, or a past flood we could match to a gauge reading?
+> - [ ] **Flood levels:** are the heights and their meaning right? Who set them, and from what study, survey or past flood?
 
 > **Words used on this page** (the same words for both systems)
 >
@@ -30,7 +30,7 @@
 | Cities and communities | Hillsborough; San Mateo *(draft)* |
 | Drains to | San Francisco Bay |
 | Description | Flow below Crystal Springs Reservoir is controlled by SFPUC releases and spills. |
-| Flood levels set? | None |
+| Flood levels set? | Yes |
 | Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
 | Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
 
@@ -49,11 +49,20 @@
 | Why this rising-fast setting | Rises follow reservoir releases, so it is mostly "happening now": 11 of 60 big storms warned, about 45 min ahead. Kept because it is San Mateo Creek's only creek-level signal until flood levels or a reservoir indicator exist. |
 | History and known issues | Rises follow Crystal Springs Reservoir releases and spills (reservoir level: USGS 11162750; spill about 294.6 ft). USGS data approved through spring 2026. |
 
-**Flood levels:** none in the 2026 Update, so this creek's status comes from indicators only (rain and rising fast).
+**Flood levels** (gauge height, ft)
+
+| Level | Name | Height (ft) | Source | Notes |
+|---|---|---|---|---|
+| 2 | Flood Watch | 6.70 | OneRain sensor thresholds (Oct 2026), converted from flow | OneRain: Flooding probable with continued rain. OneRain sets it as 200 cfs flow; 6.70 ft is the matching USGS gauge height (2023-2026 readings) |
+| 3 | Flood Warning | 7.00 | OneRain sensor thresholds (Oct 2026), converted from flow | OneRain: Active flooding likely to occur downstream. OneRain sets it as 250 cfs flow; 7.00 ft is the matching USGS gauge height (2023-2026 readings) |
+
+What they mean: Flood levels below Crystal Springs are OneRain's (Oct 2026), which OneRain sets on flow: Flood Watch = 200 cfs (about 6.70 ft), flooding probable with continued rain; Flood Warning = 250 cfs (about 7.00 ft), active flooding likely downstream. Not yet reviewed by staff. Tide station to confirm.
+
+Why these heights: they are OneRain's thresholds for this gauge, copied in October 2026. Who set the heights, and from what study, survey or past flood, isn't recorded. Status: **From OneRain, basis unknown; not yet signed off.**
 
 <details><summary>Background: how the rising-fast indicator performed on past data (no action needed)</summary>
 
-Tested on 18.1 years of readings, against 5.88 ft, the creek's typical yearly high (about a 2-year event). That is **not** a flood level: "warned" means the indicator came on before a typical yearly high, not before flooding.
+Tested on 18.1 years of readings, against the lowest flood level (Flood Watch, 5.88 ft): "warned" means the indicator came on before the creek reached it.
 
 | Setting (ft within an hour) | Times shown per year | Warned before reaching it | Typical warning time |
 |---|---|---|---|
@@ -97,7 +106,8 @@ On the 2026 Update's public pages this creek shows readings only; its status sho
 
 | Gauge | Level | 2026 Update uses | OneRain threshold | Same? |
 |---|---|---|---|---|
-| San Mateo Creek Below Crystal Springs Reservoir | Flood levels | none set | none set | – |
+| San Mateo Creek Below Crystal Springs Reservoir | Flood Watch | 6.70 ft | – | 2026 Update only |
+| San Mateo Creek Below Crystal Springs Reservoir | Flood Warning | 7.00 ft | – | 2026 Update only |
 | San Mateo Creek Below Crystal Springs Reservoir | Rising fast | 0.5 ft within an hour | nothing comparable | 2026 Update only |
 
 No OneRain rain thresholds on: Crystal Springs Cottage.
