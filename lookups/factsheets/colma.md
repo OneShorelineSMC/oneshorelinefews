@@ -78,7 +78,15 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Current OneRain dashboard thresholds
 
-None recorded yet (`onerain_dashboard_thresholds.csv`).
+As set in OneRain on 2026-10-16; source: OneRain admin screenshot (provided by staff). **For reference only:** FEWS doesn't use these; its own levels are above. Dashboard colors are what OneRain's dashboard shows; gauge alarms are thresholds set on the gauge itself.
+
+| Type | Gauge | Window | Color | Range | Name | Compared with NOAA Atlas 14 (in) |
+|---|---|---|---|---|---|---|
+| Dashboard rain color | Colma Creek at Orange Memorial Park (41101) | 6 hr | Green | 0 – 1.499 in |  | – |
+| Dashboard rain color | Colma Creek at Orange Memorial Park (41101) | 6 hr | Orange | 1.50 – 1.999 in |  | 41101: between the 2-yr (1.38) and 5-yr (1.69) |
+| Dashboard rain color | Colma Creek at Orange Memorial Park (41101) | 6 hr | Red | ≥ 2 in |  | 41101: between the 10-yr (1.95) and 25-yr (2.32) |
+
+- Only window on the Colma dashboard. A 4th color row (orange) has From/To blank and colors nothing. San Bruno Mountain (41200) has no dashboard colors.
 
 ## Open items
 

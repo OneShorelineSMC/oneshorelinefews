@@ -113,8 +113,19 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Current OneRain dashboard thresholds
 
-None recorded yet (`onerain_dashboard_thresholds.csv`).
+As set in OneRain on 2026-10-16; source: OneRain admin screenshot (provided by staff). **For reference only:** FEWS doesn't use these; its own levels are above. Dashboard colors are what OneRain's dashboard shows; gauge alarms are thresholds set on the gauge itself.
+
+| Type | Gauge | Window | Color | Range | Name | Compared with NOAA Atlas 14 (in) |
+|---|---|---|---|---|---|---|
+| Dashboard rain color | Atherton Channel upstream of CalTrain (41106) | 30 min | Green | 0 – 0.399 in |  | – |
+| Dashboard rain color | Atherton Channel upstream of CalTrain (41106) | 30 min | Orange | 0.400 – 0.449 in |  | 41106: between the 2-yr (0.343) and 5-yr (0.439) |
+| Dashboard rain color | Atherton Channel upstream of CalTrain (41106) | 30 min | Red | ≥ 0.45 in |  | 41106: between the 5-yr (0.439) and 10-yr (0.518) |
+| Gauge alarm | Atherton Channel upstream of CalTrain (41106) | 1 hr | Orange | ≥ 0.40 in | Hourly rainfall intensity flood watch | 41106: between the 1-yr (0.383) and 2-yr (0.483) |
+| Gauge alarm | Atherton Channel upstream of CalTrain (41106) | 1 hr | Red | ≥ 0.45 in | Hourly rainfall intensity flood warning | 41106: between the 1-yr (0.383) and 2-yr (0.483) |
+
+- Only window on the Atherton dashboard. Same values as the gauge's hourly alarms (0.40 / 0.45 in) but over 30 min.
 
 ## Open items
 
+- OneRain thresholds: Window: dashboard uses 30 min, the gauge alarms use 1 hour for the same amounts. Which is intended?
 - Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)

@@ -83,8 +83,17 @@ Basis: [THRESHOLDS_BASIS.md §2](../THRESHOLDS_BASIS.md).
 
 ## Current OneRain dashboard thresholds
 
-None recorded yet (`onerain_dashboard_thresholds.csv`).
+As set in OneRain on 2026-10-16; source: OneRain admin screenshot (provided by staff). **For reference only:** FEWS doesn't use these; its own levels are above. Dashboard colors are what OneRain's dashboard shows; gauge alarms are thresholds set on the gauge itself.
+
+| Type | Gauge | Window | Color | Range | Name | Compared with NOAA Atlas 14 (in) |
+|---|---|---|---|---|---|---|
+| Dashboard rain color | Belmont Creek at Old County Rd (41104) | 30 min | Green | 0 – 0.199 in |  | – |
+| Dashboard rain color | Belmont Creek at Old County Rd (41104) | 30 min | Orange | 0.20 – 0.249 in |  | 41104: below the 1-yr (0.305) |
+| Dashboard rain color | Belmont Creek at Old County Rd (41104) | 30 min | Red | ≥ 0.25 in |  | 41104: below the 1-yr (0.305) |
+
+- Only window on the Belmont dashboard.
 
 ## Open items
 
+- OneRain thresholds: FEWS shows 'Flooding likely' at 0.20 in / 30 min (thresholds.csv, citing this dashboard), where the dashboard only turns orange; red starts at 0.25 in. Which should FEWS use?
 - Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)

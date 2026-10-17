@@ -65,10 +65,19 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Current OneRain dashboard thresholds
 
-None recorded yet (`onerain_dashboard_thresholds.csv`).
+As set in OneRain on 2026-10-16; source: OneRain admin screenshot (provided by staff). **For reference only:** FEWS doesn't use these; its own levels are above. Dashboard colors are what OneRain's dashboard shows; gauge alarms are thresholds set on the gauge itself.
+
+| Type | Gauge | Window | Color | Range | Name | Compared with NOAA Atlas 14 (in) |
+|---|---|---|---|---|---|---|
+| Dashboard rain color | **to confirm** | 3 hr | Green | 0 – 0.799 in |  | – |
+| Dashboard rain color | **to confirm** | 3 hr | Orange | 0.800 – 0.999 in |  | CSC: below the 1-yr (0.931) |
+| Dashboard rain color | **to confirm** | 3 hr | Red | ≥ 1.000 in |  | CSC: between the 1-yr (0.931) and 2-yr (1.11) |
+
+- Only window on the San Mateo Creek dashboard. Comparison assumes Crystal Springs Cottage (CSC), the gauge FEWS uses.
 
 ## Open items
 
+- OneRain thresholds: Which rain gauge does the San Mateo Creek dashboard color?
 - `smc_rain_csc`: check they open the Rain Increment sensor
 - `smc_stage_11162753`: Confirm whether this gauge reads the tide; Flow below Crystal Springs dam; reservoir level is USGS 11162750 (spill at 294.6 ft)
 - Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)

@@ -12,7 +12,7 @@
 | Drains to | Pescadero Marsh, then the Pacific Ocean |
 | Description | Rural coastal creek; the town of Pescadero floods from Pescadero and Butano Creeks. |
 | Linked to flooding | **No**: alert levels only (rain and rising fast). No creek height here is tied to flooding yet |
-| Tide station | None set for this creek in FEWS (coastal creek) |
+| Tide station | None set for this creek in FEWS (coastal creek); the OneRain dashboard uses Monterey tide (NOAA 9413450), which FEWS shows on Coastside Tides (phone page and kiosk tab) |
 | Rain totals shown | 30 min, 1 hr, 3 hr, 24 hr |
 
 **Flood levels** are creek heights (or rain triggers) tied to an effect downstream, such as how full the channel is or water on a road. **Alert levels** say how unusual the rain is or how fast the creek is rising; they aren't tied to flooding at this creek. Definitions: [THRESHOLDS_BASIS.md, Terms](../THRESHOLDS_BASIS.md#terms).
@@ -92,10 +92,22 @@ Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the 
 
 ## Current OneRain dashboard thresholds
 
-None recorded yet (`onerain_dashboard_thresholds.csv`).
+As set in OneRain on 2026-10-16; source: OneRain admin screenshot (provided by staff). **For reference only:** FEWS doesn't use these; its own levels are above. Dashboard colors are what OneRain's dashboard shows; gauge alarms are thresholds set on the gauge itself.
+
+| Type | Gauge | Window | Color | Range | Name | Compared with NOAA Atlas 14 (in) |
+|---|---|---|---|---|---|---|
+| Dashboard rain color | Butano Creek near Cloverdale Road (41152) | 6 hr | Green | 0 – 1.199 in |  | – |
+| Dashboard rain color | Butano Creek near Cloverdale Road (41152) | 6 hr | Orange | 1.2 – 1.439 in |  | 41152: below the 1-yr (1.46) |
+| Dashboard rain color | Butano Creek near Cloverdale Road (41152) | 6 hr | Red | ≥ 1.44 in |  | 41152: below the 1-yr (1.46) |
+| Dashboard tide color | Monterey tide (NOAA 9413450) | – | Green | -10 – 6.999 ft MLLW (assumed) |  | – |
+| Dashboard tide color | Monterey tide (NOAA 9413450) | – | Orange | ≥ 7 ft MLLW (assumed) |  | – |
+
+- Pescadero and Butano dashboard; only window. The dashboard lists the site as 'Butano'; staff confirmed it is 41152. FEWS uses La Honda (LAH) for Pescadero, not Butano.
+- Pescadero and Butano dashboard; no red. If MLLW, 7 ft = about 7.14 ft NAVD88 (MLLW is 0.14 ft above NAVD88): above the 1-year tide FEWS uses for Coastside King Tides (6.87 ft NAVD88, KING_TIDE_FT_MRY) and MHHW (5.48 ft NAVD88), near the highest astronomical tide (7.21 ft NAVD88); highest observed 7.88 ft MLLW, Jan 27, 1983 (NOAA datums, epoch 1983-2001; tide_stations.csv).
 
 ## Open items
 
+- OneRain thresholds: Datum not shown in OneRain; assumed MLLW as on Belmont's tide rule.
 - `pes_stage_41151`: check they open the Stage sensor; set reports
 - `pes_rain_lah`: check they open the Rain Increment sensor
 - Confirm cities and outlet in creek_facts.csv (draft - confirm cities and outlet)
