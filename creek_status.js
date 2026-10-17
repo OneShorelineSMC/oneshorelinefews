@@ -120,7 +120,10 @@
     opts = opts || {};
     var v = view(data, c), st = v.st, h = "";
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
-    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + (c.preview_only ? '<span class="cs-sm">New creek, preview only</span>' : "") + "</div>";
+    var noLv = (c.stages || []).length && (c.stages || []).every(function (g) {
+      return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; });
+    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + (c.preview_only ? '<span class="cs-sm">New creek, preview only' +
+      (opts.lvlTag && noLv ? " · " + esc(T("no_flood_level_title")) : "") + "</span>" : opts.lvlTag && noLv ? '<span class="cs-sm">' + esc(T("no_flood_level_title")) + "</span>" : "") + "</div>";
     h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div>";
     if (v.since) h += '<p class="cs-since">' + esc(v.since) + "</p>";
     v.reasons.forEach(function (r) { h += '<p class="cs-why">' + esc(r) + "</p>"; });
@@ -132,13 +135,14 @@
       // Creeks without flood levels: say so where the level bar would be, then each gauge's trend below it
       var noLevels = (c.stages || []).length && (c.stages || []).every(function (g) {
         return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; });
-      if (noLevels) h += '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + "</b> " + esc(T("no_flood_level")) + "</div>";
+      if (noLevels && !opts.lvlTag) h += '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + "</b> " + esc(T("no_flood_level")) + "</div>";
       (c.stages || []).forEach(function (g) { h += band(g, data.sensors[g.key]); });
       var r = st.rain || {};
       h += '</div><div class="cs-details cs-rainrow"><div class="cs-row"><span class="cs-lbl">' + esc(T("rain_row")) + '</span><span class="cs-val">' + chip(r.level) + "</span></div></div>";
       h += numbers(data, c, opts.numbersOpen);
     } else h += "<div></div><div></div><div></div>";
-    h += '<div class="cs-foot"><span>As of ' + esc(dated(data.generated)) + (opts.compact && st.has_levels === false ? " · " + esc(T("no_flood_level_title")) : "") + "</span>" +
+    if (!opts.noAsOf || opts.link) h += '<div class="cs-foot"><span>' + (opts.noAsOf ? "" : "As of " + esc(dated(data.generated)) +
+      (opts.compact && st.has_levels === false ? " · " + esc(T("no_flood_level_title")) : "")) + "</span>" +
       (opts.link ? '<a href="' + esc(opts.link) + '">Details ›</a>' : "") + "</div>";
     return h + "</article>";
   }
@@ -174,7 +178,7 @@
   }
 
   /* Top of page: one-line summary, red banner when flooding is likely, one evacuation button */
-  function summary(data) {
+  function summary(data, asOf) {
     // When the data file is old, summarize the last statuses we have, and say so first (never "No creek alerts")
     var by = { likely: [], ready: [], alert: [], nodata: [] }, late = false;
     allCreeks(data).forEach(function (c) {
@@ -195,7 +199,7 @@
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
     }
-    h += '<p class="cs-sub">' + esc(T("nws_separate")) + "</p></div>";
+    h += '<p class="cs-sub">' + esc(T("nws_separate")) + "</p>" + (asOf && !late ? '<p class="cs-sub">Readings as of ' + esc(dated(data.generated)) + "</p>" : "") + "</div>";
     return h;
   }
 
@@ -204,13 +208,18 @@
     opts = opts || {};
     var rows = allCreeks(data).map(function (c) { return { c: c, v: view(data, c) }; });
     rows.sort(function (a, b) { return b.v.rank - a.v.rank; });
-    var link = function (c) { return c.preview_only || !linkFor ? null : linkFor(c); };   // preview creeks have no detail page yet
+    var link = function (c) { return !linkFor || (c.preview_only && !opts.previewLinks) ? null : linkFor(c); };   // preview creeks: detail page on Creeks.html only
+    var co = function (c) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes }; };
+    var noLv = rows.filter(function (x) { return (x.c.stages || []).length && x.c.stages.every(function (g) {
+      return (g.thresholds || []).filter(function (t) { return t.level <= 3; }).length < 3; }); }).map(function (x) { return x.c.short || x.c.name; });
     var active = rows.filter(function (x) { return x.v.key !== "none"; }), quiet = rows.filter(function (x) { return x.v.key === "none"; });
-    var h = badge() + summary(data) + howTo() + '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, { link: link(x.c) }); }).join("") + "</div>";
+    var h = badge() + summary(data, !!opts.compactNotes) + howTo() +
+      (opts.compactNotes && noLv.length ? '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + ": " + esc(list(noLv)) + "</b> " + esc(T("no_flood_level_many")) + "</div>" : "") +
+      '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, co(x.c)); }).join("") + "</div>";
     if (quiet.length) {
       h += '<details class="cs-quiet"' + (active.length ? "" : " open") + "><summary>" + quiet.length + " creek" + (quiet.length > 1 ? "s" : "") +
         " with no alerts — " + esc(list(quiet.map(function (x) { return x.c.short || x.c.name; }))) + '</summary><div class="cs-grid">' +
-        quiet.map(function (x) { return card(data, x.c, { link: link(x.c) }); }).join("") + "</div></details>";
+        quiet.map(function (x) { return card(data, x.c, co(x.c)); }).join("") + "</div></details>";
     }
     return h + (opts.staff === false ? "" : staffTable(data));
   }

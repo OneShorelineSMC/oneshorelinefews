@@ -155,6 +155,7 @@
     more_creeks_badge: "Readings only",
     more_creeks_note: "Flood levels for this creek haven't been set yet, so these are readings only, with no status. A higher or rising level doesn't by itself mean flooding. In an emergency, call 911.",
     no_flood_level_title: "Flood levels not set yet",
+    no_flood_level_many: "OneShoreline is still setting flood levels for these creeks. Until then, their status is based on rain in the hills above and how fast the creek is rising.",
     no_flood_level: "OneShoreline is still setting flood levels for this creek. Until then, its status is based on rain in the hills above and how fast the creek is rising, shown below.",
     limited_rain: "Rain gauges may miss storms here",
     nws_separate: "This page shows creek conditions measured by OneShoreline. It is separate from National Weather Service alerts \u2014 follow whichever is more serious.",

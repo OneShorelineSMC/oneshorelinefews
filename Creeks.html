@@ -103,6 +103,29 @@
   .intro { font-size: 13.5px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.4; }
   .trig { font-size: 13px; color: var(--muted); margin-top: 6px; }
   .trig b { color: var(--ink); } .trig.met, .trig.met b { color: var(--red); font-weight: bold; }
+  /* staff preview drill-in: one readings table, the triggers, then the graphs; notes folded at the bottom */
+  body.pv .pick { display: none; }
+  .rd { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .rd th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 2px 8px 5px 0; border-bottom: 1px solid var(--line); }
+  .rd td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .rd tr:last-child td { border-bottom: 0; }
+  .rd .n b { color: var(--ink); } .rd .n a { font-size: 12px; white-space: nowrap; }
+  .rd .v b { font-size: 16px; color: var(--ink); } .rd .t, .rd .tr { white-space: nowrap; }
+  .rd .sm { display: block; font-size: 12px; color: var(--muted); }
+  .rd .l0 { color: var(--green); font-weight: 700; } .rd .l1 { color: #8a6d00; font-weight: 700; } .rd .l2 { color: #b45a00; font-weight: 700; } .rd .l3, .rd .l4 { color: var(--red); font-weight: 700; }
+  .rd .off { color: var(--muted); font-weight: 700; }
+  .trg { list-style: none; margin: 10px 0 0; padding: 0; font-size: 13.5px; }
+  .trg li { padding: 3px 0; } .trg .ic { display: inline-block; width: 1.3em; font-weight: 700; } .trg li.met { color: var(--red); font-weight: 700; }
+  .trg .sm { color: var(--muted); }
+  .rdh { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0 0 6px; }
+  details.fold summary { cursor: pointer; font-weight: 600; color: var(--ink); padding: 2px 0; min-height: 24px; }
+  details.fold p { font-size: 13.5px; line-height: 1.45; margin: 8px 0 0; color: var(--text); }
+  @media (max-width: 600px) {   /* phones: one compact block per sensor */
+    .rd thead { display: none; } .rd, .rd tbody, .rd tr { display: block; } .rd tr { padding: 7px 0; border-bottom: 1px solid var(--line); }
+    .rd tr:last-child { border-bottom: 0; } .rd td { display: inline; border: 0; padding: 0; }
+    .rd td.n { display: block; margin-bottom: 2px; } .rd td:not(.n):not(:last-child):not(:empty)::after { content: " · "; color: var(--muted); }
+    .rd .sm { display: inline; } .rd .sm::before { content: " "; } .rd .sm.blk { display: block; } .rd .sm.blk::before { content: none; }
+  }
   .cnote { font-size: 12.5px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
   .thr { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; font-size: 12px; }
   .thr span { border-radius: 5px; padding: 2px 7px; background: var(--soft); }
@@ -177,6 +200,7 @@
     <a class="back" href="#all" id="backAll">‹ All creeks</a>
     <div class="intro" id="intro"></div>
     <div id="csOne"></div>
+    <div class="card" id="csRead" style="display:none"></div>
     <div id="stages"></div>
     <div class="two" id="rainBox">
       <div class="card"><div class="lbl" id="rainLbl">Rainfall (inches)</div><div id="rainTable"></div></div>
@@ -188,6 +212,7 @@
     </div>
     <div style="height:12px"></div>
     <div class="card" id="graphs"></div>
+    <details class="card fold" id="csNotes" style="display:none"><summary>Thresholds and notes</summary><div id="csNotesB"></div></details>
     </div>
     <div class="note"><span data-text="disclaimer_short"></span>
       <a href="#about" id="discLink">Read the disclaimer</a></div>
@@ -248,8 +273,8 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261016c"></script>
-<script src="creek_status.js?v=20261016c"></script>
+<script src="lookups.js?v=20261016d"></script>
+<script src="creek_status.js?v=20261016d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -481,6 +506,7 @@ function render() {
 
   // creek tiles: short name plus current status, with a bar in the status color
   var CS = window.CREEK_STATUS, PV = CS && CS.preview;   // ?preview=1: creek status layer (staff preview)
+  document.body.classList.toggle("pv", !!PV);   // staff preview: no creek buttons (the cards and "‹ All creeks" do that)
   $("pick").innerHTML = states.map(function (x) {
     var s = statusWord(x);
     if (PV) { var pv = CS.view(D.creek, x.c); s = { w: pv.word, bar: pv.color, col: pv.key === "alert" ? "#8a6d00" : pv.rank <= 1 ? "var(--muted)" : pv.color }; }
@@ -494,7 +520,7 @@ function render() {
   $("one").style.display = c ? "" : "none";
   if (!c) {
     document.title = "Creek Conditions – OneShoreline";
-    if (PV) $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); });
+    if (PV) $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); }, { previewLinks: true, compactNotes: true });
     else renderAll(states, now);
     if (!PV) renderMore(now);
     var gen0 = states.length && states[0].gen;
@@ -503,7 +529,15 @@ function render() {
   }
   document.title = c.name + " – OneShoreline";
   $("intro").textContent = c.intro;
-  $("csOne").innerHTML = PV ? CS.badge() + CS.card(D.creek, c) : "";
+  $("csOne").innerHTML = PV ? CS.badge() + CS.card(D.creek, c, { compact: true }) : "";
+  ["intro", "stages", "rainBox"].forEach(function (id) { $(id).style.display = PV ? "none" : ""; });
+  $("csRead").style.display = $("csNotes").style.display = PV ? "" : "none";
+  if (PV) {
+    $("csRead").innerHTML = staffReadings(c, st, now);
+    drawCharts(st, now);
+    $("updated").textContent = (st.late && st.gen ? "⚠ Creek data delayed · updated " + agoText(now - st.gen) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
+    return;
+  }
 
   // each gauge's level
   $("stages").innerHTML = st.stages.map(function (s) {
@@ -558,6 +592,67 @@ function render() {
   drawCharts(st, now);
   $("updated").textContent = (st.late && st.gen ? "⚠ Creek data delayed · updated " + agoText(now - st.gen) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
 }
+/* Staff preview drill-in: every reading once, in one table (creek level, rain, Bay tide), then the flooding triggers.
+   Each row: what and where | now | against the levels | trend | reading time. Phones: one compact block per sensor. */
+function staffReadings(c, st, now) {
+  var sens = (D.creek && D.creek.sensors) || {}, rows = [];
+  function when(t) { return Math.floor(t / 86400000) === Math.floor(now / 86400000) ? fTime(t) : fmt(t, { weekday: "short", month: "short", day: "numeric" }) + ", " + fTime(t); }
+  function srcLink(g) { return /^https:\/\/[^\s"'<>]+$/.test(g.url || "") ? ' <a href="' + esc(g.url) + '" target="_blank" rel="noopener">' + (g.source === "usgs" ? "USGS" : "OneRain") + " ↗</a>" : ""; }
+  function row(n, v, l, tr, t) { rows.push("<tr><td class=\"n\">" + n + '</td><td class="v">' + v + "</td><td>" + l + "</td><td class=\"tr\">" + tr + '</td><td class="t">' + t + "</td></tr>"); }
+  function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
+  // creek level at each gauge
+  st.stages.forEach(function (s) {
+    var g = s.g, sig = (sens[g.key] || {}).signals || {}, th = (g.thresholds || []).filter(function (t) { return t.level <= 3; });
+    var name = "<b>Creek level</b> · " + esc(g.label) + srcLink(g);
+    if (!s.last || s.quiet) {
+      row(name, s.last ? '<span class="off">' + s.last.v.toFixed(2) + " ft</span>" : "–", '<span class="off">Not reporting</span>' + (s.last ? '<span class="sm">last report ' + esc(when(s.last.t)) + "</span>" : ""), "", "");
+      return;
+    }
+    var lv = th.length < 3 ? '<span class="sm" style="display:inline">levels not set</span>'
+      : '<span class="l' + (s.lvl ? s.lvl.level : 0) + '">' + esc(s.lvl ? s.lvl.name.replace("Flood ", "") : LK.text("status_normal")) + "</span>" +
+        (s.next ? " · " + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace("Flood ", "")) : "") +
+        '<span class="sm blk">' + th.map(function (t) { return esc(t.name.replace("Flood ", "")) + " " + t.value.toFixed(2); }).join(" · ") + " ft</span>";
+    var arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[sig.trend] || "", rf = sig.rising_fast;
+    var trend = sig.trend ? arrow + " " + esc(LK.text("trend_" + sig.trend)) + (sig.ft_per_hr != null && sig.trend !== "steady" ? " " + (sig.ft_per_hr > 0 ? "+" : "") + sig.ft_per_hr.toFixed(1) + " ft/hr" : "") : "";
+    if (rf && rf.rise_ft != null) trend += '<span class="sm">rose ' + rf.rise_ft.toFixed(2) + " ft in " + rf.minutes + " min" + (rf.held ? " (up to " + esc(fTime(parseLocal(rf.at))) + ")" : "") + "</span>";
+    row(name, "<b>" + s.last.v.toFixed(2) + "</b> ft", lv, trend, esc(when(s.last.t)) + (g.reports === "interval" ? "" : '<span class="sm">reports on change</span>'));
+  });
+  // rain at each gauge (supporting gauges too: the status uses them)
+  var wins = rainWindows(c), rg = (c.rain || []).map(function (g) { return { g: g, sup: false }; }).concat((c.rain_support || []).map(function (g) { return { g: g, sup: true }; }));
+  rg.forEach(function (r) {
+    var p = pts(r.g.key), sig = (sens[r.g.key] || {}).signals || {}, lvl = sig.level || 0, d = sig.driver;
+    var vals = wins.map(function (m) { return '<span style="white-space:nowrap">' + winLabel(m) + " <b>" + inch(rainSum(p, now - m * 60000, now)) + "</b></span>"; }).join(" · ") + " in";
+    var lr = sig.last_report ? parseLocal(sig.last_report) : null;
+    row("<b>Rain</b> · " + esc(r.g.label) + (r.sup ? ' <span class="sm" style="display:inline">(' + esc(r.g.where || "supporting") + ")</span>" : "") + srcLink(r.g), vals,
+      lvl ? '<span class="l' + Math.min(3, lvl) + '">' + esc(lvl >= 3 ? LK.text("rain_severe") : lvl === 2 ? LK.text("rain_vheavy") : LK.text("rain_heavy")) + "</span>" +
+        (d ? '<span class="sm">' + d.inches.toFixed(2) + " in in " + esc(winLabel(d.minutes)) + (d.storm_years ? ", about a " + (d.storm_years >= 100 ? "100+" : Math.round(d.storm_years)) + "-year rain" : "") + "</span>" : "")
+        : esc(LK.text("rain_none")), "", lr ? "last report " + esc(when(lr)) : "no recent report");
+  });
+  // Bay tide
+  var T = c.tide && D.tides[c.tide];
+  if (T) {
+    var tl = tideNow(T, now), m = T.st.mhhw;
+    if (tl) {
+      var pv = predAt(T, tl.t), d0 = pv == null ? null : tl.v - pv, prev = null;
+      for (var k = T.obs.length - 1; k >= 0; k--) { if (tl.t - T.obs[k].t >= 30 * 60000) { prev = T.obs[k]; break; } }
+      var tt = prev ? (tl.v > prev.v + 0.05 ? "↑ rising" : tl.v < prev.v - 0.05 ? "↓ falling" : "→ steady") : "";
+      row("<b>Bay tide</b> · " + esc(T.st.name) + ' <span class="sm" style="display:inline">ft NAVD88</span>', "<b>" + tl.v.toFixed(2) + "</b> ft",
+        (tl.v > m ? '<span class="l1" style="color:var(--info)">' + (tl.v - m).toFixed(2) + " above MHHW</span>" : (m - tl.v).toFixed(2) + " below MHHW") + " (" + m.toFixed(2) + ")" +
+          (d0 == null ? "" : '<span class="sm">' + (Math.abs(d0) < 0.05 ? "matches tide table" : Math.abs(d0).toFixed(2) + " ft " + (d0 > 0 ? "above" : "below") + " tide table") + "</span>"),
+        tt, esc(fTime(tl.t)) + '<span class="sm">measured</span>');
+    } else row("<b>Bay tide</b> · " + esc(T.st.name), "–", T.at ? "No recent measurement" : "Loading…", "", "");
+  }
+  var h = '<div class="rdh">Readings</div><table class="rd"><thead><tr><th>Sensor</th><th>Now</th><th>Against the levels</th><th>Trend</th><th>Reading</th></tr></thead><tbody>' + rows.join("") + "</tbody></table>";
+  // flooding triggers: met or not, with the numbers now
+  if (st.triggers.length) h += '<ul class="trg" aria-label="Flooding-likely triggers">' + st.triggers.map(function (x) {
+    var tr = x.tr, amt = inch(x.amt);
+    return '<li class="' + (x.met ? "met" : "") + '"><span class="ic" aria-hidden="true">' + (x.met ? "✓" : "✗") + "</span>" + (x.met ? "Met: " : "Not met: ") +
+      esc(winLabel(tr.minutes)) + " rain ≥ " + tr.value.toFixed(2) + " in" + (tr.high_tide ? " and tide ≥ " + (tr.tide_min != null ? tr.tide_min.toFixed(2) + " ft" : "MHHW") : "") +
+      ' <span class="sm">(now ' + amt + " in" + (tr.high_tide && x.tide && x.tide.v != null ? ", tide " + x.tide.v.toFixed(2) + " ft" : "") + ")</span></li>";
+  }).join("") + "</ul>";
+  return h;
+}
+
 /* All creeks: one card per creek; tap a card for that creek */
 function renderAll(states, now) {
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
@@ -763,7 +858,9 @@ function drawCharts(st, now) {
     var stp = smax <= 6 ? 1 : smax <= 14 ? 2 : 5;
     var so = base(!c.tide && i === st.stages.length - 1); so.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);
     so.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };
-    var sets = shown.map(function (t) { return { label: t.name, data: [{ x: H(x0), y: t.value }, { x: H(x1), y: t.value }], borderColor: t.color, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, pointHoverRadius: 0 }; });
+    var PVg = window.CREEK_STATUS && window.CREEK_STATUS.preview;   // staff preview: each level's name on its line, so the key can leave them out
+    var sets = shown.map(function (t) { return { label: t.name, refLabel: PVg ? t.name.replace("Flood ", "") + " " + t.value.toFixed(2) : undefined, data: [{ x: H(x0), y: t.value }, { x: H(x1), y: t.value }],
+      borderColor: t.level === 1 ? "#8a6d00" : t.color, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, pointHoverRadius: 0 }; });
     sets.push({ label: "Stage (ft)", data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.12)", borderWidth: 2, pointRadius: 0, fill: "origin" });
     put("chStage" + i, { data: { datasets: sets }, options: so });
   });
@@ -787,8 +884,8 @@ function drawCharts(st, now) {
       { label: LK.text("lbl_expected") + " (ft)", data: tf, borderColor: css("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2 }]
       .concat(isFinite(trl) ? [{ label: LK.text("tide_red_line_creek", { ft: trl.toFixed(1) }), refLabel: LK.text("tide_red_line_creek", { ft: trl.toFixed(1) }), data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], borderColor: css("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, pointHoverRadius: 0 }] : []) }, options: tO });
   }
-  var seen = {}, key = "";
-  c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
+  var seen = {}, key = "", PVk = window.CREEK_STATUS && window.CREEK_STATUS.preview;
+  if (!PVk) c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
     key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace("Flood ", "")) + "</span>"; } }); });
   $("key").innerHTML = !c.tide ? key : key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
     (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
@@ -798,7 +895,11 @@ function drawCharts(st, now) {
   if (readingsOnly(c)) notes.push(esc(LK.text("more_creeks_note")));   // creeks.csv notes are for staff
   else if (c.note) notes.push(esc(c.note));
   (c.rain_triggers || []).forEach(function (tr) { notes.push("<b>Flooding likely:</b> " + esc(tr.label.toLowerCase()) + " of " + tr.value.toFixed(2) + " in or more" + (tr.high_tide ? (tr.tide_min != null ? " while the " + esc(T ? T.st.name : "Bay") + " tide is at or above " + tr.tide_min.toFixed(2) + " ft NAVD88" : " while the tide is at or above MHHW") : "")); });
-  $("cnote").innerHTML = notes.join("<br>");
+  if (PVk) {   // staff preview: the creek's intro, level meanings, triggers and gauge notes, folded under the graphs
+    var gn = c.stages.filter(function (g) { return g.note; }).map(function (g) { return "<b>" + esc(g.label) + ":</b> " + esc(g.note); });
+    $("csNotesB").innerHTML = [esc(c.intro || "")].concat(notes, gn).filter(Boolean).map(function (x) { return "<p>" + x + "</p>"; }).join("");
+    $("cnote").innerHTML = "";
+  } else $("cnote").innerHTML = notes.join("<br>");
 }
 
 /* ---------- tabs ---------- */
