@@ -232,8 +232,9 @@ Belmont's one unwarned crossing (Oct 22, 2019) is a second sensor spike the same
 - **A long silence before a storm delays the first alert.** If an on-change gauge sends nothing for more than 12
   hours and a storm then starts, the first ~70 minutes of the rise can't alert: the last report is too old to
   compare with.
-- **The "latest" reading has no UTC time of its own.** It borrows the offset of the reading before it, which is an
-  hour off if the clocks changed in between. This is rare. The data job should store UTC for it.
+- ~~**The "latest" reading has no UTC time of its own.**~~ Fixed Oct 17, 2026: `latest` is now `[Pacific, value, UTC]`
+  (from the reading with the same Pacific time, else its Pacific time converted); the data job and the home page compare
+  it on UTC. Older data files with a 2-element `latest` still work (it borrows the offset of the reading before it).
 - **No validation against observed flooding yet.** Records of when and where streets flooded (public works logs,
   service calls, dated photos) would show which stage means water in the street, and whether the alert came first.
 - **Lead time is measured at the gauge.** It doesn't include the delay before the public sees it: the gauge's
@@ -257,7 +258,8 @@ Belmont's one unwarned crossing (Oct 22, 2019) is a second sensor spike the same
 - **When a creek gets flood levels, or a gauge builds a usable record** (Colma hourly, Atherton Alameda, Green
   Hills): rerun. The script uses flood levels automatically.
 - **Changes to the rule itself** go in both `rise_check` and `riseCheck`. Then run
-  `python scripts/test_creek_signals.py` and `python scripts/test_rise_parity.py` (needs Node.js).
+  `python scripts/test_creek_signals.py` and `python scripts/test_rise_parity.py` (needs Node.js). Both also run on
+  GitHub (`.github/workflows/tests.yml`) whenever `scripts/`, `lookups/*.csv` or `index.html` change.
 
 ## Sign-off
 
