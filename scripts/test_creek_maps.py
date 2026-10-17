@@ -70,4 +70,29 @@ check(len(got) == 1 and got[0]["properties"]["name"] == "Colma Creek", "County w
 svg5, _ = B.build_svg(creek, line, hu, roads, gauges, got)
 check("Watershed (San Mateo County)" in svg5, "County watershed named in the legend")
 
+# the Bay and cities (US Census): water drawn and named on the water, city limits dashed with a legend entry
+bay = {"type": "Feature", "properties": {"NAME": "San Francisco Bay"},
+       "geometry": {"type": "Polygon", "coordinates": [[[-122.42, 37.80], [-122.30, 37.80], [-122.30, 37.50], [-122.42, 37.50], [-122.42, 37.80]]]}}
+city = {"type": "Feature", "city": True, "properties": {"NAME": "South San Francisco"},
+        "geometry": {"type": "Polygon", "coordinates": [[[-122.50, 37.67], [-122.30, 37.67], [-122.30, 37.60], [-122.50, 37.60], [-122.50, 37.67]]]}}
+town = {"type": "Feature", "city": False, "properties": {"NAME": "Broadmoor"},
+        "geometry": {"type": "Polygon", "coordinates": [[[-122.50, 37.72], [-122.30, 37.72], [-122.30, 37.67], [-122.50, 37.67], [-122.50, 37.72]]]}}
+svg6, _ = B.build_svg(creek, line, hu, roads, gauges, got, [bay], [city, town])
+check('class="wa"' in svg6 and ">San Francisco Bay<" in svg6, "the Bay drawn and named")
+check(">SOUTH SAN FRANCISCO<" in svg6 and svg6.count('class="cl"') == 2 and "City limit" in svg6,
+      "city limits dashed (and in the legend), city named")
+check(">BROADMOOR<" in svg6 and svg6.count('class="cl"') == 2, "an unincorporated town is named, with no boundary")
+check("City limit" not in svg, "no city limit in the legend when there are none")
+
+# creek line styles from NHD feature types: underground dotted, intermittent dashed, each in the legend only when drawn
+def piece(ft, fc, x0):
+    return {"type": "Feature", "properties": {"gnis_name": "Test Creek", "ftype": ft, "fcode": fc},
+            "geometry": {"type": "LineString", "coordinates": [[x0 + i * 0.002, 37.66] for i in range(6)]}}
+check([B.line_kind(piece(*a, 0)) for a in ((460, 46006), (460, 46003), (420, 42000), (336, 33600), (558, 55800))]
+      == ["per", "int", "ug", "chan", "per"] and B.line_kind(line[0]) == "per", "line kinds from NHD FType/FCode")
+svg7, _ = B.build_svg(creek, [piece(460, 46006, -122.45), piece(420, 42001, -122.438)], hu, roads, gauges)
+check('stroke-dasharray="0.1 5"' in svg7 and "Creek underground (culvert or pipe)" in svg7 and "dry part of the year" not in svg7,
+      "underground stretch dotted and in the legend; no dashed entry when none is drawn")
+check(svg7.index('stroke-dasharray="0.1 5"') < svg7.index('stroke-width="3" stroke-linecap="round"'), "open creek draws over the culvert")
+
 print(f"creek maps: {checks} checks passed")
