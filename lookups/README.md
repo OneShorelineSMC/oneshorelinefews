@@ -15,6 +15,7 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 | `creek_facts.csv` | Each creek's cities and communities, where it drains, and a short description, for the fact sheets | fact sheets only | next fact-sheet rebuild |
 | `gauge_facts.csv` | Each creek gauge's record, reporting pattern, history and known issues, for the fact sheets | fact sheets only | next fact-sheet rebuild |
 | `rising_fast_results.csv` | Rising-fast results per gauge, written by `scripts/evaluate_rising_fast.py` (don't edit by hand) | fact sheets only | when the evaluation is rerun |
+| `onerain_dashboard_thresholds.csv` | OneRain's own rain and tide dashboard colors and gauge alarm thresholds, as set in OneRain (reference; FEWS doesn't use them), with a NOAA Atlas 14 comparison | fact sheets only | when OneRain settings change |
 | `factsheets/` | **One fact sheet per creek, generated** from the tables above by `scripts/build_creek_factsheets.py` (the **Rebuild creek fact sheets** Action reruns it whenever a table changes). Don't edit these pages; edit the tables. | — | automatic |
 | `proposed/` | Drafts for the creek status layer: 10 more creeks and their gauges. See `proposed/README.md` | **not read** | — |
 
