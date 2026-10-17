@@ -61,7 +61,6 @@
   .box.gray { border-color: var(--gray); }
 
   /* NWS alerts, shown in full */
-  .alerts { display: grid; gap: 10px; margin-bottom: 8px; }
   .al h3 { margin: 0; font-size: 18px; color: var(--ink); }
   .al.red h3 { color: var(--red); } .al.amber h3 { color: #a35f00; }
   @media (prefers-color-scheme: dark) { .al.amber h3 { color: var(--amber); } }
@@ -70,19 +69,21 @@
   .al dt { font-weight: 700; color: var(--ink); } .al dd { margin: 0; }
   .al p { margin: 6px 0 0; font-size: 15px; }
   .al details { margin-top: 6px; font-size: 14px; } .al summary { cursor: pointer; color: var(--muted); }
-  .al.none { display: flex; align-items: center; gap: 10px; font-size: 15.5px; }
-  .al.none .ck { color: var(--ok); font-size: 20px; }
-  .al.none b { color: var(--ink); }
-  /* National Weather Service alerts in the creek section's style (boxes from creek_status.js) */
-  .nwsg { padding-bottom: 0; } .nwsg h3 { margin: 0; font-size: inherit; color: inherit; }
-  .nwsg.cs-hg-info { border: 2px solid var(--gray); }
-  .cs-v-info { background: rgba(138,150,163,.15); }
-  .nwsg .cs-ic-info { color: #4f5b67; }
-  @media (prefers-color-scheme: dark) { .nwsg .cs-ic-info { color: #b8c4d0; } }
-  .nwsd { margin: 0; padding: 0 14px; border-top: 1px solid var(--line); }
-  .nwsd > summary { cursor: pointer; padding: 10px 0; font-size: 14px; font-weight: 600; color: var(--link); min-height: 44px; display: flex; align-items: center; }
-  .nwsd > summary:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
-  .nwsb { padding: 0 0 12px; }
+  .al { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; } .al:last-child { border-bottom: 0; }
+  /* National Weather Service bar, the same as on the Creeks page: one colored bar, tap for the full text */
+  #alert { color: #fff; background: #5b6877; cursor: pointer; }
+  #alert .wrap { padding: 10px 16px; display: flex; gap: 10px; align-items: center; }
+  #alert.none { background: #2e7d32; } #alert.warning { background: #b71c1c; }
+  #alert.watch, #alert.advisory { background: #9a5b00; } #alert.statement { background: #455a75; }
+  #alert .ic { font-size: 22px; line-height: 1; }
+  #alert .tx { flex: 1; min-width: 0; }
+  #alert .main { font-weight: bold; font-size: 16px; }
+  #alert .sub { font-size: 12.5px; opacity: .92; }
+  #alert .more { font-size: 12px; background: rgba(0,0,0,.22); border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
+  #alert:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
+  #alertList { display: none; background: var(--card); border-bottom: 1px solid var(--line); }
+  #alertList.open { display: block; }
+  #alertList .wrap { padding: 4px 16px 10px; }
 
   /* Creek status cards */
   .creeks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -179,12 +180,18 @@
   </div>
 </header>
 <div class="e911"><div class="wrap"><b><a href="tel:911" data-text="e911">In an emergency, call 911.</a></b> <span data-text="e911_note"></span></div></div>
+<!-- National Weather Service: the same bar as on the Creeks page (tap for the full text) -->
+<div id="alert" class="unknown" role="button" tabindex="0" aria-expanded="false" aria-controls="alertList">
+  <div class="wrap">
+    <span class="ic" id="aIc">…</span>
+    <span class="tx"><span class="main" id="aMain">Checking National Weather Service alerts…</span><br><span class="sub" id="aSub">San Mateo County</span></span>
+    <span class="more" id="aMore" style="display:none"></span>
+  </div>
+</div>
+<div id="alertList" aria-live="polite"><div class="wrap" id="alertListB"></div></div>
 
 <main class="wrap">
   <div id="csBanner"></div>
-  <h2 class="sec" id="hNws">National Weather Service <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">Forecast ↗</a></h2>
-  <div class="alerts" id="alerts" aria-live="polite"><div class="box al none gray"><span>Checking National Weather Service alerts…</span></div></div>
-
   <div id="secCreeks"><h2 class="sec"><span id="hCreeks">Creeks</span> <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
   <div id="csPreview"></div>
   <div class="creeks" id="creeks">
@@ -265,9 +272,7 @@
 var HOME_PREVIEW = !!(window.CREEK_STATUS && window.CREEK_STATUS.preview);
 var PV_Q = window.CREEK_STATUS && window.CREEK_STATUS.staff ? "?preview=1" : "";   // keep the staff view on the pages it links to
 if (HOME_PREVIEW) (function () {
-  // National Weather Service first (Summer, Oct 17), then the creeks; a creek's "call 911" banner stays above both
-  var main = document.querySelector("main"), nws = document.getElementById("hNws");
-  main.insertBefore(document.getElementById("csBanner"), nws);
+  // the National Weather Service bar sits above the page (like the Creeks page); then a creek's "call 911" banner, then the creeks
   document.getElementById("hCreeks").textContent = "Creeks right now";
   document.getElementById("secMore").hidden = true;
   var sys = document.getElementById("secSys"), d = document.createElement("details");
@@ -275,13 +280,8 @@ if (HOME_PREVIEW) (function () {
   sys.parentNode.insertBefore(d, sys); d.appendChild(sys);
   sys.querySelector("h2").hidden = true;
 })();
-// The NWS alerts box is a live region: rewrite it only when its content changes, so screen readers aren't
-// re-read the same alerts every few minutes. (Creek cards and the tide box update quietly; they aren't live regions.)
-(function () {
-  var el = document.getElementById("alerts"), d = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML");
-  Object.defineProperty(el, "innerHTML", { configurable: true, get: function () { return d.get.call(this); },
-    set: function (v) { if (v !== this.__last) { this.__last = v; d.set.call(this, v); } } });
-})();
+// (The alert list under the bar is a live region; renderAlerts rewrites it only when its content changes, so screen
+// readers aren't re-read the same alerts every few minutes. Creek cards and the tide box update quietly.)
 /* ===================== CONFIG ===================== */
 // Numbers, tide levels and wording that staff check live in the lookups/ folder (settings.csv, tide_stations.csv,
 // display_text.csv; see lookups/README.md). They are read by lookups.js into the variables below.
@@ -306,7 +306,6 @@ function applyLookups() {
   RISE_REF_LATE_MIN = LK.num("RISE_REF_LATE_MIN"); RISE_CONFIRM_MIN = LK.num("RISE_CONFIRM_MIN"); RISE_CONFIRM_FRACTION = LK.num("RISE_CONFIRM_FRACTION"); RISE_HOLD_MIN = LK.num("RISE_HOLD_MIN");
 }
 applyLookups();
-var MAX_ALERTS_OPEN = 3;             // NWS alerts shown in full; any more are listed with a tap to open
 /* ================================================== */
 
 function parseLocal(s) { var a = String(s).split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -362,35 +361,36 @@ function nws() {
       return ((p.geocode && p.geocode.SAME) || []).some(function (s) { return String(s).slice(-6) === COUNTY_SAME; }) &&
         p.status === "Actual" && p.messageType !== "Cancel";
     }).sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
-    if (!list.length) {
-      $("alerts").innerHTML = nwsNone();
-      return;
-    }
-    // Exactly the creek section's look: a box per alert, colored like the creek statuses (warning red, watch orange,
-    // advisory yellow, statement gray) with the event as its headline, a row saying until when and from whom, then
-    // "What to do" (the alert's own instructions), and the full text behind "Details"
-    $("alerts").innerHTML = list.map(function (p) {
-      var c = classify(p.event), k = { warning: "likely", watch: "ready", advisory: "alert", statement: "info" }[c];
-      var ic = k === "info" ? INFO_IC : window.CREEK_STATUS ? CREEK_STATUS.icon(k) : "";
-      var todo = unwrap(p.instruction || "");
-      return '<section class="cs-hg cs-hg-' + k + ' nwsg" aria-label="' + esc(p.event) + '"><div class="cs-verdict cs-v-' + k + '">' + ic + "<h3>" + esc(p.event) + "</h3></div>" +
-        '<ul class="cs-hrows"><li><span class="cs-hrow"><span class="cs-hx"><span class="cs-hn">' + esc(untilText(p.ends || p.expires).replace(/^until/, "Until")) + "</span>" +
-        '<span class="cs-hy">National Weather Service San Francisco Bay Area · San Mateo County</span></span></span></li></ul>' +
-        (todo ? '<p class="cs-hdo"><span class="cs-hdo-l">What to do</span>' + esc(todo) + "</p>" : "") +
-        '<details class="nwsd"><summary>Details</summary><div class="nwsb al">' + alertBody(Object.assign({}, p, { instruction: "" })) + "</div></details></section>";
-    }).join("");
-  }).catch(function () {
-    $("alerts").innerHTML = '<section class="cs-hg nwsg cs-hg-info"><div class="cs-verdict cs-v-none">' + (window.CREEK_STATUS ? CREEK_STATUS.icon("offline") : "") +
-      'National Weather Service alerts are unavailable right now</div><p class="cs-hscope">Check <a href="https://forecast.weather.gov/MapClick.php?lat=37.55&amp;lon=-122.31" target="_blank" rel="noopener">weather.gov</a>.</p></section>';
-  });
+    NWS.list = list; renderAlerts();
+  }).catch(function () { if (NWS.list == null) { $("aMain").textContent = "National Weather Service alerts unavailable"; $("aSub").textContent = "Retrying…"; $("aIc").textContent = "?"; } });
 }
-// "i" in a circle for NWS statements (information), drawn like the creek status icons
-var INFO_IC = '<svg class="cs-ic cs-ic-info" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8.6" fill="currentColor"/><circle cx="10" cy="5.9" r="1.3" fill="#fff"/><path d="M10 9v5.6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>';
-// No alerts: the same box as "No alerts at OneShoreline's creek gauges right now"
-function nwsNone() {
-  return '<section class="cs-hg cs-hg-none nwsg"><div class="cs-verdict cs-v-none">' + (window.CREEK_STATUS ? CREEK_STATUS.icon("none") : "") +
-    'No watches, warnings or advisories</div><p class="cs-hscope">For San Mateo County.</p></section>';
+// The bar and its fold: the same as on the Creeks page
+var NWS = { list: null, open: false };
+function renderAlerts() {
+  var a = NWS.list || [], bar = $("alert"), body = $("alertListB");
+  if (!a.length) {
+    bar.className = "none"; $("aIc").textContent = "✓"; $("aMain").textContent = "No active National Weather Service alerts";
+    $("aSub").textContent = "San Mateo County"; $("aMore").style.display = "none";
+    body.innerHTML = ""; $("alertList").classList.remove("open"); NWS.open = false; bar.setAttribute("aria-expanded", "false"); return;
+  }
+  var top = a[0], cls = classify(top.event);
+  bar.className = cls; $("aIc").textContent = cls === "statement" ? "ℹ" : "⚠";
+  $("aMain").textContent = top.event.toUpperCase();
+  $("aSub").textContent = untilText(top.ends || top.expires) + " · National Weather Service";
+  $("aMore").style.display = ""; $("aMore").textContent = NWS.open ? "hide" : (a.length > 1 ? "+" + (a.length - 1) + " · " : "") + "details";
+  var h = a.map(function (p) {
+    return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(untilText(p.ends || p.expires)) + " · National Weather Service San Francisco Bay Area</div>" + alertBody(p) + "</div>";
+  }).join("");
+  if (body.innerHTML !== h) body.innerHTML = h;   // a live region: rewrite only when it changes
 }
+function toggleAlerts() {
+  if (!NWS.list || !NWS.list.length) return;
+  NWS.open = $("alertList").classList.toggle("open");
+  $("alert").setAttribute("aria-expanded", String(NWS.open));
+  $("aMore").textContent = NWS.open ? "hide" : (NWS.list.length > 1 ? "+" + (NWS.list.length - 1) + " · " : "") + "details";
+}
+$("alert").addEventListener("click", toggleAlerts);
+$("alert").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleAlerts(); } });
 
 /* ---------- Creeks: the same status as the creek page's tiles ---------- */
 var C = { data: null, tides: {} };
