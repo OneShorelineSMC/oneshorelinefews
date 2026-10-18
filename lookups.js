@@ -159,6 +159,7 @@
     tide_table_ft: "{ft} in the tide table",
     tide_table_word: "tide table",
     tide_king_line: "King Tide {day}: {ft} around {time}, reaching the 1-year tide",
+    tide_next_king: "Next King Tide: {day}, {ft} around {time}",
     tide_weather_higher: "NOAA projects about {diff} ft higher than the tide table",
     tide_weather_lower: "NOAA projects about {diff} ft lower than the tide table",
     tide_cal_title: "High tides and King Tides",
