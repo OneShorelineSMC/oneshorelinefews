@@ -126,6 +126,7 @@ tide_expected_ft,NOAA projects {ft},"King Tide line (kiosk), Tides page card and
 tide_table_ft,{ft} in the tide table,"King Tide line (kiosk), Tides page card and calendar",,,
 tide_table_word,tide table,"King Tide line (kiosk), Tides page card and calendar",,,
 tide_king_line,"King Tide {day}: {ft} around {time}, reaching the 1-year tide","King Tide line (kiosk), Tides page card and calendar",,,
+tide_next_king,"Next King Tide: {day}, {ft} around {time}","Tides page, under the headline when the next King Tide is 7 to 60 days away",,,
 tide_weather_higher,NOAA projects about {diff} ft higher than the tide table,"King Tide line (kiosk), Tides page card and calendar",,,
 tide_weather_lower,NOAA projects about {diff} ft lower than the tide table,"King Tide line (kiosk), Tides page card and calendar",,,
 tide_cal_title,High tides and King Tides,"King Tide line (kiosk), Tides page card and calendar",,,
