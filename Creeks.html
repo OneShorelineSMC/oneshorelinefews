@@ -334,8 +334,8 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261017c"></script>
-<script src="creek_status.js?v=20261017c"></script>
+<script src="lookups.js?v=20261018a"></script>
+<script src="creek_status.js?v=20261018a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -785,7 +785,7 @@ function staffReadings(c, st, now) {
     row("<b>Rain</b> · " + esc(r.g.label) + (r.sup ? ' <span class="sm" style="display:inline">(' + esc(r.g.where || "supporting") + ")</span>" : "") + srcLink(r.g), vals,
       lvl ? '<span class="l' + Math.min(3, lvl) + '">' + esc(lvl >= 3 ? LK.text("rain_severe") : lvl === 2 ? LK.text("rain_vheavy") : LK.text("rain_heavy")) + "</span>" +
         (d ? '<span class="sm">' + d.inches.toFixed(2) + " in in " + esc(winLabel(d.minutes)) + (d.storm_years ? ", about a " + (d.storm_years >= 100 ? "100+" : Math.round(d.storm_years)) + "-year rain" : "") + "</span>" : "")
-        : esc(LK.text("rain_none")), "", lr ? "last report " + esc(when(lr)) : "no recent report");
+        : esc(LK.text(sig.raining ? "rain_now" : "rain_none")), "", lr ? "last report " + esc(when(lr)) : "no recent report");
   });
   // Bay tide
   var T = c.tide && D.tides[c.tide];
@@ -962,7 +962,7 @@ function drawCharts(st, now) {
     g += '<div class="sgh">Rain</div>';
     st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + esc(r.g.label) + "</b> · rain per hour (in)"); });
     if (c.rain_running && c.rain_running.line) g += row("chRun", 90, "tlRun", esc(c.rain_running.label));
-    g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul>';
+    g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul><div id="fcBox"></div>';
     if (c.tide) g += '<div class="sgh" id="tideTitle">Bay tide</div>' + row("chTide", 150, "tlTide", (T ? esc(T.st.name) : "Bay") + " · ft NAVD88");
     g += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = g;
@@ -987,6 +987,8 @@ function drawCharts(st, now) {
     $("graphs").innerHTML = h;
     D.built = c.id;
   }
+  var fb = $("fcBox"), fr = fb && window.CREEK_STATUS && CREEK_STATUS.forecast ? CREEK_STATUS.forecast(c) : "";   // NWS rain forecast (FORECAST_PUBLIC)
+  if (fb) fb.innerHTML = fr ? '<div class="cs-details cs-fcbox">' + fr + "</div>" : "";
   var ink = css("--ink"), muted = css("--muted"), line = css("--line");
   var x0 = now - PAST_HOURS * 3600000, x1 = now + AHEAD_HOURS * 3600000, H = function (t) { return (t - now) / 3600000; };
   var narrow = window.innerWidth < 520, step = narrow ? 12 : 6;

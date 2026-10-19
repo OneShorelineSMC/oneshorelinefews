@@ -83,8 +83,10 @@
   }
 
   /* Pieces */
-  function chip(level) {
-    if (!level) return '<span class="cs-norain">' + esc(T("rain_none")) + "</span>";
+  // Rain chip: Heavy / Very heavy / Intense from the Atlas 14 levels; below Heavy, "Raining" if any rain fell in the
+  // last hour (RAIN_NOW_MIN, data job) and "No rain" if not
+  function chip(level, now) {
+    if (!level) return now ? '<span class="cs-chip raining">' + esc(T("rain_now")) + "</span>" : '<span class="cs-norain">' + esc(T("rain_none")) + "</span>";
     var k = level >= 3 ? "severe" : level === 2 ? "vheavy" : "heavy", b = "";
     for (var i = 1; i <= 3; i++) b += "<i" + (i <= level ? ' class="on"' : "") + "></i>";
     return '<span class="cs-chip ' + k + '"><span class="cs-meter" aria-hidden="true">' + b + "</span>" + esc(rainWord(level)) + "</span>";
@@ -127,6 +129,34 @@
         return '<span style="flex:' + s[2] + '"' + (i === act ? ' class="on"' : "") + ">" + esc(s[3]) + "</span>"; }).join("") + "</div></div>";
   }
 
+  /* NWS rain forecast (data job: scripts/nws_forecast.py). Shown on creek cards when FORECAST_PUBLIC = 1 (staff view
+     always) and at least FORECAST_SHOW_IN inches are expected in the next 3 days; never on the kiosk; never changes a status. */
+  function utcMs(s) { return s ? Date.parse(s) : NaN; }   // "2026-10-18T20:00Z"
+  function pac(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "America/Los_Angeles" }, o)); }
+  function pacTime(ms) { return pac(ms, { hour: "numeric", minute: "2-digit" }); }
+  function fc(c) {
+    var f = c.forecast;
+    if (!f || f.next72 == null || !(STAFF || LK.num("FORECAST_PUBLIC") === 1)) return null;
+    if (!(Date.now() - utcMs(f.fetched) < LK.num("FORECAST_KEEP_HOURS") * 3600000)) return null;
+    return f;
+  }
+  function inch(x) { return (x < 0.005 ? "0" : x.toFixed(2)) + " in"; }
+  function forecastRow(c) {
+    var f = fc(c);
+    if (!f || f.next72 < LK.num("FORECAST_SHOW_IN")) return "";
+    var pk = f.peak_in && f.peak_start ? T("fc_peak", { inches: f.peak_in.toFixed(2), start: pac(utcMs(f.peak_start), { weekday: "short", hour: "numeric" }),
+      end: pac(utcMs(f.peak_start) + f.peak_hours * 3600000, { hour: "numeric" }) }) : "";
+    return '<div class="cs-row cs-fc"><span class="cs-lbl">' + esc(T("fc_row")) + '</span><span class="cs-val">' +
+      esc(T("fc_value", { d1: inch(f.next24), d3: inch(f.next72) })) +
+      '<span class="cs-sm">' + (pk ? esc(pk) + " · " : "") + esc(T("fc_note", { time: f.issued ? pacTime(utcMs(f.issued)) : "" })) +
+      (f.error ? " " + esc(T("fc_stale", { time: pacTime(utcMs(f.fetched)) })) : "") + "</span></span></div>";
+  }
+  function forecastCell(c) {
+    var f = fc(c);
+    if (!f) return '<span class="cs-dim">' + (c.forecast && c.forecast.error ? "not read" : "—") + "</span>";
+    return f.next24.toFixed(2) + " in · 24 hr" + '<span class="cs-sm">' + f.next72.toFixed(2) + " in · 3 days" + (f.error ? " · not updated" : "") + "</span>";
+  }
+
   /* A creek card: status, reason, What to do, then details. opts.link: where "details" goes; opts.compact: no details */
   function card(data, c, opts) {
     opts = opts || {};
@@ -149,7 +179,7 @@
       if (noLevels && !opts.lvlTag) h += '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + "</b> " + esc(T("no_flood_level")) + "</div>";
       (c.stages || []).forEach(function (g) { h += band(g, data.sensors[g.key]); });
       var r = st.rain || {};
-      h += '</div><div class="cs-details cs-rainrow"><div class="cs-row"><span class="cs-lbl">' + esc(T("rain_row")) + '</span><span class="cs-val">' + chip(r.level) + "</span></div></div>";
+      h += '</div><div class="cs-details cs-rainrow"><div class="cs-row"><span class="cs-lbl">' + esc(T("rain_row")) + '</span><span class="cs-val">' + chip(r.level, r.now) + "</span></div>" + forecastRow(c) + "</div>";
       h += numbers(data, c, opts.numbersOpen);
     } else h += "<div></div><div></div><div></div>";
     if (!opts.noAsOf || opts.link) h += '<div class="cs-foot"><span>' + (opts.noAsOf ? "" : "As of " + esc(dated(data.generated)) +
@@ -170,7 +200,7 @@
     });
     (c.rain || []).concat(c.rain_support || []).forEach(function (g) {
       var s = (data.sensors[g.key] || {}).signals || {};
-      row(g.label + " rain gauge", (s.level ? esc(rainWord(s.level)) : esc(T("rain_none"))) + (s.driver ? " · " + s.driver.inches.toFixed(2) + " in in " + esc(winLabel(s.driver.minutes)) : "") +
+      row(g.label + " rain gauge", (s.level ? esc(rainWord(s.level)) : esc(T(s.raining ? "rain_now" : "rain_none"))) + (s.driver ? " · " + s.driver.inches.toFixed(2) + " in in " + esc(winLabel(s.driver.minutes)) : "") +
         '<span class="cs-sm">' + (s.last_report ? "last report " + esc(dated(s.last_report)) : "no recent report") + "</span>");
     });
     if (st.trigger) row("Flooding trigger", esc(st.trigger.label) + ": " + st.trigger.amount.toFixed(2) + " of " + st.trigger.value.toFixed(2) + " in · met");
@@ -252,10 +282,10 @@
       return "<tr><td><b>" + esc(c.name) + "</b>" + review(c) + "</td><td><span class=\"cs-tag\"><i style=\"background:" + v.color + "\"></i>" + esc(v.word) + "</span>" +
         (st.since ? '<span class="cs-sm">since ' + esc(dated(st.since)) + (st.prev && st.prev !== st.key ? "; was " + esc(T("verdict_" + st.prev)) : "") + "</span>" : "") +
         (v.eoc ? '<span class="cs-sm"><b>EOC:</b> ' + esc(v.eoc) + "</span>" : "") + "</td>" +
-        "<td>" + lvl + '<span class="cs-sm">' + trendText(st.trend) + "</span></td><td>" + chip(r.level) + "</td><td>" + heavy + "</td>" +
+        "<td>" + lvl + '<span class="cs-sm">' + trendText(st.trend) + "</span></td><td>" + chip(r.level, r.now) + "</td><td>" + heavy + "</td>" +
         "<td>" + (r.working || 0) + " of " + (r.of || 0) + '<span class="cs-sm">' + (r.elevated || 0) + " at very heavy+</span></td>" +
         "<td>" + (st.tidal ? (t && t.ft != null ? t.ft.toFixed(2) + " ft · " + (t.rising ? "rising" : "falling") + (t.next_high ? '<span class="cs-sm">high ' + esc(dated(t.next_high)) + " (" + t.next_high_ft + " ft)</span>" : "") : '<span class="cs-dim">no tide data</span>') : '<span class="cs-dim">not tidal</span>') + "</td>" +
-        "<td>" + esc(notes.join("; ")) + "</td></tr>";
+        "<td>" + forecastCell(c) + "</td><td>" + esc(notes.join("; ")) + "</td></tr>";
     });
     // Status changes in the hour before this update (from each creek's "since")
     var gen = parse(data.generated), changed = allCreeks(data).filter(function (c) {
@@ -264,7 +294,7 @@
     return '<details class="cs-staff"><summary>Staff table: what is behind each status</summary>' +
       '<p class="cs-changed"><b>' + esc(T("changed_title")) + ":</b> " + (changed.length ? changed.join(" · ") : "no changes") + "</p>" +
       '<div class="cs-tw"><table class="cs-tbl"><thead><tr>' +
-      "<th>Creek</th><th>Status</th><th>Creek level · trend</th><th>Rain</th><th>Heaviest rain</th><th>Rain gauges</th><th>Tide</th><th>Notes</th>" +
+      "<th>Creek</th><th>Status</th><th>Creek level · trend</th><th>Rain</th><th>Heaviest rain</th><th>Rain gauges</th><th>Tide</th><th>Expected (NWS)</th><th>Notes</th>" +
       "</tr></thead><tbody>" + rows.join("") + "</tbody></table></div><p class=\"cs-sm\">Data as of " + esc(dated(data.generated)) +
       ". Status changes are logged in status_log.csv on the data branch.</p><p class=\"cs-sm\">" + esc(T("staff_legend")) + "</p></details>";
   }
@@ -276,7 +306,7 @@
       '<div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div>" +
       (v.since ? '<div class="cs-ts">' + esc(v.since) + "</div>" : "") +
       (v.reasons[0] ? '<div class="cs-tr">' + esc(v.reasons[0]) + "</div>" : "") +
-      '<div class="cs-tm"><span class="cs-dim">Rain</span> ' + chip(r.level) + (st.trend ? ' &nbsp; <span class="cs-dim">Creek</span> ' + trendText(st.trend, true) : "") + "</div></div>";
+      '<div class="cs-tm"><span class="cs-dim">Rain</span> ' + chip(r.level, r.now) + (st.trend ? ' &nbsp; <span class="cs-dim">Creek</span> ' + trendText(st.trend, true) : "") + "</div></div>";
   }
 
 
@@ -377,14 +407,16 @@
     var quiet = rows.filter(function (x) { return x.k === "none"; });
     var h = '<div class="cs-board"><div class="cs-bhead"><b>Creeks</b><span>' + act.length + " with a status · " + quiet.length + " with no alerts · updated " + esc(clock(data.generated)) + "</span></div>" +
       (late ? '<div class="cs-blate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing each creek’s status at that time.</div>" : "");
+    if (act.length) h += '<div class="cs-bcols" aria-hidden="true"><i></i><span>' + esc(T("board_col_creek")) + "</span><span>" + esc(T("board_col_status")) + "</span><span>" +
+      esc(T("board_col_why")) + "</span><span>" + esc(T("board_col_rain")) + '</span><span class="cs-bsince">' + esc(T("board_col_since")) + "</span></div>";
     if (!act.length) h += '<div class="cs-bnone">' + esc(T("summary_none")) + "</div>";
     else h += '<div class="cs-brows' + (late ? " cs-dimmed" : "") + '">' + act.map(function (x, n) {
-      var st = x.v.st, rl = (st.rain || {}).level || 0, off = x.k === "offline";
+      var st = x.v.st, rl = (st.rain || {}).level || 0, rn = !!(st.rain || {}).now, off = x.k === "offline";
       var r = '<div class="cs-brow cs-b-' + x.k + '"' + ' data-creek="' + esc(x.c.id) + '"'  + '><i class="cs-bbar" style="background:' + COL[x.k] + '"></i>' +
         '<span class="cs-bname">' + esc(x.c.short || x.c.name) + "</span>" +
         '<span class="cs-bword cs-v-' + x.k + '">' + icon(x.k) + esc(T("verdict_" + x.k)) + "</span>" +
         '<span class="cs-bwhy">' + review(x.c, true) + esc(brief(st, x.k)) + "</span>" +   // the tag goes with the reason: the name column is narrow
-        '<span class="cs-brain">' + (rl ? chip(rl) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
+        '<span class="cs-brain">' + (rl || rn ? chip(rl, rn) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
         '<span class="cs-bsince">' + (st.since && !off ? "since " + esc(clock(st.since)) : "") + "</span></div>";
       if (n === 0 && x.v.eoc) r += '<div class="cs-beoc"><b>EOC:</b> ' + esc(x.v.eoc) + "</div>";
       return r;
@@ -441,7 +473,11 @@
     ".cs-meter{display:inline-flex;gap:2px;align-items:flex-end}.cs-meter i{display:block;width:5px;border-radius:2px;background:rgba(127,127,127,.3)}",
     ".cs-meter i:nth-child(1){height:7px}.cs-meter i:nth-child(2){height:11px}.cs-meter i:nth-child(3){height:15px}",
     ".cs-chip.heavy .on{background:#a07c00}.cs-chip.vheavy .on{background:#e07b00}.cs-chip.severe .on{background:#c62828}",
-    ".cs-norain{font-weight:500}",
+    ".cs-norain{font-weight:500}.cs-chip.raining{background:rgba(10,85,135,.12)}",
+    ".cs-row.cs-fc{display:block}.cs-fc .cs-val{display:block;text-align:left;margin-top:3px}.cs-fc .cs-sm{font-weight:400;margin-top:3px}",
+    ".cs-fcbox{margin:10px 0 4px;padding:2px 12px;border:1px solid var(--line,#d5dae1);border-radius:10px;background:var(--card,var(--panel,#fff))}",
+    ".cs-bcols{display:grid;grid-template-columns:8px 130px 150px 1fr 110px 84px;gap:0 10px;padding:3px 10px 3px 0;font-size:11.5px;font-weight:700;letter-spacing:.05em;" +
+    "text-transform:uppercase;color:var(--muted,#556274);border-bottom:1px solid var(--line,#e3e8ee)}.cs-bcols .cs-bsince{font-size:inherit;color:inherit}",
     ".cs-foot{margin-top:auto;padding:8px 14px;border-top:1px solid var(--line,#e3e7ec);font-size:12.5px;color:var(--muted,#556274);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}",
     ".cs-foot a{font-weight:600}",
     ".cs-quiet,.cs-staff{margin:4px 0 14px}.cs-quiet>summary,.cs-staff>summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center;color:var(--ink,#16202b)}",
@@ -512,6 +548,6 @@
         quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.short || c.name; })) : ""].filter(Boolean).join(" · ") };
   }
 
-  window.CREEK_STATUS = { staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief };
+  window.CREEK_STATUS = { staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
   Object.defineProperty(window.CREEK_STATUS, "preview", { get: shown });   // true when the status layer shows on this page
 })();

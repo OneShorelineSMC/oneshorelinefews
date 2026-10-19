@@ -33,6 +33,9 @@
    
     TIDE_RED_FT_RWC: [8.5, 6, 15], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
     MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1],
+    // NWS rain forecast on creek cards (scripts/nws_forecast.py); the data job uses FORECAST_EVERY_MIN and FORECAST_KEEP_HOURS too
+    FORECAST_PUBLIC: [1, 0, 1], FORECAST_SHOW_IN: [0.25, 0, 5], FORECAST_KEEP_HOURS: [12, 1, 48], FORECAST_EVERY_MIN: [60, 15, 360],
+    RAIN_NOW_MIN: [60, 15, 180], RAIN_NOW_IN: [0.01, 0.01, 0.5],
     REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
   };
   var TIDES = {
@@ -180,7 +183,18 @@
     why_trigger: "Rain has reached this creek's flooding trigger.",
     why_trigger_tide: "Rain and a high tide have reached this creek's flooding trigger.",
     why_gauge_offline: "The creek gauge isn't reporting, so this status comes from the rain.",
-    rain_none: "Light or none",
+    rain_none: "No rain",
+    rain_now: "Raining",
+    fc_row: "Rain expected",
+    fc_value: "Next 24 hr: {d1} · next 3 days: {d3}",
+    fc_peak: "Heaviest: {inches} in, {start} to {end}",
+    fc_note: "National Weather Service forecast, issued {time}. A forecast, not a measurement; it doesn’t change the status.",
+    fc_stale: "Not updated since {time}.",
+    board_col_creek: "Creek",
+    board_col_status: "Status",
+    board_col_why: "Why",
+    board_col_rain: "Rain now",
+    board_col_since: "Since",
     verdict_offline: "Not reporting",
     verdict_delayed: "Not updated since {time}",
     since_line: "Since {time}",
