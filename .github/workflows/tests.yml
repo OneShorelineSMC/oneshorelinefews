@@ -54,3 +54,5 @@ jobs:
         run: python scripts/test_creek_maps.py
       - name: Rising fast, page and data job agree
         run: python scripts/test_rise_parity.py
+      - name: NWS rain forecast and the Raining label
+        run: python scripts/test_nws_forecast.py
