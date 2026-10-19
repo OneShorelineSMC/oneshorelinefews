@@ -1,0 +1,11 @@
+creek,place,lat,lon,source,checked_by,checked_on
+colma,Colma Creek watershed,37.6633,-122.4409,Center of the County watershed 'COLMA CREEK' (data/watersheds.geojson),,
+sanbruno,San Bruno Creek watershed,37.6295,-122.4265,Center of the County watershed 'SAN BRUNO CREEK' (data/watersheds.geojson),,
+belmont,Belmont Creek watershed,37.5117,-122.2922,Center of the County watershed 'BELMONT CREEK' (data/watersheds.geojson),,
+atherton,Atherton Creek watershed,37.4573,-122.1985,Center of the County watershed 'ATHERTON CREEK' (data/watersheds.geojson),,
+sanfrancisquito,San Francisquito Creek watershed,37.3979,-122.2319,Center of the County watershed 'SAN FRANCISQUITO CREEK' (data/watersheds.geojson),,
+sanmateo,San Mateo Creek watershed,37.5257,-122.3634,Center of the County watershed 'SAN MATEO CREEK' (data/watersheds.geojson),,
+greenhills,Highline Creek (Green Hills) watershed,37.6107,-122.3926,Center of the County watershed 'HIGHLINE CREEK' (data/watersheds.geojson),,
+pilarcitos,Pilarcitos Creek watershed,37.4937,-122.4036,Center of the County watershed 'PILARCITOS CREEK' (data/watersheds.geojson),,
+sangregorio,San Gregorio Creek watershed,37.341,-122.2956,Center of the County watershed 'SAN GREGORIO CREEK' (data/watersheds.geojson),,
+pescadero,Pescadero-Butano Creek watershed,37.2533,-122.2666,Center of the County watershed 'PESCADERO-BUTANO CREEK' (data/watersheds.geojson),,
