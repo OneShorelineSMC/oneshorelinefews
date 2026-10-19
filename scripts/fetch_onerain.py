@@ -364,7 +364,8 @@ def add_signals(result, previous, now):
                 freq = RAIN_FREQ.get(g["number"])
             else:
                 freq = _freq_from_json(previous.get(g["key"], {}).get("signals", {}).get("freq"))
-            sig = rain_signals(e["points"], e.get("latest"), freq, now, SIGNAL_SETTINGS["GAUGE_QUIET_HOURS"])
+            sig = rain_signals(e["points"], e.get("latest"), freq, now, SIGNAL_SETTINGS["GAUGE_QUIET_HOURS"],
+                               SIGNAL_SETTINGS["RAIN_NOW_MIN"], SIGNAL_SETTINGS["RAIN_NOW_IN"])
             if freq:
                 sig["freq"] = {"minutes": {str(m): {str(a): d for a, d in v.items()} for m, v in freq["minutes"].items()},
                                "levels": {str(m): v for m, v in freq["levels"].items()}}
@@ -480,6 +481,12 @@ def main():
         result["sensors"][key] = entry
     add_signals(result, previous, now)
     add_status(result, now, previous_file)
+    try:   # NWS rain forecast per creek; a problem here never stops the creek data
+        import nws_forecast
+        for p in nws_forecast.add_forecast(result, previous_file, dt.datetime.now(dt.timezone.utc).replace(second=0, microsecond=0), SIGNAL_SETTINGS):
+            print(f"forecast: {p}", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001
+        print(f"NWS forecast step failed ({type(e).__name__}: {e})", file=sys.stderr)
     log_status_changes(result, previous_file, out_path)
 
     with open(out_path, "w") as f:

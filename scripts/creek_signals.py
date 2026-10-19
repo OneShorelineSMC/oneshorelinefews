@@ -37,7 +37,9 @@ SETTINGS = {
     "GAUGE_QUIET_HOURS": (12, 0.5, 168), "GAUGE_QUIET_HOURS_INTERVAL": (3, 0.25, 168),
     "TREND_WINDOW_MIN": (30, 5, 240), "TREND_MAX_WINDOW_MIN": (120, 15, 360), "TREND_STEADY_FT_PER_HR": (0.1, 0.01, 2),
     "RAIN_SEVERE_CONFIRM_GAUGES": (2, 1, 5), "RAIN_SILENT_MIN": (60, 15, 720), "TIDE_RISING_LOOKAHEAD_HOURS": (3, 0.5, 12),
-    "BE_READY_FROM_RAIN": (1, 0, 1),
+    "BE_READY_FROM_RAIN": (1, 0, 1), "RAIN_NOW_MIN": (60, 15, 180), "RAIN_NOW_IN": (0.01, 0.01, 0.5),
+    # NWS rain forecast (scripts/nws_forecast.py)
+    "FORECAST_EVERY_MIN": (60, 15, 360), "FORECAST_KEEP_HOURS": (12, 1, 48),
     # flood reports (scripts/fetch_community_flood_reports.py)
     "REPORTS_PUBLIC": (0, 0, 1), "REPORTS_MAX_AGE_DAYS": (180, 1, 730), "REPORTS_MAX_PHOTOS": (40, 0, 200),
 }
@@ -146,8 +148,9 @@ def storm_years(by_ari, depth):
     return float(aris[-1])   # at or beyond the largest storm in the table
 
 
-def rain_signals(points, latest, freq, now, quiet_hours):
-    """Rolling totals and the rain level for one rain gauge (freq: this gauge's entry from load_rain_frequency)."""
+def rain_signals(points, latest, freq, now, quiet_hours, now_min=60, now_in=0.01):
+    """Rolling totals and the rain level for one rain gauge (freq: this gauge's entry from load_rain_frequency).
+    "raining": at least now_in inches in the last now_min minutes (the pages say "Raining" below Heavy)."""
     s = _series(points, latest)
     last = s[-1][0] if s else None
     out = {"last_report": last.strftime("%Y-%m-%d %H:%M") if last else None,
@@ -156,6 +159,7 @@ def rain_signals(points, latest, freq, now, quiet_hours):
            "fresh": bool(last and now - last <= dt.timedelta(hours=quiet_hours)),
            "totals": {str(m): round(rain_total(s, now - dt.timedelta(minutes=m), now), 2) for m in DURATIONS},
            "level": 0, "driver": None}
+    out["raining"] = bool(out["fresh"] and rain_total(s, now - dt.timedelta(minutes=now_min), now) >= now_in - 1e-9)
     if not freq or not freq.get("levels"):
         out["level"] = None   # no Atlas 14 values for this gauge
         return out
@@ -494,7 +498,8 @@ def creek_status(c, sens, tide, now, S):
         drv = dict(d, gauge=best[0]["key"], label=best[0]["label"])
     return {"key": key, "level": level, "level_name": level_name, "has_levels": has_levels,
             "trigger": trigger and {k: trigger[k] for k in ("label", "minutes", "value", "amount", "level", "name") if k in trigger},
-            "rain": {"level": rain, "driver": drv, "working": len(working), "of": len(rain_gauges), "elevated": elevated,
+            "rain": {"level": rain, "now": any(sig.get("raining") for g, sig in working), "driver": drv,
+                     "working": len(working), "of": len(rain_gauges), "elevated": elevated,
                      "silent": silent},
             "trend": trend and {k: trend.get(k) for k in ("trend", "ft_per_hr", "window_min")},
             "tidal": tidal, "tide": tide if tidal else None, "reasons": reasons, "staff_notes": staff}
