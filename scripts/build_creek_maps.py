@@ -73,6 +73,7 @@ NHD_NAMES = {
     "pilarcitos": ["Pilarcitos Creek"],
     "sangregorio": ["San Gregorio Creek"],
     "pescadero": ["Pescadero Creek"],
+    "butano": ["Butano Creek"],
 }
 # Words to look for in the County streams layer's NAME when NHD has no line (default: the creek's name without "Creek")
 COUNTY_STREAM_NAMES = {"greenhills": ["Green Hills", "Highline"]}

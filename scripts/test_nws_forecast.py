@@ -93,7 +93,9 @@ bad = {"creeks": [{"id": "belmont"}], "creeks_preview": []}
 N.add_forecast(bad, {}, NOW, {}, fetch=lambda u: {"properties": {"forecastGridData": "https://evil.example/x"}}, points=PTS)
 check("only api.weather.gov grid URLs are followed", bad["creeks"][0]["forecast"].get("error"))
 pts, pr = N.load_points()
-check("lookups/forecast_points.csv loads for all 10 creeks", len(pts) == 10 and not pr)
+import csv as _csv
+_ids = {r["creek"] for r in _csv.DictReader(open(os.path.join(os.path.dirname(N.POINTS_CSV), "creeks.csv"), encoding="utf-8-sig"))}
+check("lookups/forecast_points.csv has a point for every creek in creeks.csv", set(pts) == _ids and not pr)
 
 # "raining": any rain in the last hour at a fresh gauge
 NAIVE = dt.datetime(2026, 10, 18, 13, 0)
