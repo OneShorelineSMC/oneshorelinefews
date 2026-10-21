@@ -33,7 +33,7 @@
 | Description | Short urban creek; the gauge at First Avenue is tidal (rises and falls with the Bay tide). |
 | Flood levels set? | Yes, but what they mean isn't recorded |
 | Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
-| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr, 3 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -91,14 +91,14 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 15 min | 30 min | 1 hr | 3 hr | 24 hr |
-|---|---|---|---|---|---|---|
-| San Bruno Mountain | Heavy (1-year) | 0.251 | 0.346 | 0.489 | 0.894 | 2.11 |
-| San Bruno Mountain | Very heavy (2-year) | 0.302 | 0.417 | 0.589 | 1.07 | 2.68 |
-| San Bruno Mountain | Intense (5-year) | 0.372 | 0.513 | 0.725 | 1.3 | 3.44 |
-| First Avenue | Heavy (1-year) | 0.227 | 0.311 | 0.442 | 0.799 | 1.89 |
-| First Avenue | Very heavy (2-year) | 0.277 | 0.379 | 0.538 | 0.97 | 2.36 |
-| First Avenue | Intense (5-year) | 0.344 | 0.471 | 0.669 | 1.2 | 3.0 |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
+|---|---|---|---|---|---|
+| San Bruno Mountain | Heavy (1-year) | 0.251 | 0.346 | 0.489 | 2.11 |
+| San Bruno Mountain | Very heavy (2-year) | 0.302 | 0.417 | 0.589 | 2.68 |
+| San Bruno Mountain | Intense (5-year) | 0.372 | 0.513 | 0.725 | 3.44 |
+| First Avenue | Heavy (1-year) | 0.227 | 0.311 | 0.442 | 1.89 |
+| First Avenue | Very heavy (2-year) | 0.277 | 0.379 | 0.538 | 2.36 |
+| First Avenue | Intense (5-year) | 0.344 | 0.471 | 0.669 | 3.0 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

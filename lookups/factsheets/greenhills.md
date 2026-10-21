@@ -32,7 +32,7 @@
 | Description | Small creek through Green Hills Country Club in Millbrae. At the east corner of the course it goes underground into a 42-inch storm drain and a 48-inch storm drain flow split structure; the City's 2018 Storm Drain Master Plan lists flooding there (Flooding Problem #3, p. 1-2) because the entrance restricts flow into the drains and the area is lower than downstream parts of the City. The Master Plan does not name the creek or say where the drains lead (Highline Canal to confirm). |
 | Flood levels set? | None |
 | Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
-| Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -79,11 +79,11 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 3 hr | 24 hr |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
 |---|---|---|---|---|---|
-| Pilarcitos Dam | Heavy (1-year) | 0.444 | 0.629 | 1.18 | 2.89 |
-| Pilarcitos Dam | Very heavy (2-year) | 0.539 | 0.763 | 1.41 | 3.66 |
-| Pilarcitos Dam | Intense (5-year) | 0.665 | 0.942 | 1.73 | 4.68 |
+| Pilarcitos Dam | Heavy (1-year) | 0.316 | 0.444 | 0.629 | 2.89 |
+| Pilarcitos Dam | Very heavy (2-year) | 0.383 | 0.539 | 0.763 | 3.66 |
+| Pilarcitos Dam | Intense (5-year) | 0.473 | 0.665 | 0.942 | 4.68 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

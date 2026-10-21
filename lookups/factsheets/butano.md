@@ -32,7 +32,7 @@
 | Description | Rural coastal creek from Butano Ridge, past Butano State Park, to Pescadero Marsh at the town of Pescadero. A sediment plug long backed water onto roads, farmland and homes in Pescadero; a 2019 project reconnected the creek to its floodplain. |
 | Flood levels set? | Yes |
 | Tide station | None set for this creek in the 2026 Update (coastal creek) |
-| Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -87,11 +87,11 @@ Why these heights: they are OneRain's thresholds for this gauge, copied in Octob
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 3 hr | 6 hr | 24 hr |
+| Gauge | Level | 15 min | 30 min | 1 hr | 6 hr | 24 hr |
 |---|---|---|---|---|---|---|
-| Cloverdale Road | Heavy (1-year) | 0.394 | 0.557 | 1.03 | 1.46 | 2.46 |
-| Cloverdale Road | Very heavy (2-year) | 0.491 | 0.694 | 1.27 | 1.81 | 3.12 |
-| Cloverdale Road | Intense (5-year) | 0.62 | 0.876 | 1.6 | 2.27 | 4.0 |
+| Cloverdale Road | Heavy (1-year) | 0.283 | 0.394 | 0.557 | 1.46 | 2.46 |
+| Cloverdale Road | Very heavy (2-year) | 0.353 | 0.491 | 0.694 | 1.81 | 3.12 |
+| Cloverdale Road | Intense (5-year) | 0.445 | 0.62 | 0.876 | 2.27 | 4.0 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

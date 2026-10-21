@@ -33,7 +33,7 @@
 | Description | Urban creek from San Bruno Mountain and Daly City through Colma to South San Francisco; the gauge is at Orange Memorial Park and the flood levels are for the community downstream. |
 | Flood levels set? | Yes |
 | Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
-| Rain totals on the 2026 Update page | 1 hr, 6 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -93,14 +93,14 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 1 hr | 6 hr | 24 hr |
-|---|---|---|---|---|
-| Orange Memorial Park | Heavy (1-year) | 0.456 | 1.15 | 1.87 |
-| Orange Memorial Park | Very heavy (2-year) | 0.546 | 1.38 | 2.39 |
-| Orange Memorial Park | Intense (5-year) | 0.669 | 1.69 | 3.07 |
-| San Bruno Mountain | Heavy (1-year) | 0.489 | 1.26 | 2.11 |
-| San Bruno Mountain | Very heavy (2-year) | 0.589 | 1.52 | 2.68 |
-| San Bruno Mountain | Intense (5-year) | 0.725 | 1.86 | 3.44 |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
+|---|---|---|---|---|---|
+| Orange Memorial Park | Heavy (1-year) | 0.236 | 0.323 | 0.456 | 1.87 |
+| Orange Memorial Park | Very heavy (2-year) | 0.283 | 0.387 | 0.546 | 2.39 |
+| Orange Memorial Park | Intense (5-year) | 0.347 | 0.474 | 0.669 | 3.07 |
+| San Bruno Mountain | Heavy (1-year) | 0.251 | 0.346 | 0.489 | 2.11 |
+| San Bruno Mountain | Very heavy (2-year) | 0.302 | 0.417 | 0.589 | 2.68 |
+| San Bruno Mountain | Intense (5-year) | 0.372 | 0.513 | 0.725 | 3.44 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

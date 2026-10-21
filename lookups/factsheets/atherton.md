@@ -32,7 +32,7 @@
 | Description | Channelized creek; flood levels are for the area downstream of the Caltrain crossing. |
 | Flood levels set? | Yes |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
-| Rain totals on the 2026 Update page | 30 min, 1 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -136,11 +136,11 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 24 hr |
-|---|---|---|---|---|
-| Caltrain | Heavy (1-year) | 0.272 | 0.383 | 1.6 |
-| Caltrain | Very heavy (2-year) | 0.343 | 0.483 | 2.04 |
-| Caltrain | Intense (5-year) | 0.439 | 0.618 | 2.63 |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
+|---|---|---|---|---|---|
+| Caltrain | Heavy (1-year) | 0.197 | 0.272 | 0.383 | 1.6 |
+| Caltrain | Very heavy (2-year) | 0.248 | 0.343 | 0.483 | 2.04 |
+| Caltrain | Intense (5-year) | 0.318 | 0.439 | 0.618 | 2.63 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

@@ -32,7 +32,7 @@
 | Description | Rural coastal creek; the town of Pescadero floods from Pescadero and Butano Creeks. |
 | Flood levels set? | Yes |
 | Tide station | None set for this creek in the 2026 Update (coastal creek) |
-| Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -118,11 +118,11 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 3 hr | 24 hr |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
 |---|---|---|---|---|---|
-| La Honda | Heavy (1-year) | 0.476 | 0.676 | 1.26 | 3.06 |
-| La Honda | Very heavy (2-year) | 0.597 | 0.846 | 1.57 | 3.89 |
-| La Honda | Intense (5-year) | 0.755 | 1.07 | 1.98 | 4.98 |
+| La Honda | Heavy (1-year) | 0.342 | 0.476 | 0.676 | 3.06 |
+| La Honda | Very heavy (2-year) | 0.428 | 0.597 | 0.846 | 3.89 |
+| La Honda | Intense (5-year) | 0.541 | 0.755 | 1.07 | 4.98 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

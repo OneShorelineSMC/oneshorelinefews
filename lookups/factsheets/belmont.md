@@ -36,7 +36,7 @@
 | Description | Flashy urban creek; frequent street flooding downstream; flood levels are for the Harbor Industrial Area. |
 | Flood levels set? | Yes; plus rain triggers |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
-| Rain totals on the 2026 Update page | 30 min, 1 hr, 4 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -102,11 +102,11 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 24 hr |
-|---|---|---|---|---|
-| Old County Road | Heavy (1-year) | 0.305 | 0.432 | 1.76 |
-| Old County Road | Very heavy (2-year) | 0.366 | 0.517 | 2.29 |
-| Old County Road | Intense (5-year) | 0.45 | 0.637 | 2.98 |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
+|---|---|---|---|---|---|
+| Old County Road | Heavy (1-year) | 0.22 | 0.305 | 0.432 | 1.76 |
+| Old County Road | Very heavy (2-year) | 0.264 | 0.366 | 0.517 | 2.29 |
+| Old County Road | Intense (5-year) | 0.324 | 0.45 | 0.637 | 2.98 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

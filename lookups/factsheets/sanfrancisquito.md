@@ -32,7 +32,7 @@
 | Description | Large creek on the San Mateo / Santa Clara county line; the USGS gauge is at Stanford. |
 | Flood levels set? | Yes |
 | Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
-| Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -91,17 +91,17 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 3 hr | 24 hr |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
 |---|---|---|---|---|---|
-| Wunderlich County Park | Heavy (1-year) | 0.517 | 0.734 | 1.37 | 3.28 |
-| Wunderlich County Park | Very heavy (2-year) | 0.649 | 0.921 | 1.71 | 4.22 |
-| Wunderlich County Park | Intense (5-year) | 0.822 | 1.17 | 2.16 | 5.46 |
-| Windy Hill Open Space Preserve | Heavy (1-year) | 0.488 | 0.692 | 1.29 | 3.1 |
-| Windy Hill Open Space Preserve | Very heavy (2-year) | 0.613 | 0.869 | 1.62 | 3.96 |
-| Windy Hill Open Space Preserve | Intense (5-year) | 0.777 | 1.1 | 2.04 | 5.08 |
-| Trappers Trail (Valley Water) | Heavy (1-year) | 0.427 | 0.603 | 1.11 | 2.65 |
-| Trappers Trail (Valley Water) | Very heavy (2-year) | 0.535 | 0.756 | 1.4 | 3.34 |
-| Trappers Trail (Valley Water) | Intense (5-year) | 0.677 | 0.956 | 1.77 | 4.25 |
+| Wunderlich County Park | Heavy (1-year) | 0.369 | 0.517 | 0.734 | 3.28 |
+| Wunderlich County Park | Very heavy (2-year) | 0.464 | 0.649 | 0.921 | 4.22 |
+| Wunderlich County Park | Intense (5-year) | 0.587 | 0.822 | 1.17 | 5.46 |
+| Windy Hill Open Space Preserve | Heavy (1-year) | 0.349 | 0.488 | 0.692 | 3.1 |
+| Windy Hill Open Space Preserve | Very heavy (2-year) | 0.439 | 0.613 | 0.869 | 3.96 |
+| Windy Hill Open Space Preserve | Intense (5-year) | 0.556 | 0.777 | 1.1 | 5.08 |
+| Trappers Trail (Valley Water) | Heavy (1-year) | 0.306 | 0.427 | 0.603 | 2.65 |
+| Trappers Trail (Valley Water) | Very heavy (2-year) | 0.384 | 0.535 | 0.756 | 3.34 |
+| Trappers Trail (Valley Water) | Intense (5-year) | 0.485 | 0.677 | 0.956 | 4.25 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 

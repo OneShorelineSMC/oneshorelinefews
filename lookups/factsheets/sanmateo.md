@@ -33,7 +33,7 @@
 | Description | Flow below Crystal Springs Reservoir is controlled by SFPUC releases and spills. |
 | Flood levels set? | Yes |
 | Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
-| Rain totals on the 2026 Update page | 30 min, 1 hr, 3 hr, 24 hr |
+| Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
 
@@ -89,11 +89,11 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 3 hr | 24 hr |
+| Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
 |---|---|---|---|---|---|
-| Crystal Springs Cottage | Heavy (1-year) | 0.357 | 0.505 | 0.931 | 2.12 |
-| Crystal Springs Cottage | Very heavy (2-year) | 0.431 | 0.61 | 1.11 | 2.73 |
-| Crystal Springs Cottage | Intense (5-year) | 0.532 | 0.753 | 1.36 | 3.54 |
+| Crystal Springs Cottage | Heavy (1-year) | 0.257 | 0.357 | 0.505 | 2.12 |
+| Crystal Springs Cottage | Very heavy (2-year) | 0.31 | 0.431 | 0.61 | 2.73 |
+| Crystal Springs Cottage | Intense (5-year) | 0.383 | 0.532 | 0.753 | 3.54 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 
