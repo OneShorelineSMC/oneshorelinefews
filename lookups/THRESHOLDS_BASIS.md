@@ -116,12 +116,14 @@ whether they should count toward creek status.
 
 ## 3. Rain totals shown — `creeks.csv` (`rain_windows_min`)
 
-| Creek | Windows | Basis | Status | Checked by / on |
-|---|---|---|---|---|
-| Colma | 1 hr, 6 hr, 24 hr | Match the creek's OneRain dashboard | From source | |
-| San Bruno | 15 min, 30 min, 1 hr, 3 hr, 24 hr | Very flashy creek; short windows added Oct 13, 2026 (Summer). 3 hr chosen as the middle window. | Provisional | |
-| Belmont | 30 min, 1 hr, 4 hr, 24 hr | OneRain dashboard + its 30-min and 4-hr triggers | From source | |
-| Atherton | 30 min, 1 hr, 24 hr | Match the creek's OneRain dashboard | From source | |
+**All creeks: 15 min, 30 min, 1 hr** (Oct 21, 2026: OneShoreline management, "more in line with what people need for
+warnings"). Before that, most creeks matched their OneRain dashboards (Colma 1, 6, 24 hr; Belmont 30 min, 1, 4, 24 hr;
+Atherton 30 min, 1, 24 hr; San Bruno 15 min, 30 min, 1, 3, 24 hr; the others 30 min, 1, 3, 24 hr).
+
+These are only the totals printed on the creek cards, creek pages and kiosk. They don't change any status: rain
+triggers keep their own windows (Belmont's 4-hour rain + tide trigger still has its own line and graph), and the rain
+level (Heavy, Very heavy, Severe) still compares every duration from 15 minutes to 2 days with NOAA Atlas 14 (§8), so a
+long, steady storm can be "Heavy" while the 15-minute to 1-hour totals look small.
 
 With two rain gauges (San Bruno), the creek cards show the larger of the two totals for each window.
 
