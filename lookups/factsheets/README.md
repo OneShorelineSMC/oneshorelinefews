@@ -16,5 +16,6 @@ One page per creek in the **FEWS 2026 Update**, the new public creek and tide st
 | [Pilarcitos Creek](pilarcitos.md) | Staff preview only | Half Moon Bay; unincorporated Pilarcitos Canyon (SFPUC lands above Stone Dam) | 4 | 1 | Yes | 5 |
 | [San Gregorio Creek](sangregorio.md) | Staff preview only | Unincorporated San Gregorio; La Honda (upper watershed) | 1 | 1 | Yes | 4 |
 | [Pescadero Creek](pescadero.md) | Staff preview only | Unincorporated Pescadero; Loma Mar; La Honda area | 2 | 1 | Yes | 3 |
+| [Butano Creek](butano.md) | Staff preview only | Unincorporated Pescadero | 2 | 1 | Yes | 3 |
 
 *Generated from the 2026 Update lookup tables by `scripts/build_creek_factsheets.py`; edit the tables (`creek_facts.csv`, `gauge_facts.csv`, `thresholds.csv`, `onerain_dashboard_thresholds.csv` and others in `lookups/`), not these pages.*

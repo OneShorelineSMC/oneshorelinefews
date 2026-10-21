@@ -118,11 +118,11 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year (NOAA Atlas 14 depths at the gauge, inches). These say how rare the rain is, not whether the creek floods.
 
-| Gauge | Level | 30 min | 1 hr | 3 hr | 6 hr | 24 hr |
-|---|---|---|---|---|---|---|
-| La Honda | Heavy (1-year) | 0.476 | 0.676 | 1.26 | 1.81 | 3.06 |
-| La Honda | Very heavy (2-year) | 0.597 | 0.846 | 1.57 | 2.26 | 3.89 |
-| La Honda | Intense (5-year) | 0.755 | 1.07 | 1.98 | 2.85 | 4.98 |
+| Gauge | Level | 30 min | 1 hr | 3 hr | 24 hr |
+|---|---|---|---|---|---|
+| La Honda | Heavy (1-year) | 0.476 | 0.676 | 1.26 | 3.06 |
+| La Honda | Very heavy (2-year) | 0.597 | 0.846 | 1.57 | 3.89 |
+| La Honda | Intense (5-year) | 0.755 | 1.07 | 1.98 | 4.98 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 
@@ -141,29 +141,12 @@ On the 2026 Update's public pages this creek shows readings only; its status sho
 | Pescadero Creek near Pescadero | Flood Watch | 11.20 ft | 11.20 ft ("Flooding likely") | Same | none |
 | Pescadero Creek near Pescadero | Flood Warning | 13.25 ft | 13.25 ft ("Projected flooding in downstream reaches") | Same | none |
 | Pescadero Creek near Pescadero | Rising fast | 1.0 ft within an hour | nothing comparable | 2026 Update only | – |
-| Butano Creek near Cloverdale Road (not a 2026 Update gauge) | Flood Watch | – | 10.10 ft ("Flooding likely") | OneRain only | none |
-| Butano Creek near Cloverdale Road (not a 2026 Update gauge) | Flood Warning | – | 11.80 ft ("Flooding likely in downstream reaches") | OneRain only | none |
 
 How often the creek reached OneRain's levels (USGS record, water years 2008–2026): Flood Watch 11.20 ft: 7 of 19 years (highest 16.93 ft); Flood Warning 13.25 ft: 4 of 19 years (highest 16.93 ft).
-
-**Rain**
-
-Each row is one length of time ("rain within"). **2026 Update** = the amounts at which its rain indicator turns Heavy, Very heavy and Intense (or a rain trigger shows). **OneRain** = the thresholds set on that gauge's rain sensors for the same length of time. Rows are listed only where OneRain or a 2026 Update trigger uses that length of time; the 2026 Update checks every length from 15 minutes to 48 hours.
-
-| Gauge | Rain within | 2026 Update (inches) | OneRain thresholds and text alerts (inches) |
-|---|---|---|---|
-| Butano Creek near Cloverdale Road | 6 hr | – (the 2026 Update doesn't use this gauge) | Rainfall warning from 1.04 in |
-
-*Why the 2026 Update uses these amounts:* for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
 
 No OneRain rain thresholds on: La Honda.
 
 **OneRain text alerts:** none set up for this creek's gauges (OneRain's rule list, Oct 17, 2026).
-
-Notes:
-
-- Butano Creek (not a 2026 Update gauge); sensor is labeled backup.
-- Set on OneRain's rolling 6-hour total sensor.
 
 <details><summary>Internal to-do for the project team (reviewers can skip)</summary>
 
