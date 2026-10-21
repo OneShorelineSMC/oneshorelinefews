@@ -27,6 +27,8 @@
     SITE_QUIET_HOURS: [24, 1, 336], SITE_OLD_READING_HOURS: [3, 0.25, 168], SITE_DATA_LATE_MIN: [45, 5, 1440],
     MODEL_MAX_AGE_HOURS: [12, 1, 72], MODEL_MIN_AHEAD_HOURS: [6, 0, 72],
     OFFSET_RECENT_HIGHS: [4, 1, 14], OFFSET_NOTE_FT: [0.2, 0.01, 5], OFFSET_HIGH_FT: [0.5, 0.01, 10],
+    // recent offset after the NOAA projection (tide_offset.json from scripts/tide_offset.py, which uses BAY_OFFSET_DAYS)
+    BAY_OFFSET_DAYS: [30, 7, 31], BAY_OFFSET_SHOW: [1, 0, 1], BAY_OFFSET_MIN_FT: [0.1, 0, 2], BAY_OFFSET_MAX_AGE_HOURS: [48, 6, 168], BAY_OFFSET_AHEAD_DAYS: [30, 3, 90],
     // creek status layer (the data job uses the same ranges, scripts/creek_signals.py)
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
@@ -164,6 +166,14 @@
     tide_king_line: "King Tide {day}: {ft} around {time}, reaching the 1-year tide",
     tide_next_king: "Next King Tide: {day}, {ft} around {time}",
     tide_weather_higher: "NOAA projects about {diff} ft higher than the tide table",
+    lbl_offset: "Tide table + recent offset",
+    tide_offset_key: "Tide table + {ft} ft ({water} average, past {days} days)",
+    tide_offset_note: "After the NOAA projection ends, the gray dotted line adds {ft} ft to the tide table: on average, the {water} has run that much higher than the tide table over the past {days} days. It assumes the {water} stays that high. It isn’t a forecast, and storms can add more.",
+    tide_offset_day: "≈ {ft} if the {water} stays high",
+    tide_offset_cal: "could reach the flood level if the {water} stays {off} ft higher than the tide table ({ft})",
+    tide_offset_cal_key: "Gray dotted ring: could reach {red} ft if the {water} stays this high",
+    tide_offset_later: "+{off} ft if the {water} stays high ›",
+    tide_offset_assume: "It assumes the {water} stays that high. It isn’t a forecast, and storms can add more.",
     tide_weather_lower: "NOAA projects about {diff} ft lower than the tide table",
     tide_cal_title: "High tides and King Tides",
     tide_cal_tap: "Tap any day to see its highest tide and time.",

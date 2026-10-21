@@ -6,6 +6,10 @@
  * Everything comes from NOAA at the Redwood City tide gauge (9414523), ft NAVD88, so nothing needs a yearly update:
  *   - the tide table (predicted high tides) from the start of this month through the next 6 months
  *   - the NOAA projection (NOAA's San Francisco Bay model, ofs_water_level: storms, wind, runoff, ocean conditions such as El Niño), about 2 days ahead
+ *   - after the projection: the tide table plus the recent offset (tide_offset.json on the data branch, scripts/tide_offset.py):
+ *     how much higher than the tide table the water has run on average over the past month (BAY_OFFSET_* in settings.csv).
+ *     An assumption ("if the Bay stays this high"), not a forecast: it never changes a day's color, only adds a gray
+ *     dotted mark on days it would take to the flood level.
  *
  * Levels (the colors) come from the water height, never from the name "King Tide":
  *   below MHHW (tide_stations.csv)            normal
@@ -18,6 +22,17 @@
 (function () {
   "use strict";
   var LK = window.LOOKUPS, MATCH_MIN = 90, MONTHS_AHEAD = 6;
+  var OFFSET_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/tide_offset.json";
+  var OFF = { data: null, t: 0, pending: null, listeners: [] };   // one download for both gauges
+  function loadOffsetFile() {
+    if (OFF.pending) return OFF.pending;
+    OFF.pending = fetch(OFFSET_URL + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (j) { if (j && j.stations) { OFF.data = j; OFF.t = Date.now(); OFF.listeners.forEach(function (fn) { try { fn(); } catch (e) {} }); } })
+      .catch(function () {})
+      .then(function () { OFF.pending = null; });
+    return OFF.pending;
+  }
   // cfg: { station, red: settings key or null (no flood level), king: settings key, sfx: wording suffix ("" Bayside, "_coast" Coastside) }
   function make(cfg) {
   var STATION = cfg.station, SFX = cfg.sfx || "";
@@ -52,6 +67,7 @@
      If it fails (NOAA slow or down), try again in 5 minutes until it works, keeping the last good copy meanwhile. */
   var listeners = [], retry = 0, pending = null;
   function changed() { listeners.forEach(function (fn) { try { fn(); } catch (e) {} }); }
+  OFF.listeners.push(changed);
   function loadTable() {
     if (pending) return pending;
     var n = nowLocal(), d = new Date(n), y = d.getUTCFullYear(), m = d.getUTCMonth();
@@ -75,6 +91,33 @@
   function modelOK(now) {
     return !!(S.ofs && S.ofs.length && Date.now() - S.tOfs < LK.num("MODEL_MAX_AGE_HOURS") * 3600000 &&
       S.ofs[S.ofs.length - 1].t >= now + LK.num("MODEL_MIN_AHEAD_HOURS") * 3600000);
+  }
+
+  /* The recent offset at this gauge: {ft, days, from, to, recent7} or null when it's switched off, too old, missing,
+     or smaller than BAY_OFFSET_MIN_FT (only a Bay running higher than the tide table is shown). */
+  function offset() {
+    var j = OFF.data, r = j && j.stations ? j.stations[STATION] : null;
+    if (!r || LK.num("BAY_OFFSET_SHOW") !== 1 || typeof r.offset_ft !== "number" || !r.computed_utc) return null;
+    var age = (Date.now() - Date.parse(r.computed_utc.replace(/Z$/, ":00Z"))) / 3600000;
+    if (!(age >= 0 && age <= LK.num("BAY_OFFSET_MAX_AGE_HOURS")) || r.offset_ft < LK.num("BAY_OFFSET_MIN_FT")) return null;
+    return { ft: r.offset_ft, days: r.days_used || r.days, from: r.from, to: r.to, recent7: r.recent7_ft };
+  }
+  /* Days after the NOAA projection: each day's highest tide-table high tide plus the offset, {date: {t, v, table, off}}.
+     Only days the projection doesn't cover (expected()), high tides still ahead, and no further than BAY_OFFSET_AHEAD_DAYS
+     (a month: an offset seen over the last month says little about the months after). */
+  function offsetDays(now) {
+    now = now || nowLocal();
+    var o = offset(), out = {};
+    if (!o || !S.highs) return out;
+    var ex = expected(now);
+    S.highs.forEach(function (h) {
+      var d = iso(h.t);
+      if (h.t < now - MATCH_MIN * 60000 || ex[d] || h.t > now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000) return;
+      if (modelOK(now) && h.t <= S.ofs[S.ofs.length - 1].t) return;   // still inside the projection
+      var x = { t: h.t, v: h.v + o.ft, table: h.v, off: o.ft };
+      if (!out[d] || x.v > out[d].v) out[d] = x;
+    });
+    return out;
   }
 
   function mhhw() { return LK.mhhw(STATION); }
@@ -143,7 +186,8 @@
       sub: [weatherNote(x), level(v) === 1 ? LK.text("tide_level_amber") : ""].filter(Boolean).join(" · "), what: txt("king_tide_what") };
   }
 
-  return { load: function () { return Promise.all([loadTable(), loadModel()]); }, loadTable: loadTable, loadModel: loadModel, setModel: setModel,
+  return { load: function () { return Promise.all([loadTable(), loadModel(), loadOffsetFile()]); }, loadTable: loadTable, loadModel: loadModel, setModel: setModel,
+    loadOffset: loadOffsetFile, offset: offset, offsetDays: offsetDays,
     onUpdate: function (fn) { listeners.push(fn); },
     dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote, txt: txt,
     clock: clock, ft: ft, mhhw: mhhw, red: red, king: king, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };
