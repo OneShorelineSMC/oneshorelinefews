@@ -65,7 +65,21 @@ lay = H.layers(fake_get)
 check("layers found by their names (12, 24, 36, 66 in)", lay == {12: 0, 24: 1, 36: 2, 66: 5})
 calls = []
 feats = H.features(0, lambda u, p=None: calls.append(u) or fake_get(u))
-check("250 features fetched in 3 batches by object id, in lon/lat", len(feats) == 250 and len(calls) == 4 and "outSR=4326" in calls[1])
+check("250 shapes fetched one by one by object id, in lon/lat", len(feats) == 250 and len(calls) == 251 and "outSR=4326" in calls[1])
+
+
+# a shape too big to send in detail (HTTP 500) is asked for again with a simpler outline
+def big_500(url, params=None):
+    q = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
+    if q.get("returnIdsOnly") == "true":
+        return json.dumps({"objectIds": [7]})
+    if float(q["maxAllowableOffset"]) < 0.0003:
+        raise OSError("HTTP Error 500: Internal Server Error")
+    return json.dumps({"type": "FeatureCollection", "features": [sq(-122.27, 37.515, 50)]})
+
+
+fb = H.features(2, big_500)
+check("HTTP 500 at full detail: read with the simplest outline instead", len(fb) == 1)
 
 with tempfile.TemporaryDirectory() as d:
     H.write(rows, os.path.join(d, "x.csv"), os.path.join(d, "x.geojson"))
@@ -73,6 +87,36 @@ with tempfile.TemporaryDirectory() as d:
     g = json.load(open(os.path.join(d, "x.geojson")))
     check("CSV with CRLF and the review columns", raw.startswith(b"id,name,city,watershed,lat,lon,level_in") and b"\r\n" in raw)
     check("GeoJSON with one feature per row", len(g["features"]) == 2 and g["features"][0]["properties"]["id"] == "SH-001")
+
+# a host that sends a web page, then the second host; GeoJSON refused, Esri JSON instead
+def page_then_ok(url, params=None):
+    if url.startswith(H.SERVICES[0]):
+        return "<html>Access denied</html>"
+    if "f=geojson" in url:
+        return json.dumps({"error": {"code": 400, "message": "Invalid format"}})
+    if url.endswith("?f=json"):
+        return fake_get(url)
+    q = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
+    if q.get("returnIdsOnly") == "true":
+        return json.dumps({"objectIds": [1, 2]})
+    ring = [[-122.27, 37.515], [-122.27, 37.516], [-122.269, 37.516], [-122.269, 37.515], [-122.27, 37.515]]   # clockwise
+    hole = [[-122.2698, 37.5152], [-122.2692, 37.5152], [-122.2692, 37.5158], [-122.2698, 37.5158], [-122.2698, 37.5152]]
+    return json.dumps({"features": [{"attributes": {"DEPTH_FT": "0.4"}, "geometry": {"rings": [ring, hole]}}]})
+
+
+H.SERVICE = H.SERVICES[0]
+lay2 = H.layers(page_then_ok)
+check("first host sends a web page: the second host is used", lay2.get(24) == 1 and H.SERVICE == H.SERVICES[1])
+f2 = H.features(1, page_then_ok)
+g = f2[0]["geometry"]
+check("GeoJSON refused: Esri JSON read and converted (outer ring plus its hole)", len(f2) == 2 and g["type"] == "MultiPolygon" and len(g["coordinates"][0]) == 2)
+check("depth kept from the Esri attributes", H.depth(f2[0]["properties"]) == 0.4)
+try:
+    H.fetch_json("https://example.org/x?f=json", lambda u, p=None: "<html>")
+    check("a web page instead of JSON gives a clear error", False)
+except RuntimeError as e:
+    check("a web page instead of JSON gives a clear error", "not JSON" in str(e))
+H.SERVICE = H.SERVICES[0]
 
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)

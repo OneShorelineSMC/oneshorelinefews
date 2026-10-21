@@ -38,6 +38,8 @@ BAY_BOX = (-122.43, 37.44, -122.08, 37.72)    # San Mateo County's Bay side, wit
 LEVELS_IN = (12, 24, 36)                       # ART water levels above MHHW used here (the pages only ever reach the lowest)
 MIN_ACRES = 0.5                                # smaller flooded patches are left out
 MERGE_M = 250                                  # pieces at one level closer than this are one spot
+OFFSETS = (0.00003, 0.0001, 0.0003)           # outline detail asked for (degrees), simplest last
+MIN_PIECE_ACRES = 0.05                         # pieces smaller than this are dropped before grouping
 WS_NEAR_M = 600                                # a spot this close to a San Mateo County watershed counts as in the county
 OUT_CSV = os.path.join(ROOT, "lookups", "proposed", "shoreline_hotspots.csv")
 OUT_GEO = os.path.join(ROOT, "data", "shoreline_hotspots_candidates.geojson")
@@ -99,31 +101,97 @@ def depth(props):
 
 
 # ---------------------------------------------------------------- downloads
+# The same Caltrans service answers on two host names; the job tries each until one works.
+SERVICES = [SERVICE, "https://geodata.dot.ca.gov/arcgis/rest/services/CHhqenvi/DEA_BCDC_polygon_SLR/MapServer"]
+
+
+def fetch_json(url, get=M.get):
+    """JSON from a map service, with a clear message when it sends an error or a web page instead."""
+    text = get(url)
+    try:
+        d = json.loads(text)
+    except ValueError:
+        raise RuntimeError(f"not JSON from {url.split('?')[0]}: {text[:200]!r}")
+    if isinstance(d, dict) and d.get("error"):
+        raise RuntimeError(f"{url.split('?')[0]}: {d['error']}")
+    return d
+
+
 def layers(get=M.get):
-    """{inches: layer id} from the service's layer names ("BCDC SLR 2.0 ft (24 in)")."""
-    j = json.loads(get(SERVICE + "?f=json"))
-    out = {}
-    for lyr in j.get("layers") or []:
-        m = re.search(r"\((\d+)\s*in\)", lyr.get("name") or "")
-        if m:
-            out[int(m.group(1))] = lyr["id"]
-    return out
+    """{inches: layer id} from the service's layer names ("BCDC SLR 2.0 ft (24 in)"); uses the first host that answers."""
+    global SERVICE
+    for base in SERVICES:
+        try:
+            j = fetch_json(base + "?f=json", get)
+        except Exception as e:   # noqa: BLE001
+            print(f"  {base}: {type(e).__name__}: {str(e)[:300]}")
+            continue
+        out = {}
+        for lyr in j.get("layers") or []:
+            m = re.search(r"\((\d+)\s*in\)", lyr.get("name") or "")
+            if m:
+                out[int(m.group(1))] = lyr["id"]
+        if out:
+            SERVICE = base
+            return out
+        print(f"  {base}: no layers named like '(24 in)'; its layers are: " + "; ".join(f"{l.get('id')} {l.get('name')}" for l in j.get("layers") or []))
+    return {}
+
+
+def esri_to_geojson(feat):
+    """An Esri JSON polygon feature as GeoJSON: clockwise rings are outer rings, the counter-clockwise ones after them holes."""
+    polys = []
+    for ring in (feat.get("geometry") or {}).get("rings") or []:
+        if len(ring) < 4:
+            continue
+        signed = sum(ring[i - 1][0] * ring[i][1] - ring[i][0] * ring[i - 1][1] for i in range(len(ring)))
+        if signed < 0 or not polys:
+            polys.append([ring])
+        else:
+            polys[-1].append(ring)
+    return {"type": "Feature", "properties": feat.get("attributes") or {},
+            "geometry": {"type": "MultiPolygon", "coordinates": polys} if polys else None}
 
 
 def features(layer_id, get=M.get):
-    """Flooded polygons in BAY_BOX for one layer, as GeoJSON features (lon/lat), fetched by object id in batches."""
+    """Flooded polygons in BAY_BOX for one layer, as GeoJSON features (lon/lat), fetched by object id in batches.
+    Asks for GeoJSON; if the service can't give it, asks for Esri JSON and converts."""
     q = SERVICE + f"/{layer_id}/query"
     common = {"geometry": ",".join(map(str, BAY_BOX)), "geometryType": "esriGeometryEnvelope", "inSR": 4326,
               "spatialRel": "esriSpatialRelIntersects", "where": "1=1"}
-    ids = json.loads(get(q + "?" + urllib.parse.urlencode(dict(common, returnIdsOnly="true", f="json")))).get("objectIds") or []
-    out = []
-    for k in range(0, len(ids), 100):
-        p = {"objectIds": ",".join(map(str, ids[k:k + 100])), "outFields": "OBJECTID,DEPTH_FT", "returnGeometry": "true",
-             "outSR": 4326, "maxAllowableOffset": 0.00003, "geometryPrecision": 6, "f": "geojson"}
-        d = json.loads(get(q + "?" + urllib.parse.urlencode(p)))
-        if "error" in d:
-            raise RuntimeError(f"layer {layer_id}: {d['error']}")
-        out += [f for f in d.get("features", []) if f.get("geometry")]
+    ids = fetch_json(q + "?" + urllib.parse.urlencode(dict(common, returnIdsOnly="true", f="json")), get).get("objectIds") or []
+    # The layers hold a few very large shapes (about 20 in the box), so each shape is asked for on its own, and when the
+    # server can't send it (HTTP 500, too big) it is asked for again with a simpler outline (OFFSETS, degrees: about 3, 10, 30 m).
+    out, state = [], {"fmt": "geojson"}
+    g1 = (lambda u: M.get(u, tries=1)) if get is M.get else get   # one try per outline; the simpler outline is the retry
+
+    def one(oid, offset):
+        p = {"objectIds": str(oid), "outFields": "OBJECTID,DEPTH_FT", "returnGeometry": "true",
+             "outSR": 4326, "maxAllowableOffset": offset, "geometryPrecision": 6}
+        if state["fmt"] == "geojson":
+            try:
+                d = fetch_json(q + "?" + urllib.parse.urlencode(dict(p, f="geojson")), g1)
+                if d.get("type") != "FeatureCollection":
+                    raise RuntimeError("no FeatureCollection")
+                return [f for f in d.get("features", []) if f.get("geometry")]
+            except RuntimeError as e:   # the service answered but can't do GeoJSON: use Esri JSON from now on
+                print(f"  layer {layer_id}: GeoJSON not available ({str(e)[:120]}); using Esri JSON")
+                state["fmt"] = "json"
+        d = fetch_json(q + "?" + urllib.parse.urlencode(dict(p, f="json")), g1)
+        return [g for g in (esri_to_geojson(f) for f in d.get("features", [])) if g["geometry"]]
+
+    for oid in ids:
+        last = None
+        for offset in OFFSETS:
+            try:
+                out += one(oid, offset)
+                last = None
+                break
+            except Exception as e:   # noqa: BLE001 - usually HTTP 500 for a shape too big to send in detail
+                last = e
+                print(f"  layer {layer_id}, shape {oid}: {type(e).__name__} at outline {offset}°; trying simpler")
+        if last is not None:
+            raise RuntimeError(f"shape {oid} couldn't be read even at the simplest outline: {last}")
     return out
 
 
@@ -151,12 +219,22 @@ def cluster(pieces):
             parent[i] = parent[parent[i]]
             i = parent[i]
         return i
-    for i in range(len(pieces)):
-        for j in range(i + 1, len(pieces)):
-            a, b = pieces[i], pieces[j]
-            bx = a["box"]
-            if (dist_m(a["c"], b["c"]) <= MERGE_M or
-                    (bx[0] <= b["c"][0] <= bx[2] and bx[1] <= b["c"][1] <= bx[3])):
+    cell = MERGE_M / 111000 * 1.4   # grid cells about MERGE_M across: only pieces in neighbouring cells can be close
+    grid = {}
+    for i, p in enumerate(pieces):
+        grid.setdefault((int(p["c"][0] // cell), int(p["c"][1] // cell)), []).append(i)
+    for i, a in enumerate(pieces):
+        gx, gy = int(a["c"][0] // cell), int(a["c"][1] // cell)
+        near = [j for dx in (-1, 0, 1) for dy in (-1, 0, 1) for j in grid.get((gx + dx, gy + dy), []) if j > i]
+        for j in near:
+            if dist_m(a["c"], pieces[j]["c"]) <= MERGE_M:
+                parent[find(i)] = find(j)
+    # a piece whose centre lies inside another piece's box joins it (big pieces with small ones inside them)
+    big = sorted(range(len(pieces)), key=lambda k: -pieces[k]["area"])[:200]
+    for i in big:
+        bx = pieces[i]["box"]
+        for j, b in enumerate(pieces):
+            if j != i and bx[0] <= b["c"][0] <= bx[2] and bx[1] <= b["c"][1] <= bx[3]:
                 parent[find(i)] = find(j)
     groups = {}
     for i, p in enumerate(pieces):
@@ -164,12 +242,17 @@ def cluster(pieces):
     return list(groups.values())
 
 
+def _in_box(pt, box, pad_deg=0.0004):
+    return box[0] - pad_deg <= pt[0] <= box[2] + pad_deg and box[1] - pad_deg <= pt[1] <= box[3] + pad_deg
+
+
 def candidates(by_level, watersheds, places):
     """by_level: {inches: [GeoJSON features]} -> rows (dicts) and their polygons, lowest level first."""
-    taken, rows = [], []
+    taken, rows = [], []   # taken: (box, polygon) of every piece at lower levels
     for level in sorted(by_level):
-        new = [p for p in pieces_of(by_level[level], level)
-               if not any(M.inside(p["c"], q) or near_poly(p["c"], q, 30) for q in taken)]
+        pcs = [p for p in pieces_of(by_level[level], level)
+               if p["area"] >= MIN_PIECE_ACRES * 4046.86 and _in_box(p["c"], (BAY_BOX[0], BAY_BOX[1], BAY_BOX[2], BAY_BOX[3]), 0)]
+        new = [p for p in pcs if not any(_in_box(p["c"], b) and (M.inside(p["c"], q) or near_poly(p["c"], q, 30)) for b, q in taken)]
         for g in cluster(new):
             area = sum(p["area"] for p in g)
             if area < MIN_ACRES * 4046.86:
@@ -186,7 +269,7 @@ def candidates(by_level, watersheds, places):
             rows.append({"lat": round(c[1], 5), "lon": round(c[0], 5), "level_in": level, "area_acres": round(area / 4046.86, 1),
                          "max_depth_ft": round(max(deps), 1) if deps else "", "pieces": len(g), "city": city or "",
                          "watershed": ws.title(), "_polys": [p["poly"] for p in g]})
-        taken += [p["poly"] for p in new]
+        taken += [(p["box"], p["poly"]) for p in pcs]
     rows.sort(key=lambda r: (r["level_in"], -r["area_acres"]))
     for k, r in enumerate(rows, start=1):
         r["id"] = f"SH-{k:03d}"
@@ -218,15 +301,23 @@ def write(rows, csv_path=OUT_CSV, geo_path=OUT_GEO):
 
 
 def main():
+    print("Reading the BCDC Adapting to Rising Tides layers (Caltrans map service)…")
     lay = layers()
-    print("ART layers in the service:", ", ".join(f"{k} in = layer {v}" for k, v in sorted(lay.items())))
+    if not lay:
+        print("Couldn't read the map service's layer list (messages above). Nothing written.")
+        return 1
+    print(f"ART layers at {SERVICE}:", ", ".join(f"{k} in = layer {v}" for k, v in sorted(lay.items())))
     missing = [x for x in LEVELS_IN if x not in lay]
     if missing:
         print(f"No layer for {missing} in; the service's layer names may have changed. Nothing written.")
         return 1
     by_level = {}
     for x in LEVELS_IN:
-        by_level[x] = features(lay[x])
+        try:
+            by_level[x] = features(lay[x])
+        except Exception as e:   # noqa: BLE001
+            print(f"Couldn't read the {x} in layer: {type(e).__name__}: {str(e)[:400]}. Nothing written.")
+            return 1
         print(f"{x} in above MHHW: {len(by_level[x])} flooded polygons in the box")
     places = []
     for layer in (4, 5):   # Census cities, then unincorporated places (as in build_creek_maps.py)
