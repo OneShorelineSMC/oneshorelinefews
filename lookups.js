@@ -172,7 +172,7 @@
     tide_offset_day: "≈ {ft} if the {water} stays high",
     tide_offset_cal: "could reach the flood level if the {water} stays {off} ft higher than the tide table ({ft})",
     tide_offset_cal_key: "Gray dotted ring: could reach {red} ft if the {water} stays this high",
-    tide_offset_later: "+{off} ft if the {water} stays high ›",
+    tide_offset_later: "If the {water} stays {off} ft higher than the tide table (its average this past month): {list}",
     tide_offset_assume: "It assumes the {water} stays that high. It isn’t a forecast, and storms can add more.",
     shore_intro: "Low spots along San Mateo County’s Bay shoreline where very high tides can come over the edge, and whether the tides in the coming days and weeks are high enough to reach them.",
     shore_no_list: "The list of low spots isn’t ready yet.",

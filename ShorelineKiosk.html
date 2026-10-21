@@ -113,7 +113,9 @@
   .tsec b { color: var(--ink); font-size: 13px; }
   .tsec .tap { font-size: 11.5px; }
   #tdays { display: grid; grid-template-columns: repeat(3, 1fr); flex: none; margin-left: 30px; }   /* placed over their days by dayAlign */
-  .tsec .tap.offl { color: var(--offln); }   /* the recent offset after the NOAA projection: details on the look-ahead screen */
+  /* the recent offset after the NOAA projection: its own line under "Later", with the heights (details on the look-ahead screen) */
+  .toff { font-size: 12px; color: var(--muted); height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .toff b { color: var(--info); } .toff .red { color: var(--red); font-weight: bold; }
   #tlater { color: var(--muted); } #tlater b { font-size: 12px; } #tlater .over { color: var(--info); font-weight: bold; } #tlater .red { color: var(--red); font-weight: bold; }
   .tday { border-top: 4px solid var(--line); padding: 4px 4px 5px; text-align: center; border-right: 1px solid var(--line); min-width: 0; }
   .tday:last-child { border-right: 0; }
@@ -174,6 +176,11 @@
   #creekStrip.lvl-warning { color: #fff; }
   /* Make room for the strip: content moves down 28px and gets 28px shorter */
   #stage.creekalert #creek, #stage.creekalert #about { top: 104px; height: 324px; }
+  /* Creeks tab during a creek alert: the regional NWS bar steps aside and the (local) creek strip takes its place */
+  #stage.crk.oncreek #alertbar { display: none; }
+  #stage.crk.oncreek #creekStrip { top: 20px; height: 48px; font-size: 18px; border-top: none; }
+  #stage.crk.oncreek #creekStrip .sicon { font-size: 18px; } #stage.crk.oncreek #creekStrip .stap { font-size: 13px; }
+  #stage.crk.oncreek #creek { top: 76px; height: 352px; }
   /* Creek tab button takes the creek's alert color */
   .tab.creek-monitoring { background: #f2d024; border-color: #f2d024; color: #1a1a1a; }
   .tab.creek-watch { background: #b45a00; border-color: #b45a00; color: #fff; }   /* darker orange: white text 4.5:1 */
@@ -229,6 +236,10 @@
   .mlist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mlist .mi { border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 18px; font-weight: bold; display: flex; flex-direction: column; gap: 4px; }
   .mlist .mi .ms { font-size: 14px; font-weight: normal; color: var(--muted); }
+  .cbtn.back { border-color: var(--ink); }
+  .cname { font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  #cpick:empty { display: none; }
+  .cs-bquiet [data-creek] { cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
   .cinfo { margin-left: auto; font-size: 12.5px; color: var(--muted); padding: 4px 6px; }
   #cbody { flex: 1; min-height: 0; display: flex; gap: 10px; }
   #call { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; }
@@ -417,6 +428,7 @@
       <div id="tdays"></div>
       <div id="tchart"><canvas id="tchartc" role="img" aria-label="Graph of the Bay tide for the last 24 hours and the next 48 hours. The same heights are listed day by day above."></canvas></div>
       <div id="tkey"></div>
+      <div class="toff" id="toff" hidden></div>
     </div>
     <div id="tnws" class="unknown"><span class="ni" id="tnwsi">…</span><div class="nt"><div class="nm" id="tnwsm">Checking National Weather Service coastal flood information…</div>
       <div class="ns" id="tnwss"></div></div><span class="nmore" id="tnwsmore"></span></div>
@@ -490,9 +502,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261021b"></script>
-<script src="tide_season.js?v=20261021b"></script>
-<script src="creek_status.js?v=20261021b"></script>
+<script src="lookups.js?v=20261021c"></script>
+<script src="tide_season.js?v=20261021c"></script>
+<script src="creek_status.js?v=20261021c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -849,7 +861,7 @@ function renderDays(s, now) {
     var inView = (Math.min(b, x1) - Math.max(a, x0)) / 3600000 >= CARD_MIN_H;
     if (!inView) {   // after the graph: one line, colored when the day is above MHHW or at the flood level
       if (top) later.push('<span class="' + (top.v >= redFor(st) ? "red" : top.v > st.mhhw ? "over" : "") + '">' + esc(name) + " " + top.v.toFixed(2) + "</span>");
-      if (top && off && top.src === "pred") laterOff.push(name);   // the heights with the offset are on the look-ahead screen
+      if (top && off && top.src === "pred") laterOff.push('<span class="' + (top.v + off.ft >= redFor(st) ? "red" : "") + '">' + esc(name) + " " + (top.v + off.ft).toFixed(2) + (top.v + off.ft >= redFor(st) ? " ⚠" : "") + "</span>");
       continue;
     }
     cards++;
@@ -865,9 +877,10 @@ function renderDays(s, now) {
   $t("tsechint").textContent = "highest tide each day";
   $t("tlater").innerHTML = later.length ? " · <b>Later:</b> " + later.join(" · ") + " (tide table" +
     ")" : "";
-  // the recent offset after the NOAA projection takes the place of "Tap for times ›" (the same tap opens the details)
-  var tap = document.querySelector(".tsec .tap");
-  if (tap) { tap.textContent = laterOff.length ? LK.text("tide_offset_later", { off: off.ft.toFixed(2), water: waterWord() }) : "Tap for times ›"; tap.classList.toggle("offl", !!laterOff.length); }
+  // the recent offset after the NOAA projection: the same later days, if the Bay stays as high as this past month
+  var to = $t("toff");
+  to.hidden = !laterOff.length;
+  to.innerHTML = laterOff.length ? esc(LK.text("tide_offset_later", { off: off.ft.toFixed(2), water: waterWord(), list: "" })).replace(/\s*$/, " ") + laterOff.join(" · ") : "";
 }
 
 /* Tide graphs: labels written on the flat reference lines (MHHW, flood level) so the dashed lines can be read without the key.
@@ -1538,13 +1551,15 @@ function renderCreek() {
   var c = selectedCreek(), st = states.filter(function (x) { return x.c === c; })[0] || creekState(c, now), more = moreCreeks(), sm = isMore(c);
 
   var all = C.sel === "all" || !creeks().concat(more).some(function (x) { return x.id === C.sel; });
-  // Creek buttons, each in its creek's alert color
-  el("cpick").innerHTML = '<span class="cbtn' + (all ? " on" : "") + '" data-creek="all">' + (moreCreeks().length ? "All creeks" : "Dashboard Creeks") + '</span>' + states.map(function (x) {
-    var on = !all && x.c === c, col = x.top ? x.top.color : null;
-    return '<span class="cbtn' + (on ? " on" : "") + '" data-creek="' + esc(x.c.id) + '"' +
-      (col ? ' style="background:' + fillOf(col) + ";border-color:" + fillOf(col) + ";color:" + inkOn(x.top) + '"' : "") + ">" +
-      (col ? "▲ " : "") + esc(shortName(x.c)) + "</span>";
-  }).join("") + (more.length ? '<span class="cbtn more' + (!all && sm ? " on" : "") + '" data-more="1">' + (!all && sm ? esc(shortName(c)) : "More creeks") + " ▾</span>" : "") + (all ? '<span class="cinfo">' + (window.CREEK_STATUS && CREEK_STATUS.staff ? "staff view · " : "") + 'tap a creek for graphs</span>' : '<span class="cinfo" data-info="1">ⓘ notes</span>');
+  // Navigation (no colored creek buttons: the board and the cards already show each creek's status).
+  // All creeks: the board's rows and names open a creek; a single creek: "‹ All creeks", its name, More creeks, notes
+  var board = !!(window.CREEK_STATUS && CREEK_STATUS.preview);
+  el("cpick").innerHTML = all
+    ? (board ? "" : '<span class="cinfo" style="margin-left:0">' + (window.CREEK_STATUS && CREEK_STATUS.staff ? "staff view · " : "") + "Tap a creek for its graphs</span>" +
+        (more.length ? '<span class="cbtn more" data-more="1" style="margin-left:auto">More creeks ▾</span>' : ""))
+    : '<span class="cbtn back" data-creek="all">‹ All creeks</span><span class="cname">' + esc(c.name) + "</span>" +
+      (more.length ? '<span class="cbtn more" data-more="1" style="margin-left:auto">More creeks ▾</span>' : "") +
+      '<span class="cinfo" data-info="1"' + (more.length ? ' style="margin-left:0"' : "") + ">ⓘ notes</span>";
   el("call").style.display = all ? "" : "none";
   el("cbody").style.display = all ? "none" : "";
   if (all) { destroyCreekCharts(); renderAllCreeks(states, now); return; }
@@ -1626,14 +1641,15 @@ function renderAllCreeks(states, now) {
     var el = document.getElementById("call");
     el.style.gridTemplateColumns = "1fr"; el.style.gridTemplateRows = "1fr";
     el.innerHTML = CREEK_STATUS.board(C.data);
+    var hd = el.querySelector(".cs-bhead span"); if (hd) hd.textContent += " · tap a creek for its graphs";
     // Rows that don't fit (the screen is shorter during a creek alert) fold into one line, least serious first
     var box = el.querySelector(".cs-brows"), rows = box ? Array.prototype.slice.call(box.querySelectorAll(".cs-brow")) : [], cut = [], more = null;
     function over() { return box.scrollHeight > box.clientHeight + 1; }
     while (box && rows.length > 1 && over()) {
       var r = rows.pop(); r.style.display = "none";
-      cut.unshift(r.querySelector(".cs-bname").textContent + " (" + r.querySelector(".cs-bword").textContent + ")");
+      cut.unshift('<span data-creek="' + esc(r.dataset.creek) + '">' + esc(r.querySelector(".cs-bname").textContent) + "</span> (" + esc(r.querySelector(".cs-bword").textContent) + ")");
       if (!more) { more = document.createElement("div"); more.className = "cs-bquiet"; more.style.marginTop = "0"; box.parentNode.insertBefore(more, box.nextSibling); }
-      more.innerHTML = "<b>+" + cut.length + " more:</b> " + esc(cut.join(" · ")) + " · see the Creeks page";
+      more.innerHTML = "<b>+" + cut.length + " more:</b> " + cut.join(" · ");
     }
     return;
   }
@@ -1728,8 +1744,9 @@ function updateCreekAlert(states) {
   var bt = window.TIDE_SEASON ? window.TIDE_SEASON.line(tsDay) : null, now0 = nowLocal();
   var hw = !worst && bt && bt.cls === "red" && bt.date <= window.TIDE_SEASON.iso(now0 + 86400000) ? bt : null;
   stage.classList.toggle("creekalert", !!(worst || hw));
+  stage.classList.toggle("crk", !!worst);
   strip.dataset.go = hw ? "tides" : "creek";
-  document.getElementById("csTap").textContent = hw ? "Bayside Tides ›" : "creeks tab ›";
+  document.getElementById("csTap").textContent = hw ? "Bayside Tides ›" : currentTab === "creek" ? "graphs ›" : "creeks tab ›";
   if (hw) {
     strip.className = "lvl-warning"; strip.style.background = "#c62828"; strip.style.color = "#fff";
     document.getElementById("csText").innerHTML = "<b>" + esc(LK.text("tide_red_chip")) + " · REDWOOD CITY</b> · " + esc(bt.main);
@@ -1966,6 +1983,8 @@ function showTab(name) {
   currentTab = name; tabChangedAt = Date.now();
   var creek = name === "creek", about = name === "about", tides = name === "tides" || name === "coast";
   setSide(name === "coast");
+  document.getElementById("stage").classList.toggle("oncreek", creek);
+  if (C.lastStates && !creek) updateCreekAlert(C.lastStates);
   document.getElementById("creek").classList.toggle("show", creek);
   document.getElementById("about").classList.toggle("show", about);
   document.getElementById("disclaimer").classList.toggle("show", name === "disclaimer");

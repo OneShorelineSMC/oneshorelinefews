@@ -421,7 +421,7 @@
       if (n === 0 && x.v.eoc) r += '<div class="cs-beoc"><b>EOC:</b> ' + esc(x.v.eoc) + "</div>";
       return r;
     }).join("") + "</div>";
-    if (quiet.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + esc(quiet.map(function (x) { return x.c.short || x.c.name; }).join(" · ")) + "</div>";
+    if (quiet.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + quiet.map(function (x) { return '<span data-creek="' + esc(x.c.id) + '">' + esc(x.c.short || x.c.name) + "</span>"; }).join(" · ") + "</div>";
     return h + "</div>";
   }
 
