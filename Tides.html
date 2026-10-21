@@ -144,6 +144,7 @@
   nav button { flex: 1; border: 0; background: none; font: inherit; font-size: 13px; color: var(--muted);
     padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav button .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav button.on { color: var(--ink); font-weight: bold; }
   nav button .dot { display: none; width: 9px; height: 9px; border-radius: 50%; position: absolute; margin-left: 22px; }
   /* Bayside | Coastside switch (two pages, one file: ?side=coast) */
@@ -384,12 +385,13 @@
   <button data-href="index.html"><span class="i">🏠</span>Home</button>
   <button data-href="Creeks.html"><span class="i">🌊</span>Creeks</button>
   <button class="on"><span class="i">〰️</span>Tides</button>
+  <button data-href="Shoreline.html"><span class="i">🏖️</span>Shoreline</button>
   <button data-href="SiteMap.html"><span class="i">🗺️</span>Map</button>
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261021a"></script>
-<script src="tide_season.js?v=20261021a"></script>
+<script src="lookups.js?v=20261021b"></script>
+<script src="tide_season.js?v=20261021b"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }

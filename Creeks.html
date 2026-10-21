@@ -218,6 +218,7 @@
   nav button { flex: 1; border: 0; background: none; font: inherit; font-size: 13px; color: var(--muted);
     padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav button .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav button.on { color: var(--ink); font-weight: bold; }
   nav button .dot { display: none; width: 9px; height: 9px; border-radius: 50%; position: absolute; margin-left: 22px; }
 </style>
@@ -330,12 +331,13 @@
   <button data-href="index.html"><span class="i">🏠</span>Home</button>
   <button class="on" data-tab="creek"><span class="i">🌊</span>Creeks<span class="dot" id="navDot"></span></button>
   <button data-href="Tides.html"><span class="i">〰️</span>Tides</button>
+  <button data-href="Shoreline.html"><span class="i">🏖️</span>Shoreline</button>
   <button data-href="SiteMap.html"><span class="i">🗺️</span>Map</button>
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261021a"></script>
-<script src="creek_status.js?v=20261021a"></script>
+<script src="lookups.js?v=20261021b"></script>
+<script src="creek_status.js?v=20261021b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).

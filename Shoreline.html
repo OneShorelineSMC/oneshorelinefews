@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shoreline">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>Shoreline – OneShoreline</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+  crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root {
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5b6877; --line: #e3e8ee;
+    --red: #c0392b; --blue: #1e88e5; --info: #0a5587; --soon: #c62828; --later: #b45a00; --spot: #1e6fb8;
+    --okbg: rgba(46,125,50,.08); --okb: #2e7d32; --nearbg: rgba(30,136,229,.08); --nearb: #1e88e5; --reachbg: rgba(198,40,40,.07); --reachb: #c62828;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
+      --red: #f47c79; --info: #8cc8ff; --soon: #f47c79; --later: #ffa94d; --spot: #6ea8fe;
+      --okbg: rgba(102,187,106,.12); --okb: #66bb6a; --nearbg: rgba(78,163,240,.12); --nearb: #4ea3f0; --reachbg: rgba(244,124,121,.12); --reachb: #f47c79; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  a { color: inherit; }
+  header { background: #0A5587; color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap { display: flex; align-items: center; gap: 11px; max-width: 860px; margin: 0 auto; }
+  header .mark { width: 36px; height: 36px; flex: none; }
+  header .ht { font-size: 19px; font-weight: bold; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; line-height: 1.25; }
+  /* Weather Service coastal alerts (the full alert is on the home page) */
+  #alert { display: none; color: #fff; background: #9a5b00; padding: 10px 16px; gap: 10px; align-items: center; text-decoration: none; }
+  #alert.show { display: flex; } #alert.warning { background: #b71c1c; } #alert.statement { background: #455a75; }
+  #alert .ic { font-size: 22px; line-height: 1; } #alert .tx { flex: 1; min-width: 0; } #alert b { font-size: 16px; } #alert small { display: block; font-size: 12.5px; opacity: .92; }
+  main { max-width: 900px; margin: 0 auto; padding: 0 12px; }
+  h1.page { font-size: 22px; color: var(--ink); margin: 12px 2px 2px; }
+  .intro { font-size: 14px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.45; }
+  .card { background: var(--card); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+  .draft { display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: var(--later);
+    border: 1.5px solid var(--later); border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: 2px; }
+  /* the headline: will the coming tides reach the low spots? */
+  #head { border-left: 6px solid var(--muted); }
+  #head.ok { border-left-color: var(--okb); background: var(--okbg); }
+  #head.near { border-left-color: var(--nearb); background: var(--nearbg); }
+  #head.reach { border-left-color: var(--reachb); background: var(--reachbg); }
+  #head h2 { margin: 0 0 4px; font-size: 18px; color: var(--ink); line-height: 1.3; }
+  #head p { margin: 4px 0; font-size: 15px; line-height: 1.45; }
+  #head .later { font-size: 14px; color: var(--muted); }
+  /* the map */
+  #map { height: 62vh; min-height: 340px; max-height: 620px; border-radius: 10px; }
+  .mapcard { padding: 8px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); margin: 8px 4px 2px; }
+  .key i { display: inline-block; width: 16px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .nomap { padding: 30px 14px; text-align: center; color: var(--muted); font-size: 14.5px; line-height: 1.45; }
+  .leaflet-container .leaflet-control-attribution { font-size: 10px; } .leaflet-control-attribution a { text-decoration: underline; }
+  .leaflet-popup-content { font-size: 14px; line-height: 1.4; margin: 10px 12px; } .leaflet-popup-content b { color: #003B5C; }
+  /* the list */
+  #list h2 { margin: 0 0 6px; font-size: 17px; color: var(--ink); }
+  #list h3 { margin: 12px 0 4px; font-size: 15px; color: var(--ink); }
+  #list ul { list-style: none; margin: 0; padding: 0; }
+  #list li { padding: 7px 0; border-top: 1px solid var(--line); font-size: 14.5px; line-height: 1.35; cursor: pointer; }
+  #list li .nx { display: block; font-size: 13px; color: var(--muted); }
+  #list li .nx.soon { color: var(--soon); font-weight: 700; } #list li .nx.later { color: var(--later); }
+  #list li:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  details.card summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 32px; display: flex; align-items: center; }
+  details.card p { font-size: 14px; line-height: 1.5; margin: 8px 0; }
+  .lbl { font-size: 12.5px; color: var(--muted); }
+  .always { text-align: center; margin: 8px 6px 4px; line-height: 1.45; }
+  .owner { text-align: center; font-size: 12.5px; color: var(--muted); margin: 18px 0 10px; line-height: 1.45; }
+  .owner img { display: block; margin: 0 auto 6px; height: 37px; width: auto; }
+  /* Bottom tab bar (the same on every page) */
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
+    border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
+  nav a.on { color: var(--ink); font-weight: bold; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <img class="mark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="36" height="36">
+    <div><div class="ht">Flood Early Warning</div>
+      <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
+  </div>
+</header>
+<a id="alert" href="index.html"><span class="ic" aria-hidden="true">⚠</span><span class="tx"><b id="aMain"></b><small id="aSub"></small></span></a>
+
+<main>
+  <h1 class="page">Shoreline<span class="draft" id="draftTag" hidden>Draft</span></h1>
+  <p class="intro" data-text="shore_intro"></p>
+
+  <div class="card" id="head" aria-live="polite"><h2>Loading tides…</h2></div>
+
+  <div class="card mapcard">
+    <div id="map" role="region" aria-label="Map of low spots along the Bay shoreline. The same places are listed below the map."></div>
+    <div class="key" id="key"></div>
+  </div>
+
+  <div class="card" id="list"></div>
+
+  <details class="card" id="about">
+    <summary>About this map</summary>
+    <p data-text="shore_about_what"></p>
+    <p data-text="shore_about_levels"></p>
+    <p data-text="shore_about_limits"></p>
+    <p id="aboutOffset" hidden></p>
+    <p data-text="shore_about_draft" id="aboutDraft" hidden></p>
+    <p class="lbl">Low spots: BCDC (San Francisco Bay Conservation and Development Commission), Adapting to Rising Tides maps, 2017
+      (<a href="https://www.sfei.org/projects/adapting-rising-tides-bay-shoreline-flood-explorer" rel="noopener">Bay Shoreline Flood Explorer</a>).
+      Tides: NOAA tide gauge 9414523, Redwood City. Map: © OpenStreetMap contributors.</p>
+  </details>
+
+  <p class="lbl always"><span data-text="disclaimer_short"></span> <a href="Creeks.html#about">Disclaimer</a> · <span data-text="e911"></span></p>
+  <p class="lbl always" id="updated"></p>
+</main>
+<div class="owner"><img src="img/oneshoreline-logo.png" alt="OneShoreline" width="140" height="37">Operated by OneShoreline, the San Mateo County Flood and Sea Level Rise Resiliency District · <a href="https://oneshoreline.org">oneshoreline.org</a></div>
+
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">🌊</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true">〰️</span>Tides</a>
+  <a class="on" href="Shoreline.html" aria-current="page"><span class="i" aria-hidden="true">🏖️</span>Shoreline</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+
+<script src="lookups.js?v=20261021b"></script>
+<script src="tide_season.js?v=20261021b"></script>
+<script>
+/* Shoreline: low spots along San Mateo County's Bay shoreline (BCDC Adapting to Rising Tides maps) and whether the coming
+   tides at Redwood City are high enough to reach them. lookups/THRESHOLDS_BASIS.md §4c.
+   Spots: lookups/shoreline_hotspots.csv (reviewed), or the draft lookups/proposed/shoreline_hotspots.csv until there is one
+   (the page then says Draft). Shapes: data/shoreline_hotspots_candidates.geojson (scripts/build_shoreline_hotspots.py).
+   A spot's level_in is inches above an average high tide (MHHW) in BCDC's maps; the page compares it with how far the tide at
+   Redwood City is above MHHW there (tide_season.js: the tide table, the NOAA projection for 2 days, the recent offset after it).
+   It never sets a status or a color elsewhere; nothing here is a forecast of flooding at a given address. */
+var LK = window.LOOKUPS, TS = window.TIDE_SEASON;
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function dayName(iso, today) {
+  if (iso === today) return "Today";
+  if (iso === TS.iso(Date.parse(today + "T12:00:00Z") + 86400000)) return "Tomorrow";
+  return new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
+}
+function ft1(v) { return "about " + v.toFixed(1) + " ft"; }
+var AHEAD_DAYS = 30;   // how far ahead the list says when a spot could be reached (the tide table; the recent offset stops at BAY_OFFSET_AHEAD_DAYS)
+
+var SP = { rows: null, draft: false, shapes: null }, map = null, layers = {};
+function loadSpots() {
+  function use(rows, draft) {
+    rows = (rows || []).filter(function (r) { return r.id && isFinite(+r.level_in) && +r.level_in > 0 && !/^no$/i.test(r.include || ""); });
+    if (!rows.length) throw new Error("empty");
+    SP.rows = rows; SP.draft = draft; render();
+  }
+  return LK.csv("shoreline_hotspots.csv").then(function (r) { use(r, false); })
+    .catch(function () { return LK.csv("proposed/shoreline_hotspots.csv").then(function (r) { use(r, true); }); })
+    .catch(function () { SP.rows = []; render(); });
+}
+function loadShapes() {
+  return fetch("data/shoreline_hotspots_candidates.geojson?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (g) { SP.shapes = {}; (g.features || []).forEach(function (f) { if (f.properties && f.properties.id) SP.shapes[f.properties.id] = f; }); render(); })
+    .catch(function () { SP.shapes = {}; render(); });
+}
+
+/* Each day's highest tide for the next AHEAD_DAYS: the NOAA projection where there is one, else the tide table, and the tide
+   table plus the recent offset where the page uses it ("if the Bay stays this high"). */
+function days(now) {
+  var today = TS.iso(now), dh = TS.dayHighs(), ex = TS.expected(now), od = TS.offsetDays(now), out = [];
+  for (var n = 0; n <= AHEAD_DAYS; n++) {
+    var d = TS.iso(now + n * 86400000), x = ex[d], h = dh[d];
+    if (!x && !h) continue;
+    if (!x && h.t < now - 90 * 60000) continue;   // today's highest tide already passed
+    out.push({ d: d, t: x ? x.t : h.t, v: x ? x.v : h.v, src: x ? "projected" : "table", ov: od[d] ? od[d].v : null, today: today });
+  }
+  return out;
+}
+function levelFt(r) { return TS.mhhw() + (+r.level_in) / 12; }   // the Redwood City tide that matches the spot's level
+// For one spot: the first day the tide reaches it (projected or tide table), and the first day it would if the Bay stays high
+function nextFor(r, ds) {
+  var L = levelFt(r) - 1e-9, a = null, b = null;
+  ds.forEach(function (x) { if (!a && x.v >= L) a = x; if (!b && x.ov != null && x.ov >= L) b = x; });
+  if (a && b && b.d >= a.d) b = null;
+  return { hit: a, ifHigh: b };
+}
+function status(nx, now) {   // soon: within the next 2 days; later: in the next month; high: only if the Bay stays high; none
+  var soonEnd = TS.iso(now + 86400000);
+  if (nx.hit && nx.hit.d <= soonEnd) return "soon";
+  if (nx.hit) return "later";
+  if (nx.ifHigh) return "high";
+  return "none";
+}
+function whenText(nx, now) {
+  if (!nx.hit && !nx.ifHigh) return LK.text("shore_not_month");
+  var o = TS.offset(), out = [];
+  function day(x) { return dayName(x.d, x.today) + " " + TS.clock(x.t); }
+  // "if the Bay stays high" first when it comes sooner than the tide table (nextFor drops it when it doesn't)
+  if (nx.ifHigh) out.push(LK.text("shore_when_ifhigh", { day: day(nx.ifHigh), ft: ft1(nx.ifHigh.ov), off: o ? o.ft.toFixed(1) : "" }));
+  if (nx.hit) out.push(LK.text(nx.hit.src === "projected" ? "shore_when_projected" : "shore_when_table", { day: day(nx.hit), ft: ft1(nx.hit.v) }));
+  return out.join(" · ");
+}
+function firstOf(nx) { return nx.ifHigh && (!nx.hit || nx.ifHigh.d < nx.hit.d) ? { x: nx.ifHigh, ifHigh: true } : nx.hit ? { x: nx.hit, ifHigh: false } : null; }
+
+var COL = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+function styleFor(st) {
+  if (st === "soon") return { color: COL("--soon"), weight: 2, fillColor: COL("--soon"), fillOpacity: 0.55 };
+  if (st === "later") return { color: COL("--later"), weight: 2, fillColor: COL("--later"), fillOpacity: 0.45 };
+  if (st === "high") return { color: COL("--later"), weight: 2, dashArray: "4 4", fillColor: COL("--later"), fillOpacity: 0.18 };
+  return { color: COL("--spot"), weight: 1, fillColor: COL("--spot"), fillOpacity: 0.28 };
+}
+function popupFor(r, nx, now) {
+  var el = document.createElement("div"), b = document.createElement("b"), p1 = document.createElement("div"), p2 = document.createElement("div");
+  b.textContent = r.name || r.id;
+  p1.textContent = LK.text("shore_spot_level", { ft: ft1(levelFt(r)) });
+  p2.textContent = whenText(nx, now);
+  el.appendChild(b); el.appendChild(p1); el.appendChild(p2);
+  return el;
+}
+
+function render() {
+  if (!TS) return;
+  var now = TS.now(), rows = SP.rows, ready = !!TS.state.highs;
+  $("draftTag").hidden = !SP.draft; $("aboutDraft").hidden = !SP.draft;
+  var o = TS.offset(), ao = $("aboutOffset");
+  ao.hidden = !o; if (o) ao.textContent = LK.text("shore_about_offset", { off: o.ft.toFixed(2), days: o.days });
+  var head = $("head");
+  if (!ready || !rows) { head.className = "card"; head.innerHTML = "<h2>" + esc(!rows ? "Loading the low spots…" : "Loading tides…") + "</h2>"; }
+  else if (!rows.length) { head.className = "card"; head.innerHTML = "<h2>" + esc(LK.text("shore_no_list")) + "</h2>"; }
+  var ds = ready ? days(now) : [], info = (rows || []).map(function (r) { var nx = nextFor(r, ds); return { r: r, nx: nx, st: status(nx, now) }; });
+
+  // Headline: the next 2 days, then later this month
+  if (ready && rows && rows.length) {
+    var two = ds.filter(function (x) { return x.d <= TS.iso(now + 86400000); }), top = null;
+    two.forEach(function (x) { if (!top || x.v > top.v) top = x; });
+    var lowest = Math.min.apply(null, rows.map(levelFt)), soon = info.filter(function (x) { return x.st === "soon"; });
+    var later = info.filter(function (x) { return x.st === "later" || x.st === "high"; });
+    var firsts = later.map(function (x) { return firstOf(x.nx); }).sort(function (a, b) { return a.x.d < b.x.d ? -1 : a.x.d > b.x.d ? 1 : 0; });
+    var firstLater = firsts.length ? firsts[0].x : null;
+    var h = "";
+    if (soon.length) {
+      head.className = "card reach";
+      h += "<h2>" + esc(LK.text("shore_head_reach", { n: soon.length, s: soon.length > 1 ? "s" : "" })) + "</h2>";
+    } else {
+      head.className = "card " + (top && top.v >= lowest - 0.5 ? "near" : "ok");
+      h += "<h2>" + esc(LK.text("shore_head_ok")) + "</h2>";
+    }
+    if (top) h += "<p>" + esc(LK.text("shore_head_top", { day: dayName(top.d, top.today) + " " + TS.clock(top.t), ft: ft1(top.v),
+      src: top.src === "projected" ? LK.text("shore_src_projected") : LK.text("shore_src_table"), low: ft1(lowest) })) + "</p>";
+    if (firstLater) {
+      var nLater = firsts.filter(function (f) { return f.x.d === firstLater.d; }).length;
+      h += '<p class="later">' + esc(LK.text(!firsts[0].ifHigh ? "shore_head_later_table" : "shore_head_later_ifhigh",
+        { day: dayName(firstLater.d, firstLater.today), n: nLater, s: nLater > 1 ? "s" : "", off: o ? o.ft.toFixed(1) : "" })) + "</p>";
+    } else h += '<p class="later">' + esc(LK.text(soon.length ? "shore_head_none_more" : "shore_head_none_month")) + "</p>";
+    head.innerHTML = h;
+  }
+
+  // Map
+  drawMap(info, now);
+
+  // List, grouped by level (lowest first), each with when the tide could next reach it
+  var L = $("list");
+  if (!rows || !rows.length) { L.innerHTML = ""; L.style.display = "none"; }
+  else {
+    L.style.display = "";
+    var groups = {}; info.forEach(function (x) { (groups[x.r.level_in] = groups[x.r.level_in] || []).push(x); });
+    L.innerHTML = "<h2>" + esc(LK.text("shore_list_title")) + "</h2>" + Object.keys(groups).sort(function (a, b) { return a - b; }).map(function (k) {
+      var g = groups[k].sort(function (a, b) { return ["soon", "later", "high", "none"].indexOf(a.st) - ["soon", "later", "high", "none"].indexOf(b.st); });
+      return "<h3>" + esc(LK.text("shore_group", { ft: ft1(levelFt(g[0].r)) })) + "</h3><ul>" + g.map(function (x) {
+        return '<li tabindex="0" role="button" data-id="' + esc(x.r.id) + '">' + esc(x.r.name || x.r.id) +
+          '<span class="nx ' + (x.st === "soon" ? "soon" : x.st === "none" ? "" : "later") + '">' + esc(whenText(x.nx, now)) + "</span></li>";
+      }).join("") + "</ul>";
+    }).join("");
+  }
+  $("updated").textContent = "Tides from NOAA at Redwood City · updated " + TS.clock(now) + " · refreshes automatically";
+}
+
+function drawMap(info, now) {
+  if (typeof L === "undefined") return;
+  var box = $("map");
+  if (SP.shapes && !Object.keys(SP.shapes).length) {
+    if (map) { map.remove(); map = null; }
+    box.innerHTML = '<div class="nomap">' + esc(LK.text("shore_no_map")) + "</div>"; $("key").innerHTML = ""; return;
+  }
+  if (!SP.shapes || !info.length) return;
+  if (!map) {
+    box.innerHTML = "";
+    map = L.map("map", { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([37.56, -122.27], 11);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · BCDC ART' }).addTo(map);
+    map.once("focus", function () { map.scrollWheelZoom.enable(); });
+  }
+  Object.keys(layers).forEach(function (k) { map.removeLayer(layers[k]); }); layers = {};
+  var bounds = [];
+  ["none", "high", "later", "soon"].forEach(function (st) {   // stronger colors drawn last, on top
+    info.filter(function (x) { return x.st === st && SP.shapes[x.r.id]; }).forEach(function (x) {
+      var lay = L.geoJSON(SP.shapes[x.r.id], { style: styleFor(st) }).bindPopup(popupFor(x.r, x.nx, now)).addTo(map);
+      layers[x.r.id] = lay;
+      bounds.push(lay.getBounds());
+    });
+  });
+  if (bounds.length && !map._fitted) { var bb = bounds[0]; bounds.forEach(function (b) { bb.extend(b); }); map.fitBounds(bb, { padding: [12, 12] }); map._fitted = true; }
+  var seen = {}; info.forEach(function (x) { seen[x.st] = 1; });
+  var k = [["soon", "shore_key_soon"], ["later", "shore_key_later"], ["high", "shore_key_high"], ["none", "shore_key_none"]].filter(function (p) { return seen[p[0]]; });
+  $("key").innerHTML = k.map(function (p) {
+    var s = styleFor(p[0]);
+    return '<span><i style="background:' + s.fillColor + ";opacity:" + (0.35 + s.fillOpacity) + ";border:2px " + (s.dashArray ? "dashed" : "solid") + " " + s.color + '"></i>' + esc(LK.text(p[1])) + "</span>";
+  }).join("");
+}
+// Tap a spot in the list: open it on the map
+$("list").addEventListener("click", function (e) {
+  var li = e.target.closest("li[data-id]"); if (!li || !map || !layers[li.dataset.id]) return;
+  var lay = layers[li.dataset.id]; map.fitBounds(lay.getBounds(), { maxZoom: 16, padding: [20, 20] }); lay.openPopup();
+  $("map").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+$("list").addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target.matches("li[data-id]")) { e.preventDefault(); e.target.click(); } });
+
+/* Weather Service coastal alerts for the county: one line, full details on the home page */
+function loadAlerts() {
+  fetch("https://api.weather.gov/alerts/active?area=CA", { headers: { Accept: "application/geo+json" } }).then(function (r) { return r.json(); }).then(function (j) {
+    var a = (j.features || []).map(function (f) { return f.properties; }).filter(function (p) {
+      return ((p.geocode && p.geocode.SAME) || []).indexOf("006081") >= 0 && p.status === "Actual" && p.messageType !== "Cancel" &&
+        /coastal|tidal|surf|beach|storm surge/i.test(p.event || "");
+    })[0], el = $("alert");
+    el.className = a ? "show " + (/warning/i.test(a.event) ? "warning" : /statement/i.test(a.event) ? "statement" : "") : "";
+    if (a) { $("aMain").textContent = a.event; $("aSub").textContent = "National Weather Service · details on the home page ›"; }
+  }).catch(function () {});
+}
+
+if (TS) {
+  TS.onUpdate(render);
+  TS.load();
+  setInterval(TS.loadTable, 12 * 3600000);
+  setInterval(TS.loadModel, 60 * 60000);
+  setInterval(TS.loadOffset, 60 * 60000);
+}
+loadSpots(); loadShapes(); loadAlerts();
+setInterval(loadAlerts, 5 * 60000);
+setInterval(render, 60000);
+LK.onChange(render);   // edited lookups/ files: wording and MHHW (the wording on the page is filled in by lookups.js)
+</script>
+</body>
+</html>

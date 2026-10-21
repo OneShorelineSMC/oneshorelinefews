@@ -50,6 +50,7 @@
   nav a { flex: 1; font-size: 12.5px; color: var(--muted); text-decoration: none; min-width: 0;
     padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav a.on { color: var(--ink); font-weight: bold; }
 </style>
 </head>
@@ -85,12 +86,13 @@
   <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
   <a href="Creeks.html"><span class="i" aria-hidden="true">🌊</span>Creeks</a>
   <a href="Tides.html"><span class="i" aria-hidden="true">〰️</span>Tides</a>
+  <a href="Shoreline.html"><span class="i" aria-hidden="true">🏖️</span>Shoreline</a>
   <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
   <a class="on" href="CommunityFloodReports.html" aria-current="page"><span class="i" aria-hidden="true">📍</span>Report</a>
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261021a"></script>
+<script src="lookups.js?v=20261021b"></script>
 <script>
 // The report form is an ArcGIS Survey123 form (COMMUNITY_FLOOD_REPORTS_SETUP.md). Its link lives in lookups/display_text.csv
 // (url_report_form); blank = reporting not open yet. Only a survey123.arcgis.com/share/<item id> link is accepted,
