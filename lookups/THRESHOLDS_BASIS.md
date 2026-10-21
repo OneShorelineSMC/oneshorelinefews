@@ -184,33 +184,6 @@ weighing when the level is confirmed against known flooding. The official values
 (`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/<id>/floodlevels.json`: `nos_minor`,
 `nos_moderate`, `nos_major`, `nws_minor` …; datum not stated in the docs, to confirm); not yet read here.
 
-### 4b. After the NOAA projection: the tide table plus the recent offset (Oct 21, 2026; provisional)
-
-NOAA's projection (its Bay and West Coast models, `ofs_water_level`) runs about 48 hours ahead. After that the pages
-used only the tide table, which leaves out a Bay that has been running high for weeks (for example in an El Niño
-winter). Since Oct 21, 2026 the Tides page and the kiosk add the **recent offset** to the tide table after the
-projection ends:
-
-- **Offset** (`scripts/tide_offset.py`, data branch `tide_offset.json`, once a day): for each of the last
-  `BAY_OFFSET_DAYS` (30) whole days, the day's average of NOAA's measured water level minus NOAA's tide table at the
-  station (6-minute data; a day counts if at least 80% of its readings are there); the offset is the average of those
-  daily averages, if at least two thirds of the days count. Redwood City, Alameda and Monterey.
-- **Why daily averages over a month:** a storm surge lasts hours to a day or two, so it moves a 30-day average of daily
-  means very little (a 2 ft surge for 6 hours moves it about 0.02 ft); slow rises that last weeks to months, such as
-  El Niño, stay in. This is persistence of the mean sea level anomaly, which NOAA's high tide flooding research found
-  adds skill at 1–3 month leads, especially on the West Coast (Dusek et al. 2022, *Frontiers in Marine Science*,
-  doi:10.3389/fmars.2022.1073792).
-- **Shown** only when the water has run at least `BAY_OFFSET_MIN_FT` (0.1 ft) **higher** than the tide table, the offset
-  is less than `BAY_OFFSET_MAX_AGE_HOURS` (48) old, and `BAY_OFFSET_SHOW` = 1: a thin gray dotted line on the Tides page
-  graph after the projection; "≈ x ft if the Bay stays high" in the day list; a gray dotted ring on calendar days the
-  offset would take to the flood level (`TIDE_RED_FT_RWC`), no more than `BAY_OFFSET_AHEAD_DAYS` (30) ahead; the kiosk's Later line and look-ahead screen.
-- **Never** changes a color, the headline, the King Tide stars or any creek status. Wording says it is an assumption
-  ("if the Bay stays this high"), not a forecast; storms can add more.
-- Not used: NOAA's Annual and Monthly High Tide Flooding Outlooks, which use El Niño (the Oceanic Niño Index), list no
-  San Francisco Bay station (nearby: Point Reyes, Monterey).
-- **To review:** the 30-day window, the 30 days ahead on the calendar, the 0.1 ft minimum, whether to show a Bay running lower too, and whether the kiosk's
-  "running higher" note (last few high tides, `OFFSET_RECENT_HIGHS`, includes surge) should change.
-
 ## 5. Page logic settings — `settings.csv`
 
 | Setting | Value | Basis | Status | Checked by / on |
