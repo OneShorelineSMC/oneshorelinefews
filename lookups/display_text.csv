@@ -134,7 +134,7 @@ tide_offset_note,"After the NOAA projection ends, the gray dotted line adds {ft}
 tide_offset_day,≈ {ft} if the {water} stays high,Tides page day list (days after the NOAA projection),{ft} = tide table + offset,,
 tide_offset_cal,could reach the flood level if the {water} stays {off} ft higher than the tide table ({ft}),"Tides page and kiosk calendar (screen readers, tapped day)",{off} = the offset; {ft} = tide table + offset,,
 tide_offset_cal_key,Gray dotted ring: could reach {red} ft if the {water} stays this high,Tides page and kiosk calendar key,{red} = TIDE_RED_FT_RWC,,
-tide_offset_later,+{off} ft if the {water} stays high ›,"kiosk Bayside/Coastside Tides, in place of 'Tap for times' (the tap opens the look-ahead screen)",{off} = the offset,,
+tide_offset_later,If the {water} stays {off} ft higher than the tide table (its average this past month): {list},"kiosk Bayside/Coastside Tides, its own line under 'Later' (tap the tides for the look-ahead screen)",{off} = the offset; {list} = the later days and their heights with the offset,,
 tide_offset_assume,"It assumes the {water} stays that high. It isn’t a forecast, and storms can add more.",kiosk look-ahead (after the offset sentence),{water} = Bay or ocean,,
 shore_intro,"Low spots along San Mateo County’s Bay shoreline where very high tides can come over the edge, and whether the tides in the coming days and weeks are high enough to reach them.","Shoreline page, under the title",,,
 shore_no_list,The list of low spots isn’t ready yet.,"Shoreline page, before the list exists",,,
