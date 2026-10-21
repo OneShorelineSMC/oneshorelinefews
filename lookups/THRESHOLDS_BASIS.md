@@ -211,6 +211,35 @@ projection ends:
 - **To review:** the 30-day window, the 30 days ahead on the calendar, the 0.1 ft minimum, whether to show a Bay running lower too, and whether the kiosk's
   "running higher" note (last few high tides, `OFFSET_RECENT_HIGHS`, includes surge) should change.
 
+### 4c. Shoreline spots: BCDC Adapting to Rising Tides levels against the NOAA projection (Oct 21, 2026; staff preview, draft)
+
+Which places on the Bay shoreline the water would reach, not just how high it is at the gauge.
+
+- **Source:** BCDC's Adapting to Rising Tides (ART) Bay Area Sea Level Rise and Shoreline Analysis Maps (2017; 1 m
+  USGS/NOAA lidar from 2010–11, refined with local review; CC-BY), read from Caltrans' public map service
+  `DEA_BCDC_polygon_SLR`, one layer per total water level (e.g. "BCDC SLR 2.0 ft (24 in)"). ART's water levels are
+  inches above **local MHHW** (sea level rise plus a storm surge, or either alone).
+- **Draft list** (`scripts/build_shoreline_hotspots.py`, Actions > Build shoreline hotspots, run by hand): the flooded
+  areas at 12, 24 and 36 in above MHHW on San Mateo County's Bay side, pieces within 250 m grouped into one spot,
+  at least 0.5 acre, each spot listed at the lowest level that floods it, named after its Census city and County
+  watershed. Written to `proposed/shoreline_hotspots.csv` (and `data/shoreline_hotspots_candidates.geojson` to check
+  on a map), `include` = review.
+- **Review:** staff rename, merge, drop (`include` = no) and sign off rows, then save the list as
+  `lookups/shoreline_hotspots.csv`; the page uses that copy once it exists, the draft until then (marked "draft").
+- **Shown on the Shoreline tab (`Shoreline.html`, public, marked Draft while it reads the draft list):** each spot's level
+  turned into a tide height at Redwood City (MHHW + level, e.g. 12 in = about 8.0 ft), compared with each day's highest
+  tide for the next 30 days: the NOAA projection for 2 days, then the tide table, and the tide table plus the recent
+  offset (§4b) where that comes sooner. Headline for the next 2 days, an interactive map (OpenStreetMap; spots in reach
+  in 2 days red, later this month orange, only if the Bay stays high dashed orange, the rest blue) and a list with the
+  next date for each spot. Plain language; MHHW, NAVD88 and BCDC's method are in "About this map". Never a status or a
+  color anywhere else.
+- **Limits:** still water, no waves or wind setup; ground as of 2010–11 (newer levees or fills aren't in it); local MHHW
+  differs around the Bay, so comparing every spot with Redwood City's "above MHHW" is approximate (the northern
+  shoreline sits closer to Alameda's tide); our provisional 8.5 ft level is about 1.5 ft (18 in) above Redwood City's
+  MHHW, between ART's 12 and 24 in levels.
+- **To review:** start from any hotspot list OneShoreline already trusts; the 0.5 acre and 250 m rules; spot names; a
+  kiosk view.
+
 ## 5. Page logic settings — `settings.csv`
 
 | Setting | Value | Basis | Status | Checked by / on |
