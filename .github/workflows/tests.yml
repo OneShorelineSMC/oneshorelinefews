@@ -56,3 +56,5 @@ jobs:
         run: python scripts/test_rise_parity.py
       - name: NWS rain forecast and the Raining label
         run: python scripts/test_nws_forecast.py
+      - name: Bay offset after the NOAA projection
+        run: python scripts/test_tide_offset.py

@@ -47,6 +47,7 @@ jobs:
             git show FETCH_HEAD:sites.json > out/sites.json 2>/dev/null || true
             git show FETCH_HEAD:status_log.csv > out/status_log.csv 2>/dev/null || true
             git show FETCH_HEAD:creeks_7day.json > out/creeks_7day.json 2>/dev/null || true
+            git show FETCH_HEAD:tide_offset.json > out/tide_offset.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -63,6 +64,12 @@ jobs:
         # A problem here never stops the creek data from being published.
         continue-on-error: true
         run: python scripts/fetch_sites.py out/sites.json --min-age 14
+
+      - name: Bay offset vs the tide table (once a day; scripts/tide_offset.py)
+        # The last month's average of measured minus tide table at each NOAA tide station, which the tide pages add to
+        # the tide table after the NOAA projection ends. A problem here never stops the creek data; the last values are kept.
+        continue-on-error: true
+        run: python scripts/tide_offset.py out/tide_offset.json
 
       - name: Flood reports approved by staff (every 15 minutes)
         # A problem here never stops the creek data from being published; the last published reports are kept.
@@ -82,7 +89,7 @@ jobs:
           git checkout -q -b data
           [ -s sites.json ] || rm -f sites.json
           cp creeks.json sanbruno.json   # older name, kept so pages not yet updated keep working
-          git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) \
+          git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
