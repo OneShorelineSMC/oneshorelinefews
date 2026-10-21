@@ -58,3 +58,5 @@ jobs:
         run: python scripts/test_nws_forecast.py
       - name: Bay offset after the NOAA projection
         run: python scripts/test_tide_offset.py
+      - name: Shoreline hotspots draft list
+        run: python scripts/test_shoreline_hotspots.py
