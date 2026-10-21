@@ -40,6 +40,8 @@ SETTINGS = {
     "BE_READY_FROM_RAIN": (1, 0, 1), "RAIN_NOW_MIN": (60, 15, 180), "RAIN_NOW_IN": (0.01, 0.01, 0.5),
     # NWS rain forecast (scripts/nws_forecast.py)
     "FORECAST_EVERY_MIN": (60, 15, 360), "FORECAST_KEEP_HOURS": (12, 1, 48),
+    # Bay offset after the NOAA projection (scripts/tide_offset.py): days averaged
+    "BAY_OFFSET_DAYS": (30, 7, 31),
     # flood reports (scripts/fetch_community_flood_reports.py)
     "REPORTS_PUBLIC": (0, 0, 1), "REPORTS_MAX_AGE_DAYS": (180, 1, 730), "REPORTS_MAX_PHOTOS": (40, 0, 200),
 }
