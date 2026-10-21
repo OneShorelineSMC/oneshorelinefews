@@ -20,7 +20,7 @@ jobs:
       max-parallel: 5         # stay polite to USGS
       matrix:
         site: ["11164500", "11162500", "11162570", "11162619", "11162620",
-               "11162630", "111626182", "11162753", "11162750"]
+               "11162630", "111626182", "11162753", "11162750", "11162540"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
