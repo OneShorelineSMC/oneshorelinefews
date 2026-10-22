@@ -1,11 +1,12 @@
 name: Build shoreline hotspots
 
-# A draft list of the low points on San Mateo County's Bay shoreline: where BCDC's Adapting to Rising Tides "shoreline
-# overtopping" layer shows the Bay coming over the shoreline at 12, 24 and 36 inches above MHHW
-# (scripts/build_shoreline_lowpoints.py). Reads the overtopping layers from BCDC's RSAP "Physical Conditions Vector"
-# map (the log lists its layers), or data/shoreline_overtopping.geojson (a GIS export) when that file is there; writes lookups/proposed/shoreline_hotspots.csv and data/shoreline_hotspots_candidates.geojson for
-# staff review. The pages read the reviewed copy, lookups/shoreline_hotspots.csv. Run it by hand (Actions > Build
-# shoreline hotspots > Run workflow) after uploading a new export. Commits only if the draft changed.
+# A draft list of the low points on San Mateo County's Bay shoreline: where the Bay comes over the shoreline at 12, 24
+# and 36 inches above MHHW (scripts/build_shoreline_lowpoints.py): SFEI's Bay Shore Inventory lines (from BCDC's RSAP
+# open data; wetland and channel lines left out) checked against BCDC's Adapting to Rising Tides flooded areas
+# (Caltrans map service), or BCDC's own overtopping lines if data/shoreline_overtopping.geojson (a GIS export) is there.
+# Writes lookups/proposed/shoreline_hotspots.csv and data/shoreline_hotspots_candidates.geojson for staff review; the
+# pages read the reviewed copy, lookups/shoreline_hotspots.csv. Run it by hand (Actions > Build shoreline hotspots >
+# Run workflow); about 10 minutes. Commits only if the draft changed.
 on:
   workflow_dispatch:
 
@@ -19,7 +20,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
