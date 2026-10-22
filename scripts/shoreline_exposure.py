@@ -12,6 +12,7 @@ Geometry with shapely (lon/lat; lengths and areas by a local metres-per-degree s
 Nothing here needs a key. Every source is optional except the habitat map: without it the list would be mostly marsh.
 """
 
+import functools
 import io
 import json
 import math
@@ -28,6 +29,7 @@ from shapely.geometry import shape, mapping, Point, MultiPoint, MultiLineString,
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
+print = functools.partial(print, flush=True)   # noqa: A001  (log lines show at once on GitHub)
 UA = {"User-Agent": "OneShoreline FEWS shoreline spots (github.com/OneShorelineSMC/oneshorelinefews)"}
 
 BAYLANDS = "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3190_fpu/FeatureServer/0/query"
@@ -113,10 +115,13 @@ def lines_only(g):
     return []
 
 
-def download(url, tries=3):
+RSAP_BUDGET_S = 600          # RSAP layers are optional: stop reading more of them after 10 minutes
+
+
+def download(url, tries=2):
     for k in range(tries):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=300) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=180) as r:
                 return r.read()
         except Exception as e:   # noqa: BLE001
             if k == tries - 1:
@@ -243,7 +248,9 @@ def read_county_shapefile(zip_bytes, want, box):
         fields = [f[0] for f in r.fields[1:]]
         print(f"  {os.path.basename(shp)}: {len(r)} shapes, fields {', '.join(fields[:30])}")
         out = []
-        for sr in r.iterShapeRecords():
+        for n, sr in enumerate(r.iterShapeRecords()):
+            if n and n % 100000 == 0:
+                print(f"    {n} of {len(r)} read, {len(out)} in the box so far")
             sh = sr.shape
             if not sh.points or not hasattr(sh, "bbox"):
                 continue
@@ -473,9 +480,12 @@ def assets_in_spots(layers_by_group, spots, box, get):
     areas (airports, ports) as a point inside the overlap."""
     geoms = [g for _, _, g in spots]
     tree = STRtree(geoms) if geoms else None
-    feats, by_spot = [], {}
+    feats, by_spot, t0 = [], {}, time.time()
     for group, layers in layers_by_group.items():
         for title, url in layers:
+            if time.time() - t0 > RSAP_BUDGET_S:
+                print(f"    {group} · {title}: skipped (RSAP time limit of {RSAP_BUDGET_S // 60} min reached)")
+                continue
             try:
                 fs = layer_features(url, box, get)
             except Exception as e:   # noqa: BLE001

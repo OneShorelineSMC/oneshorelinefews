@@ -28,6 +28,8 @@ Usage: python scripts/build_shoreline_hotspots.py
 """
 
 import csv
+import functools
+import time
 import json
 import math
 import os
@@ -353,8 +355,16 @@ def write(rows, csv_path=OUT_CSV, geo_path=OUT_GEO, exposure=None, wet_map=None,
             json.dump(wet_map, f, separators=(",", ":"))
 
 
+T0 = time.time()
+print = functools.partial(print, flush=True)   # noqa: A001  (the Actions log shows each line as it happens, even if the job is stopped)
+
+
+def step(msg):
+    print(f"[{(time.time() - T0) / 60:4.1f} min] {msg}")
+
+
 def main():
-    print("Reading the BCDC Adapting to Rising Tides layers (Caltrans map service)…")
+    step("Reading the BCDC Adapting to Rising Tides layers (Caltrans map service)…")
     lay = layers()
     if not lay:
         print("Couldn't read the map service's layer list (messages above). Nothing written.")
@@ -371,8 +381,8 @@ def main():
         except Exception as e:   # noqa: BLE001
             print(f"Couldn't read the {x} in layer: {type(e).__name__}: {str(e)[:400]}. Nothing written.")
             return 1
-        print(f"{x} in above MHHW: {len(by_level[x])} flooded polygons in the box")
-    print("Reading the SFEI Baylands Habitat Map (normally wet land, taken out)…")
+        step(f"{x} in above MHHW: {len(by_level[x])} flooded polygons in the box")
+    step("Reading the SFEI Baylands Habitat Map (normally wet land, taken out)…")
     try:
         habitats = E.load_baylands(M.arcgis, BAY_BOX)
     except Exception as e:   # noqa: BLE001
@@ -384,6 +394,7 @@ def main():
         kinds[k] = kinds.get(k, 0) + 1
     print(f"  {len(habitats)} habitat polygons: " + ", ".join(f"{k or '(blank)'} {n}" for k, n in sorted(kinds.items())))
     wet, tree = E.wet_mask(habitats)
+    step("Taking out the normally wet land…")
     by_level, removed = prepare(by_level, wet, tree)
     for x in LEVELS_IN:
         print(f"{x} in: {removed[x]:.0f} acres of marsh, mudflat, pond and open water taken out")
@@ -394,17 +405,21 @@ def main():
                 places.append({"name": (f.get("properties") or {}).get("BASENAME") or "", "polys": M.polys_of(f["geometry"])})
         except Exception as e:   # noqa: BLE001
             print(f"Census places (layer {layer}) unavailable ({type(e).__name__}); names without them")
+    step("Grouping the spots…")
     rows = candidates(by_level, load_watersheds(), places)
+    step(f"{len(rows)} spots; reading San Mateo County buildings and streets…")
     dev = E.load_developed(BAY_BOX)
-    print("Reading BCDC RSAP critical facilities and transportation (ArcGIS Online)…")
+    step("Reading BCDC RSAP critical facilities and transportation (ArcGIS Online)…")
     assets, by_spot = [], {}
     try:
-        lays = E.find_rsap_layers(M.get)
+        quick = lambda u: M.get(u, tries=2)   # noqa: E731  optional source: don't wait long on it
+        lays = E.find_rsap_layers(quick)
         for g, ls in lays.items():
             print(f"  RSAP {g}: " + ("; ".join(t for t, _ in ls) or "no layers found"))
-        assets, by_spot = E.assets_in_spots(lays, [(r["id"], r["level_in"], spot_geom(r)) for r in rows], BAY_BOX, M.get)
+        assets, by_spot = E.assets_in_spots(lays, [(r["id"], r["level_in"], spot_geom(r)) for r in rows], BAY_BOX, quick)
     except Exception as e:   # noqa: BLE001
         print(f"  RSAP layers unavailable: {type(e).__name__}: {str(e)[:300]}")
+    step("Counting buildings and streets in each spot…")
     exposure = add_exposure(rows, dev, by_spot) + assets
     write(rows, exposure=exposure, wet_map=E.map_habitats(habitats))
     for x in LEVELS_IN:
@@ -415,6 +430,7 @@ def main():
     for r in rows:
         if r.get("assets"):
             print(f"  {r['id']} {r['name']}: {r['assets']}")
+    step("Done.")
     for p in (OUT_CSV, OUT_GEO, OUT_EXPO, OUT_WET):
         print(f"Wrote {p} ({os.path.getsize(p) // 1024} KB)")
     return 0
