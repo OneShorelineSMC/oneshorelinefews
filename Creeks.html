@@ -85,8 +85,11 @@
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   /* city picker: which creeks we measure in or near a city (lookups/creek_facts.csv "cities") */
   .cp { margin: 0 0 12px; }
-  .cp details { background: var(--card); border-radius: 12px; border: 2px solid var(--line); }
-  .cp details[open] { border-color: #0A5587; }
+  .cp-box { background: var(--card); border-radius: 12px; border: 2px solid #0A5587; padding-top: 2px; }
+  .cp-t { margin: 0; padding: 12px 14px 8px; font-size: 18px; color: var(--ink); }
+  .cp-all { display: inline-flex; align-items: center; min-height: 44px; margin: 2px 0 0; padding: 0 2px; background: none; border: 0;
+    font: inherit; font-size: 15px; font-weight: 700; color: #0A5587; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .cp-all:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
   .cp summary { cursor: pointer; padding: 12px 14px; font-weight: 700; font-size: 17px; color: var(--ink); min-height: 44px; }
   .cp summary:focus-visible, .cp select:focus-visible, .cp a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
   .cp select { display: block; margin: 0 14px 10px; width: calc(100% - 28px); font: inherit; font-size: 16px; padding: 10px; border-radius: 8px;
@@ -246,11 +249,12 @@
   <div id="creekView">
     <div id="cpBanner"></div>
     <section class="cp" id="cityPick" hidden>
-      <details id="cpD"><summary><span id="cpH" data-text="city_title">Find your city</span></summary>
+      <div class="cp-box">
+        <h2 class="cp-t" id="cpH" data-text="city_title">Find flood information for your city</h2>
         <label class="vh" for="cpSel" data-text="city_choose">Choose a city or community</label>
         <select id="cpSel"></select>
         <div id="cpOut" aria-live="polite"></div>
-      </details>
+      </div>
     </section>
     <div id="allView"></div>
     <div id="one">
@@ -336,8 +340,8 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261022b"></script>
-<script src="creek_status.js?v=20261022b"></script>
+<script src="lookups.js?v=20261022c"></script>
+<script src="creek_status.js?v=20261022c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -593,19 +597,27 @@ function cityInit() {
     if (D.creek) render();
   }).catch(function () { /* no picker without the table */ });
 }
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.id === "cpAll") {
+    CITY.sel = ""; try { localStorage.setItem("fews_city", ""); } catch (x) {}
+    var sel = $("cpSel"); if (sel) { sel.value = ""; sel.focus(); }
+    renderCity();
+  }
+  var how = e.target && e.target.closest && e.target.closest("[data-howto]");   // "New to this page?": open the explainer
+  if (how) { var d = $("howto"); if (d) { e.preventDefault(); d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" }); var sm = d.querySelector("summary"); if (sm) sm.focus(); } }
+});
 function renderCity() {
   if (!CITY.list || !D.creek) return;
   $("cityPick").hidden = false;
   var CS = window.CREEK_STATUS, all = (D.creek.creeks || []).concat(D.creek.creeks_preview || []);
   var views = all.map(function (c) { return { c: c, v: CS ? CS.view(D.creek, c) : null }; });
-  var storm = views.some(function (x) { return x.v && x.v.rank >= 2; }), d = $("cpD");
-  if (!CITY.opened && (storm || CITY.sel)) { d.open = true; CITY.opened = true; }   // once: the viewer can still fold it
   var out = $("cpOut"), h = "";
   if (CITY.sel === "_other") h = '<p class="cp-note">' + esc(LK.text("city_other_note")) + "</p>";
   else if (CITY.sel) {
     var city = CITY.list.filter(function (x) { return x.slug === CITY.sel; })[0];
     var mine = views.filter(function (x) { return city.creeks.indexOf(x.c.id) >= 0; }).sort(function (a, b) { return (b.v ? b.v.rank : 0) - (a.v ? a.v.rank : 0); });
-    h = '<p class="cp-h">' + esc(LK.text("city_creeks", { city: city.name })) + "</p>";
+    h = '<p class="cp-h">' + esc(LK.text("city_creeks", { city: city.name })) + "</p>" +
+      '<p class="cp-note">' + esc(LK.text("city_coverage", { city: city.name })) + "</p>";
     if (!mine.some(function (x) { return x.v && x.v.rank >= 2; })) h += '<p class="cp-note">' + esc(LK.text("city_none", { city: city.name })) + "</p>";
     h += '<ul class="cp-list">' + mine.map(function (x) {
       var v = x.v;
@@ -613,6 +625,7 @@ function renderCity() {
         (v ? '<span class="cs-verdict cs-v-' + v.key + '">' + CS.icon(v.key) + esc(v.word) + "</span>" : "") + '<span aria-hidden="true">›</span></a></li>';
     }).join("") + "</ul>";
   }
+  if (CITY.sel) h += '<button type="button" class="cp-all" id="cpAll">' + esc(LK.text("city_all")) + "</button>";
   if (out.innerHTML !== h) out.innerHTML = h;   // a live region: rewrite only when it changes
 }
 
@@ -672,7 +685,11 @@ function render() {
   $("one").style.display = c ? "" : "none";
   if (!c) {
     document.title = "Creek Conditions – OneShoreline";
-    if (PV) $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); }, { previewLinks: true, compactNotes: true });
+    if (PV) {
+      $("creekView").insertBefore($("cityPick"), $("allView"));   // out of the way before the cards are redrawn
+      $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); }, { previewLinks: true, compactNotes: true });
+      var slot = $("cpSlot"); if (slot) slot.appendChild($("cityPick"));   // under the summary: answer first, then "your city"
+    }
     else renderAll(states, now);
     // a "call 911" banner stays first, above the city picker
     var bn = $("allView").querySelector(".cs-banner"); $("cpBanner").innerHTML = "";

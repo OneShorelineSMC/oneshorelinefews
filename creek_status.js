@@ -74,7 +74,7 @@
     likely: '<path d="M10 2.2 19 17.8H1Z" fill="currentColor"/><path class="x" d="M10 7.5v4.6" stroke-width="2.2" stroke-linecap="round"/><circle class="x" cx="10" cy="14.9" r="1.25"/>',
     ready: '<circle cx="10" cy="10" r="8.6" fill="currentColor"/><path d="M10 5.4v5.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14" r="1.3" fill="#fff"/>',
     alert: '<path d="M1.3 10C3.6 6 6.6 4.2 10 4.2S16.4 6 18.7 10C16.4 14 13.4 15.8 10 15.8S3.6 14 1.3 10Z" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="10" cy="10" r="3" fill="currentColor"/>',
-    none: '<circle cx="10" cy="10" r="5" fill="currentColor"/>'
+    none: '<path d="M4.2 10.4 8.3 14.4 15.8 6.2" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'
   };
   function icon(key) {
     var k = ICON[key] ? key : "nodata";
@@ -85,8 +85,8 @@
   /* Pieces */
   // Rain chip: Heavy / Very heavy / Intense from the Atlas 14 levels; below Heavy, "Raining" if any rain fell in the
   // last hour (RAIN_NOW_MIN, data job) and "No rain" if not
-  function chip(level, now) {
-    if (!level) return now ? '<span class="cs-chip raining">' + esc(T("rain_now")) + "</span>" : '<span class="cs-norain">' + esc(T("rain_none")) + "</span>";
+  function chip(level, now, long) {
+    if (!level) return now ? '<span class="cs-chip raining">' + esc(T("rain_now")) + "</span>" : '<span class="cs-norain">' + esc(T(long ? "rain_none_card" : "rain_none")) + "</span>";
     var k = level >= 3 ? "severe" : level === 2 ? "vheavy" : "heavy", b = "";
     for (var i = 1; i <= 3; i++) b += "<i" + (i <= level ? ' class="on"' : "") + "></i>";
     return '<span class="cs-chip ' + k + '"><span class="cs-meter" aria-hidden="true">' + b + "</span>" + esc(rainWord(level)) + "</span>";
@@ -157,10 +157,40 @@
     return f.next24.toFixed(2) + " in · 24 hr" + '<span class="cs-sm">' + f.next72.toFixed(2) + " in · 3 days" + (f.error ? " · not updated" : "") + "</span>";
   }
 
+  /* A creek with no alert, in brief (Creeks page): the status once, where the creek is measured, its level and which
+     way it is moving in words, rainfall, and one link to its own page (numbers, graphs, levels). No level bar. */
+  function levelWords(g, e) {
+    var p = e && e.points && e.points.length ? e.points[e.points.length - 1] : null;
+    if (e && e.latest && e.latest[0] && (!p || e.latest[0] > p[0])) p = e.latest;
+    var sig = e && e.signals || {};
+    if (!p || !sig.trend) return esc(T("verdict_offline"));
+    var th = lvls(g), at = null;
+    th.forEach(function (t) { if (p[1] >= t.value) at = t; });
+    var name = !th.length ? T("no_flood_level_title") : at ? at.name : T("status_normal");
+    return '<span class="nw">' + esc(name) + '</span> · <span class="nw">' + trendText(sig, true) + "</span>";
+  }
+  function briefCard(data, c, v, opts) {
+    var st = v.st, r = st.rain || {}, gs = c.stages || [], h = "";
+    h += '<article class="cs-card cs-brief cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
+    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + review(c) + "</div>";
+    h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div></div>";
+    h += '<div class="cs-factw"><dl class="cs-facts">';
+    if (gs.length === 1) {
+      h += "<div><dt>" + esc(T("brief_location")) + "</dt><dd>" + esc(gs[0].label) + "</dd></div>";
+      h += "<div><dt>" + esc(T("brief_level")) + "</dt><dd>" + levelWords(gs[0], data.sensors[gs[0].key]) + "</dd></div>";
+    } else gs.forEach(function (g) {
+      h += "<div><dt>" + esc(levelLabel(g)) + "</dt><dd>" + levelWords(g, data.sensors[g.key]) + "</dd></div>";
+    });
+    h += "<div><dt>" + esc(T("rain_row")) + "</dt><dd>" + chip(r.level, r.now, true) + "</dd></div></dl>" + forecastRow(c) + "</div>";
+    if (opts.link) h += '<div class="cs-foot cs-more"><a href="' + esc(opts.link) + '" aria-label="' + esc(T("card_more_aria", { creek: c.name })) + '">' + esc(T("card_more")) + ' <span aria-hidden="true">→</span></a></div>';
+    return h + "</article>";
+  }
+
   /* A creek card: status, reason, What to do, then details. opts.link: where "details" goes; opts.compact: no details */
   function card(data, c, opts) {
     opts = opts || {};
     var v = view(data, c), st = v.st, h = "";
+    if (opts.quiet && v.key === "none" && !opts.compact) return briefCard(data, c, v, opts);
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
     var noLv = (c.stages || []).length && (c.stages || []).every(function (g) {
       return !lvls(g).length; });
@@ -179,12 +209,12 @@
       if (noLevels && !opts.lvlTag) h += '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + "</b> " + esc(T("no_flood_level")) + "</div>";
       (c.stages || []).forEach(function (g) { h += band(g, data.sensors[g.key]); });
       var r = st.rain || {};
-      h += '</div><div class="cs-details cs-rainrow"><div class="cs-row"><span class="cs-lbl">' + esc(T("rain_row")) + '</span><span class="cs-val">' + chip(r.level, r.now) + "</span></div>" + forecastRow(c) + "</div>";
-      h += numbers(data, c, opts.numbersOpen);
+      h += '</div><div class="cs-details cs-rainrow"><div class="cs-row"><span class="cs-lbl">' + esc(T("rain_row")) + '</span><span class="cs-val">' + chip(r.level, r.now, true) + "</span></div>" + forecastRow(c) + "</div>";
+      h += opts.link ? "<div></div>" : numbers(data, c, opts.numbersOpen);   // (an empty row keeps the cards' rows lined up)
     } else h += "<div></div><div></div><div></div>";
     if (!opts.noAsOf || opts.link) h += '<div class="cs-foot"><span>' + (opts.noAsOf ? "" : "As of " + esc(dated(data.generated)) +
       (opts.compact && st.has_levels === false ? " · " + esc(T("no_flood_level_title")) : "")) + "</span>" +
-      (opts.link ? '<a href="' + esc(opts.link) + '">Details ›</a>' : "") + "</div>";
+      (opts.link ? '<a href="' + esc(opts.link) + '" aria-label="' + esc(T("card_more_aria", { creek: c.name })) + '">' + esc(T("card_more")) + ' <span aria-hidden="true">→</span></a>' : "") + "</div>";
     return h + "</article>";
   }
 
@@ -212,10 +242,17 @@
 
   /* "How to read this page" */
   function howTo() {
-    return '<details class="cs-how"><summary>' + esc(T("howto_title")) + '</summary><div class="cs-howb"><ul>' +
+    return '<details class="cs-how" id="howto"><summary>' + esc(T("howto_title")) + '</summary><div class="cs-howb">' +
+      "<h4>" + esc(T("howto_alerts_h")) + "</h4><ul>" +
       ["likely", "ready", "alert", "none"].map(function (k) {
-        return "<li>" + icon(k) + esc(T("howto_" + k)) + "</li>"; }).join("") +
-      "</ul><p>" + esc(T("howto_band")) + "</p><p>" + esc(T("howto_rain")) + "</p><p>" + esc(T("nws_separate")) + "</p></div></details>";
+        return "<li>" + icon(k) + esc(T("howto_" + k)) + "</li>"; }).join("") + "</ul>" +
+      "<h4>" + esc(T("howto_levels_h")) + "</h4><p>" + esc(T("howto_levels")) + "</p><ul class=\"cs-howlv\">" +
+      [["status_normal", "howto_lv_normal"], ["lv_monitoring", "home_reason_monitoring"], ["lv_watch", "home_reason_watch"], ["lv_warning", "home_reason_warning"]].map(function (x) {
+        return "<li><b>" + esc(T(x[0])) + ":</b> " + esc(T(x[1])) + "</li>"; }).join("") + "</ul>" +
+      "<p>" + esc(T("howto_band")) + "</p>" +
+      "<h4>" + esc(T("howto_trend_h")) + "</h4><p>" + esc(T("howto_trend")) + "</p>" +
+      "<h4>" + esc(T("howto_rain_h")) + "</h4><p>" + esc(T("howto_rain")) + "</p>" +
+      "<h4>" + esc(T("howto_nws_h")) + "</h4><p>" + esc(T("nws_separate")) + " " + esc(T("summary_caveat")) + "</p></div></details>";
   }
 
   /* Top of page: one-line summary, red banner when flooding is likely, one evacuation button */
@@ -232,7 +269,8 @@
     if (by.likely.length) m.push(T("summary_likely", { creeks: list(by.likely) }));
     if (by.ready.length) m.push(T("summary_ready", { creeks: list(by.ready) }));
     if (by.alert.length) m.push(by.alert.length <= 3 ? T("summary_alert", { creeks: list(by.alert) }) : T("summary_alert_many", { n: by.alert.length }));
-    if (m.length === (late ? 1 : 0)) m.push(T("summary_none"));
+    var calm = m.length === (late ? 1 : 0);
+    if (calm) m.push(T("summary_none"));
     var h = "";
     if (by.likely.length) h += '<div class="cs-banner" role="alert">' + (late ? esc("As of " + clock(data.generated) + ": ") : "") + esc(T("banner_likely", { creeks: list(by.likely) })) + "</div>";
     h += '<div class="cs-glance">' + m.map(function (x, i) { return '<p class="cs-main' + (late && i === 0 ? " cs-late" : "") + '">' + esc(x) + "</p>"; }).join("");
@@ -240,7 +278,11 @@
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
     }
-    h += '<p class="cs-sub">' + esc(T("nws_separate")) + "</p>" + (asOf && !late ? '<p class="cs-sub">Readings as of ' + esc(dated(data.generated)) + "</p>" : "") + "</div>";
+    if (calm && !late) h += '<p class="cs-calm">' + esc(by.nodata.length ? T("summary_normal_some", { creeks: list(by.nodata) }) : T("summary_normal_line")) + "</p>" +
+      '<p class="cs-calm cs-caveat">' + esc(T("summary_caveat")) + "</p>";
+    h += (asOf && !late ? '<p class="cs-sub cs-asof">' + esc(T("summary_asof", { time: dated(data.generated) })) + "</p>" : "") +
+      '<p class="cs-sub">' + esc(T("nws_separate")) + "</p>" +
+      (asOf ? '<p class="cs-new"><a href="#howto" data-howto="1">' + esc(T("howto_link")) + "</a></p>" : "") + "</div>";
     return h;
   }
 
@@ -250,18 +292,13 @@
     var rows = allCreeks(data).map(function (c) { return { c: c, v: view(data, c) }; });
     rows.sort(function (a, b) { return b.v.rank - a.v.rank; });
     var link = function (c) { return !linkFor || (c.preview_only && !opts.previewLinks) ? null : linkFor(c); };   // preview creeks: detail page on Creeks.html only
-    var co = function (c) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes }; };
-    var noLv = rows.filter(function (x) { return (x.c.stages || []).length && x.c.stages.every(function (g) {
-      return !lvls(g).length; }); }).map(function (x) { return x.c.short || x.c.name; });
+    var co = function (c, quiet) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes, quiet: !!quiet }; };
     var active = rows.filter(function (x) { return x.v.key !== "none"; }), quiet = rows.filter(function (x) { return x.v.key === "none"; });
-    var h = badge() + summary(data, !!opts.compactNotes) + howTo() +
-      (opts.compactNotes && noLv.length ? '<div class="cs-nolvl"><b>' + esc(T("no_flood_level_title")) + ": " + esc(list(noLv)) + "</b> " + esc(T("no_flood_level_many")) + "</div>" : "") +
+    var h = badge() + summary(data, !!opts.compactNotes) + '<div id="cpSlot"></div>' + howTo() +   // cpSlot: the page puts its city finder here
       '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, co(x.c)); }).join("") + "</div>";
-    if (quiet.length) {
-      h += '<details class="cs-quiet"' + (active.length ? "" : " open") + "><summary>" + quiet.length + " creek" + (quiet.length > 1 ? "s" : "") +
-        " with no alerts — " + esc(list(quiet.map(function (x) { return x.c.short || x.c.name; }))) + '</summary><div class="cs-grid">' +
-        quiet.map(function (x) { return card(data, x.c, co(x.c)); }).join("") + "</div></details>";
-    }
+    var cards = '<div class="cs-grid">' + quiet.map(function (x) { return card(data, x.c, co(x.c, true)); }).join("") + "</div>";
+    if (quiet.length && !active.length) h += '<h2 class="cs-qh">' + esc(T("quiet_title")) + "</h2>" + cards;
+    else if (quiet.length) h += '<details class="cs-quiet"><summary>' + esc(T("quiet_some", { n: quiet.length })) + "</summary>" + cards + "</details>";
     return h + (opts.staff === false || !STAFF ? "" : staffTable(data));
   }
   function badge() {
@@ -456,7 +493,8 @@
     ".cs-danger{font-weight:700;color:#c62828}@media (prefers-color-scheme:dark){.cs-danger{color:#f47c79}}",
     ".cs-details{margin:0 14px;border-top:1px solid var(--line,#eceff3)}.cs-rainrow{margin-bottom:6px}.cs-stages .cs-band:last-child,.cs-stages .cs-row:last-child{border-bottom:0}",
     // Cards side by side line up section by section: status, What to do, creek level, rain, numbers, footer
-    "@supports (grid-template-rows:subgrid){.cs-grid>.cs-card{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0}.cs-grid>.cs-card>.cs-stages{align-self:start}}",
+    "@supports (grid-template-rows:subgrid){.cs-grid>.cs-card{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:0}.cs-grid>.cs-card>.cs-stages{align-self:start}" +
+      ".cs-grid>.cs-card.cs-brief{grid-row:span 4}.cs-grid>.cs-brief>.cs-factw{align-self:start}}",   // brief cards: name, status, facts, link
     ".cs-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line,#eceff3);font-size:14px}",
     ".cs-nolvl{margin:8px 0 2px;padding:8px 10px;border:1px dashed var(--muted,#8a96a3);border-radius:8px;font-size:13.5px;line-height:1.4;color:var(--text,#22303f);" +
     "background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(138,150,163,.10) 6px 12px)}.cs-nolvl b{display:block;color:var(--ink,#003B5C)}",
@@ -504,6 +542,19 @@
     ".cs-hg-likely{border:4px solid #c62828}.cs-hg-ready{border:4px solid #e07b00}.cs-hg-alert{border:4px solid #e6c200}.cs-hg-none{border:2px solid #2e7d32;padding-bottom:12px}",
     ".cs-hg-likely{background:color-mix(in srgb,#c62828 4%,var(--card,#fff))}.cs-hg-ready{background:color-mix(in srgb,#e07b00 4%,var(--card,#fff))}.cs-hg-alert{background:color-mix(in srgb,#e6c200 6%,var(--card,#fff))}",
     ".cs-hg-none .cs-verdict{background:rgba(46,125,50,.1)}.cs-hg-none .cs-ic-none{color:#2e7d32}",
+    ".cs-glance .cs-calm{margin:6px 0 0;font-size:15.5px;line-height:1.45;color:var(--ink,#16202b)}.cs-glance .cs-caveat{font-size:14.5px;color:var(--text,#22303f)}",
+    ".cs-glance .cs-asof{font-weight:600}.cs-new{margin:10px 0 0;font-size:15px}.cs-new a{font-weight:700;color:var(--link,#0A5587);text-underline-offset:3px}",
+    ".cs-qh{font-size:17px;margin:16px 2px 8px;color:var(--ink,#16202b)}",
+    ".cs-quiet>summary::before,.cs-how>summary::before{content:'\\25B8';display:inline-block;width:1.1em;transition:transform .15s}.cs-quiet[open]>summary::before,.cs-how[open]>summary::before{transform:rotate(90deg)}",
+    ".cs-how>summary{font-size:15px}.cs-quiet>summary,.cs-how>summary,.cs-num>summary{list-style:none}.cs-quiet>summary::-webkit-details-marker,.cs-how>summary::-webkit-details-marker{display:none}",
+    ".cs-how>summary:focus-visible,.cs-quiet>summary:focus-visible,.cs-new a:focus-visible,.cs-more a:focus-visible{outline:3px solid #1e6fd9;outline-offset:2px}",
+    ".cs-facts{margin:0;padding:6px 14px 10px;display:grid;gap:6px}.cs-facts>div{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border-top:1px solid var(--line,#e3e7ec);padding-top:6px}",
+    ".cs-facts .nw{white-space:nowrap}.cs-facts dt{font-size:14px;color:var(--muted,#556274)}.cs-facts dd{margin:0;font-size:15px;font-weight:600;text-align:right;color:var(--ink,#16202b)}",
+    ".cs-more{justify-content:flex-start;margin-top:auto}.cs-more a,.cs-foot a{font-size:15px;font-weight:700;min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--link,#0A5587)}",
+    ".cs-howb .cs-ic-none{color:#2e7d32}",
+    ".cs-howb h4{margin:12px 0 4px;font-size:15px;color:var(--ink,#16202b)}.cs-howlv{padding-left:18px}.cs-howlv li{list-style:disc}",
+    ".cs-card .cs-v-none{background:rgba(46,125,50,.1)}.cs-card .cs-ic-none{color:#2e7d32}",   // creek cards: No alerts in green with a check, like the home page
+    "@media (prefers-color-scheme:dark){.cs-card .cs-ic-none,.cs-hg-none .cs-ic-none{color:#66bb6a}}",
     ".cs-hrows{list-style:none;margin:0;padding:4px 14px 0}.cs-hrows li+li{border-top:1px solid var(--line,#e3e8ee)}",
     ".cs-hrow{display:flex;align-items:center;gap:10px;padding:9px 0;min-height:44px;text-decoration:none;color:inherit}",
     ".cs-hdown{margin:0;padding:9px 14px 0;font-size:15px;font-weight:700;color:var(--ink,#16202b)}.cs-hg-none .cs-hdown{border-top:1px solid var(--line,#e3e8ee);margin-top:9px}.cs-hscope{margin:0;padding:7px 14px 0;font-size:14px;line-height:1.4;color:var(--muted,#556274)}",
