@@ -347,7 +347,8 @@ function addBasemaps(map, extraAttr, pos) {
 }
 /* FEMA flood zones (National Flood Hazard Layer, layer 28 Flood Hazard Zones), drawn by FEMA's map service as an image of
    the current view in FEMA's own colors: the 1% annual chance ("100-year") special flood hazard area, and the 0.2%
-   ("500-year") zone. Off until switched on; the choice is remembered. */
+   ("500-year") zone. Off until switched on; the choice is remembered. FEMA draws them only when zoomed in, so the
+   picture is asked for at a lower dpi (see _update): the zones then show at the county view too. */
 var FEMA_URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/export";
 var FemaLayer = L.Layer.extend({
   initialize: function (where, attribution) { this._where = where; this.options = { attribution: attribution }; },
@@ -356,9 +357,12 @@ var FemaLayer = L.Layer.extend({
   _update: function () {
     var map = this._map, b = map.getBounds(), sz = map.getSize();
     var sw = L.CRS.EPSG3857.project(b.getSouthWest()), ne = L.CRS.EPSG3857.project(b.getNorthEast());
+    // FEMA only draws its flood zones when zoomed in closer than about 1:250,000. Asking for the picture at a lower
+    // "dots per inch" makes FEMA work out a closer scale (about 1:36,000), so the zones show at every zoom, county too.
+    var scale = (ne.x - sw.x) / sz.x * 96 / 0.0254, dpi = Math.max(10, Math.min(96, Math.floor(96 * 36000 / scale)));
     var url = FEMA_URL + "?" + [
       "bbox=" + [sw.x, sw.y, ne.x, ne.y].map(function (v) { return v.toFixed(1); }).join(","), "bboxSR=3857", "imageSR=3857",
-      "size=" + sz.x + "," + sz.y, "format=png32", "transparent=true", "dpi=96", "layers=show:28",
+      "size=" + sz.x + "," + sz.y, "format=png32", "transparent=true", "dpi=" + dpi, "layers=show:28",
       "layerDefs=" + encodeURIComponent(JSON.stringify({ 28: this._where })), "f=image"].join("&");
     var img = L.imageOverlay(url, b, { opacity: 0.55, interactive: false, attribution: this.options.attribution });
     var old = this._img; this._img = img;
