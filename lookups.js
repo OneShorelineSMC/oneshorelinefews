@@ -212,6 +212,8 @@
     shore_key_bld: "Buildings and streets in a low spot (zoom in)",
     shore_key_critical: "Critical facility (BCDC RSAP)",
     shore_key_transport: "Highway, rail or transit (BCDC RSAP)",
+    shore_fema_100: "FEMA 100-year flood zone",
+    shore_fema_500: "FEMA 500-year flood zone",
     shore_about_exposure: "Marsh, mudflats, ponds and open water are left out of the low spots: they are normally wet at high tide (SFEI Baylands Habitat Map 2020). Each spot lists the buildings and streets in it (San Mateo County GIS) and any critical facilities, highways, rail or transit in it (BCDC’s Regional Shoreline Adaptation Plan data). A spot with none of these is shown faintly as open land, such as a park or field.",
     tide_weather_lower: "NOAA projects about {diff} ft lower than the tide table",
     tide_cal_title: "High tides and King Tides",

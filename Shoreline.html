@@ -127,6 +127,8 @@
       Marsh, mudflats and ponds: SFEI <a href="https://www.sfei.org/data/baylands-habitat-map-2020-gis-data" rel="noopener">Baylands Habitat Map 2020</a>.
       Buildings and streets: <a href="https://www.smcgov.org/tsd/gis-data-download" rel="noopener">San Mateo County GIS</a>.
       Critical facilities and transportation: BCDC <a href="https://www.bcdc.ca.gov/rsap-atlas/" rel="noopener">Regional Shoreline Adaptation Plan (RSAP) data</a>.
+      Flood zones (when switched on): FEMA <a href="https://www.fema.gov/flood-maps/national-flood-hazard-layer" rel="noopener">National Flood Hazard Layer</a>:
+      the 100-year zone has a 1% chance of flooding in any year, the 500-year zone a 0.2% chance.
       Tides: NOAA tide gauge 9414523, Redwood City. Map: © OpenStreetMap contributors; satellite: Esri, Maxar, Earthstar Geographics.</p>
   </details>
 
@@ -144,8 +146,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261022a"></script>
-<script src="tide_season.js?v=20261022a"></script>
+<script src="lookups.js?v=20261022b"></script>
+<script src="tide_season.js?v=20261022b"></script>
 <script>
 /* Shoreline: low spots along San Mateo County's Bay shoreline (BCDC Adapting to Rising Tides maps) and whether the coming
    tides at Redwood City are high enough to reach them. lookups/THRESHOLDS_BASIS.md §4c.
@@ -339,8 +341,51 @@ function addBasemaps(map, extraAttr, pos) {
     L.tileLayer(esri + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 })]);
   var pick = null; try { pick = localStorage.getItem("fews_basemap"); } catch (e) {}
   (pick === "sat" ? sat : osm).addTo(map);
-  L.control.layers({ "Map": osm, "Satellite": sat }, null, { position: pos || "topright", collapsed: false }).addTo(map);
+  var ctrl = L.control.layers({ "Map": osm, "Satellite": sat }, null, { position: pos || "topright", collapsed: false }).addTo(map);
   map.on("baselayerchange", function (e) { try { localStorage.setItem("fews_basemap", e.layer === sat ? "sat" : "map"); } catch (x) {} });
+  return ctrl;
+}
+/* FEMA flood zones (National Flood Hazard Layer, layer 28 Flood Hazard Zones), drawn by FEMA's map service as an image of
+   the current view in FEMA's own colors: the 1% annual chance ("100-year") special flood hazard area, and the 0.2%
+   ("500-year") zone. Off until switched on; the choice is remembered. */
+var FEMA_URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/export";
+var FemaLayer = L.Layer.extend({
+  initialize: function (where, attribution) { this._where = where; this.options = { attribution: attribution }; },
+  onAdd: function (map) { this._map = map; map.on("moveend", this._update, this); this._update(); },
+  onRemove: function (map) { map.off("moveend", this._update, this); if (this._img) map.removeLayer(this._img); this._img = null; },
+  _update: function () {
+    var map = this._map, b = map.getBounds(), sz = map.getSize();
+    var sw = L.CRS.EPSG3857.project(b.getSouthWest()), ne = L.CRS.EPSG3857.project(b.getNorthEast());
+    var url = FEMA_URL + "?" + [
+      "bbox=" + [sw.x, sw.y, ne.x, ne.y].map(function (v) { return v.toFixed(1); }).join(","), "bboxSR=3857", "imageSR=3857",
+      "size=" + sz.x + "," + sz.y, "format=png32", "transparent=true", "dpi=96", "layers=show:28",
+      "layerDefs=" + encodeURIComponent(JSON.stringify({ 28: this._where })), "f=image"].join("&");
+    var img = L.imageOverlay(url, b, { opacity: 0.55, interactive: false, attribution: this.options.attribution });
+    var old = this._img; this._img = img;
+    img.once("load", function () { if (old) map.removeLayer(old); });
+    img.once("error", function () { if (old) map.removeLayer(old); });
+    img.addTo(map);
+  }
+});
+var FEMA = {
+  f100: new FemaLayer("SFHA_TF = 'T'", "Flood zones: FEMA NFHL"),
+  f500: new FemaLayer("ZONE_SUBTY LIKE '0.2 PCT%'", "Flood zones: FEMA NFHL")
+};
+function addFema(map, ctrl) {
+  ctrl.addOverlay(FEMA.f500, LK.text("shore_fema_500"));
+  ctrl.addOverlay(FEMA.f100, LK.text("shore_fema_100"));
+  var on = {}; try { on = JSON.parse(localStorage.getItem("fews_fema") || "{}"); } catch (e) {}
+  if (on.f500) FEMA.f500.addTo(map);
+  if (on.f100) FEMA.f100.addTo(map);
+  function save() { try { localStorage.setItem("fews_fema", JSON.stringify({ f100: map.hasLayer(FEMA.f100), f500: map.hasLayer(FEMA.f500) })); } catch (e) {} drawKey(); }
+  map.on("overlayadd overlayremove", save);
+}
+var KEY = [];
+function drawKey() {   // the map key, plus the FEMA zones when they are switched on (FEMA's colors)
+  var h = KEY.slice();
+  if (map && map.hasLayer(FEMA.f100)) h.push('<span><i style="background:rgba(0,112,255,.55);border:1px solid #0070ff"></i>' + esc(LK.text("shore_fema_100")) + "</span>");
+  if (map && map.hasLayer(FEMA.f500)) h.push('<span><i style="background:rgba(255,170,0,.55);border:1px solid #e69500"></i>' + esc(LK.text("shore_fema_500")) + "</span>");
+  $("key").innerHTML = h.join("");
 }
 function drawMap(info, now) {
   if (typeof L === "undefined") return;
@@ -353,7 +398,7 @@ function drawMap(info, now) {
   if (!map) {
     box.innerHTML = "";
     map = L.map("map", { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([37.56, -122.27], 11);
-    addBasemaps(map, " · BCDC ART, RSAP · SFEI · San Mateo County", "topright");
+    addFema(map, addBasemaps(map, " · BCDC ART, RSAP · SFEI · San Mateo County", "topright"));
     map.once("focus", function () { map.scrollWheelZoom.enable(); });
   }
   Object.keys(layers).forEach(function (k) { map.removeLayer(layers[k]); }); layers = {};
@@ -413,7 +458,7 @@ function drawMap(info, now) {
   if (has.bld) html.push('<span><i class="dot" style="background:' + BLD_COL + '"></i>' + esc(LK.text("shore_key_bld")) + "</span>");
   if (has.critical) html.push('<span><i class="ring" style="border:3px solid ' + CRIT_COL + '"></i>' + esc(LK.text("shore_key_critical")) + "</span>");
   if (has.transport) html.push('<span><i class="ln" style="border-top:4px dashed ' + TRANS_COL + '"></i>' + esc(LK.text("shore_key_transport")) + "</span>");
-  $("key").innerHTML = html.join("");
+  KEY = html; drawKey();
 }
 // Tap a spot in the list: open it on the map
 $("list").addEventListener("click", function (e) {
