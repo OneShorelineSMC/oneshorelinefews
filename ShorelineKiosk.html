@@ -236,6 +236,8 @@
   .mlist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .mlist .mi { border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 18px; font-weight: bold; display: flex; flex-direction: column; gap: 4px; }
   .mlist .mi .ms { font-size: 14px; font-weight: normal; color: var(--muted); }
+  .mlist .mi.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .mhead { font-size: 15px; color: var(--muted); margin: 14px 0 8px; }
   .cbtn.back { border-color: var(--ink); }
   .cname { font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   #cpick:empty { display: none; }
@@ -1611,10 +1613,10 @@ function renderCreek() {
   var board = !!(window.CREEK_STATUS && CREEK_STATUS.preview);
   el("cpick").innerHTML = all
     ? (board ? "" : '<span class="cinfo" style="margin-left:0">' + (window.CREEK_STATUS && CREEK_STATUS.staff ? "staff view · " : "") + "Tap a creek for its graphs</span>" +
-        (more.length ? '<span class="cbtn more" data-more="1" style="margin-left:auto">More creeks ▾</span>' : ""))
+        '<span class="cbtn more" data-more="1" style="margin-left:auto">Go to a creek ▾</span>')
     : '<span class="cbtn back" data-creek="all">‹ All creeks</span><span class="cname">' + esc(c.name) + "</span>" +
-      (more.length ? '<span class="cbtn more" data-more="1" style="margin-left:auto">More creeks ▾</span>' : "") +
-      '<span class="cinfo" data-info="1"' + (more.length ? ' style="margin-left:0"' : "") + ">ⓘ notes</span>";
+      '<span class="cbtn more" data-more="1" style="margin-left:auto">Go to a creek ▾</span>' +
+      '<span class="cinfo" data-info="1" style="margin-left:0">ⓘ notes</span>';
   el("call").style.display = all ? "" : "none";
   el("cbody").style.display = all ? "none" : "";
   if (all) { destroyCreekCharts(); renderAllCreeks(states, now); return; }
@@ -1742,14 +1744,19 @@ function renderAllCreeks(states, now) {
   }).join("");
 }
 
-/* "More creeks": the other creeks (methodology under review), as big buttons */
+/* "Go to a creek": every creek as a big button, the dashboard creeks first, then the ones whose flood levels are still
+   under review; each with its status in words, the one on screen outlined */
 function showMoreCreeks() {
   var CS = window.CREEK_STATUS;
-  openDetail("More creeks · " + LK.text("method_review"), '<div class="mlist">' + moreCreeks().map(function (c) {
-    var v = CS ? CS.view(C.data, c) : null;
-    return '<div class="mi" data-creek="' + esc(c.id) + '" role="button" tabindex="0">' + esc(c.name) +
-      (v ? '<span class="ms">' + esc(v.word) + "</span>" : "") + "</div>";
-  }).join("") + '</div><div id="dnote">' + esc(LK.text("no_flood_level_many")) + "</div>");
+  function btn(c) {
+    var v = CS ? CS.view(C.data, c) : null, on = c.id === C.sel;
+    return '<div class="mi' + (on ? " on" : "") + '" data-creek="' + esc(c.id) + '" role="button" tabindex="0"' + (on ? ' aria-current="true"' : "") + ">" + esc(c.name) +
+      (v ? '<span class="ms">' + esc(v.word) + (on ? " · on screen now" : "") + "</span>" : on ? '<span class="ms">On screen now</span>' : "") + "</div>";
+  }
+  var more = moreCreeks();
+  openDetail("Go to a creek", '<div class="mlist">' + creeks().map(btn).join("") + "</div>" +
+    (more.length ? '<h3 class="mhead">' + esc(LK.text("method_review")) + '</h3><div class="mlist">' + more.map(btn).join("") + "</div>" +
+      '<div id="dnote">' + esc(LK.text("no_flood_level_many")) + "</div>" : ""));
 }
 document.getElementById("dbody").addEventListener("click", function (e) {
   var b = e.target.closest && e.target.closest(".mlist [data-creek]"); if (!b) return;
