@@ -88,6 +88,38 @@ got = B.from_rsap(agol)
 check("RSAP map: overtopping layers found by name, levels from the names, other layers left out",
       got is not None and [len(got[x]) for x in B.LEVELS_IN] == [1, 1, 0] and got[12][0][1] == 0.6)
 
+# Shore Inventory lines checked against ART flooded areas (made-up services)
+import build_shoreline_hotspots as H
+W = 1 / (111320 * 0.793)   # degrees per metre east-west
+
+
+def sq(lon, lat, m):
+    return {"type": "Feature", "properties": {}, "geometry": {"type": "Polygon", "coordinates": [[
+        [lon, lat - m / 2 / 110540], [lon + m * W, lat - m / 2 / 110540], [lon + m * W, lat + m / 2 / 110540], [lon, lat + m / 2 / 110540], [lon, lat - m / 2 / 110540]]]}}
+
+
+def shore(url, params=None):
+    return json.dumps({"type": "FeatureCollection", "features": [
+        {"type": "Feature", "properties": {"Class": "Engineered Levee", "Geographic_County": "San Mateo"},
+         "geometry": {"type": "LineString", "coordinates": east(-122.2800, 37.5150, 400)}},
+        {"type": "Feature", "properties": {"Class": "Wetland", "Geographic_County": "San Mateo"},
+         "geometry": {"type": "LineString", "coordinates": east(-122.2800, 37.5160, 400)}},
+        {"type": "Feature", "properties": {"Class": "Engineered Levee", "Geographic_County": "Alameda"},
+         "geometry": {"type": "LineString", "coordinates": east(-122.2800, 37.5152, 400)}}]})
+
+
+H.layers, H.features = (lambda get=None: {12: 0, 24: 1, 36: 2}), (lambda lid, get=None: {
+    0: [sq(-122.2800 + 100 * W, 37.5150, 100)],                       # 12 in: water over 100 m of the levee
+    1: [sq(-122.2800 + 100 * W, 37.5150, 200)],                       # 24 in: 200 m
+    2: [sq(-122.2800 + 300 * W, 37.5150 + 48 / 110540, 100)]}[lid])  # 36 in: an area whose edge is only 2 m past the levee
+logs = []
+ot = B.from_shore_and_art(shore, log=logs.append)
+L12 = sum(B.run_len(r) for r, _ in ot[12])
+check("levee under water at 12 in: one stretch about 100 m; wetland and Alameda lines left out",
+      len(ot[12]) == 1 and 75 <= L12 <= 100 and "Wetland 1" in logs[0] and "1 lines used" in logs[0])
+check("24 in: about 200 m", 180 <= sum(B.run_len(r) for r, _ in ot[24]) <= 200)
+check("a flooded area whose edge only just crosses the shoreline line (2 m) isn't counted", ot[36] == [])
+
 check("levels from layer names", [B.level_from_text(t) for t in ("Overtopping 12 in", "Shoreline overtopping 2 ft", 'SLR 36"', "2.0 ft (24 in)", "Overtop")] == [12, 24, 36, 24, None])
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)

@@ -2,9 +2,10 @@
 "shoreline overtopping" layer shows the Bay coming over the shoreline at 12, 24 and 36 inches above MHHW.
 The Shoreline tab compares each stretch's level with the coming tides (lookups/THRESHOLDS_BASIS.md §4c).
 
-Input: BCDC's RSAP open data "Physical Conditions Vector" map (ArcGIS Online item RSAP_MAP, read when the build runs;
-every layer is listed in the log, and the ones with "overtop" in their name are used, their level read from the layer
-name, e.g. "12 in" or "1 ft", or from a level field), or, if this file is there, a GIS export instead:
+Input (read when the build runs): SFEI's San Francisco Bay Shore Inventory lines for San Mateo County (as published in
+BCDC's RSAP open data, SHORE; wetland and channel lines left out) checked every 10 m against BCDC's ART flooded areas at
+12, 24 and 36 in (Caltrans map service): where the shoreline is under water, the Bay comes over it at that level, which
+is what ART's overtopping layer shows. If this file is there, BCDC's own overtopping lines (a GIS export) are used instead:
   data/shoreline_overtopping.geojson   the overtopping lines for 12, 24 and 36 in, WGS84 (lon/lat), each with a
                                        level_in field (12, 24 or 36); an overtopping-depth field is kept if there is
                                        one (any field with "depth" in its name, in feet)
@@ -42,6 +43,10 @@ MERGE_M = 200        # stretches at one level closer than this are one low point
 MIN_LEN_M = 20       # shorter overtopped stretches are left out
 WS_NEAR_M = 600      # this close to a San Mateo County watershed counts as in the county
 RSAP_MAP = "7535792221cb4ae5a9f022ff5dbaf94a"   # RSAP Open Data: Physical Conditions Vector (web map)
+# SFEI San Francisco Bay Shore Inventory (2016), as published in that RSAP map: the shoreline as lines, by class
+SHORE = "https://services2.arcgis.com/4Z9x989NrBVrvFwm/arcgis/rest/services/Physical_Conditions_Vector/FeatureServer/217"
+SHORE_SKIP = {"Wetland", "Channel or Opening"}   # marsh edges and creek mouths: water there at high tide is normal
+INSIDE_M = 3          # a shoreline point counts as under water only if at least this far inside BCDC's flooded area
 BAY_BOX = (-122.53, 37.44, -122.08, 37.72)      # San Mateo County's Bay side, with a margin (lon, lat)
 COLUMNS = ["id", "name", "city", "watershed", "lat", "lon", "level_in", "length_m", "max_depth_ft", "stretches",
            "include", "notes", "source", "checked_by", "checked_on"]
@@ -137,6 +142,69 @@ def from_rsap(get, box=BAY_BOX):
                 c = list(ln.coords)
                 if len(c) >= 2:
                     out[lv].append((sample(c), depth_of(a)))
+    return out
+
+
+def from_shore_and_art(get, box=BAY_BOX, log=print):
+    """{inches: [(runs of points, depth)]}: San Mateo County's Shore Inventory lines (not wetland or channel), checked
+    every STEP_M against BCDC's ART flooded areas at each level (Caltrans map service); a run of points inside the
+    flooded area is shoreline the Bay comes over at that level."""
+    import shapely
+    import shoreline_exposure as E
+    import build_shoreline_hotspots as H   # ART layers from the Caltrans service (layers(), features())
+    fs = E.layer_features(SHORE, box, get)
+    lines, classes = [], {}
+    for g, a in fs:
+        cls = (a.get("Class") or "").strip()
+        if "san mateo" not in str(a.get("Geographic_County") or "").lower():
+            continue
+        classes[cls] = classes.get(cls, 0) + 1
+        if cls in SHORE_SKIP:
+            continue
+        for ln in E.lines_only(g):
+            c = list(ln.coords)
+            if len(c) >= 2:
+                lines.append((sample(c), cls))
+    log("Shore Inventory, San Mateo County: " + ", ".join(f"{k or '(blank)'} {n}" for k, n in sorted(classes.items())) +
+        f"; {len(lines)} lines used ({', '.join(sorted(SHORE_SKIP))} left out)")
+    lay = H.layers()
+    if not all(x in lay for x in LEVELS_IN):
+        raise RuntimeError("the ART layers for 12, 24 and 36 in weren't found")
+    xs = [p[0] for pts, _ in lines for p in pts]
+    ys = [p[1] for pts, _ in lines for p in pts]
+    import numpy as np
+    X, Y = np.array(xs), np.array(ys)
+    out = {}
+    for lv in LEVELS_IN:
+        feats = H.features(lay[lv])
+        hit = np.zeros(len(X), dtype=bool)
+        for f in feats:
+            for part in E.polygons_only(shapely.geometry.shape(f["geometry"])):
+                x0, y0, x1, y1 = part.bounds
+                idx = np.nonzero((X >= x0) & (X <= x1) & (Y >= y0) & (Y <= y1) & ~hit)[0]
+                if not len(idx):
+                    continue
+                shapely.prepare(part)
+                # inside, and still inside INSIDE_M east, west, north and south: not just grazing the edge of the
+                # flooded area (the outlines are simplified by a few metres)
+                dx, dy = INSIDE_M / (111320 * math.cos(math.radians(37.55))), INSIDE_M / 110540
+                ok = shapely.contains_xy(part, X[idx], Y[idx])
+                for ox, oy in ((dx, 0), (-dx, 0), (0, dy), (0, -dy)):
+                    ok &= shapely.contains_xy(part, X[idx] + ox, Y[idx] + oy)
+                hit[idx[ok]] = True
+        runs, k = [], 0
+        for pts, cls in lines:
+            cur = []
+            for p in pts:
+                if hit[k]:
+                    cur.append(p)
+                elif cur:
+                    runs.append((cur, None)); cur = []
+                k += 1
+            if cur:
+                runs.append((cur, None))
+        out[lv] = [(r, d) for r, d in runs if len(r) >= 2]
+        log(f"{lv} in: {len(feats)} ART flooded areas; {int(hit.sum())} of {len(X)} shoreline points under water, in {len(out[lv])} stretches")
     return out
 
 
@@ -283,9 +351,9 @@ def main():
     else:
         skipped = 0
         try:
-            by_level = from_rsap(lambda u: M.get(u, tries=2))
+            by_level = from_shore_and_art(lambda u: M.get(u, tries=2), log=lambda m: print(m, flush=True))
         except Exception as e:   # noqa: BLE001
-            print(f"RSAP map unavailable: {type(e).__name__}: {str(e)[:300]}", flush=True)
+            print(f"Shore Inventory or ART layers unavailable: {type(e).__name__}: {str(e)[:300]}", flush=True)
             by_level = None
         if not by_level or not any(by_level.values()):
             print(f"No overtopping lines found. Export the ART shoreline overtopping lines for 12, 24 and 36 in from GIS "
