@@ -48,7 +48,7 @@ SHORE = "https://services2.arcgis.com/4Z9x989NrBVrvFwm/arcgis/rest/services/Phys
 SHORE_SKIP = {"Wetland", "Channel or Opening"}   # marsh edges and creek mouths: water there at high tide is normal
 INSIDE_M = 3          # a shoreline point counts as under water only if at least this far inside BCDC's flooded area
 BAY_BOX = (-122.53, 37.44, -122.08, 37.72)      # San Mateo County's Bay side, with a margin (lon, lat)
-COLUMNS = ["id", "name", "city", "watershed", "lat", "lon", "level_in", "length_m", "max_depth_ft", "stretches",
+COLUMNS = ["id", "name", "city", "watershed", "lat", "lon", "level_in", "length_m", "max_depth_ft", "stretches", "shore_type",
            "include", "notes", "source", "checked_by", "checked_on"]
 SOURCE = "BCDC Adapting to Rising Tides (2017), shoreline overtopping"
 
@@ -141,7 +141,7 @@ def from_rsap(get, box=BAY_BOX):
             for ln in E.lines_only(g):
                 c = list(ln.coords)
                 if len(c) >= 2:
-                    out[lv].append((sample(c), depth_of(a)))
+                    out[lv].append((sample(c), (depth_of(a), "")))
     return out
 
 
@@ -199,10 +199,10 @@ def from_shore_and_art(get, box=BAY_BOX, log=print):
                 if hit[k]:
                     cur.append(p)
                 elif cur:
-                    runs.append((cur, None)); cur = []
+                    runs.append((cur, (None, cls))); cur = []
                 k += 1
             if cur:
-                runs.append((cur, None))
+                runs.append((cur, (None, cls)))
         out[lv] = [(r, d) for r, d in runs if len(r) >= 2]
         log(f"{lv} in: {len(feats)} ART flooded areas; {int(hit.sum())} of {len(X)} shoreline points under water, in {len(out[lv])} stretches")
     return out
@@ -220,7 +220,7 @@ def load(path=INPUT):
             continue
         for ln in lines_of(ft.get("geometry")):
             if len(ln) >= 2:
-                out[lv].append((sample(ln), depth_of(ft.get("properties"))))
+                out[lv].append((sample(ln), (depth_of(ft.get("properties")), "")))
     return out, skipped
 
 
@@ -314,9 +314,14 @@ def low_points(by_level, watersheds, places):
             city = next((pl["name"] for pl in places if any(M.inside(c, poly) for poly in pl["polys"])), None)
             if not city and places:
                 city = min(places, key=lambda pl: min(dist_m(c, q) for poly in pl["polys"] for q in poly[0][::25]))["name"] + " (nearest)"
-            deps = [d for _, d in g if d is not None]
+            deps = [m[0] for _, m in g if m[0] is not None]
+            by_cls = {}
+            for r, m in g:
+                if m[1]:
+                    by_cls[m[1]] = by_cls.get(m[1], 0) + run_len(r)
+            shore_type = "; ".join(f"{k} {v / length:.0%}" for k, v in sorted(by_cls.items(), key=lambda kv: -kv[1])[:3])
             rows.append({"lat": round(c[1], 5), "lon": round(c[0], 5), "level_in": lv, "length_m": round(length),
-                         "max_depth_ft": round(max(deps), 1) if deps else "", "stretches": len(g), "city": city or "",
+                         "max_depth_ft": round(max(deps), 1) if deps else "", "stretches": len(g), "shore_type": shore_type, "city": city or "",
                          "watershed": ws.title(), "_lines": [r for r, _ in g]})
     rows.sort(key=lambda r: (r["level_in"], -r["length_m"]))
     for k, r in enumerate(rows, start=1):

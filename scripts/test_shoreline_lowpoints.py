@@ -62,9 +62,11 @@ with tempfile.TemporaryDirectory() as d:
     check("map file: one line feature per row", len(g["features"]) == 3 and g["features"][0]["geometry"]["type"] == "MultiLineString")
     B.INPUT = os.path.join(d, "missing.geojson")
     real = B.from_rsap
+    real2 = B.from_shore_and_art
     B.from_rsap = lambda get, box=None: None   # no network in tests
-    check("no input file and nothing on the RSAP map: clear message, nothing written", B.main() == 1)
-    B.from_rsap = real
+    B.from_shore_and_art = lambda get, box=None, log=None: None
+    check("no input file and no shoreline data: clear message, nothing written", B.main() == 1)
+    B.from_rsap, B.from_shore_and_art = real, real2
 
 
 # The RSAP web map: a group with shoreline layers, overtopping at 12 and 24 in by layer name, one other layer
@@ -86,7 +88,7 @@ def agol(url, params=None):
 
 got = B.from_rsap(agol)
 check("RSAP map: overtopping layers found by name, levels from the names, other layers left out",
-      got is not None and [len(got[x]) for x in B.LEVELS_IN] == [1, 1, 0] and got[12][0][1] == 0.6)
+      got is not None and [len(got[x]) for x in B.LEVELS_IN] == [1, 1, 0] and got[12][0][1][0] == 0.6)
 
 # Shore Inventory lines checked against ART flooded areas (made-up services)
 import build_shoreline_hotspots as H
@@ -117,6 +119,8 @@ ot = B.from_shore_and_art(shore, log=logs.append)
 L12 = sum(B.run_len(r) for r, _ in ot[12])
 check("levee under water at 12 in: one stretch about 100 m; wetland and Alameda lines left out",
       len(ot[12]) == 1 and 75 <= L12 <= 100 and "Wetland 1" in logs[0] and "1 lines used" in logs[0])
+rows2 = B.low_points(ot, [{"name": "BELMONT CREEK", "polys": [[[[-122.30, 37.50], [-122.24, 37.50], [-122.24, 37.54], [-122.30, 37.54], [-122.30, 37.50]]]]}], [])
+check("shoreline type listed with its share", rows2 and rows2[0]["shore_type"] == "Engineered Levee 100%")
 check("24 in: about 200 m", 180 <= sum(B.run_len(r) for r, _ in ot[24]) <= 200)
 check("a flooded area whose edge only just crosses the shoreline line (2 m) isn't counted", ot[36] == [])
 
