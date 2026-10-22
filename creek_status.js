@@ -49,7 +49,8 @@
     var st = c.status || {}, key = st.key || "none";
     var late = !data.generated || nowLocal() - parse(data.generated) > LK.num("CREEK_DATA_LATE_MIN") * 60000;
     if (late) key = "delayed";
-    var word = key === "delayed" ? T("verdict_delayed", { time: clock(data.generated) }) : T("verdict_" + key);
+    var word = key === "delayed" ? T("verdict_delayed", { time: clock(data.generated) })
+      : key === "offline" && (st.out_of_service || []).length ? T("verdict_out_of_service") : T("verdict_" + key);
     var todo = key === "offline" || key === "delayed" ? T("verdict_nodata_todo") : T("verdict_" + key + "_todo");
     var reasons = (st.reasons || []).map(reason).filter(Boolean);
     if (late && st.key && st.key !== "none") reasons.unshift(T("verdict_" + st.key) + " at " + clock(data.generated) + ", the last update.");
@@ -60,6 +61,7 @@
       eoc: key === "delayed" || key === "none" ? "" : T("eoc_action_" + key) };
   }
   function reason(r) {
+    if (r.code === "why_out_of_service") return T("why_out_of_service", { gauge: r.gauge }) + (r.note ? " " + r.note : "");
     var s = T(r.code, { rain: rainWord(r.rain).toLowerCase(), Rain: rainWord(r.rain), time: clock(r.time) });
     if (!s) return "";
     if (r.code === "why_watch" && r.rising_fast) s = s.replace(/\.$/, " and rising fast.");
@@ -107,6 +109,7 @@
     var p = e && e.points && e.points.length ? e.points[e.points.length - 1] : null;
     if (e && e.latest && e.latest[0] && (!p || e.latest[0] > p[0])) p = e.latest;
     var sig = e && e.signals || {};
+    if (e && e.out_of_service) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val"><b>' + esc(T("gauge_out")) + "</b></span></div>";
     if (!p || !sig.trend) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val cs-dim">' + esc(T("verdict_offline")) + (p ? " · " + esc(dated(p[0])) : "") + "</span></div>";
     var v = p[1];
     if (!th.length) return '<div class="cs-row"><span class="cs-lbl">' + esc(levelLabel(g)) + '</span><span class="cs-val">' + trendText(sig, true) + "</span></div>";
@@ -163,6 +166,7 @@
     var p = e && e.points && e.points.length ? e.points[e.points.length - 1] : null;
     if (e && e.latest && e.latest[0] && (!p || e.latest[0] > p[0])) p = e.latest;
     var sig = e && e.signals || {};
+    if (e && e.out_of_service) return "<b>" + esc(T("gauge_out")) + "</b>";
     if (!p || !sig.trend) return esc(T("verdict_offline"));
     var th = lvls(g), at = null;
     th.forEach(function (t) { if (p[1] >= t.value) at = t; });
@@ -258,12 +262,12 @@
   /* Top of page: one-line summary, red banner when flooding is likely, one evacuation button */
   function summary(data, asOf) {
     // When the data file is old, summarize the last statuses we have, and say so first (never "No creek alerts")
-    var by = { likely: [], ready: [], alert: [], nodata: [] }, late = false;
+    var by = { likely: [], ready: [], alert: [], nodata: [], out: [] }, late = false;
     allCreeks(data).forEach(function (c) {
       var v = view(data, c), k = v.key;
       if (k === "delayed") { late = true; k = (c.status || {}).key || "none"; }
       if (by[k]) by[k].push(c.name);
-      else if (k === "offline") by.nodata.push(c.name);
+      else if (k === "offline") ((c.status || {}).out_of_service || []).length ? by.out.push(c.name) : by.nodata.push(c.name);
     });
     var m = late ? [T("verdict_delayed", { time: dated(data.generated) }) + ". At that time:"] : [];
     if (by.likely.length) m.push(T("summary_likely", { creeks: list(by.likely) }));
@@ -278,7 +282,8 @@
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
     }
-    if (calm && !late) h += '<p class="cs-calm">' + esc(by.nodata.length ? T("summary_normal_some", { creeks: list(by.nodata) }) : T("summary_normal_line")) + "</p>" +
+    var odd = (by.nodata.length ? " " + T("summary_nodata", { creeks: list(by.nodata) }) : "") + (by.out.length ? " " + T("summary_out", { creeks: list(by.out) }) : "");
+    if (calm && !late) h += '<p class="cs-calm">' + esc(odd ? T("summary_normal_other") + odd : T("summary_normal_line")) + "</p>" +
       '<p class="cs-calm cs-caveat">' + esc(T("summary_caveat")) + "</p>";
     h += (asOf && !late ? '<p class="cs-sub cs-asof">' + esc(T("summary_asof", { time: dated(data.generated) })) + "</p>" : "") +
       '<p class="cs-sub">' + esc(T("nws_separate")) + "</p>" +
@@ -417,6 +422,7 @@
   // Short reasons, a few words each (staff wording: the Flood Watch / Warning level names are fine here)
   function brief(st, k) {
     if (k === "delayed") return "Data not updated";
+    if ((st.out_of_service || []).length && k === "offline") return (st.out_of_service[0] || {}).note || T("why_out_of_service", { gauge: st.out_of_service[0].gauge });
     var out = [];
     (st.reasons || []).forEach(function (r) {
       var t = { why_warning: "At Flood Warning level", why_watch: "At Flood Watch level", why_monitoring: "Higher than usual",
@@ -451,7 +457,7 @@
       var st = x.v.st, rl = (st.rain || {}).level || 0, rn = !!(st.rain || {}).now, off = x.k === "offline";
       var r = '<div class="cs-brow cs-b-' + x.k + '"' + ' data-creek="' + esc(x.c.id) + '"'  + '><i class="cs-bbar" style="background:' + COL[x.k] + '"></i>' +
         '<span class="cs-bname">' + esc(x.c.short || x.c.name) + "</span>" +
-        '<span class="cs-bword cs-v-' + x.k + '">' + icon(x.k) + esc(T("verdict_" + x.k)) + "</span>" +
+        '<span class="cs-bword cs-v-' + x.k + '">' + icon(x.k) + esc(x.k === "offline" && (st.out_of_service || []).length ? T("gauge_out") : T("verdict_" + x.k)) + "</span>" +
         '<span class="cs-bwhy">' + review(x.c, true) + esc(brief(st, x.k)) + "</span>" +   // the tag goes with the reason: the name column is narrow
         '<span class="cs-brain">' + (rl || rn ? chip(rl, rn) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
         '<span class="cs-bsince">' + (st.since && !off ? "since " + esc(clock(st.since)) : "") + "</span></div>";

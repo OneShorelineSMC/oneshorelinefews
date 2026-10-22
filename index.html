@@ -265,8 +265,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261022c"></script>
-<script src="creek_status.js?v=20261022c"></script>
+<script src="lookups.js?v=20261022d"></script>
+<script src="creek_status.js?v=20261022d"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // National Weather Service first, then creeks, tides, sign-up; the sensor map card goes (the creek list links to the map);
@@ -484,7 +484,7 @@ function creekState(c, now) {
     for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
     var arrow = quiet || !prev ? "" : last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "";
     var lvl = last && !quiet ? stageLevel(g, last.v) : null;
-    var s = { g: g, last: last, quiet: quiet, arrow: arrow, lvl: lvl,
+    var s = { g: g, last: last, quiet: quiet, arrow: arrow, lvl: lvl, out: (C.data.sensors[g.key] || {}).out_of_service || null,
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null };
     st.stages.push(s);
     if (lvl && !late && (!st.top || lvl.level > st.top.level)) st.top = lvl;
@@ -521,7 +521,7 @@ function statusOf(st) {
   if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace(/^Flood | Flood Stage$/g, ""), color: hex(st.top.color, "#c62828"),
     ink: st.top.level === 1 ? "#1a1a1a" : "#fff", lvl: st.top.level };
   if (st.late) return { w: LK.text("status_delayed"), color: "#66717d", ink: "#fff", lvl: 0 };
-  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline"), color: "#66717d", ink: "#fff", lvl: 0 };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text(st.stages.every(function (s) { return s.out; }) ? "gauge_out" : "status_offline"), color: "#66717d", ink: "#fff", lvl: 0 };
   return { w: LK.text("status_normal"), color: "#2e7d32", ink: "#fff", lvl: 0, ok: true };
 }
 function renderCreeks() {
@@ -536,7 +536,8 @@ function renderCreeks() {
       (st.top && st.top.minutes ? '<span class="met">Met: ' + esc(st.top.label || "rain trigger") + "</span>" : "");
     st.stages.forEach(function (x) {
       h += '<span class="g"><span class="l">' + (st.stages.length > 1 ? esc(x.g.label) + " stage" : "Stage (creek level)") + "</span>";
-      if (!x.last) h += '<span class="q">no readings</span>';
+      if (x.out) h += '<span class="q"><b>' + esc(LK.text("gauge_out")) + "</b>" + (x.out.note ? " · " + esc(x.out.note) : "") + "</span>";
+      else if (!x.last) h += '<span class="q">no readings</span>';
       else if (x.quiet) h += '<span class="q">not reporting since ' + esc(fmt(x.last.t, { month: "short", day: "numeric" })) + "</span>";
       else h += "<b>" + x.last.v.toFixed(2) + x.arrow + "</b> ft · " + esc(fTime(x.last.t));
       h += "</span>";

@@ -512,9 +512,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261022c"></script>
-<script src="tide_season.js?v=20261022c"></script>
-<script src="creek_status.js?v=20261022c"></script>
+<script src="lookups.js?v=20261022d"></script>
+<script src="tide_season.js?v=20261022d"></script>
+<script src="creek_status.js?v=20261022d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1522,7 +1522,7 @@ function creekState(c, now) {
     var arrow = quiet ? "" : fast ? " ↑↑" : sig.trend ? { rising: " ↑", falling: " ↓" }[sig.trend] || ""
       : !prev ? "" : (last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "");
     var lvl = last && !quiet ? stageLevel(g, last.v) : null;
-    var s = { g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl, fast: fast, rate: fast && sig.ft_per_hr > 0 ? sig.ft_per_hr : null,
+    var s = { g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl, fast: fast, out: (C.data.sensors[g.key] || {}).out_of_service || null, rate: fast && sig.ft_per_hr > 0 ? sig.ft_per_hr : null,
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null };
     st.stages.push(s);
     // the creek's level for the alert strip: only from a current reading in current data
@@ -1641,14 +1641,15 @@ function renderCreek() {
       var agoT = !s.last ? "" : ago < 60 ? ago + " min ago" : ago < 2880 ? Math.round(ago / 60) + " hr ago" : fDay(s.last.t).replace(/^\w+, /, "");
       var hl = gHasLv(g);   // no flood levels: a plain tile, no level word
       h += '<div class="ktile ' + (!s.last || s.quiet ? "off" : hl ? "l" + lv : "nolv") + (two ? " two" : "") + '" data-info="1"><div class="klbl">' + esc(g.label) + (s.last && !s.quiet && !two ? " · " + esc(agoT) : "") + "</div>" +
-        (!s.last || s.quiet ? '<div class="kv">' + (s.last ? s.last.v.toFixed(2) + '<small> ft</small>' : "–") + '</div><div class="kw">Not reporting · ' + esc(agoT) + "</div>"
+        (s.out ? '<div class="kv">–</div><div class="kw">' + esc(LK.text("gauge_out")) + "</div>" + (s.out.note ? '<div class="kt">' + esc(s.out.note) + "</div>" : "")
+          : !s.last || s.quiet ? '<div class="kv">' + (s.last ? s.last.v.toFixed(2) + '<small> ft</small>' : "–") + '</div><div class="kw">Not reporting · ' + esc(agoT) + "</div>"
           : '<div class="kv">' + s.last.v.toFixed(2) + "<small> ft" + s.arrow + '</small><span class="kw">' + (!hl ? '<span class="knl">' + esc(LK.text("no_flood_level_title")) + "</span>" : s.lvl ? lvIcon(s.lvl.level) + esc(s.lvl.name.replace(/^Flood | Flood Stage$/g, "")) : esc(LK.text("status_normal"))) + "</span></div>" +
             (s.fast ? '<div class="kfast">↑↑ ' + esc(LK.text("trend_fast")) + (s.rate ? " · +" + s.rate.toFixed(1) + " ft/hr" : "") + "</div>" : "") +
             (s.next || two ? '<div class="kt">' + (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "")) : "") +
               (two ? (s.next ? " · " : "") + esc(agoT) : "") + "</div>" : "")) + "</div>";   // two gauges: "how long ago" moves here to save a line
       return;
     }
-    var sub = !s.last ? "No recent readings" : s.quiet
+    var sub = s.out ? "<b>" + esc(LK.text("gauge_out")) + "</b>" + (s.out.note ? " · " + esc(s.out.note) : "") : !s.last ? "No recent readings" : s.quiet
       ? "<b>⚠ Gauge may be offline</b> · last report " + fDay(s.last.t).replace(/^\w+, /, "") + " " + fTime(s.last.t)
       : "<b class='lvw' style='color:" + (s.lvl ? "var(--lv" + Math.min(3, s.lvl.level) + ")" : "var(--green)") + "'>" + (s.lvl ? lvIcon(s.lvl.level) + esc(s.lvl.name) : esc(LK.text("status_normal"))) + "</b> · " +
         (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "")) : "highest level") + " · " + fTime(s.last.t);
@@ -1659,11 +1660,11 @@ function renderCreek() {
   });
   if (boxS.length && lvS.length) h += '<div class="cbox" data-info="1"><div class="clbl">Other gauges, ft · ' + esc(LK.text("no_flood_level_title").toLowerCase()) + "</div>" +
     boxS.map(function (s) {   // short: one line each (the graph beside it has the detail)
-      return '<div class="kother"><span>' + esc(s.g.label) + "</span><b>" + (!s.last ? "–" : s.quiet ? "⚠ offline" : s.last.v.toFixed(2) + s.arrow) + "</b></div>";
+      return '<div class="kother"><span>' + esc(s.g.label) + "</span><b>" + (s.out ? esc(LK.text("gauge_out")) : !s.last ? "–" : s.quiet ? "⚠ offline" : s.last.v.toFixed(2) + s.arrow) + "</b></div>";
     }).join("") + "</div>";
   else if (boxS.length) h += '<div class="cbox" data-info="1"><div class="clbl">Creek level (ft, each gauge’s own zero)' + (sm ? " · " + esc(LK.text("no_flood_level_title")) : "") + "</div>" +
     boxS.map(function (s) {
-      return '<div class="csub"><b>' + esc(s.g.label) + ":</b> " + (!s.last ? "no data" : s.quiet ? "⚠ offline since " + fDay(s.last.t).replace(/^\w+, /, "")
+      return '<div class="csub"><b>' + esc(s.g.label) + ":</b> " + (s.out ? esc(LK.text("gauge_out")) : !s.last ? "no data" : s.quiet ? "⚠ offline since " + fDay(s.last.t).replace(/^\w+, /, "")
         : "<b style='font-size:16px'>" + s.last.v.toFixed(2) + s.arrow + "</b> · " + fTime(s.last.t)) + "</div>";
     }).join("") + "</div>";
   function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
@@ -1690,7 +1691,7 @@ function renderCreek() {
 function creekStatus(st) {
   if (st.top) return { w: st.topTrigger ? LK.text("status_rain_trigger_long") : st.top.name, col: st.top.color, ink: inkOn(st.top) };
   if (st.late) return { w: LK.text("status_delayed"), col: "#6b7a8c", ink: "#fff" };
-  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline_long"), col: "#6b7a8c", ink: "#fff" };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text(st.stages.every(function (s) { return s.out; }) ? "gauge_out" : "status_offline_long"), col: "#6b7a8c", ink: "#fff" };
   return { w: LK.text("status_normal"), col: "#2e7d32", ink: "#fff", ok: true };
 }
 function renderAllCreeks(states, now) {
@@ -1718,7 +1719,7 @@ function renderAllCreeks(states, now) {
       '<div class="cch"><span class="ccn">' + esc(c.name) + '</span><span class="ccs" style="background:' + fillOf(s0.col) + ";color:" + s0.ink + '">' + esc(s0.w) + "</span></div>";
     // each gauge: stage, its level and distance to the next one (an offline gauge shows no old number)
     st.stages.forEach(function (s) {
-      var row = !s.last ? "<span class='m'>no data</span>" : s.quiet
+      var row = s.out ? "<b>" + esc(LK.text("gauge_out")) + "</b>" + (s.out.note ? " <span class='m'>· " + esc(s.out.note) + "</span>" : "") : !s.last ? "<span class='m'>no data</span>" : s.quiet
         ? "<span style='font-weight:bold'>⚠ Offline</span> <span class='m'>· since " + fDay(s.last.t).replace(/^\w+, /, "") + "</span>"
         : "<span class='ccv'>" + s.last.v.toFixed(2) + s.arrow + " ft</span><b style='color:" + (s.lvl ? textCol(s.lvl) : "var(--green)") + "'>" +
           (s.lvl ? esc(s.lvl.name.replace(/^Flood | Flood Stage$/g, "")) : esc(LK.text("status_normal"))) + "</b>" +

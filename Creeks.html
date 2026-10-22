@@ -340,8 +340,8 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261022c"></script>
-<script src="creek_status.js?v=20261022c"></script>
+<script src="lookups.js?v=20261022d"></script>
+<script src="creek_status.js?v=20261022d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -519,7 +519,7 @@ function creekState(c, now) {
     for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
     var arrow = quiet || !prev ? "" : last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "";
     var lvl = last && !quiet ? stageLevel(g, last.v) : null;
-    st.stages.push({ g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl,
+    st.stages.push({ g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl, out: (D.creek.sensors[g.key] || {}).out_of_service || null,
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null });
     if (lvl && !late && (!st.top || lvl.level > st.top.level)) st.top = lvl;
   });
@@ -543,11 +543,13 @@ function runColor(c) {
 }
 function rainWindows(c) { return (c.rain_windows || [60, 1440]).slice().sort(function (a, b) { return a - b; }); }
 function winLabel(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
+// A gauge staff have taken out of service (lookups/gauge_outages.csv): "Out of service · Damaged; being repaired."
+function outText(s) { return "<b>" + esc(LK.text("gauge_out")) + "</b>" + (s.out && s.out.note ? " · " + esc(s.out.note) : ""); }
 // One or two words for a creek's tile: its level, or Offline / Delayed / Normal
 function statusWord(st) {
   if (st.top) return { w: st.top.minutes ? LK.text("status_rain_trigger") : st.top.name.replace(/^Flood | Flood Stage$/g, ""), col: st.top.level === 1 ? "#8a6d00" : st.top.color, bar: st.top.color };
   if (st.late) return { w: LK.text("status_delayed_short"), col: "var(--muted)", bar: "#66717d" };
-  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text("status_offline"), col: "var(--muted)", bar: "#66717d" };
+  if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text(st.stages.every(function (s) { return s.out; }) ? "gauge_out" : "status_offline"), col: "var(--muted)", bar: "#66717d" };
   return { w: LK.text("status_normal"), col: "var(--green)", bar: "#2e7d32" };
 }
 
@@ -720,10 +722,11 @@ function render() {
         (g.source === "usgs" ? "Data from USGS ↗" : "Full data on OneRain ↗") + "</a></div>" : "";
       return '<div class="card scard ro"><div class="lbl">' + esc(g.site_name) + " · creek level</div>" +
         '<div class="big">' + (s.last ? s.last.v.toFixed(2) + s.arrow : "–") + "<small> ft</small></div>" +
-        '<div class="ssub">' + (!s.last ? "No recent readings" : s.quiet ? '<span class="warn">Gauge may be offline</span> · last report ' + fDate(s.last.t) + ", " + fTime(s.last.t)
+        '<div class="ssub">' + (s.out ? outText(s) : !s.last ? "No recent readings" : s.quiet ? '<span class="warn">Gauge may be offline</span> · last report ' + fDate(s.last.t) + ", " + fTime(s.last.t)
           : fTime(s.last.t) + " · " + esc(LK.text("more_creeks_badge"))) + "</div>" + src + "</div>";
     }
-    if (!s.last) { badge = "NO DATA"; sub = "No recent readings"; }
+    if (s.out) { badge = LK.text("gauge_out").toUpperCase(); sub = outText(s); }
+    else if (!s.last) { badge = "NO DATA"; sub = "No recent readings"; }
     else if (s.quiet) { badge = "LAST READING " + agoText(now - s.last.t).toUpperCase(); sub = '<span class="warn">Gauge may be offline</span> · last report ' + fDate(s.last.t) + ", " + fTime(s.last.t); }
     else { badge = s.lvl ? s.lvl.name.toUpperCase() + " LEVEL" : "NORMAL"; sub = (s.next ? (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name) : "Above " + esc(s.lvl.name)) + " · " + fTime(s.last.t); }
     return '<div class="card scard" style="border-left-color:' + col + '"><div class="lbl">' + esc(g.site_name) + " · stage</div>" +
@@ -841,7 +844,7 @@ function renderAll(states, now) {
         '<div class="ah"><span class="an">' + esc(c.name) + '</span><span class="ac" style="background:' + chip + ";color:" + ink + '">' +
         esc(st.top ? st.top.name : s.w) + "</span></div>";
       st.stages.forEach(function (g) {
-        var lv = !g.last ? "no data" : g.quiet
+        var lv = g.out ? outText(g) : !g.last ? "no data" : g.quiet
           ? '<span class="warn">offline</span> · last report ' + fDate(g.last.t)
           : "<b style='color:" + (g.lvl ? (g.lvl.level === 1 ? "#8a6d00" : g.lvl.color) : "var(--green)") + "'>" + (g.lvl ? esc(g.lvl.name.replace(/^Flood | Flood Stage$/g, "")) : esc(LK.text("status_normal"))) + "</b>" +
             (g.next ? ' <span class="lbl">· ' + (g.next.value - g.last.v).toFixed(2) + " ft below " + esc(g.next.name.replace(/^Flood | Flood Stage$/g, "")) + "</span>" : "");
@@ -901,6 +904,12 @@ $("allView").addEventListener("click", function (e) {
   var b = e.target.closest("[data-creek]"); if (b) showCreek(b.dataset.creek);
 });
 $("backAll").addEventListener("click", function (e) { e.preventDefault(); showCreek("all"); });
+// Any link to "#<creek>" (the city finder's list, a shared link, the browser's Back button) opens that creek
+window.addEventListener("hashchange", function () {
+  var h = decodeURIComponent(location.hash.replace("#", "")) || "all";   // no creek in the address (Back to the page's start): all creeks
+  if (h === "about" || h === "howto" || h === D.sel) return;
+  if (h === "all" || creeks().concat(moreCreeks()).some(function (c) { return c.id === h; })) showCreek(h);
+});
 
 /* ---------- graphs: rain, each gauge's stage, and the tide on one time axis ---------- */
 var nowLine = {
@@ -1127,6 +1136,7 @@ function fillTiles(st, now) {
   function set(id, cls, html) { var e = $(id); if (e) { e.className = "tile " + cls; e.innerHTML = html; } }
   st.stages.forEach(function (s, i) {
     var g = s.g, sig = (sens[g.key] || {}).signals || {}, th = (g.thresholds || []).filter(function (t) { return t.level >= 1 && t.level <= 4; });
+    if (s.out) { set("tlStage" + i, "off", '<span class="tv">–</span><span class="tw">' + esc(LK.text("gauge_out")) + "</span>" + (s.out.note ? '<span class="tx">' + esc(s.out.note) + "</span>" : "")); return; }
     if (!s.last || s.quiet) { set("tlStage" + i, "off", '<span class="tv">' + (s.last ? s.last.v.toFixed(2) : "–") + '<small> ft</small></span><span class="tw">Not reporting</span>' +
       (s.last ? '<span class="tx">last report ' + esc(ago(s.last.t)) + "</span>" : "")); return; }
     var lv = s.lvl ? Math.min(4, s.lvl.level) : 0, arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[sig.trend] || "";
