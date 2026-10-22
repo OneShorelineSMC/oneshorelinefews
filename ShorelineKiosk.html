@@ -798,16 +798,39 @@ function upcomingAbove(s, now) {
 }
 /* Headline for the coming week's tides above MHHW (same as the Tides page): title and when, then peak, how far above
    MHHW and where it is against the flood level. Above MHHW alone is "higher than usual" (information); red only at TIDE_RED_FT_RWC. */
-function headHtml(ups, st, now) {
-  var rl = redFor(st), red = ups.filter(function (w) { return w.peak >= rl; }), first = red[0] || ups[0], on = first.start <= now;
+/* High water (a tide at or above the flood level, TIDE_RED_FT_RWC) in the coming week: the first such tide, when the
+   water is at or above the flood level, and how many more. Used by the headline and by the strip on the other tabs, so
+   the kiosk says it once, the same way. null when no tide reaches it. */
+function highWater(s, now) {
+  var st = s.st, rl = redFor(st);
+  if (!isFinite(rl) || !s.pred) return null;
+  var ups = upcomingAbove(s, now), red = ups.filter(function (w) { return w.peak >= rl; });
+  if (!red.length) return null;
+  var w = red[0], ser = bestSeries(s, now).filter(function (p) { return p.t >= w.start && p.t <= w.end; });
+  var rw = findWindows(ser, rl)[0] || { start: w.peakT, end: w.peakT };
+  var on = rw.start <= now;
+  var when = on ? "now, until about " + fTime(rw.end) : relDay(rw.start, now) + " about " +
+    fTime(rw.start).replace(/ (AM|PM)$/, function (m) { return fTime(rw.end).slice(-3) === m ? "" : m; }) + (rw.end > rw.start ? "–" + fTime(rw.end) : "");
+  return { w: w, rw: rw, when: when, more: red.length - 1, src: w.src, rl: rl };
+}
+/* Headline: one statement for the whole Bay shoreline (the Redwood City gauge stands for it). High water: when the water
+   is at or above the flood level, then peak, source and where it is measured. Otherwise: higher than usual (above MHHW). */
+function headHtml(ups, st, now, s) {
+  var hw = s ? highWater(s, now) : null, where = COAST ? "" : " along the Bay shoreline";
+  var tagOf = function (w) { return w.src === "fcst" ? " (projected)" : w.src === "measured" ? " (measured)" : " (tide table)"; };
+  if (hw) {
+    return '<span class="hi" aria-hidden="true">⚠</span>' + esc(LK.text("tide_head_red") + where) + ": " + esc(hw.when) +
+      (hw.more ? " <span>+" + hw.more + " more this week</span>" : "") +
+      '<span class="hd">Peak <b>' + hw.w.peak.toFixed(2) + " ft</b> at " + esc(fTime(hw.w.peakT)) + esc(tagOf(hw.w)) + " · flood level " + hw.rl.toFixed(1) +
+      " ft · similar Bay-wide</span>";
+  }
+  var first = ups[0], on = first.start <= now;
   var when = on ? LK.text("tide_head_now", { time: fTime(first.end) }) : winText(first, now).replace(/ \([^)]*\)$/, "");
-  var title = red.length ? LK.text("tide_head_red") : LK.text("tide_head_info");
-  var tag = first.src === "fcst" ? " (projected)" : first.src === "measured" ? " (measured)" : "";   // short: one line on the kiosk
-  var peak = (on && first.peakT <= now ? "Peaked " : "Peak ") + "<b>" + first.peak.toFixed(2) + " ft</b> at " + esc(fTime(first.peakT)) + tag;
+  var peak = (on && first.peakT <= now ? "Peaked " : "Peak ") + "<b>" + first.peak.toFixed(2) + " ft</b> at " + esc(fTime(first.peakT)) + esc(tagOf(first));
   var bits = [peak, sgn(first.peak - st.mhhw).replace(/^\+/, "") + " ft above MHHW"];
-  if (isFinite(rl)) bits.push(esc(LK.text(first.peak >= rl ? "tide_head_at_red_short" : "tide_head_below_red_short", { ft: rl.toFixed(1) })));
+  if (isFinite(redFor(st))) bits.push(esc(LK.text("tide_head_below_red_short", { ft: redFor(st).toFixed(1) })));
   var more = ups.length - 1;
-  return '<span class="hi" aria-hidden="true">' + (red.length ? "⚠" : "〰") + "</span>" + esc(title) + ": " + esc(when) +
+  return '<span class="hi" aria-hidden="true">〰</span>' + esc(LK.text("tide_head_info") + where) + ": " + esc(when) +
     (more ? " <span>+" + more + " more this week</span>" : "") + '<span class="hd">' + bits.join(" · ") + "</span>";
 }
 function winText(w, now) {
@@ -832,8 +855,9 @@ function renderTides() {
     if (!ups.length) { hd.className = "ok"; hm.textContent = "No tides above MHHW in the next 7 days"; }
     else {
       hd.className = ups.some(function (w) { return w.peak >= redFor(st); }) ? "red" : "over";
-      hm.innerHTML = headHtml(ups, st, now);
+      hm.innerHTML = headHtml(ups, st, now, s);
     }
+    if (typeof renderSeason === "function") renderSeason();   // the bottom line hides itself while the headline says high water
   }
 
   // Now: measured level, trend and difference from predicted (one short line)
@@ -1367,6 +1391,8 @@ function renderSeason() {
   el.classList.toggle("hide", !st);
   if (!st) return;
   el.className = st.cls;
+  var rwc = S.filter(function (x) { return x.st.id === "9414523"; })[0];
+  if (/red/.test(st.cls) && !COAST && rwc && highWater(rwc, nowLocal())) { el.classList.add("hide"); return; }   // the headline says it
   $t("tschip").textContent = st.chip;
   $t("tsmain").textContent = st.main;
   $t("tssub").textContent = st.sub ? " · " + st.sub : "";
@@ -1772,13 +1798,15 @@ function updateCreekAlert(states) {
   // No creek at a level: the strip can still warn of Bayside high water (flood level) today or tomorrow, from any tab
   var bt = window.TIDE_SEASON ? window.TIDE_SEASON.line(tsDay) : null, now0 = nowLocal();
   var hw = !worst && bt && bt.cls === "red" && bt.date <= window.TIDE_SEASON.iso(now0 + 86400000) ? bt : null;
-  stage.classList.toggle("creekalert", !!(worst || hw));
+  stage.classList.toggle("creekalert", !!(worst || (hw && currentTab !== "tides")));   // high water alone: the Bayside Tides tab headline says it
   stage.classList.toggle("crk", !!worst);
   strip.dataset.go = hw ? "tides" : "creek";
   document.getElementById("csTap").textContent = hw ? "Bayside Tides ›" : currentTab === "creek" ? "graphs ›" : "creeks tab ›";
   if (hw) {
     strip.className = "lvl-warning"; strip.style.background = "#c62828"; strip.style.color = "#fff";
-    document.getElementById("csText").innerHTML = "<b>" + esc(LK.text("tide_red_chip")) + " · REDWOOD CITY</b> · " + esc(bt.main);
+    var rwc = S.filter(function (x) { return x.st.id === "9414523"; })[0], hwx = rwc ? highWater(rwc, now0) : null;
+    document.getElementById("csText").innerHTML = "<b>" + esc(LK.text("tide_red_chip")) + " · BAY SHORELINE</b> · " +
+      (hwx ? esc(hwx.when.charAt(0).toUpperCase() + hwx.when.slice(1)) + ", peak " + hwx.w.peak.toFixed(1) + " ft at Redwood City" : esc(bt.main));
   }
   tab.classList.remove("creek-monitoring", "creek-watch", "creek-warning", "creek-beyond");
   if (worst) {
@@ -1828,17 +1856,21 @@ function drawCreekCharts(st, now) {
   var layoutKey = c.id + (dry ? ":dry" : "");
   if (C.chartsFor !== layoutKey) {
     destroyCreekCharts();
-    // Each graph has its own legend on its title row
-    var parts = dry ? [] : [{ id: "chRain", w: 0.65, title: "Rain per hour (in)", key: "cRainKey" }];
-    if (!dry && c.rain_running && c.rain_running.line) parts.push({ id: "chRun", w: 0.7, title: esc(c.rain_running.label), key: "cRunKey" });
+    // Each graph has its own legend on its title row. Order: stage, rain, tide
+    var parts = [];
     // A graph per gauge with flood levels (its level lines); with many gauges, the ones without levels share one graph
     var manyG = c.stages.length > 2, anyLv = c.stages.some(gHasLv), restG = manyG && c.stages.some(function (g) { return !gHasLv(g); });
     c.stages.forEach(function (g, i) { if (!manyG || gHasLv(g)) parts.push({ id: "chStage" + i, w: manyG ? 1.1 : c.stages.length > 1 ? 1 : 1.5, title: esc(g.label) + " · stage (ft)", key: "cStageKey" + i }); });
     if (restG) parts.push({ id: "chStageAll", w: anyLv ? 1 : 1.5, title: anyLv ? "Other gauges (ft, each gauge’s own zero)" : "Creek level (ft, each gauge’s own zero)", key: "cStageKeyAll" });
+    if (dry) parts.push({ dryLine: true });
+    else {
+      parts.push({ id: "chRain", w: 0.65, title: "Rain per hour (in)", key: "cRainKey" });
+      if (c.rain_running && c.rain_running.line) parts.push({ id: "chRun", w: 0.7, title: esc(c.rain_running.label), key: "cRunKey" });
+    }
     if (tideFor(c)) parts.push({ id: "chTide", w: 1.05, title: esc(tideFor(c).st.name) + " tide (ft NAVD88)", key: "cTideKey" });
-    var html = (dry ? '<div class="ctitle"><span>Rain: none in the last ' + CREEK_PAST_HOURS + ' hours</span><span class="ck">' +
-      (c.rain_running && c.rain_running.line ? esc(c.rain_running.label.replace(/ \(in\)$/, "")) + " trigger " + c.rain_running.line.toFixed(2) + " in" : "") + "</span></div>" : "") +
-      parts.map(function (p) {
+    var html = parts.map(function (p) {
+      if (p.dryLine) return '<div class="ctitle"><span>Rain: none in the last ' + CREEK_PAST_HOURS + ' hours</span><span class="ck">' +
+        (c.rain_running && c.rain_running.line ? esc(c.rain_running.label.replace(/ \(in\)$/, "")) + " trigger " + c.rain_running.line.toFixed(2) + " in" : "") + "</span></div>";
       return '<div class="ctitle"><span>' + p.title + '</span><span class="ck" id="' + p.key + '"></span></div>' +
         '<div class="cchart" data-w="' + p.w + '"><canvas id="' + p.id + '"></canvas></div>';
     }).join("");
@@ -1893,12 +1925,11 @@ function drawCreekCharts(st, now) {
     return Object.keys(bins).filter(function (k) { return bins[k] > 0; }).map(function (k) { return { x: H(+k) - 0.5, y: bins[k] }; });
   }
   if (!dry) {
+  C.nowTagged = false;
   var RAIN_COLORS = st.rains.length > 1 ? ["#7e57c2", "#1e88e5", "#00897b"] : ["#1e88e5"];
   var series = st.rains.map(function (r) { return hourly(r.p); });
   var rmax = Math.max(0.1, Math.max.apply(null, [].concat.apply([], series).map(function (p) { return p.y; }).concat([0])));
   var ropt = base(false);
-  ropt.plugins.nowLine.label = true;   // one "Now" tag on the top graph; the line runs through every graph below it
-  ropt.layout.padding.top = 2;
   ropt.scales.y = yScale(0, Math.ceil(rmax * 10) / 10, Math.ceil(rmax * 10) / 20);
   ropt.datasets = { bar: { barPercentage: 1, categoryPercentage: 1 } };
   var pxPerHr = Math.max(1, (document.getElementById("chRain").parentNode.clientWidth - 40) / (CREEK_PAST_HOURS + CREEK_AHEAD_HOURS));
@@ -1960,7 +1991,7 @@ function drawCreekCharts(st, now) {
     var box = document.getElementById("chStage" + i).parentNode.clientHeight;
     var stp = [1, 2, 4, 5, 10].filter(function (k) { return Math.ceil(smax / k) <= Math.max(2, Math.floor(box / 22)); })[0] || 10;
     var sopt = base(false);
-    if (dry && i === 0) { sopt.plugins.nowLine.label = true; sopt.layout.padding.top = 2; }   // the top graph carries the "Now" tag
+    if (!C.nowTagged) { sopt.plugins.nowLine.label = true; sopt.layout.padding.top = 2; C.nowTagged = true; }   // one "Now" tag, on the top graph (the first stage graph); the line runs through every graph below
     sopt.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);
     sopt.plugins.refMarks = { side: "right", bg: cssVar("--panel") };
     sopt.scales.y.ticks.callback = function (v) { return +v.toFixed(2) + " ft"; };

@@ -972,7 +972,11 @@ function drawCharts(st, now) {
   }
   if (D.built !== c.id) {   // build this creek's graph boxes
     Object.keys(D.charts).forEach(function (k) { D.charts[k].destroy(); }); D.charts = {};
-    var h = "";
+    var h = "";   // order: stage, rain, tide
+    st.stages.forEach(function (s, i) {
+      h += '<div class="gtitle"><span>' + esc(s.g.label) + " · stage (ft)</span><span></span></div>" +
+        '<div class="gbox" style="height:' + (st.stages.length > 1 ? 150 : 170) + 'px"><canvas id="chStage' + i + '"></canvas></div>';
+    });
     st.rains.forEach(function (r, i) {
       var col = st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5";
       h += '<div class="gtitle"><span><b><i aria-hidden="true" style="display:inline-block;width:14px;border-top:3px solid ' + col + ';vertical-align:middle;margin-right:4px"></i>' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + "</span><span>in/hr</span></div>" +
@@ -980,10 +984,6 @@ function drawCharts(st, now) {
     });
     if (c.rain_running && c.rain_running.line) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span><i aria-hidden="true" style="display:inline-block;width:14px;border-top:2px dashed ' + runColor(c) + ';vertical-align:middle;margin-right:4px"></i>trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
       '<div class="gbox" style="height:80px"><canvas id="chRun"></canvas></div>';
-    st.stages.forEach(function (s, i) {
-      h += '<div class="gtitle"><span>' + esc(s.g.label) + " · stage (ft)</span><span></span></div>" +
-        '<div class="gbox" style="height:' + (st.stages.length > 1 ? 150 : 170) + 'px"><canvas id="chStage' + i + '"></canvas></div>';
-    });
     if (c.tide) h += '<div class="gtitle"><span id="tideTitle">Tide (ft NAVD88)</span><span></span></div><div class="gbox" style="height:170px"><canvas id="chTide"></canvas></div>';
     h += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = h;
