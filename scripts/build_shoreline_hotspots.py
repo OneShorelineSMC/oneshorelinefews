@@ -293,15 +293,9 @@ def candidates(by_level, watersheds, places):
 
 
 def prepare(by_level, wet=None, tree=None):
-    """Normally wet land cut out of each level, then what already floods at lower levels. Returns ({inches: features},
-    {inches: acres of wet land removed})."""
-    out, removed, lower = {}, {}, None
-    for level in sorted(by_level):
-        feats, removed[level] = E.remove_wet(by_level[level], wet or [], tree) if tree is not None else (by_level[level], 0.0)
-        out[level] = E.minus_lower(feats, lower)
-        u = E.union_of(feats)
-        lower = u if lower is None else (E.fix(lower.union(u)) if u is not None else lower)
-    return out, removed
+    """Normally wet land cut out of each level, then what already floods at lower levels (tile by tile; see
+    shoreline_exposure.cut_levels). Returns ({inches: features}, {inches: acres of wet land removed})."""
+    return E.cut_levels(by_level, wet or [], tree, log=step if "step" in globals() else None)
 
 
 def spot_geom(r):

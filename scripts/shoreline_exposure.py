@@ -197,6 +197,85 @@ def minus_lower(feats, lower):
     return out
 
 
+TILE_DEG = 0.01               # the cut is done tile by tile (about 1 km): each overlay only sees the shapes in its tile
+
+
+def _depth(props):
+    try:
+        return float(re.findall(r"-?\d+(?:\.\d+)?", str((props or {}).get("DEPTH_FT") or ""))[-1])
+    except (IndexError, ValueError):
+        return None
+
+
+def cut_levels(by_level, wet, tree, tile=TILE_DEG, log=None):
+    """For each level: the flooded land with the normally wet land cut out and what already floods at lower levels cut
+    out, worked tile by tile (the habitat map has ~45,000 detailed polygons; one big overlay takes hours), then joined
+    back into whole areas. Returns ({inches: GeoJSON features, one per joined area, DEPTH_FT = deepest}, {inches: acres
+    of wet land taken out})."""
+    levels = sorted(by_level)
+    src = {L: [(fix(shape(f["geometry"])), _depth(f.get("properties"))) for f in by_level[L] if f.get("geometry")] for L in levels}
+    ftree = {L: STRtree([g for g, _ in src[L]]) for L in levels if src[L]}
+    allg = [g for L in levels for g, _ in src[L]]
+    out = {L: [] for L in levels}
+    removed = {L: 0.0 for L in levels}
+    if not allg:
+        return out, removed
+    x0, y0, x1, y1 = shapely.total_bounds(allg)
+    nx, ny = int(math.ceil((x1 - x0) / tile)), int(math.ceil((y1 - y0) / tile))
+    pieces = {L: [] for L in levels}   # (polygon, depth) per level, cut by tile
+    done = 0
+    for ix in range(nx):
+        for iy in range(ny):
+            tb = (x0 + ix * tile, y0 + iy * tile, x0 + (ix + 1) * tile, y0 + (iy + 1) * tile)
+            tg = shapely.box(*tb)
+            wet_t, lower = None, None
+            for L in levels:
+                if L not in ftree:
+                    continue
+                idx = ftree[L].query(tg, predicate="intersects")
+                if not len(idx):
+                    continue
+                if wet_t is None:
+                    wi = tree.query(tg, predicate="intersects") if tree is not None else []
+                    wet_t = fix(unary_union([shapely.clip_by_rect(wet[j], *tb) for j in wi])) if len(wi) else shapely.Polygon()
+                land = []
+                for i in idx:
+                    g, dep = src[L][i]
+                    part = fix(shapely.clip_by_rect(g, *tb))
+                    if part.is_empty:
+                        continue
+                    a0 = area_m2(part)
+                    if not wet_t.is_empty:
+                        part = fix(part.difference(wet_t))
+                    part = trim(part)
+                    removed[L] += max(0.0, a0 - area_m2(part))
+                    if not part.is_empty:
+                        land.append((part, dep))
+                if not land:
+                    continue
+                lvl = fix(unary_union([p for p, _ in land]))
+                for p, dep in land:
+                    q = p if lower is None else trim(fix(p.difference(lower)))
+                    pieces[L] += [(pp, dep) for pp in polygons_only(q)]
+                lower = lvl if lower is None else fix(lower.union(lvl))
+            done += 1
+            if log and done % 100 == 0:
+                log(f"  {done} of {nx * ny} tiles")
+    if log:
+        log(f"  cut {done} tiles")
+    for L in levels:   # join the tile pieces back into whole areas; each keeps the deepest depth of its pieces
+        ps = [p for p, _ in pieces[L]]
+        if not ps:
+            continue
+        joined = polygons_only(fix(unary_union(ps)))
+        pt = STRtree(ps)
+        for poly in joined:
+            deps = [pieces[L][k][1] for k in pt.query(poly, predicate="intersects") if pieces[L][k][1] is not None]
+            out[L].append({"type": "Feature", "properties": {"DEPTH_FT": str(max(deps)) if deps else ""},
+                           "geometry": mapping(poly)})
+    return out, {L: removed[L] / 4046.86 for L in levels}
+
+
 def union_of(feats):
     return fix(unary_union([fix(shape(f["geometry"])) for f in feats])) if feats else None
 
