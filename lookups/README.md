@@ -5,7 +5,7 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 
 | File | What's in it | Read by | When a change shows up |
 |---|---|---|---|
-| `creeks.csv` | The four dashboard creeks: names, intro and note text, which NOAA tide station, which rain totals (minutes) to show, Belmont's running-rain graph | data job → `creeks.json` → kiosk, home page, Creeks page | next data run (about 5 min) |
+| `creeks.csv` | The four dashboard creeks: names, intro and note text, which NOAA tide station, which rain totals (minutes) to show, an optional running-rain graph (none since Oct 22; Belmont's 4-hour graph was dropped) | data job → `creeks.json` → kiosk, home page, Creeks page | next data run (about 5 min) |
 | `creek_gauges.csv` | Each creek's stage and rain gauges, mapped to their OneRain sensors; how each stage gauge reports; whether it is tidal | data job | next data run |
 | `thresholds.csv` | Flood thresholds (Monitoring / Watch / Warning, ft) for every stage gauge, and rain triggers (in, with minutes and tide level) | data job (also colors the sensor map) | next data run |
 | `tide_stations.csv` | NOAA tide stations: MHHW (ft NAVD88) and the MLLW-to-NAVD88 difference | pages directly, and the data job | pages: within about 10 min |
