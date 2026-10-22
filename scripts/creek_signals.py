@@ -493,6 +493,13 @@ def creek_status(c, sens, tide, now, S):
         reasons.append({"code": "why_stale", "time": sg["since"], "gauge": sg["label"]})
     if tide_line and STATUS_RANK[key] >= 2:
         reasons.append({"code": "tide_rising_line", "time": tide.get("next_high")})
+    # Gauges staff have marked out of service (lookups/gauge_outages.csv): said first, with staff's note
+    outs = [{"gauge": g["label"], "note": (sens.get(g["key"], {}).get("out_of_service") or {}).get("note", ""),
+             "since": (sens.get(g["key"], {}).get("out_of_service") or {}).get("since", "")}
+            for g in c["stages"] if sens.get(g["key"], {}).get("out_of_service")]
+    for o in reversed(outs):
+        reasons.insert(0, {"code": "why_out_of_service", "gauge": o["gauge"], "note": o["note"]})
+        staff.append(f"{o['gauge']} gauge out of service since {o['since'] or '?'} (gauge_outages.csv)")
 
     drv = None
     if best and best[1].get("driver"):
@@ -504,4 +511,5 @@ def creek_status(c, sens, tide, now, S):
                      "working": len(working), "of": len(rain_gauges), "elevated": elevated,
                      "silent": silent},
             "trend": trend and {k: trend.get(k) for k in ("trend", "ft_per_hr", "window_min")},
-            "tidal": tidal, "tide": tide if tidal else None, "reasons": reasons, "staff_notes": staff}
+            "tidal": tidal, "tide": tide if tidal else None, "reasons": reasons, "staff_notes": staff,
+            "out_of_service": outs}

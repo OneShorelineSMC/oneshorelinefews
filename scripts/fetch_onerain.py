@@ -47,6 +47,26 @@ RAIN_FREQ, _fp = load_rain_frequency()
 SETTINGS_ERRORS = SETTINGS_ERRORS + _sp + _fp
 
 SENSORS = {}
+
+
+def load_gauge_outages(path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lookups", "gauge_outages.csv")):
+    """{gauge key: {"since", "note"}} from lookups/gauge_outages.csv: gauges staff have taken out of service (damaged,
+    being repaired). Their readings are dropped, so a damaged sensor can't show a false level or set off a false alert;
+    the creek's status then comes from rain alone, and the pages say "Out of service" with the note."""
+    import csv as _csv
+    out = {}
+    try:
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            for r in _csv.DictReader(f):
+                k = (r.get("gauge") or "").strip()
+                if k and not k.startswith("#"):
+                    out[k] = {"since": (r.get("out_since") or "").strip(), "note": (r.get("note") or "").strip()}
+    except FileNotFoundError:
+        pass
+    return out
+
+
+GAUGE_OUTAGES = load_gauge_outages()
 USGS_PAGE = "https://waterdata.usgs.gov/monitoring-location/USGS-{}/"
 
 
@@ -478,7 +498,14 @@ def main():
             entry["fetched"] = old.get("fetched")
             entry["error"] = f"{type(e).__name__}: {e}"[:300]
             print(f"{key}: FAILED ({entry['error']}); kept {len(entry['points'])} old readings", file=sys.stderr)
+        if key in GAUGE_OUTAGES:   # out of service: no readings published
+            entry["points"], entry["latest"] = [], None
+            entry["out_of_service"] = GAUGE_OUTAGES[key]
+            print(f"{key}: OUT OF SERVICE since {GAUGE_OUTAGES[key]['since'] or '?'} (gauge_outages.csv); readings not published")
         result["sensors"][key] = entry
+    for k in GAUGE_OUTAGES:
+        if k not in SENSORS:
+            print(f"gauge_outages.csv: '{k}' is not a gauge in creek_gauges.csv (left out)", file=sys.stderr)
     add_signals(result, previous, now)
     add_status(result, now, previous_file)
     try:   # NWS rain forecast per creek; a problem here never stops the creek data
