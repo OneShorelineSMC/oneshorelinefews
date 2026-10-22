@@ -119,10 +119,10 @@
     <p data-text="shore_about_what"></p>
     <p data-text="shore_about_levels"></p>
     <p data-text="shore_about_limits"></p>
-    <p data-text="shore_about_exposure"></p>
+    <p data-text="shore_about_exposure" id="aboutExpo" hidden></p>
     <p id="aboutOffset" hidden></p>
     <p data-text="shore_about_draft" id="aboutDraft" hidden></p>
-    <p class="lbl">Low spots: BCDC (San Francisco Bay Conservation and Development Commission), Adapting to Rising Tides maps, 2017
+    <p class="lbl">Low spots: BCDC (San Francisco Bay Conservation and Development Commission), Adapting to Rising Tides maps, 2017, shoreline overtopping
       (<a href="https://www.sfei.org/projects/adapting-rising-tides-bay-shoreline-flood-explorer" rel="noopener">Bay Shoreline Flood Explorer</a>).
       Marsh, mudflats and ponds: SFEI <a href="https://www.sfei.org/data/baylands-habitat-map-2020-gis-data" rel="noopener">Baylands Habitat Map 2020</a>.
       Buildings and streets: <a href="https://www.smcgov.org/tsd/gis-data-download" rel="noopener">San Mateo County GIS</a>.
@@ -144,8 +144,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261021d"></script>
-<script src="tide_season.js?v=20261021d"></script>
+<script src="lookups.js?v=20261022a"></script>
+<script src="tide_season.js?v=20261022a"></script>
 <script>
 /* Shoreline: low spots along San Mateo County's Bay shoreline (BCDC Adapting to Rising Tides maps) and whether the coming
    tides at Redwood City are high enough to reach them. lookups/THRESHOLDS_BASIS.md §4c.
@@ -264,6 +264,7 @@ function render() {
   if (!TS) return;
   var now = TS.now(), rows = SP.rows, ready = !!TS.state.highs;
   $("draftTag").hidden = !SP.draft; $("aboutDraft").hidden = !SP.draft;
+  $("aboutExpo").hidden = !(SP.expo && SP.expo.length);   // only with the buildings / streets layer
   var o = TS.offset(), ao = $("aboutOffset");
   ao.hidden = !o; if (o) ao.textContent = LK.text("shore_about_offset", { off: o.ft.toFixed(2), days: o.days });
   var head = $("head");
@@ -364,7 +365,12 @@ function drawMap(info, now) {
   ["none", "high", "later", "soon"].forEach(function (st) {   // stronger colors drawn last, on top
     info.filter(function (x) { return x.st === st && SP.shapes[x.r.id]; }).sort(function (a, b) { return isDev(a.r) - isDev(b.r); }).forEach(function (x) {
       var o = !isDev(x.r); open = open || o;
-      var lay = L.geoJSON(SP.shapes[x.r.id], { style: styleFor(st, o) }).bindPopup(popupFor(x.r, x.nx, now)).addTo(map);
+      var sty = styleFor(st, o), shp = SP.shapes[x.r.id], isLine = /Line/.test((shp.geometry || {}).type || "");
+      if (isLine) { sty.weight = 7; sty.opacity = 0.95; sty.lineCap = "round"; }   // an overtopped stretch of shoreline
+      var lay = L.featureGroup([L.geoJSON(shp, { style: sty })]);
+      if (isLine && isFinite(+x.r.lat) && isFinite(+x.r.lon))   // a dot too: a short stretch is too small to see zoomed out
+        lay.addLayer(L.circleMarker([+x.r.lat, +x.r.lon], { radius: 7, color: "#fff", weight: 2, fillColor: sty.color, fillOpacity: 1 }));
+      lay.bindPopup(popupFor(x.r, x.nx, now)).addTo(map);
       layers[x.r.id] = lay;
       bounds.push(lay.getBounds());
     });
