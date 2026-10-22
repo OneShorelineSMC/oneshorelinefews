@@ -223,24 +223,44 @@ Which places on the Bay shoreline the water would reach, not just how high it is
   inches above **local MHHW** (sea level rise plus a storm surge, or either alone).
 - **Draft list** (`scripts/build_shoreline_hotspots.py`, Actions > Build shoreline hotspots, run by hand): the flooded
   areas at 12, 24 and 36 in above MHHW on San Mateo County's Bay side, pieces within 250 m grouped into one spot,
-  at least 0.5 acre, each spot listed at the lowest level that floods it, named after its Census city and County
-  watershed. Written to `proposed/shoreline_hotspots.csv` (and `data/shoreline_hotspots_candidates.geojson` to check
-  on a map), `include` = review.
+  at least 0.5 acre, named after its Census city and County watershed. Written to `proposed/shoreline_hotspots.csv`
+  (and `data/shoreline_hotspots_candidates.geojson` to check on a map), `include` = review.
+- **Normally wet land taken out (Oct 21):** ART floods every low area connected to the Bay, and marsh, mudflats and salt
+  ponds are the lowest ground there is (the first draft's top spot was 9,858 acres of Redwood City marsh and ponds at
+  12 in). The build now cuts out the SFEI **Baylands Habitat Map 2020** (`Level4` habitat types Shallow and Deep
+  Subtidal, Tidal Flat, Tidal Pond/Panne, Intertidal Channel, Tidal Marsh, Other Marsh, Other Open Water, Beach, Dune;
+  `WET` in `scripts/shoreline_exposure.py`). **Kept as land:** Non-Aquatic Diked Bayland and Levee. Slivers about 2 m
+  wide along the cut are trimmed.
+- **Levels (Oct 21):** each level's spots are only the land that floods at that level and not lower, so a 24 in spot
+  is the ground the water adds between 12 and 24 in (before, a piece mostly inside a 12 in spot was dropped).
+- **What is in each spot (Oct 21):** San Mateo County GIS **building footprints** (a building touching the spot) and
+  **street centerlines** (miles inside the spot, longest names listed), both the County's daily exports. A spot with a
+  building, at least 25 m of street or an RSAP asset is `developed` = yes; the rest is open land (parks, fields, diked
+  baylands). BCDC **Regional Shoreline Adaptation Plan (RSAP)** open data: the "Critical Infrastructure" map (power
+  plants and substations, wastewater plants, emergency hospitals, emergency operations centers, and the other layers in
+  it) and the transportation / transit maps by the same owner (highways, passenger and freight rail and stations,
+  airports, seaports, ferry terminals), found on ArcGIS Online when the build runs; the log lists the layers it used.
+  Columns `developed`, `buildings`, `street_mi`, `streets`, `assets`; map features in `data/shoreline_exposure.geojson`,
+  marsh and ponds for the map in `data/shoreline_baylands.geojson`. RSAP's own exposure results (2050/2100 scenarios of
+  0.8–6.6 ft of sea level rise) aren't used: the Shoreline tab is about the coming month's tides.
 - **Review:** staff rename, merge, drop (`include` = no) and sign off rows, then save the list as
   `lookups/shoreline_hotspots.csv`; the page uses that copy once it exists, the draft until then (marked "draft").
 - **Shown on the Shoreline tab (`Shoreline.html`, public, marked Draft while it reads the draft list):** each spot's level
   turned into a tide height at Redwood City (MHHW + level, e.g. 12 in = about 8.0 ft), compared with each day's highest
   tide for the next 30 days: the NOAA projection for 2 days, then the tide table, and the tide table plus the recent
-  offset (§4b) where that comes sooner. Headline for the next 2 days, an interactive map (OpenStreetMap; spots in reach
-  in 2 days red, later this month orange, only if the Bay stays high dashed orange, the rest blue) and a list with the
-  next date for each spot. Plain language; MHHW, NAVD88 and BCDC's method are in "About this map". Never a status or a
+  offset (§4b) where that comes sooner. Headline for the next 2 days, counting the spots with buildings or streets
+  (open land only mentioned), an interactive map (OpenStreetMap; spots in reach in 2 days red, later this month orange,
+  only if the Bay stays high dashed orange, the rest blue; open land faint and dashed; marsh and ponds faint green;
+  buildings and streets in a spot once zoomed in; RSAP facilities as rings, highways and rail as dashed lines) and a
+  list with the next date and what is in each spot. Plain language; MHHW, NAVD88 and BCDC's method are in "About this map". Never a status or a
   color anywhere else.
 - **Limits:** still water, no waves or wind setup; ground as of 2010–11 (newer levees or fills aren't in it); local MHHW
   differs around the Bay, so comparing every spot with Redwood City's "above MHHW" is approximate (the northern
   shoreline sits closer to Alameda's tide); our provisional 8.5 ft level is about 1.5 ft (18 in) above Redwood City's
   MHHW, between ART's 12 and 24 in levels.
 - **To review:** start from any hotspot list OneShoreline already trusts; the 0.5 acre and 250 m rules; spot names; a
-  kiosk view.
+  kiosk view; which habitat types count as normally wet (diked baylands and managed ponds especially); the 25 m street
+  rule; which RSAP layers to show.
 
 ## 5. Page logic settings — `settings.csv`
 
