@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
+      - name: Map libraries (shoreline spots test)
+        run: pip install shapely pyproj pyshp
       - name: Lookup tables load
         run: |
           cd scripts
