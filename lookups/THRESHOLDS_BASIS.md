@@ -188,6 +188,13 @@ weighing when the level is confirmed against known flooding. The official values
 
 ### 4b. After the NOAA projection: the tide table plus the recent offset (Oct 21, 2026; provisional)
 
+- **Oct 22: "possible flood level" days.** After the NOAA projection ends (day 3 onward), a day whose tide-table high
+  plus the 30-day offset reaches the flood level (`TIDE_RED_FT_RWC`), while the tide table alone doesn't, is marked
+  "Possible flood level" with ⚠ and a **dashed red outline** on the Tides page, the kiosk day boxes and tide table
+  screen, and a dashed red ring on the calendar. The Tides page headline adds "Possible flood-level tides … if the Bay
+  stays … ft higher than the tide table". This is not a status: no solid red fill, no "High water" headline, no red
+  strip on the home page or kiosk; those stay tied to the NOAA projection (next 2 days).
+
 NOAA's projection (its Bay and West Coast models, `ofs_water_level`) runs about 48 hours ahead. After that the pages
 used only the tide table, which leaves out a Bay that has been running high for weeks (for example in an El Niño
 winter). Since Oct 21, 2026 the Tides page and the kiosk add the **recent offset** to the tide table after the
