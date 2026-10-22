@@ -199,6 +199,11 @@
   .day.over .dv, .day.over .dx { color: var(--info); font-weight: 700; }
   .day.red { background: rgba(192,57,43,.09); }
   .day.red .dv, .day.red .dx { color: var(--red); font-weight: 700; }
+  /* after the NOAA projection, the tide table plus the recent offset reaches the flood level: possible, not projected.
+     A dashed red outline (not the solid red fill), and the words "Possible flood level". */
+  .day.maybe { outline: 2px dashed var(--red); outline-offset: -2px; }
+  .day.maybe .dx, .day.maybe .dof { color: var(--red); font-weight: 700; }
+  .head .hm .maybe { display: block; margin-top: 6px; font-size: 14.5px; font-weight: 700; color: var(--red); line-height: 1.4; }
   .tag { font-size: 11.5px; font-weight: 700; } .hd .wsep { display: none; }
   .tag.fc { color: var(--fc); } .tag.ms { color: var(--info); }
   .day .dof { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }   /* "≈ 8.12 if the Bay stays high" (after the NOAA projection) */
@@ -210,7 +215,7 @@
     .day .dxw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* "+0.21 ft" (the day's color says above MHHW; still read aloud) */
     .day { display: block; text-align: center; border-bottom: 0; border-top: 4px solid var(--line); border-right: 1px solid var(--line); padding: 5px 4px; }
     .day:last-child { border-right: 0; }
-    .day.over { border-top-color: var(--infob); } .day.red { border-top-color: #c0392b; }
+    .day.over { border-top-color: var(--infob); } .day.red { border-top-color: #c0392b; } .day.maybe { border-top: 4px dashed #c0392b; outline: 0; }
     .day .dv { font-size: 21px; } .day .dx { text-align: center; white-space: normal; } .day .dt { white-space: normal; }
   }
   /* graph range: 3 days | 7 days (aria-pressed shows which; selected = filled, not just a color) */
@@ -290,7 +295,7 @@
   .mgrid .d.k { background: var(--king); color: #fff; font-weight: 700; }
   /* NOAA projection days (next 2 days): dotted, like the projection line on the graphs; white dots on the red and purple fills */
   .mgrid .d.xp { border: 2px dotted var(--ink); }
-  .mgrid .d.of:not(.past) { border: 2px dotted var(--offln); }   /* could reach the flood level if the Bay stays this high */
+  .mgrid .d.of:not(.past) { border: 2px dashed var(--red); }   /* possible flood level if the Bay stays this high */
   .mgrid .d.xp.r:not(.past), .mgrid .d.xp.k:not(.past) { border-color: #fff; }
   .mgrid .d.past { color: var(--muted); font-weight: 400; }   /* past days: plain, still readable (no see-through fading) */
   .mgrid .d.past.a, .mgrid .d.past.r { background: transparent; color: var(--muted); box-shadow: none; }
@@ -352,7 +357,7 @@
       <span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>
       <span><i style="outline:4px double var(--ink);outline-offset:-4px"></i>Selected</span>
       <span id="fckey" class="hide"><i style="border:2px dotted var(--ink);box-sizing:border-box"></i><span data-text="tide_day_expected"></span></span>
-      <span id="ofkey" class="hide"><i style="border:2px dotted var(--offln);box-sizing:border-box"></i><span id="ofkeyt"></span></span></div>
+      <span id="ofkey" class="hide"><i style="border:2px dashed var(--red);box-sizing:border-box"></i><span id="ofkeyt"></span></span></div>
     <div id="calfc" class="hide"></div>
     <p class="caltap" data-text="tide_cal_tap"></p>
     <div class="months" id="months" role="group" aria-label="High tides calendar. Arrow keys move between days; Enter shows a day's tide."></div>
@@ -390,8 +395,8 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261022d"></script>
-<script src="tide_season.js?v=20261022d"></script>
+<script src="lookups.js?v=20261022e"></script>
+<script src="tide_season.js?v=20261022e"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -605,6 +610,18 @@ function bestSeries(s, now) {
 }
 // The recent offset added to the tide table after the NOAA projection ends (tide_season.js, tide_offset.json): {ft, days} or null
 function offOf(s) { return TSN && TSN.station === s.st.id ? TSN.offset() : null; }
+// Days after the NOAA projection whose tide-table high plus the recent offset reaches the flood level (and the tide
+// table alone doesn't): "possible flood level if the Bay stays high". Shown, never a status (no red fill, no strip).
+function maybeDays(s, now, fe) {
+  var off = offOf(s), red = redFor(s.st), by = {};
+  if (!off || !isFinite(red) || !s.highs) return [];
+  s.highs.forEach(function (h) {
+    if (h.t <= fe || h.t >= dayStart(now) + DAYS * 86400000) return;
+    var d = dayStart(h.t); if (!by[d] || h.v > by[d].v) by[d] = h;
+  });
+  return Object.keys(by).sort().map(function (k) { return by[k]; })
+    .filter(function (h) { return h.v < red && h.v + off.ft >= red; }).map(function (h) { return { t: h.t, v: h.v + off.ft, off: off }; });
+}
 function offWords(o, k, more) { return LK.text(k, Object.assign({ ft: o.ft.toFixed(2), days: o.days, water: SIDE.water }, more || {})); }
 function srcWord(src) { return src === "measured" ? "measured" : src === "fcst" ? "NOAA projection" : "tide table"; }
 function upcomingAbove(s, now) {   // stretches above MHHW that haven't ended, with each peak and its source
@@ -745,6 +762,12 @@ function render() {
       hd.className = ups.some(function (w) { return w.peak >= redFor(st); }) ? "head red" : "head over";
       hm.innerHTML = headHtml(ups, st, now, s);
     }
+    var md = s.pred ? maybeDays(s, now, fe) : [];
+    if (md.length) {
+      var dl = md.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fmt(x.t, { day: "numeric" }); });
+      var dtxt = dl.length < 2 ? dl.join("") : dl.slice(0, -1).join(", ") + " and " + dl[dl.length - 1];
+      hm.insertAdjacentHTML("beforeend", '<span class="maybe">⚠ ' + esc(LK.text("tide_maybe_head", { days: dtxt, off: md[0].off.ft.toFixed(2), water: SIDE.water, red: redFor(st).toFixed(1) })) + "</span>");
+    }
     if (st.id === "9414523" && typeof renderSeason === "function" && $("season")) renderSeason();   // the red card hides itself when this says high water
 
     // Now: one short line
@@ -770,19 +793,21 @@ function render() {
       });
       var name = dd === 0 ? "Today" : fmt(a0, { weekday: "short" }) + " " + fmt(a0, { day: "numeric" });
       var isKing = !!kd[new Date(a0).toISOString().slice(0, 10)];
+      var mayRed = !!(top && off && top.src === "pred" && top.t > fe && top.v < redFor(st) && top.v + off.ft >= redFor(st));
       if (short && dd >= 3) {
-        if (!top || !(top.v > st.mhhw || isKing)) continue;
+        if (!top || !(top.v > st.mhhw || isKing || mayRed)) continue;
         if (!laterHd) { h += '<div class="dlater">Later this week</div>'; laterHd = true; }
       }
       if (!top) { h += '<div class="day"><span class="dn">' + name + '</span><span class="dv">–</span></div>'; continue; }
       var over = top.v > st.mhhw, isRed = top.v >= redFor(st); if (top.src === "fcst") fcDays++;
       // after the NOAA projection: the tide table plus the recent offset, in gray under the time ("if the Bay stays high")
       var ofv = off && top.src === "pred" && top.t > fe ? top.v + off.ft : null; if (ofv != null) ofDays++;
-      h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span></span>' +
+      h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (mayRed ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span></span>' +
         '<span class="dt">' + fTime(top.t) + (top.src === "fcst" ? ' <span class="tag fc">projected</span>' : top.src === "measured" ? ' <span class="tag ms">measured</span>' : "") +
-        (ofv != null ? '<span class="dof">' + esc(offWords(off, "tide_offset_day", { ft: ofv.toFixed(2) })) + (ofv >= redFor(st) && !isRed ? " ⚠" : "") + "</span>" : "") + '</span>' +
+        (ofv != null ? '<span class="dof">' + esc(offWords(off, "tide_offset_day", { ft: ofv.toFixed(2) })) + "</span>" : "") + '</span>' +
         '<span class="dx">' + (isKing ? '<span class="kx">★ ' + esc(LK.text("tide_day_king_short")) + "</span>" + (isRed || over ? "<br>" : "") : "") +
-        (isRed ? esc(LK.text("tide_red_key", { ft: redFor(st).toFixed(1) })) + " reached" : over ? sgn(top.v - st.mhhw) + ' ft<span class="dxw"> above MHHW</span>' : "") + "</span></div>";
+        (isRed ? esc(LK.text("tide_red_key", { ft: redFor(st).toFixed(1) })) + " reached" : mayRed ? "⚠ " + esc(LK.text("tide_maybe_day")) + (over ? '<span class="dxw"> · ' + sgn(top.v - st.mhhw) + " ft above MHHW in the tide table</span>" : "")
+          : over ? sgn(top.v - st.mhhw) + ' ft<span class="dxw"> above MHHW</span>' : "") + "</span></div>";
     }
     q(".days").innerHTML = h;
     q(".days").classList.toggle("short", short);

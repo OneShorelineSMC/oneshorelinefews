@@ -129,8 +129,10 @@
   .tday.over .dv, .tday.over .dx { color: var(--info); }
   .tday.red { border-top-color: #c0392b; background: rgba(192,57,43,.09); }
   .tday.red .dv, .tday.red .dx { color: var(--red); }
-  .tday.maybe { border-top-color: var(--infob); border-top-style: dashed; background: var(--infobg); }
-  .tday.maybe .dx { color: var(--info); }
+  /* after the NOAA projection, the tide table plus the recent offset reaches the flood level: possible, not projected
+     (dashed red outline and the words, not the solid red fill) */
+  .tday.mred { border-top: 4px dashed #c0392b; outline: 2px dashed var(--red); outline-offset: -2px; }
+  .tday.mred .dx, .tday.under.mred .dx { color: var(--red); white-space: normal; overflow: visible; text-overflow: clip; }
   .tday.under .dx { color: var(--green); font-weight: normal; }
   .tday.past .dv { color: var(--muted); }
   .tday .dt .fc { color: var(--fc); font-weight: bold; }
@@ -512,9 +514,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261022d"></script>
-<script src="tide_season.js?v=20261022d"></script>
-<script src="creek_status.js?v=20261022d"></script>
+<script src="lookups.js?v=20261022e"></script>
+<script src="tide_season.js?v=20261022e"></script>
+<script src="creek_status.js?v=20261022e"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -901,10 +903,12 @@ function renderDays(s, now) {
     cards++;
     if (!top) { h += '<div class="tday" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">–</div></div>'; continue; }
     var over = top.v > st.mhhw, isRed = top.v >= redFor(st);
+    var mRed = !!(off && top.src === "pred" && !isRed && top.v + off.ft >= redFor(st));   // possible flood level if the Bay stays high
     var tag = top.src === "fcst" ? ' <span class="fc">projected</span>' : top.src === "measured" ? ' <span class="ms">measured</span>' : "";
     if (top.src === "fcst") fcDays++;
-    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span>' +
-      '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (isRed ? esc(LK.text("tide_red_day")) : over ? "MHHW " + sgn(top.v - st.mhhw) : "") + "</div></div>";
+    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + (mRed ? " mred" : "") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span>' +
+      '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (isRed ? esc(LK.text("tide_red_day"))
+        : mRed ? "⚠ " + esc(LK.text("tide_maybe_day")) + " (≈" + (top.v + off.ft).toFixed(2) + ")" : over ? "MHHW " + sgn(top.v - st.mhhw) : "") + "</div></div>";
   }
   el.innerHTML = h;
   $t("tsechead").textContent = cards === 1 ? "Today" : "Next " + cards + " days";
@@ -1331,18 +1335,20 @@ function showLookAhead() {
   function day(t) { return fDay(t) === fDay(now) ? "Today" : fDay(t) === fDay(now + 86400000) ? "Tomorrow" : fDay(t); }
   function compare(r) {
     var d = r.v - st.mhhw;
-    if (r.v >= red) return '<b class="red">⚠ Flood level</b> <span class="mut">' + sgn(d) + " ft</span>";
+    if (r.v >= red) return '<b class="red">⚠ ' + esc(r.src === "off" ? LK.text("tide_maybe_day") : "Flood level") + '</b> <span class="mut">' + sgn(d) + " ft</span>";
     if (d > 0) return '<b class="info">Higher than usual</b> <span class="mut">' + sgn(d) + " ft" +
       (r.win ? " · above it " + fTime(r.win.start) + "–" + fTime(r.win.end) : "") + "</span>";
     return 'Normal <span class="mut">' + sgn(d) + " ft</span>";
   }
   // The answer first
-  var hi = rows.filter(function (r) { return r.v > st.mhhw; }), fl = rows.filter(function (r) { return r.v >= red; });
+  var hi = rows.filter(function (r) { return r.v > st.mhhw; }), fl = rows.filter(function (r) { return r.v >= red && r.src !== "off"; });
+  var mfl = rows.filter(function (r) { return r.v >= red && r.src === "off"; });
   var list = function (rs) { return rs.map(function (r) { return day(r.t) + " " + fTime(r.t) + (r.src === "off" ? " ¹" : ""); }).join(" · "); };
   var html = '<div class="lsum ' + (fl.length ? "red" : hi.length ? "hi" : "") + '">' + (fl.length
     ? "⚠ At or above the " + red.toFixed(1) + " ft flood level: " + esc(list(fl))
-    : hi.length ? "Higher than usual: " + esc(list(hi)) + (isFinite(red) ? ". None at the " + red.toFixed(1) + " ft flood level." : ".")
-    : "No tides higher than usual in the next " + DAYS + " days.") + "</div>";
+    : hi.length ? "Higher than usual: " + esc(list(hi)) + (isFinite(red) ? (mfl.length ? ". None projected to reach the " : ". None at the ") + red.toFixed(1) + " ft flood level." : ".")
+    : "No tides higher than usual in the next " + DAYS + " days.") + "</div>" +
+    (mfl.length ? '<p class="lnote" style="color:var(--red);font-weight:bold;margin:-4px 0 10px">⚠ ' + esc(LK.text("tide_maybe_day")) + " if the " + waterWord() + " stays high: " + esc(list(mfl)) + "</p>" : "");
   // The table, in two parts: the NOAA projection, then after it
   var part = null;
   html += '<table class="look"><thead><tr><th>When</th><th>Expected height</th><th>Compared with an average high tide (' + st.mhhw.toFixed(2) + " ft)</th></tr></thead><tbody>";
