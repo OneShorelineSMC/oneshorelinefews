@@ -21,7 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -30,7 +30,7 @@ jobs:
       - name: Install the map libraries
         run: pip install shapely pyproj pyshp
       - name: Build the draft list
-        run: python scripts/build_shoreline_hotspots.py
+        run: python -u scripts/build_shoreline_hotspots.py
       - name: Commit if anything changed
         run: |
           git config user.name  "fews-hotspots-bot"
