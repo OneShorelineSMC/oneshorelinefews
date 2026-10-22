@@ -127,7 +127,7 @@
       Marsh, mudflats and ponds: SFEI <a href="https://www.sfei.org/data/baylands-habitat-map-2020-gis-data" rel="noopener">Baylands Habitat Map 2020</a>.
       Buildings and streets: <a href="https://www.smcgov.org/tsd/gis-data-download" rel="noopener">San Mateo County GIS</a>.
       Critical facilities and transportation: BCDC <a href="https://www.bcdc.ca.gov/rsap-atlas/" rel="noopener">Regional Shoreline Adaptation Plan (RSAP) data</a>.
-      Tides: NOAA tide gauge 9414523, Redwood City. Map: © OpenStreetMap contributors.</p>
+      Tides: NOAA tide gauge 9414523, Redwood City. Map: © OpenStreetMap contributors; satellite: Esri, Maxar, Earthstar Geographics.</p>
   </details>
 
   <p class="lbl always"><span data-text="disclaimer_short"></span> <a href="Creeks.html#about">Disclaimer</a> · <span data-text="e911"></span></p>
@@ -326,6 +326,21 @@ function render() {
   $("updated").textContent = "Tides from NOAA at Redwood City · updated " + TS.clock(now) + " · refreshes automatically";
 }
 
+/* Base map: OpenStreetMap, or satellite (Esri World Imagery) with road and place names on top; the choice is remembered */
+function addBasemaps(map, extraAttr, pos) {
+  var esri = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+  var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' + (extraAttr || "") });
+  var sat = L.layerGroup([
+    L.tileLayer(esri + "World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, maxNativeZoom: 19,
+      attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" + (extraAttr || "") }),
+    L.tileLayer(esri + "Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, opacity: 0.8 }),
+    L.tileLayer(esri + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 })]);
+  var pick = null; try { pick = localStorage.getItem("fews_basemap"); } catch (e) {}
+  (pick === "sat" ? sat : osm).addTo(map);
+  L.control.layers({ "Map": osm, "Satellite": sat }, null, { position: pos || "topright", collapsed: false }).addTo(map);
+  map.on("baselayerchange", function (e) { try { localStorage.setItem("fews_basemap", e.layer === sat ? "sat" : "map"); } catch (x) {} });
+}
 function drawMap(info, now) {
   if (typeof L === "undefined") return;
   var box = $("map");
@@ -337,8 +352,7 @@ function drawMap(info, now) {
   if (!map) {
     box.innerHTML = "";
     map = L.map("map", { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([37.56, -122.27], 11);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · BCDC ART, RSAP · SFEI · San Mateo County' }).addTo(map);
+    addBasemaps(map, " · BCDC ART, RSAP · SFEI · San Mateo County", "topright");
     map.once("focus", function () { map.scrollWheelZoom.enable(); });
   }
   Object.keys(layers).forEach(function (k) { map.removeLayer(layers[k]); }); layers = {};

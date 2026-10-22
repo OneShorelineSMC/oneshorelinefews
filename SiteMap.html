@@ -271,11 +271,24 @@ function siteStatus(site, now) {
 }
 
 /* ---------- map ---------- */
+/* Base map: OpenStreetMap, or satellite (Esri World Imagery) with road and place names on top; the choice is remembered */
+function addBasemaps(map, extraAttr, pos) {
+  var esri = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+  var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' + (extraAttr || "") });
+  var sat = L.layerGroup([
+    L.tileLayer(esri + "World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, maxNativeZoom: 19,
+      attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" + (extraAttr || "") }),
+    L.tileLayer(esri + "Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, opacity: 0.8 }),
+    L.tileLayer(esri + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 })]);
+  var pick = null; try { pick = localStorage.getItem("fews_basemap"); } catch (e) {}
+  (pick === "sat" ? sat : osm).addTo(map);
+  L.control.layers({ "Map": osm, "Satellite": sat }, null, { position: pos || "topright", collapsed: false }).addTo(map);
+  map.on("baselayerchange", function (e) { try { localStorage.setItem("fews_basemap", e.layer === sat ? "sat" : "map"); } catch (x) {} });
+}
 var map = L.map("map", { zoomControl: false, attributionControl: true }).setView([37.5, -122.3], 10);
 L.control.zoom({ position: "bottomright" }).addTo(map);
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+addBasemaps(map, "", "bottomleft");
 map.attributionControl.setPrefix(false);
 
 var DATA = null, markers = {}, selected = null, showRain = false, rainWin = 0, firstFit = true, autoRain = false;   // rainWin: 1, 3, 6 or 24 hours; 0 = off
