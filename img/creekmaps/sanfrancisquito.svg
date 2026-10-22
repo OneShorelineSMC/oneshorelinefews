@@ -416,10 +416,20 @@
 <path class="rd" d="M-150.4,-535.9 L-150.7,-519.7 L-155.0,-509.7 L-153.8,-485.6 L-163.6,-484.7 L-164.7,-483.2 L-161.7,-473.9 L-160.6,-459.1 L-158.0,-407.4 L-158.7,-391.8 L-154.9,-385.8" fill="none" stroke="#a3adb8" stroke-width="1.5" stroke-linecap="round"/>
 <path class="rd" d="M-150.3,-535.9 L-150.6,-519.7 L-154.8,-509.8 L-153.6,-485.6 L-163.4,-484.6 L-164.5,-483.2 L-161.5,-474.0 L-160.5,-459.1 L-157.7,-407.4 L-158.4,-392.2 L-154.9,-385.8" fill="none" stroke="#a3adb8" stroke-width="1.5" stroke-linecap="round"/>
 <path class="rd" d="M-215.4,-122.6 L-215.9,-125.8 L-206.4,-148.3 L-203.2,-150.5" fill="none" stroke="#a3adb8" stroke-width="1.5" stroke-linecap="round"/>
-<path class="ck" d="M176.7,163.2 L180.6,160.6 L183.0,161.4 L185.2,163.4 L187.0,162.9 L189.1,160.7 L193.0,161.7 L194.5,160.9 L196.5,157.8 L197.8,157.6" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<path class="ck" d="M197.8,157.6 L201.9,161.8 L204.4,163.1 L205.5,166.1 L207.4,167.3" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<path class="ck" d="M207.4,167.3 L209.7,168.5 L216.3,167.1 L221.6,168.4 L224.1,169.9 L228.6,167.1 L232.1,167.7 L232.3,166.6 L230.3,161.5 L232.2,161.5 L235.9,156.8 L237.9,156.3 L240.7,157.3" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<path class="ck" d="M240.7,157.3 L243.1,155.1 L249.4,153.8 L250.7,151.9 L250.3,150.4 L247.0,149.0 L246.0,147.6 L246.2,146.4 L248.4,145.8 L249.2,144.0 L248.4,139.8 L245.6,137.5 L244.1,135.0 L246.9,131.1 L245.3,123.9 L248.0,122.8 L249.4,120.3 L253.3,119.8 L255.4,116.2 L255.3,114.2 L257.2,109.4 L260.0,109.8 L261.0,108.4 L260.5,106.8 L263.1,106.9 L266.2,105.4 L268.0,100.6 L270.7,97.7 L274.5,95.2 L275.8,96.0 L277.9,92.7 L277.7,89.6 L278.6,88.9 L280.2,89.7 L281.3,85.5 L282.9,86.7 L283.3,85.1 L284.8,85.1 L285.3,83.6 L287.4,83.9 L288.0,82.3 L289.8,82.4 L290.4,84.3 L292.8,84.7 L293.3,83.1 L295.0,83.2 L294.5,80.7 L297.1,80.0 L299.1,77.0 L300.3,78.1 L304.8,77.9 L306.8,79.0 L308.4,78.5 L308.7,76.6 L310.5,75.9 L315.2,77.3 L317.1,81.0 L319.0,82.4 L321.8,82.8 L322.5,83.6 L326.1,82.9 L328.2,83.6 L329.1,84.8 L331.1,85.1 L333.2,87.5 L334.0,87.3 L335.4,84.3 L339.8,85.8 L342.3,84.5 L342.8,83.2 L341.3,79.8 L339.8,70.8 L345.8,66.2" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="ck" d="M177.0,162.5 L177.8,161.1 L180.1,159.8 L182.1,160.3 L184.0,162.3 L186.6,162.0" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M191.1,159.9 L193.4,160.4 L196.7,156.6 L198.7,157.2" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M223.8,170.0 L228.5,167.3 L230.9,167.7" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M205.6,165.6 L207.0,166.9" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M198.7,157.2 L200.9,160.0 L203.9,161.4 L205.6,165.6" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M207.0,166.9 L209.6,168.5" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M178.1,167.4 L176.8,165.0 L175.2,165.2 L177.0,162.5" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M230.9,167.7 L232.4,166.9 L230.4,161.6 L232.1,161.5 L234.4,158.1 L236.5,156.5 L238.3,156.3 L240.2,157.5 L242.7,155.3" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M209.6,168.5 L216.7,167.5 L222.4,168.9 L223.8,170.0" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M246.3,154.4 L249.4,153.7 L250.3,150.9 L249.1,149.7 L247.0,149.5 L245.7,147.0 L248.1,145.8 L249.0,144.0 L248.4,140.0 L245.3,137.2 L244.2,135.1 L246.9,131.0 L245.3,124.2 L248.3,122.8 L249.4,120.6 L254.0,119.0 L257.2,109.6 L260.1,109.9 L261.1,108.6 L260.6,106.8 L263.3,106.7 L266.3,105.3 L268.1,100.3 L272.2,96.1 L274.9,95.1 L275.9,95.7 L277.8,92.7 L277.8,89.4 L280.2,89.4 L281.3,85.5 L283.1,86.5 L283.3,85.0 L284.7,85.2 L284.7,83.8 L287.3,84.0 L288.0,82.4 L289.8,82.5 L290.5,84.2 L291.9,84.5 L293.1,83.3 L294.6,83.4 L294.4,80.9 L296.5,80.3 L299.0,76.9 L300.4,78.0 L304.8,77.8 L306.4,79.2 L308.2,78.7 L308.6,76.8 L310.4,76.1 L315.0,77.6 L318.7,82.2 L322.6,83.5 L325.7,83.0 L328.2,83.7 L329.0,84.8 L331.3,85.3 L333.5,87.5" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M242.7,155.3 L246.3,154.4" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M186.6,162.0 L188.0,160.2 L191.1,159.9" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt" stroke-linejoin="round"/>
+<path class="ck" d="M333.5,87.5 L335.0,84.5 L336.1,84.3 L339.4,85.8 L341.9,84.8 L342.9,82.8" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="ck" d="M342.9,82.8 L339.8,71.5 L340.1,70.5 L348.1,64.0 L352.2,62.4" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 <circle class="gs" cx="246.9" cy="138.5" r="7" fill="#0A5587" stroke="#fff" stroke-width="2"/>
 <text class="t h" x="257.9" y="142.5" font-size="14" font-weight="700" text-anchor="start">Stanford</text>
@@ -444,17 +454,19 @@
 <text class="ct h" x="384" y="284" font-size="11" font-weight="700" letter-spacing="0.6" text-anchor="middle" fill="#5d6b79">LOYOLA</text>
 <g transform="translate(394,26)"><path class="na" d="M0,-14 L7,8 L0,3 L-7,8Z" fill="#16324a"/><text class="t" y="22" font-size="11" font-weight="700" text-anchor="middle">N</text></g>
 <g class="sb" stroke="#16324a" stroke-width="2"><path class="sb" d="M16,348 V353 H68 V348" fill="none"/></g><text class="t h" x="74" y="353" font-size="12">2 mi</text>
-<rect class="bg" x="6" y="9" width="211" height="102" rx="6" fill="#f4f7fa" opacity="0.92"/>
+<rect class="bg" x="6" y="9" width="211" height="118" rx="6" fill="#f4f7fa" opacity="0.92"/>
 <path class="ck" d="M14,18 h17" fill="none" stroke="#1e6fd9" stroke-width="3" stroke-linecap="round"/>
 <text class="t" x="36" y="22" font-size="12">Creek</text>
-<rect class="ws" x="16" y="28" width="13" height="12" fill="#e2eedf" stroke="#7fa278" stroke-width="1.2"/>
-<text class="t" x="36" y="38" font-size="12">Watershed (San Mateo County)</text>
-<path class="cl" d="M14,50 h16" stroke="#8d96a0" stroke-width="1.5" stroke-dasharray="5 3"/>
-<text class="t" x="36" y="54" font-size="12">City limit</text>
-<circle class="gs" cx="22" cy="66" r="5.5" fill="#0A5587" stroke="#fff" stroke-width="1.5"/>
-<text class="t" x="36" y="70" font-size="12">Creek level gauge</text>
-<rect class="gr" x="17" y="77" width="10" height="10" fill="#5b6b7c" stroke="#fff" stroke-width="1.5"/>
-<text class="t" x="36" y="86" font-size="12">Rain gauge</text>
-<rect class="gp" x="17" y="93" width="10" height="10" fill="#fff" stroke="#5b6b7c" stroke-width="2"/>
-<text class="t" x="36" y="102" font-size="12">Hillside rain gauge</text>
+<path class="ck" d="M14,34 h17" fill="none" stroke="#1e6fd9" stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt"/>
+<text class="t" x="36" y="38" font-size="12">Creek, dry part of the year</text>
+<rect class="ws" x="16" y="44" width="13" height="12" fill="#e2eedf" stroke="#7fa278" stroke-width="1.2"/>
+<text class="t" x="36" y="54" font-size="12">Watershed (San Mateo County)</text>
+<path class="cl" d="M14,66 h16" stroke="#8d96a0" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text class="t" x="36" y="70" font-size="12">City limit</text>
+<circle class="gs" cx="22" cy="82" r="5.5" fill="#0A5587" stroke="#fff" stroke-width="1.5"/>
+<text class="t" x="36" y="86" font-size="12">Creek level gauge</text>
+<rect class="gr" x="17" y="93" width="10" height="10" fill="#5b6b7c" stroke="#fff" stroke-width="1.5"/>
+<text class="t" x="36" y="102" font-size="12">Rain gauge</text>
+<rect class="gp" x="17" y="109" width="10" height="10" fill="#fff" stroke="#5b6b7c" stroke-width="2"/>
+<text class="t" x="36" y="118" font-size="12">Hillside rain gauge</text>
 </svg>
