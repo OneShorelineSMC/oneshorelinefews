@@ -13,9 +13,16 @@ reviewed), as published in Caltrans' public map service DEA_BCDC_polygon_SLR (on
 surge, or either alone), so a spot's level is compared with how far the Bay is above MHHW at the tide gauge, not with
 a NAVD88 height. Still water only: no waves. See lookups/THRESHOLDS_BASIS.md §4c.
 
-Each candidate: the flooded pieces at one water level that lie within MERGE_M of each other, kept if at least
-MIN_ACRES; a piece already flooded at a lower level belongs to that lower level's spot. Named after the Census city
-it's in (or nearest) and the County watershed (C/CAG) around it; staff rename, merge, trim and mark include = yes/no.
+Normally wet land (the Bay, tidal marsh, mudflats, ponds, channels, beaches: SFEI Baylands Habitat Map 2020) is taken
+out first: water there at a high tide is normal. Each level's spots are only the land that floods at that level and not
+lower down (so a 24 in spot is the ground the water adds between 12 and 24 in). Each candidate: those pieces at one
+level that lie within MERGE_M of each other, kept if at least MIN_ACRES. Named after the Census city it's in (or
+nearest) and the County watershed (C/CAG) around it; staff rename, merge, trim and mark include = yes/no.
+
+What is in each spot (scripts/shoreline_exposure.py): San Mateo County building footprints and streets (a spot with a
+building or a street is "developed", the rest open land), and BCDC's RSAP critical facilities and transportation.
+Also writes data/shoreline_exposure.geojson (those buildings, streets and facilities, for the map) and
+data/shoreline_baylands.geojson (marsh, mudflats and ponds, drawn faintly on the map).
 
 Usage: python scripts/build_shoreline_hotspots.py
 """
@@ -31,6 +38,8 @@ import urllib.parse
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import build_creek_maps as M  # noqa: E402  (get, arcgis, polys_of, inside, PLACES; no side effects on import)
+import shoreline_exposure as E  # noqa: E402
+import shapely  # noqa: E402
 
 ROOT = os.path.dirname(HERE)
 SERVICE = "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhqenvi/DEA_BCDC_polygon_SLR/MapServer"
@@ -43,10 +52,12 @@ MIN_PIECE_ACRES = 0.05                         # pieces smaller than this are dr
 WS_NEAR_M = 600                                # a spot this close to a San Mateo County watershed counts as in the county
 OUT_CSV = os.path.join(ROOT, "lookups", "proposed", "shoreline_hotspots.csv")
 OUT_GEO = os.path.join(ROOT, "data", "shoreline_hotspots_candidates.geojson")
+OUT_EXPO = os.path.join(ROOT, "data", "shoreline_exposure.geojson")
+OUT_WET = os.path.join(ROOT, "data", "shoreline_baylands.geojson")
 WATERSHEDS = os.path.join(ROOT, "data", "watersheds.geojson")
 COLUMNS = ["id", "name", "city", "watershed", "lat", "lon", "level_in", "area_acres", "max_depth_ft", "pieces",
-           "include", "notes", "source", "checked_by", "checked_on"]
-SOURCE = "BCDC Adapting to Rising Tides maps (2017), Caltrans DEA_BCDC_polygon_SLR"
+           "developed", "buildings", "street_mi", "streets", "assets", "include", "notes", "source", "checked_by", "checked_on"]
+SOURCE = "BCDC Adapting to Rising Tides maps (2017), Caltrans DEA_BCDC_polygon_SLR; wetlands removed (SFEI Baylands Habitat Map 2020)"
 
 
 # ---------------------------------------------------------------- geometry (lon, lat degrees; small areas)
@@ -247,12 +258,12 @@ def _in_box(pt, box, pad_deg=0.0004):
 
 
 def candidates(by_level, watersheds, places):
-    """by_level: {inches: [GeoJSON features]} -> rows (dicts) and their polygons, lowest level first."""
-    taken, rows = [], []   # taken: (box, polygon) of every piece at lower levels
+    """by_level: {inches: [GeoJSON features]}, each level only the land that floods there and not lower (prepare()),
+    -> rows (dicts) and their polygons, lowest level first."""
+    rows = []
     for level in sorted(by_level):
-        pcs = [p for p in pieces_of(by_level[level], level)
+        new = [p for p in pieces_of(by_level[level], level)
                if p["area"] >= MIN_PIECE_ACRES * 4046.86 and _in_box(p["c"], (BAY_BOX[0], BAY_BOX[1], BAY_BOX[2], BAY_BOX[3]), 0)]
-        new = [p for p in pcs if not any(_in_box(p["c"], b) and (M.inside(p["c"], q) or near_poly(p["c"], q, 30)) for b, q in taken)]
         for g in cluster(new):
             area = sum(p["area"] for p in g)
             if area < MIN_ACRES * 4046.86:
@@ -269,7 +280,6 @@ def candidates(by_level, watersheds, places):
             rows.append({"lat": round(c[1], 5), "lon": round(c[0], 5), "level_in": level, "area_acres": round(area / 4046.86, 1),
                          "max_depth_ft": round(max(deps), 1) if deps else "", "pieces": len(g), "city": city or "",
                          "watershed": ws.title(), "_polys": [p["poly"] for p in g]})
-        taken += [(p["box"], p["poly"]) for p in pcs]
     rows.sort(key=lambda r: (r["level_in"], -r["area_acres"]))
     for k, r in enumerate(rows, start=1):
         r["id"] = f"SH-{k:03d}"
@@ -280,24 +290,67 @@ def candidates(by_level, watersheds, places):
     return rows
 
 
+def prepare(by_level, wet=None, tree=None):
+    """Normally wet land cut out of each level, then what already floods at lower levels. Returns ({inches: features},
+    {inches: acres of wet land removed})."""
+    out, removed, lower = {}, {}, None
+    for level in sorted(by_level):
+        feats, removed[level] = E.remove_wet(by_level[level], wet or [], tree) if tree is not None else (by_level[level], 0.0)
+        out[level] = E.minus_lower(feats, lower)
+        u = E.union_of(feats)
+        lower = u if lower is None else (E.fix(lower.union(u)) if u is not None else lower)
+    return out, removed
+
+
+def spot_geom(r):
+    return E.fix(shapely.MultiPolygon([shapely.Polygon(p[0], p[1:]) for p in r["_polys"]]))
+
+
+def add_exposure(rows, dev, assets_by_spot=None):
+    """Buildings, streets and RSAP facilities in each spot (columns developed, buildings, street_mi, streets, assets),
+    and the map features for the buildings and streets."""
+    feats = []
+    for r in rows:
+        x = dev.in_spot(spot_geom(r))
+        r["buildings"] = x["buildings"] if dev.known else ""
+        r["street_mi"] = round(x["street_m"] / 1609.34, 2) if dev.known else ""
+        r["streets"] = "; ".join(x["streets"][:5])
+        r["assets"] = "; ".join((assets_by_spot or {}).get(r["id"], [])[:8])
+        r["developed"] = ("yes" if x["buildings"] or x["street_m"] >= E.MIN_STREET_M or r["assets"] else "no") if dev.known else ""
+        if x["bpts"]:
+            feats.append({"type": "Feature", "properties": {"spot": r["id"], "level_in": r["level_in"], "group": "buildings"},
+                          "geometry": {"type": "MultiPoint", "coordinates": [list(p) for p in x["bpts"]]}})
+        if x["street_m"] >= E.MIN_STREET_M:
+            feats.append({"type": "Feature", "properties": {"spot": r["id"], "level_in": r["level_in"], "group": "streets"},
+                          "geometry": E.rounded(E.mapping(E.MultiLineString(x["slines"])))})
+    return feats
+
+
 def load_watersheds(path=WATERSHEDS):
     with open(path) as f:
         return [{"name": (ft.get("properties") or {}).get("name") or "", "polys": M.polys_of(ft["geometry"])}
                 for ft in json.load(f).get("features", []) if ft.get("geometry")]
 
 
-def write(rows, csv_path=OUT_CSV, geo_path=OUT_GEO):
+def write(rows, csv_path=OUT_CSV, geo_path=OUT_GEO, exposure=None, wet_map=None, expo_path=OUT_EXPO, wet_path=OUT_WET):
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore", lineterminator="\r\n")
         w.writeheader()
         w.writerows(rows)
-    feats = [{"type": "Feature", "properties": {k: r[k] for k in ("id", "name", "level_in", "area_acres")},
+    feats = [{"type": "Feature", "properties": {k: r.get(k, "") for k in ("id", "name", "level_in", "area_acres", "developed", "buildings", "street_mi")},
               "geometry": {"type": "MultiPolygon", "coordinates": [[[[round(x, 5), round(y, 5)] for x, y, *_ in ring] for ring in poly] for poly in r["_polys"]]}}
              for r in rows]
     os.makedirs(os.path.dirname(geo_path), exist_ok=True)
     with open(geo_path, "w") as f:
         json.dump({"type": "FeatureCollection", "source": SOURCE, "features": feats}, f, separators=(",", ":"))
+    if exposure is not None:
+        with open(expo_path, "w") as f:
+            json.dump({"type": "FeatureCollection", "source": "San Mateo County GIS (buildings, streets); BCDC RSAP open data "
+                       "(critical facilities, transportation)", "features": exposure}, f, separators=(",", ":"))
+    if wet_map is not None:
+        with open(wet_path, "w") as f:
+            json.dump(wet_map, f, separators=(",", ":"))
 
 
 def main():
@@ -319,6 +372,21 @@ def main():
             print(f"Couldn't read the {x} in layer: {type(e).__name__}: {str(e)[:400]}. Nothing written.")
             return 1
         print(f"{x} in above MHHW: {len(by_level[x])} flooded polygons in the box")
+    print("Reading the SFEI Baylands Habitat Map (normally wet land, taken out)…")
+    try:
+        habitats = E.load_baylands(M.arcgis, BAY_BOX)
+    except Exception as e:   # noqa: BLE001
+        print(f"Couldn't read the Baylands Habitat Map: {type(e).__name__}: {str(e)[:400]}. Nothing written "
+              "(without it the list would be mostly marsh and ponds).")
+        return 1
+    kinds = {}
+    for k, _ in habitats:
+        kinds[k] = kinds.get(k, 0) + 1
+    print(f"  {len(habitats)} habitat polygons: " + ", ".join(f"{k or '(blank)'} {n}" for k, n in sorted(kinds.items())))
+    wet, tree = E.wet_mask(habitats)
+    by_level, removed = prepare(by_level, wet, tree)
+    for x in LEVELS_IN:
+        print(f"{x} in: {removed[x]:.0f} acres of marsh, mudflat, pond and open water taken out")
     places = []
     for layer in (4, 5):   # Census cities, then unincorporated places (as in build_creek_maps.py)
         try:
@@ -327,11 +395,28 @@ def main():
         except Exception as e:   # noqa: BLE001
             print(f"Census places (layer {layer}) unavailable ({type(e).__name__}); names without them")
     rows = candidates(by_level, load_watersheds(), places)
-    write(rows)
+    dev = E.load_developed(BAY_BOX)
+    print("Reading BCDC RSAP critical facilities and transportation (ArcGIS Online)…")
+    assets, by_spot = [], {}
+    try:
+        lays = E.find_rsap_layers(M.get)
+        for g, ls in lays.items():
+            print(f"  RSAP {g}: " + ("; ".join(t for t, _ in ls) or "no layers found"))
+        assets, by_spot = E.assets_in_spots(lays, [(r["id"], r["level_in"], spot_geom(r)) for r in rows], BAY_BOX, M.get)
+    except Exception as e:   # noqa: BLE001
+        print(f"  RSAP layers unavailable: {type(e).__name__}: {str(e)[:300]}")
+    exposure = add_exposure(rows, dev, by_spot) + assets
+    write(rows, exposure=exposure, wet_map=E.map_habitats(habitats))
     for x in LEVELS_IN:
         sel = [r for r in rows if r["level_in"] == x]
-        print(f"{x} in: {len(sel)} spots, {sum(r['area_acres'] for r in sel):.0f} acres")
-    print(f"Wrote {OUT_CSV} ({len(rows)} rows) and {OUT_GEO}")
+        d = [r for r in sel if r.get("developed") == "yes"]
+        print(f"{x} in: {len(sel)} spots, {sum(r['area_acres'] for r in sel):.0f} acres; {len(d)} with buildings or streets "
+              f"({sum(r['buildings'] or 0 for r in sel)} buildings, {sum(r['street_mi'] or 0 for r in sel):.1f} mi of streets)")
+    for r in rows:
+        if r.get("assets"):
+            print(f"  {r['id']} {r['name']}: {r['assets']}")
+    for p in (OUT_CSV, OUT_GEO, OUT_EXPO, OUT_WET):
+        print(f"Wrote {p} ({os.path.getsize(p) // 1024} KB)")
     return 0
 
 
