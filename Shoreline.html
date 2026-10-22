@@ -70,6 +70,10 @@
   #list li { padding: 7px 0; border-top: 1px solid var(--line); font-size: 14.5px; line-height: 1.35; cursor: pointer; }
   #list li .nx { display: block; font-size: 13px; color: var(--muted); }
   #list li .nx.soon { color: var(--soon); font-weight: 700; } #list li .nx.later { color: var(--later); }
+  #list li .ex { display: block; font-size: 13px; color: var(--text); margin-top: 1px; } #list li .ex.open { color: var(--muted); font-style: italic; }
+  .key i.dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 5px 0 4px; vertical-align: 1px; }
+  .key i.ring { width: 12px; height: 12px; border-radius: 50%; background: #fff; vertical-align: -2px; }
+  .key i.ln { width: 18px; height: 0; border-radius: 0; vertical-align: 3px; }
   #list li:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   details.card summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 32px; display: flex; align-items: center; }
   details.card p { font-size: 14px; line-height: 1.5; margin: 8px 0; }
@@ -115,10 +119,14 @@
     <p data-text="shore_about_what"></p>
     <p data-text="shore_about_levels"></p>
     <p data-text="shore_about_limits"></p>
+    <p data-text="shore_about_exposure"></p>
     <p id="aboutOffset" hidden></p>
     <p data-text="shore_about_draft" id="aboutDraft" hidden></p>
     <p class="lbl">Low spots: BCDC (San Francisco Bay Conservation and Development Commission), Adapting to Rising Tides maps, 2017
       (<a href="https://www.sfei.org/projects/adapting-rising-tides-bay-shoreline-flood-explorer" rel="noopener">Bay Shoreline Flood Explorer</a>).
+      Marsh, mudflats and ponds: SFEI <a href="https://www.sfei.org/data/baylands-habitat-map-2020-gis-data" rel="noopener">Baylands Habitat Map 2020</a>.
+      Buildings and streets: <a href="https://www.smcgov.org/tsd/gis-data-download" rel="noopener">San Mateo County GIS</a>.
+      Critical facilities and transportation: BCDC <a href="https://www.bcdc.ca.gov/rsap-atlas/" rel="noopener">Regional Shoreline Adaptation Plan (RSAP) data</a>.
       Tides: NOAA tide gauge 9414523, Redwood City. Map: © OpenStreetMap contributors.</p>
   </details>
 
@@ -136,8 +144,8 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261021c"></script>
-<script src="tide_season.js?v=20261021c"></script>
+<script src="lookups.js?v=20261021d"></script>
+<script src="tide_season.js?v=20261021d"></script>
 <script>
 /* Shoreline: low spots along San Mateo County's Bay shoreline (BCDC Adapting to Rising Tides maps) and whether the coming
    tides at Redwood City are high enough to reach them. lookups/THRESHOLDS_BASIS.md §4c.
@@ -145,7 +153,11 @@
    (the page then says Draft). Shapes: data/shoreline_hotspots_candidates.geojson (scripts/build_shoreline_hotspots.py).
    A spot's level_in is inches above an average high tide (MHHW) in BCDC's maps; the page compares it with how far the tide at
    Redwood City is above MHHW there (tide_season.js: the tide table, the NOAA projection for 2 days, the recent offset after it).
-   It never sets a status or a color elsewhere; nothing here is a forecast of flooding at a given address. */
+   It never sets a status or a color elsewhere; nothing here is a forecast of flooding at a given address.
+   Marsh, mudflats and ponds are left out of the spots (normally wet). A spot with buildings or streets (developed = yes) is drawn
+   solid and counts in the headline; open land (developed = no) is drawn faint and only mentioned. A list without the
+   developed column (an older draft) treats every spot as developed. Buildings, streets and RSAP facilities in the spots:
+   data/shoreline_exposure.geojson; marsh drawn faintly: data/shoreline_baylands.geojson (both optional). */
 var LK = window.LOOKUPS, TS = window.TIDE_SEASON;
 var $ = function (id) { return document.getElementById(id); };
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -157,7 +169,17 @@ function dayName(iso, today) {
 function ft1(v) { return "about " + v.toFixed(1) + " ft"; }
 var AHEAD_DAYS = 30;   // how far ahead the list says when a spot could be reached (the tide table; the recent offset stops at BAY_OFFSET_AHEAD_DAYS)
 
-var SP = { rows: null, draft: false, shapes: null }, map = null, layers = {};
+var SP = { rows: null, draft: false, shapes: null, expo: null, wet: null }, map = null, layers = {}, extra = {};
+function isDev(r) { return !/^no$/i.test(r.developed || ""); }   // unknown (blank) counts as developed
+// What is in a spot, in a short line: buildings, streets (by name), critical facilities and transportation
+function expText(r) {
+  if (/^no$/i.test(r.developed || "")) return { open: true, t: LK.text("shore_exp_open") };
+  var out = [], nb = +r.buildings || 0, mi = +r.street_mi || 0, names = (r.streets || "").split(/\s*;\s*/).filter(Boolean).slice(0, 3);
+  if (nb) out.push(LK.text("shore_exp_buildings", { n: nb, s: nb > 1 ? "s" : "" }));
+  if (mi) out.push((mi < 0.1 ? LK.text("shore_exp_street_short") : LK.text("shore_exp_streets", { mi: mi.toFixed(1) })) + (names.length ? " (" + names.join(", ") + ")" : ""));
+  (r.assets || "").split(/\s*;\s*/).filter(Boolean).forEach(function (a) { out.push(a); });
+  return { open: false, t: out.join(" · ") };
+}
 function loadSpots() {
   function use(rows, draft) {
     rows = (rows || []).filter(function (r) { return r.id && isFinite(+r.level_in) && +r.level_in > 0 && !/^no$/i.test(r.include || ""); });
@@ -168,9 +190,13 @@ function loadSpots() {
     .catch(function () { return LK.csv("proposed/shoreline_hotspots.csv").then(function (r) { use(r, true); }); })
     .catch(function () { SP.rows = []; render(); });
 }
+function getGeo(path) {
+  return fetch(path + "?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+}
 function loadShapes() {
-  return fetch("data/shoreline_hotspots_candidates.geojson?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" })
-    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+  getGeo("data/shoreline_exposure.geojson").then(function (g) { SP.expo = g.features || []; render(); }).catch(function () { SP.expo = []; });
+  getGeo("data/shoreline_baylands.geojson").then(function (g) { SP.wet = g; render(); }).catch(function () { SP.wet = null; });
+  return getGeo("data/shoreline_hotspots_candidates.geojson")
     .then(function (g) { SP.shapes = {}; (g.features || []).forEach(function (f) { if (f.properties && f.properties.id) SP.shapes[f.properties.id] = f; }); render(); })
     .catch(function () { SP.shapes = {}; render(); });
 }
@@ -214,18 +240,23 @@ function whenText(nx, now) {
 function firstOf(nx) { return nx.ifHigh && (!nx.hit || nx.ifHigh.d < nx.hit.d) ? { x: nx.ifHigh, ifHigh: true } : nx.hit ? { x: nx.hit, ifHigh: false } : null; }
 
 var COL = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
-function styleFor(st) {
-  if (st === "soon") return { color: COL("--soon"), weight: 2, fillColor: COL("--soon"), fillOpacity: 0.55 };
-  if (st === "later") return { color: COL("--later"), weight: 2, fillColor: COL("--later"), fillOpacity: 0.45 };
-  if (st === "high") return { color: COL("--later"), weight: 2, dashArray: "4 4", fillColor: COL("--later"), fillOpacity: 0.18 };
-  return { color: COL("--spot"), weight: 1, fillColor: COL("--spot"), fillOpacity: 0.28 };
+function styleFor(st, open) {
+  var s = st === "soon" ? { color: COL("--soon"), weight: 2, fillColor: COL("--soon"), fillOpacity: 0.55 }
+    : st === "later" ? { color: COL("--later"), weight: 2, fillColor: COL("--later"), fillOpacity: 0.45 }
+    : st === "high" ? { color: COL("--later"), weight: 2, dashArray: "4 4", fillColor: COL("--later"), fillOpacity: 0.18 }
+    : { color: COL("--spot"), weight: 1, fillColor: COL("--spot"), fillOpacity: 0.28 };
+  if (open) { s.weight = 1.5; s.dashArray = "2 4"; s.fillOpacity = Math.min(s.fillOpacity, 0.12); }   // open land: faint
+  return s;
 }
+var WET_COL = "#5f9e5c", BLD_COL = "#263238", CRIT_COL = "#7b1fa2", TRANS_COL = "#00796b";
 function popupFor(r, nx, now) {
   var el = document.createElement("div"), b = document.createElement("b"), p1 = document.createElement("div"), p2 = document.createElement("div");
   b.textContent = r.name || r.id;
   p1.textContent = LK.text("shore_spot_level", { ft: ft1(levelFt(r)) });
   p2.textContent = whenText(nx, now);
   el.appendChild(b); el.appendChild(p1); el.appendChild(p2);
+  var ex = expText(r);
+  if (ex.t) { var p3 = document.createElement("div"); p3.textContent = ex.t; p3.style.marginTop = "4px"; if (ex.open) p3.style.fontStyle = "italic"; el.appendChild(p3); }
   return el;
 }
 
@@ -240,18 +271,23 @@ function render() {
   else if (!rows.length) { head.className = "card"; head.innerHTML = "<h2>" + esc(LK.text("shore_no_list")) + "</h2>"; }
   var ds = ready ? days(now) : [], info = (rows || []).map(function (r) { var nx = nextFor(r, ds); return { r: r, nx: nx, st: status(nx, now) }; });
 
-  // Headline: the next 2 days, then later this month
+  // Headline: the next 2 days, then later this month. Counts the spots with buildings or streets; open land only mentioned
   if (ready && rows && rows.length) {
     var two = ds.filter(function (x) { return x.d <= TS.iso(now + 86400000); }), top = null;
     two.forEach(function (x) { if (!top || x.v > top.v) top = x; });
-    var lowest = Math.min.apply(null, rows.map(levelFt)), soon = info.filter(function (x) { return x.st === "soon"; });
-    var later = info.filter(function (x) { return x.st === "later" || x.st === "high"; });
+    var dev = info.filter(function (x) { return isDev(x.r); }), base = dev.length ? dev : info;
+    var lowest = Math.min.apply(null, base.map(function (x) { return levelFt(x.r); })), soon = dev.filter(function (x) { return x.st === "soon"; });
+    var openSoon = info.filter(function (x) { return !isDev(x.r) && x.st === "soon"; });
+    var later = base.filter(function (x) { return x.st === "later" || x.st === "high"; });
     var firsts = later.map(function (x) { return firstOf(x.nx); }).sort(function (a, b) { return a.x.d < b.x.d ? -1 : a.x.d > b.x.d ? 1 : 0; });
     var firstLater = firsts.length ? firsts[0].x : null;
     var h = "";
     if (soon.length) {
       head.className = "card reach";
       h += "<h2>" + esc(LK.text("shore_head_reach", { n: soon.length, s: soon.length > 1 ? "s" : "" })) + "</h2>";
+    } else if (openSoon.length) {
+      head.className = "card near";
+      h += "<h2>" + esc(LK.text("shore_head_open", { n: openSoon.length, s: openSoon.length > 1 ? "s" : "" })) + "</h2>";
     } else {
       head.className = "card " + (top && top.v >= lowest - 0.5 ? "near" : "ok");
       h += "<h2>" + esc(LK.text("shore_head_ok")) + "</h2>";
@@ -276,10 +312,14 @@ function render() {
     L.style.display = "";
     var groups = {}; info.forEach(function (x) { (groups[x.r.level_in] = groups[x.r.level_in] || []).push(x); });
     L.innerHTML = "<h2>" + esc(LK.text("shore_list_title")) + "</h2>" + Object.keys(groups).sort(function (a, b) { return a - b; }).map(function (k) {
-      var g = groups[k].sort(function (a, b) { return ["soon", "later", "high", "none"].indexOf(a.st) - ["soon", "later", "high", "none"].indexOf(b.st); });
+      var ORD = ["soon", "later", "high", "none"];
+      var g = groups[k].sort(function (a, b) {
+        return ORD.indexOf(a.st) - ORD.indexOf(b.st) || (isDev(b.r) - isDev(a.r)) || ((+b.r.buildings || 0) - (+a.r.buildings || 0));
+      });
       return "<h3>" + esc(LK.text("shore_group", { ft: ft1(levelFt(g[0].r)) })) + "</h3><ul>" + g.map(function (x) {
         return '<li tabindex="0" role="button" data-id="' + esc(x.r.id) + '">' + esc(x.r.name || x.r.id) +
-          '<span class="nx ' + (x.st === "soon" ? "soon" : x.st === "none" ? "" : "later") + '">' + esc(whenText(x.nx, now)) + "</span></li>";
+          '<span class="nx ' + (x.st === "soon" ? "soon" : x.st === "none" ? "" : "later") + '">' + esc(whenText(x.nx, now)) + "</span>" +
+          (function (ex) { return ex.t ? '<span class="ex' + (ex.open ? " open" : "") + '">' + esc(ex.t) + "</span>" : ""; })(expText(x.r)) + "</li>";
       }).join("") + "</ul>";
     }).join("");
   }
@@ -298,25 +338,62 @@ function drawMap(info, now) {
     box.innerHTML = "";
     map = L.map("map", { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([37.56, -122.27], 11);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · BCDC ART' }).addTo(map);
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · BCDC ART, RSAP · SFEI · San Mateo County' }).addTo(map);
     map.once("focus", function () { map.scrollWheelZoom.enable(); });
   }
   Object.keys(layers).forEach(function (k) { map.removeLayer(layers[k]); }); layers = {};
-  var bounds = [];
+  Object.keys(extra).forEach(function (k) { map.removeLayer(extra[k]); }); extra = {};
+  // Marsh, mudflats and ponds, faint and under everything (normally wet: not part of the spots)
+  if (SP.wet && (SP.wet.features || []).length)
+    extra.wet = L.geoJSON(SP.wet, { interactive: false, style: { stroke: false, fillColor: WET_COL, fillOpacity: 0.22 } }).addTo(map);
+  var bounds = [], open = false;
   ["none", "high", "later", "soon"].forEach(function (st) {   // stronger colors drawn last, on top
-    info.filter(function (x) { return x.st === st && SP.shapes[x.r.id]; }).forEach(function (x) {
-      var lay = L.geoJSON(SP.shapes[x.r.id], { style: styleFor(st) }).bindPopup(popupFor(x.r, x.nx, now)).addTo(map);
+    info.filter(function (x) { return x.st === st && SP.shapes[x.r.id]; }).sort(function (a, b) { return isDev(a.r) - isDev(b.r); }).forEach(function (x) {
+      var o = !isDev(x.r); open = open || o;
+      var lay = L.geoJSON(SP.shapes[x.r.id], { style: styleFor(st, o) }).bindPopup(popupFor(x.r, x.nx, now)).addTo(map);
       layers[x.r.id] = lay;
       bounds.push(lay.getBounds());
     });
   });
+  // Buildings and streets in the spots (once zoomed in), RSAP critical facilities and transportation
+  var shown = {}; info.forEach(function (x) { shown[x.r.id] = x.r; });
+  var ex = (SP.expo || []).filter(function (f) { return f.properties && shown[f.properties.spot]; }), has = {};
+  var cv = L.canvas({ padding: 0.3 });
+  var bs = ex.filter(function (f) { return f.properties.group === "buildings" || f.properties.group === "streets"; });
+  if (bs.length) {
+    has.bld = true;
+    extra.bld = L.geoJSON({ type: "FeatureCollection", features: bs }, { interactive: false, renderer: cv,
+      style: { color: BLD_COL, weight: 2.5, opacity: 0.85 },
+      pointToLayer: function (f, ll) { return L.circleMarker(ll, { radius: 2.5, stroke: false, fillColor: BLD_COL, fillOpacity: 0.9, renderer: cv, interactive: false }); } });
+    var zoomShow = function () { if (map.getZoom() >= 14) extra.bld.addTo(map); else map.removeLayer(extra.bld); };
+    if (!map._bldZoom) { map.on("zoomend", function () { if (extra.bld) zoomShow(); }); map._bldZoom = true; }
+    zoomShow();
+  }
+  var as = ex.filter(function (f) { return f.properties.group === "critical" || f.properties.group === "transport"; });
+  if (as.length) {
+    extra.assets = L.geoJSON({ type: "FeatureCollection", features: as }, {
+      style: function (f) { has[f.properties.group] = true; return { color: f.properties.group === "critical" ? CRIT_COL : TRANS_COL, weight: 5, opacity: 0.9, dashArray: "8 5" }; },
+      pointToLayer: function (f, ll) { has[f.properties.group] = true;
+        return L.circleMarker(ll, { radius: 7, color: f.properties.group === "critical" ? CRIT_COL : TRANS_COL, weight: 3, fillColor: "#fff", fillOpacity: 1 }); },
+      onEachFeature: function (f, lay) {
+        var el = document.createElement("div"), b = document.createElement("b"), p = document.createElement("div");
+        b.textContent = f.properties.name || f.properties.kind; p.textContent = f.properties.kind + " · " + (shown[f.properties.spot].name || f.properties.spot);
+        el.appendChild(b); el.appendChild(p); lay.bindPopup(el);
+      } }).addTo(map);
+  }
   if (bounds.length && !map._fitted) { var bb = bounds[0]; bounds.forEach(function (b) { bb.extend(b); }); map.fitBounds(bb, { padding: [12, 12] }); map._fitted = true; }
   var seen = {}; info.forEach(function (x) { seen[x.st] = 1; });
   var k = [["soon", "shore_key_soon"], ["later", "shore_key_later"], ["high", "shore_key_high"], ["none", "shore_key_none"]].filter(function (p) { return seen[p[0]]; });
-  $("key").innerHTML = k.map(function (p) {
+  var html = k.map(function (p) {
     var s = styleFor(p[0]);
     return '<span><i style="background:' + s.fillColor + ";opacity:" + (0.35 + s.fillOpacity) + ";border:2px " + (s.dashArray ? "dashed" : "solid") + " " + s.color + '"></i>' + esc(LK.text(p[1])) + "</span>";
-  }).join("");
+  });
+  if (open) html.push('<span><i style="background:rgba(91,104,119,.12);border:1.5px dashed ' + COL("--muted") + '"></i>' + esc(LK.text("shore_key_open")) + "</span>");
+  if (extra.wet) html.push('<span><i style="background:' + WET_COL + ';opacity:.45"></i>' + esc(LK.text("shore_key_wet")) + "</span>");
+  if (has.bld) html.push('<span><i class="dot" style="background:' + BLD_COL + '"></i>' + esc(LK.text("shore_key_bld")) + "</span>");
+  if (has.critical) html.push('<span><i class="ring" style="border:3px solid ' + CRIT_COL + '"></i>' + esc(LK.text("shore_key_critical")) + "</span>");
+  if (has.transport) html.push('<span><i class="ln" style="border-top:4px dashed ' + TRANS_COL + '"></i>' + esc(LK.text("shore_key_transport")) + "</span>");
+  $("key").innerHTML = html.join("");
 }
 // Tap a spot in the list: open it on the map
 $("list").addEventListener("click", function (e) {
