@@ -109,7 +109,7 @@
 
   /* Right: 3-day look-ahead (the main element): the last 24 hours and the next 48, with a one-line "Later" for the rest of the week */
   #tright { flex: 1; min-height: 0; display: flex; flex-direction: column; cursor: pointer; }
-  .tsec { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; height: 15px; white-space: nowrap; }
+  .tsec { display: none; }   /* "Next 3 days · highest tide each day · Later: … · Tap for times" line: dropped (the day columns and graph say it; the panel is still tappable) */
   .tsec b { color: var(--ink); font-size: 13px; }
   .tsec .tap { font-size: 11.5px; }
   #tdays { display: grid; grid-template-columns: repeat(3, 1fr); flex: none; margin-left: 30px; }   /* placed over their days by dayAlign */
@@ -364,6 +364,12 @@
   .dalert p { margin: 0 0 5px; font-size: 15px; }
   .dalert dl + p { margin-top: 6px; }
   #dnote { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  /* Tide look-ahead table: headers readable and kept in view while scrolling; above/below MHHW in words, not color alone */
+  #dbody table.look th { position: sticky; top: -10px; background: var(--panel); color: var(--ink); font-size: 14px; font-weight: bold; white-space: normal; vertical-align: bottom; padding-top: 4px; }
+  #dbody table.look td { white-space: normal; } #dbody table.look td:first-child { white-space: nowrap; }
+  #dbody table.look tr.div td { background: var(--infobg, rgba(10,85,135,.08)); color: var(--ink); font-size: 15px; font-weight: bold; padding: 6px 10px; }
+  #dbody .mut { color: var(--muted); font-weight: normal; }
+  #dbody .lnote { font-size: 15px; margin: 10px 0 0; line-height: 1.4; }
 
   /* Map tab */
   #maptab { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
@@ -535,7 +541,7 @@ var ALERTS_EVERY_MIN = 3;
 var OBSERVED_EVERY_MIN = 6;        // NOAA posts water levels every 6 minutes
 var PREDICTIONS_EVERY_MIN = 60;
 var STALE_AFTER_MIN = 90;          // warn if any data is older than this
-var DETAIL_TIMEOUT_SEC = 45;       // detail screens return to the main view on their own
+var DETAIL_TIMEOUT_SEC = 90;       // detail screens return to the main view on their own
 var RELOAD_AT_HOUR = 3;            // full page reload once a day (3 AM) to keep the browser fresh
 
 // Creeks tab. OneRain doesn't let other sites read its data directly, so a GitHub Action
@@ -1273,39 +1279,52 @@ $t("tnws").addEventListener("click", function () {
   openDetail("National Weather Service – tides and coastal flooding", html);
 });
 
+/* Tap the tide panel: one table for the next DAYS days, one row per high tide (each day's highest, plus any other high
+   tide expected above MHHW). "Expected" is the NOAA projection while it lasts (about 2 days), then the tide table plus the
+   30-day average offset (marked ¹, explained under the table), so the heights match the panel's "If the Bay stays…" line.
+   Without a current offset, the tide table. Meaning is in words as well as color (above / below MHHW, flood level). */
 function showLookAhead() {
-  var s = tideS(), st = s.st, now = nowLocal(), lo = offNow(), off = lo ? lo.ft : s.offset, adj = off != null && (lo || off >= OFFSET_NOTE_FT);
-  var wins = s.wins.filter(function (w) { return w.end > now; }), html = "";
-  if (modelOK(s, now)) {   // NOAA model forecast first, for as far as it goes
-    var fe = modelEnd(s), fwins = upcomingAbove(s, now).filter(function (w) { return w.start < fe; });
-    var hs = (s.highs || []).filter(function (h) { return h.t >= now - 60 * 60000 && h.t + 90 * 60000 <= fe; });
-    html += "<h3 style='margin:4px 0 6px;font-size:18px'>NOAA projection, through " + esc(fDay(fe)) + " " + esc(fTime(fe)) + "</h3>" +
-      (hs.length ? "<table><tr><th>High tide</th><th>Tide table</th><th>NOAA projection</th><th>Difference</th></tr>" + hs.map(function (h) {
-        var mp = modelPeak(s, h); if (!mp) return "";
-        return "<tr><td><b>" + fDay(mp.t) + "</b> " + fTime(mp.t) + "</td><td>" + h.v.toFixed(2) + " ft</td><td" + (mp.v >= redFor(st) ? ' class="red"' : mp.v > st.mhhw ? ' class="info"' : "") +
-          "><b>" + mp.v.toFixed(2) + " ft</b></td><td>" + sgn(mp.v - h.v) + " ft</td></tr>";
-      }).join("") + "</table>" : "") +
-      "<p style='margin-top:8px'>" + (fwins.length ? "Above MHHW (measured so far, then NOAA projection): " + fwins.map(function (w) {
-        return fDay(w.start) + " " + fTime(w.start) + " – " + fTime(w.end) + " (peak " + w.peak.toFixed(2) + " ft " + srcWord(w.src) + ")"; }).join("; ") + "."
-        : "Not expected to rise above MHHW in this period.") + "</p>" +
-      "<h3 style='margin:14px 0 6px;font-size:18px'>Tide table, next " + DAYS + " days</h3>";
+  var s = tideS(), st = s.st, now = nowLocal(), lo = offNow(), red = redFor(st), mOK = modelOK(s, now);
+  var fe = mOK ? modelEnd(s) : now, endT = now + DAYS * 86400000, html = "";
+  var rows = (s.highs || []).filter(function (h) { return h.t + 90 * 60000 >= now && h.t <= endT; }).map(function (h) {
+    var mp = mOK ? modelPeak(s, h) : null;
+    if (mp) return { t: mp.t, tbl: h.v, v: mp.v, src: "model" };
+    if (h.t < fe) return null;   // inside the projection but no peak found: left out rather than mixed in
+    return lo ? { t: h.t, tbl: h.v, v: h.v + lo.ft, src: "off" } : { t: h.t, tbl: h.v, v: h.v, src: "table" };
+  }).filter(Boolean);
+  var top = {};   // each day's highest
+  rows.forEach(function (r) { var d = fDay(r.t); if (!top[d] || r.v > top[d].v) top[d] = r; });
+  rows = rows.filter(function (r) { return top[fDay(r.t)] === r || r.v > st.mhhw; });
+  var expTitle = mOK ? (lo ? "Expected: NOAA projection, then tide table + " + lo.days + "-day average ¹" : "Expected: NOAA projection, then tide table")
+                     : (lo ? "Expected: tide table + " + lo.days + "-day average ¹" : "Expected (tide table)");
+  function vsMhhw(v) {
+    if (v >= red) return '<b class="red">⚠ ' + sgn(v - st.mhhw) + " ft, at or above the " + red.toFixed(1) + " ft flood level</b>";
+    if (v > st.mhhw) return '<b class="info">' + sgn(v - st.mhhw) + " ft above</b>";
+    return '<span class="mut">' + Math.abs(v - st.mhhw).toFixed(2) + " ft below</span>";
   }
-  html += wins.length ? "<table><tr><th>Day</th><th>Above MHHW (tide table)</th><th>High tide (tide table)</th></tr>" + wins.map(function (w) {
-    return "<tr><td><b>" + fDay(w.start) + "</b></td><td>" + fTime(w.start) + " – " + fTime(w.end) +
-      ' <span style="color:var(--muted);font-size:14px">(' + dur(Math.round((w.end - w.start) / 60000)) + ")</span></td><td>" +
-      w.peak.toFixed(2) + ' ft at ' + fTime(w.peakT) + ' <span class="' + (w.peak >= redFor(st) ? "red" : "info") + '" style="font-size:14px">' + sgn(w.peak - st.mhhw) + "</span></td></tr>";
-  }).join("") + "</table>" : "<p>The tide table has no tides above MHHW in the next " + DAYS + " days.</p>";
-  if (adj) {
-    var after = modelOK(s, now) ? modelEnd(s) : now;   // the model forecast covers the tides before this
-    var extra = (s.highs || []).filter(function (h) { return h.t > after && h.v <= st.mhhw && h.v + off > st.mhhw; });
-    html += "<p style='margin-top:12px'><b style='color:var(--info)'>If the " + waterWord() + " stays " + off.toFixed(2) + " ft higher than the tide table</b> (" +
-      (lo ? "its average over the past " + lo.days + " days" : "its average at the last " + OFFSET_RECENT_HIGHS + " high tides") + ")" + (after > now ? ", after the NOAA projection ends" : "") + ", " + (extra.length ? "these high tides would also go above MHHW: " +
-      extra.map(function (h) { return fDay(h.t) + " " + fTime(h.t) + " (" + (h.v + off).toFixed(2) + " ft)"; }).join("; ") + "."
-      : "no other high tides would go above MHHW.") + "</p>" + (lo ? "<p style='font-size:15px;color:var(--muted)'>" + esc(LK.text("tide_offset_assume", { water: waterWord() })) + "</p>" : "");
+  var divided = false;
+  html += '<table class="look"><thead><tr><th>High tide</th><th>Tide table</th><th>' + esc(expTitle) + "</th><th>Compared with MHHW (" + st.mhhw.toFixed(2) + " ft)</th></tr></thead><tbody>";
+  rows.forEach(function (r) {
+    if (mOK && !divided && r.src !== "model") {
+      divided = true;
+      html += '<tr class="div"><td colspan="4">NOAA projection ends ' + esc(fDay(fe) + " " + fTime(fe)) + ". " +
+        (lo ? "Below: tide table + " + lo.ft.toFixed(2) + " ft ¹" : "Below: tide table only") + "</td></tr>";
+    }
+    html += "<tr><td><b>" + fDay(r.t) + "</b> " + fTime(r.t) + "</td><td>" + r.tbl.toFixed(2) + " ft</td><td><b>" + r.v.toFixed(2) + " ft</b>" +
+      (r.src === "off" ? " <span class=\"mut\">¹</span>" : r.src === "model" ? ' <span class="mut">NOAA</span>' : "") + "</td><td>" + vsMhhw(r.v) + "</td></tr>";
+  });
+  html += "</tbody></table>";
+  if (!rows.length) html = "<p>No tide information for the next " + DAYS + " days yet.</p>";
+  if (mOK) {
+    var fwins = upcomingAbove(s, now).filter(function (w) { return w.start < fe; });
+    html += "<p class='lnote'><b>Times above MHHW, next 2 days</b> (measured so far, then NOAA projection): " + (fwins.length ? fwins.map(function (w) {
+      return fDay(w.start) + " " + fTime(w.start) + " – " + fTime(w.end) + " (peak " + w.peak.toFixed(2) + " ft)"; }).join("; ") + "." : "none expected.") + "</p>";
   }
+  if (lo) html += "<p class='lnote'>¹ " + esc("After the NOAA projection ends, the expected height is the tide table plus " + lo.ft.toFixed(2) +
+    " ft: how much higher than the tide table the " + waterWord() + " has run, on average, over the past " + lo.days + " days. ") + esc(LK.text("tide_offset_assume", { water: waterWord() })) + "</p>";
   html += '<div id="dnote">MHHW = ' + st.mhhw.toFixed(2) + " ft NAVD88. " + esc(LK.text("mhhw_definition")) + " " + esc(LK.text("predicted_tide_note")) + " " +
-    esc(LK.text("mhhw_info")) + " " + esc(LK.text("noaa_forecast_note")) + " All heights ft NAVD88. NOAA station " + esc(st.id) + ".</div>";
-  openDetail(st.name + " – next " + DAYS + " days", html);
+    esc(LK.text("noaa_forecast_note")) + " All heights ft NAVD88. NOAA station " + esc(st.id) + ".</div>";
+  openDetail(st.name + " – high tides, next " + DAYS + " days", html);
 }
 function showPast() {
   var s = tideS(), R = (s.res || []).slice().reverse(), now = nowLocal(), off = s.offset, html = "";
