@@ -64,3 +64,5 @@ jobs:
         run: python scripts/test_shoreline_hotspots.py
       - name: Shoreline low points
         run: python scripts/test_shoreline_lowpoints.py
+      - name: Creek outlets
+        run: python scripts/test_creek_outlets.py

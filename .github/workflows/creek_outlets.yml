@@ -1,0 +1,39 @@
+name: Build creek outlets
+
+# A draft list of where each creek on San Mateo County's Bay side reaches the Bay, as lat/lon
+# (scripts/build_creek_outlets.py): USGS NHD creek lines crossed with SFEI's Bay Shore Inventory shoreline, one row per
+# Bay-side watershed in data/watersheds.geojson. Writes lookups/proposed/creek_outlets.csv and
+# data/creek_outlets_candidates.geojson for staff review. Run it by hand (Actions > Build creek outlets > Run workflow);
+# a few minutes. Commits only if the draft changed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: creek-outlets
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install the map library
+        run: pip install shapely
+      - name: Build the draft list
+        run: python -u scripts/build_creek_outlets.py
+      - name: Commit if anything changed
+        run: |
+          git config user.name  "fews-outlets-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lookups/proposed/creek_outlets.csv data/creek_outlets_candidates.geojson
+          if git diff --cached --quiet; then echo "Draft list already up to date."; exit 0; fi
+          git commit -q -m "Draft creek outlets (NHD + Bay Shore Inventory)"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
