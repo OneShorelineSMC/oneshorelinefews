@@ -617,15 +617,36 @@ function upcomingAbove(s, now) {   // stretches above MHHW that haven't ended, w
 }
 /* Headline for the coming week's tides above MHHW: title, when, then peak, how far above MHHW and where it is against the flood level.
    Above MHHW alone is "higher than usual" (information); it's only a warning at the flood level (TIDE_RED_FT_RWC). */
-function headHtml(ups, st, now) {
-  var rl = redFor(st), red = ups.filter(function (w) { return w.peak >= rl; }), first = red[0] || ups[0], on = first.start <= now;
+/* Headline: one statement. High water (a tide at or above the flood level): when the water is at or above that level,
+   the peak, how many more such tides this week, that the Redwood City gauge stands for the whole Bay shoreline, and what
+   to do. The red "HIGH WATER" card above is hidden then (renderSeason), so the page says it once. Otherwise higher
+   than usual (above MHHW). */
+function highWater(s, now) {
+  var rl = redFor(s.st);
+  if (!isFinite(rl) || !s.pred) return null;
+  var red = upcomingAbove(s, now).filter(function (w) { return w.peak >= rl; });
+  if (!red.length) return null;
+  var w = red[0], rw = findWindows(bestSeries(s, now).filter(function (p) { return p.t >= w.start && p.t <= w.end; }), rl)[0] || { start: w.peakT, end: w.peakT };
+  var when = rw.start <= now ? "now, until about " + fTime(rw.end) : relDay(rw.start, now) + " about " +
+    fTime(rw.start).replace(/ (AM|PM)$/, function (m) { return fTime(rw.end).slice(-3) === m ? "" : m; }) + (rw.end > rw.start ? "–" + fTime(rw.end) : "");
+  return { w: w, when: when, more: red.length - 1, rl: rl };
+}
+function headHtml(ups, st, now, s) {
+  var hw = s ? highWater(s, now) : null, where = COAST ? "" : " along the Bay shoreline";
+  if (hw) {
+    var b1 = "Peak <b>" + hw.w.peak.toFixed(2) + " ft</b> (" + esc(srcWord(hw.w.src)) + ") at " + esc(fTime(hw.w.peakT)) + " · flood level " + hw.rl.toFixed(1) + " ft (provisional)" +
+      (hw.more ? " · " + hw.more + " more high tide" + (hw.more > 1 ? "s" : "") + " at flood level this week" : "");
+    return '<span class="hi" aria-hidden="true">⚠</span>' + esc(LK.text("tide_head_red") + where) + ": " + esc(hw.when) +
+      '<span class="hd">' + b1 + "<br>" + (COAST ? "" : "Measured at Redwood City; levels are similar all along the county’s Bay shoreline. ") +
+      "<b>" + esc(LK.text("tide_red_what")) + "</b></span>";
+  }
+  var first = ups[0], on = first.start <= now;
   var when = on ? LK.text("tide_head_now", { time: fTime(first.end) }) : winText(first, now).replace(/ \([^)]*\)$/, "");
-  var title = red.length ? LK.text("tide_head_red") : LK.text("tide_head_info");
   var peak = (on && first.peakT <= now ? "Peaked " : "Peak ") + "<b>" + first.peak.toFixed(2) + " ft</b> (" + esc(srcWord(first.src)) + ") at " + esc(fTime(first.peakT));
   var bits = [peak, sgn(first.peak - st.mhhw).replace(/^\+/, "") + " ft above MHHW"];
-  if (isFinite(rl)) bits.push(esc(LK.text(first.peak >= rl ? "tide_head_at_red" : "tide_head_below_red", { ft: rl.toFixed(1) })));
-  var others = ups.filter(function (w) { return w !== first; }), more = others.length;
-  return '<span class="hi" aria-hidden="true">' + (red.length ? "⚠" : "〰") + "</span>" + esc(title) + ": " + esc(when) +
+  if (isFinite(redFor(st))) bits.push(esc(LK.text("tide_head_below_red", { ft: redFor(st).toFixed(1) })));
+  var more = ups.length - 1;
+  return '<span class="hi" aria-hidden="true">〰</span>' + esc(LK.text("tide_head_info") + where) + ": " + esc(when) +
     '<span class="hd">' + bits[0] + '<br class="nb"><span class="wsep"> · </span>' + bits.slice(1).join(" · ") + (more ? '<br class="nb"><span class="wsep"> · </span><span class="lbl">+' + more + " more " + (more > 1 ? "times" : "time") + " this week</span>" : "") + "</span>";
 }
 function winText(w, now) {
@@ -722,8 +743,9 @@ function render() {
     else if (!ups.length) { hd.className = "head ok"; hm.textContent = "No tides above MHHW in the next " + DAYS + " days"; }
     else {
       hd.className = ups.some(function (w) { return w.peak >= redFor(st); }) ? "head red" : "head over";
-      hm.innerHTML = headHtml(ups, st, now);
+      hm.innerHTML = headHtml(ups, st, now, s);
     }
+    if (st.id === "9414523" && typeof renderSeason === "function" && $("season")) renderSeason();   // the red card hides itself when this says high water
 
     // Now: one short line
     var last = s.obs && s.obs.length ? s.obs[s.obs.length - 1] : null, nl = q(".nowl");
@@ -1033,6 +1055,8 @@ function renderSeason() {
   el.classList.toggle("hide", !st);
   if (!st) return;
   el.className = "card " + st.cls;
+  var bay = !COAST && S.filter(function (x) { return x.st.id === "9414523"; })[0];
+  if (/red/.test(st.cls) && bay && highWater(bay, nowLocal())) { el.classList.add("hide"); return; }   // the headline says it (with what to do)
   $("tschip").textContent = st.chip;
   $("tsmain").textContent = st.main;
   $("tssub").textContent = st.sub ? " · " + st.sub : "";
