@@ -61,7 +61,33 @@ with tempfile.TemporaryDirectory() as d:
     check("CSV with CRLF and the review columns", raw.startswith(b"id,name,city,watershed,lat,lon,level_in,length_m") and b"\r\n" in raw)
     check("map file: one line feature per row", len(g["features"]) == 3 and g["features"][0]["geometry"]["type"] == "MultiLineString")
     B.INPUT = os.path.join(d, "missing.geojson")
-    check("no input file: clear message, nothing written", B.main() == 1)
+    real = B.from_rsap
+    B.from_rsap = lambda get, box=None: None   # no network in tests
+    check("no input file and nothing on the RSAP map: clear message, nothing written", B.main() == 1)
+    B.from_rsap = real
 
+
+# The RSAP web map: a group with shoreline layers, overtopping at 12 and 24 in by layer name, one other layer
+def agol(url, params=None):
+    u = url.split("?")[0]
+    if u.endswith("/content/items/" + B.RSAP_MAP):
+        return json.dumps({"type": "Web Map", "title": "Physical Conditions Vector", "owner": "BCDC"})
+    if u.endswith("/content/items/" + B.RSAP_MAP + "/data"):
+        return json.dumps({"operationalLayers": [{"title": "Shoreline", "layers": [
+            {"title": "Shoreline Overtopping 12 in", "url": "https://x.test/rest/services/OT12/FeatureServer/0"},
+            {"title": "Shoreline Overtopping 2 ft", "url": "https://x.test/rest/services/OT24/FeatureServer/0"},
+            {"title": "Shoreline Type", "url": "https://x.test/rest/services/ST/FeatureServer/0"}]}]})
+    if u.endswith("/query"):
+        lon = -122.28 if "OT12" in u else -122.27
+        return json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"Depth_ft": 0.6},
+                           "geometry": {"type": "LineString", "coordinates": east(lon, 37.515, 120)}}]})
+    raise OSError("unexpected " + url)
+
+
+got = B.from_rsap(agol)
+check("RSAP map: overtopping layers found by name, levels from the names, other layers left out",
+      got is not None and [len(got[x]) for x in B.LEVELS_IN] == [1, 1, 0] and got[12][0][1] == 0.6)
+
+check("levels from layer names", [B.level_from_text(t) for t in ("Overtopping 12 in", "Shoreline overtopping 2 ft", 'SLR 36"', "2.0 ft (24 in)", "Overtop")] == [12, 24, 36, 24, None])
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)

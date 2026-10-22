@@ -2,7 +2,9 @@
 "shoreline overtopping" layer shows the Bay coming over the shoreline at 12, 24 and 36 inches above MHHW.
 The Shoreline tab compares each stretch's level with the coming tides (lookups/THRESHOLDS_BASIS.md §4c).
 
-Input (made once in GIS from the ART geodatabase, explorer.adaptingtorisingtides.org/download):
+Input: BCDC's RSAP open data "Physical Conditions Vector" map (ArcGIS Online item RSAP_MAP, read when the build runs;
+every layer is listed in the log, and the ones with "overtop" in their name are used, their level read from the layer
+name, e.g. "12 in" or "1 ft", or from a level field), or, if this file is there, a GIS export instead:
   data/shoreline_overtopping.geojson   the overtopping lines for 12, 24 and 36 in, WGS84 (lon/lat), each with a
                                        level_in field (12, 24 or 36); an overtopping-depth field is kept if there is
                                        one (any field with "depth" in its name, in feet)
@@ -39,6 +41,8 @@ SAME_M = 15          # a point this close to shoreline already overtopped lower 
 MERGE_M = 200        # stretches at one level closer than this are one low point
 MIN_LEN_M = 20       # shorter overtopped stretches are left out
 WS_NEAR_M = 600      # this close to a San Mateo County watershed counts as in the county
+RSAP_MAP = "7535792221cb4ae5a9f022ff5dbaf94a"   # RSAP Open Data: Physical Conditions Vector (web map)
+BAY_BOX = (-122.53, 37.44, -122.08, 37.72)      # San Mateo County's Bay side, with a margin (lon, lat)
 COLUMNS = ["id", "name", "city", "watershed", "lat", "lon", "level_in", "length_m", "max_depth_ft", "stretches",
            "include", "notes", "source", "checked_by", "checked_on"]
 SOURCE = "BCDC Adapting to Rising Tides (2017), shoreline overtopping"
@@ -87,6 +91,53 @@ def depth_of(props):
             except (IndexError, ValueError):
                 return None
     return None
+
+
+def level_from_text(t):
+    """Inches from a layer name or value: "12 in", "24-inch", "1 ft", "2.0 ft (24 in)", "36"."""
+    t = str(t or "")
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:in\b|inch|\")", t, re.I)
+    if m:
+        return int(round(float(m.group(1))))
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:ft\b|feet|foot|')", t, re.I)
+    if m:
+        return int(round(float(m.group(1)) * 12))
+    return None
+
+
+def from_rsap(get, box=BAY_BOX):
+    """{inches: [(sampled points, depth)]} from the overtopping layers of the RSAP "Physical Conditions Vector" map,
+    or None if it has none. Lists every layer it finds."""
+    import shoreline_exposure as E   # shapely; only needed here
+    info, layers = E.item_layers(RSAP_MAP, get)
+    print(f"RSAP map '{info.get('title')}': {len(layers)} layers", flush=True)
+    for t, u in layers:
+        print(f"  {t} · {u}", flush=True)
+    ot = [(t, u) for t, u in layers if re.search(r"overtop", t or "", re.I)]
+    if not ot:
+        print("No layer with 'overtop' in its name.", flush=True)
+        return None
+    out = {x: [] for x in LEVELS_IN}
+    for t, u in ot:
+        fs = E.layer_features(u, box, get)
+        fields = sorted({k for _, a in fs for k in a})
+        print(f"Using '{t}': {len(fs)} features in the box; fields: {', '.join(fields[:25])}", flush=True)
+        lv_name = level_from_text(t)
+        for g, a in fs:
+            lv = lv_name
+            if lv is None:   # one layer for all levels: a level field
+                for k, v in a.items():
+                    if re.search(r"level|twl|slr|scen|wl\b|water", k, re.I):
+                        lv = level_from_text(v) if not isinstance(v, (int, float)) else (int(round(v * 12)) if v <= 10 else int(round(v)))
+                        if lv:
+                            break
+            if lv not in out:
+                continue
+            for ln in E.lines_only(g):
+                c = list(ln.coords)
+                if len(c) >= 2:
+                    out[lv].append((sample(c), depth_of(a)))
+    return out
 
 
 def load(path=INPUT):
@@ -227,11 +278,19 @@ def write(rows, csv_path=OUT_CSV, geo_path=OUT_GEO):
 
 
 def main():
-    if not os.path.exists(INPUT):
-        print(f"No {os.path.relpath(INPUT, ROOT)} yet: export the ART shoreline overtopping lines for 12, 24 and 36 in from "
-              "GIS (WGS84 GeoJSON, a level_in field) and upload it to the data folder. Nothing written.", flush=True)
-        return 1
-    by_level, skipped = load()
+    if os.path.exists(INPUT):
+        by_level, skipped = load()
+    else:
+        skipped = 0
+        try:
+            by_level = from_rsap(lambda u: M.get(u, tries=2))
+        except Exception as e:   # noqa: BLE001
+            print(f"RSAP map unavailable: {type(e).__name__}: {str(e)[:300]}", flush=True)
+            by_level = None
+        if not by_level or not any(by_level.values()):
+            print(f"No overtopping lines found. Export the ART shoreline overtopping lines for 12, 24 and 36 in from GIS "
+                  f"(WGS84 GeoJSON, a level_in field) as {os.path.relpath(INPUT, ROOT)}. Nothing written.", flush=True)
+            return 1
     print("Overtopping lines: " + ", ".join(f"{x} in = {len(by_level[x])}" for x in LEVELS_IN) +
           (f" ({skipped} features without a level_in of 12, 24 or 36 left out)" if skipped else ""), flush=True)
     places = []
