@@ -218,8 +218,12 @@ projection ends:
 - **Oct 22: low points from BCDC's shoreline overtopping layer (replaces the flood-area method below).** The flood areas
   include marsh, mudflats and ponds, and cutting them out was too slow and fragile to run on GitHub. The Shoreline tab now
   lists the stretches of shoreline where ART's **shoreline overtopping** lines show the Bay coming over at 12, 24 and 36 in
-  above MHHW (`scripts/build_shoreline_lowpoints.py`). Input: `data/shoreline_overtopping.geojson`, exported once in GIS
-  from the ART geodatabase (WGS84, a `level_in` field; an overtopping-depth field is kept). Each low point is the
+  above MHHW (`scripts/build_shoreline_lowpoints.py`). BCDC's overtopping layer isn't in an online map service, so the
+  build makes the same thing from two that are: SFEI's **San Francisco Bay Shore Inventory** lines for San Mateo County
+  (2016, as published in BCDC's RSAP open data "Physical Conditions Vector"; classes Wetland and Channel or Opening left
+  out) are checked every 10 m against ART's flooded areas at each level (Caltrans `DEA_BCDC_polygon_SLR`); a point at
+  least 3 m inside the flooded area is shoreline the Bay comes over. A GIS export of ART's own overtopping lines,
+  `data/shoreline_overtopping.geojson` (WGS84, a `level_in` field), is used instead when it is there. Each low point is the
   shoreline that first overtops at that level (checked every 10 m; a stretch within 15 m of shoreline already overtopped
   lower down belongs to that lower level), stretches within 200 m joined, at least 20 m, in or within 600 m of a San Mateo
   County watershed; columns `length_m`, `max_depth_ft`, `stretches`. The map shows the overtopped stretches as lines
