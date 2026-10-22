@@ -215,6 +215,17 @@ projection ends:
 
 ### 4c. Shoreline spots: BCDC Adapting to Rising Tides levels against the NOAA projection (Oct 21, 2026; staff preview, draft)
 
+- **Oct 22: low points from BCDC's shoreline overtopping layer (replaces the flood-area method below).** The flood areas
+  include marsh, mudflats and ponds, and cutting them out was too slow and fragile to run on GitHub. The Shoreline tab now
+  lists the stretches of shoreline where ART's **shoreline overtopping** lines show the Bay coming over at 12, 24 and 36 in
+  above MHHW (`scripts/build_shoreline_lowpoints.py`). Input: `data/shoreline_overtopping.geojson`, exported once in GIS
+  from the ART geodatabase (WGS84, a `level_in` field; an overtopping-depth field is kept). Each low point is the
+  shoreline that first overtops at that level (checked every 10 m; a stretch within 15 m of shoreline already overtopped
+  lower down belongs to that lower level), stretches within 200 m joined, at least 20 m, in or within 600 m of a San Mateo
+  County watershed; columns `length_m`, `max_depth_ft`, `stretches`. The map shows the overtopped stretches as lines
+  with a dot, colored by when the tide could reach them. No flood areas, buildings or streets. The rest of this section
+  describes the earlier flood-area method, kept for reference (`scripts/build_shoreline_hotspots.py`, not run).
+
 Which places on the Bay shoreline the water would reach, not just how high it is at the gauge.
 
 - **Source:** BCDC's Adapting to Rising Tides (ART) Bay Area Sea Level Rise and Shoreline Analysis Maps (2017; 1 m
