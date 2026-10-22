@@ -2,8 +2,8 @@ name: Build shoreline hotspots
 
 # A draft list of the low points on San Mateo County's Bay shoreline: where BCDC's Adapting to Rising Tides "shoreline
 # overtopping" layer shows the Bay coming over the shoreline at 12, 24 and 36 inches above MHHW
-# (scripts/build_shoreline_lowpoints.py). Reads data/shoreline_overtopping.geojson (exported once in GIS from the ART
-# geodatabase); writes lookups/proposed/shoreline_hotspots.csv and data/shoreline_hotspots_candidates.geojson for
+# (scripts/build_shoreline_lowpoints.py). Reads the overtopping layers from BCDC's RSAP "Physical Conditions Vector"
+# map (the log lists its layers), or data/shoreline_overtopping.geojson (a GIS export) when that file is there; writes lookups/proposed/shoreline_hotspots.csv and data/shoreline_hotspots_candidates.geojson for
 # staff review. The pages read the reviewed copy, lookups/shoreline_hotspots.csv. Run it by hand (Actions > Build
 # shoreline hotspots > Run workflow) after uploading a new export. Commits only if the draft changed.
 on:
@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - name: Install the map library
+        run: pip install shapely
       - name: Build the draft list
         run: python -u scripts/build_shoreline_lowpoints.py
       - name: Commit if anything changed
