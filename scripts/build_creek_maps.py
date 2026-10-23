@@ -5,8 +5,10 @@ Static creek maps for the Creeks page, and watershed boundaries for the sensor m
 Writes
   img/creekmaps/<creek>.svg   one small map per creek in lookups/creeks.csv: the creek line, the area draining to its
                               level gauge (USGS NLDI; or data/creek_watersheds.geojson when it has the creek), the creek's
-                              gauges (creek level, rain, supporting rain) labeled as on the Creeks page, the Bay, ocean
-                              and reservoirs, city limits and town names, the main highways, a north arrow and a scale bar. Shown at the bottom of each creek's page;
+                              gauges (creek level, rain, supporting rain) labeled as on the Creeks page, a north arrow and
+                              a scale bar, over Esri's World Topographic Map (streets, the Bay and place names come from
+                              it). If the base map can't be had, a plain map instead: the Bay, ocean and reservoirs and
+                              the main highways (Census). No city limits or names. Shown at the bottom of each creek's page;
                               tapping it opens SiteMap.html zoomed to that creek.
   data/watersheds.geojson     USGS Watershed Boundary Dataset subwatersheds (HUC-12) covering San Mateo County, simplified,
                               with their names (SiteMap.html "Watersheds" switch; not the kiosk).
@@ -19,8 +21,8 @@ Sources (public, no keys; read when the script runs, so it runs on GitHub, not i
   Watersheds    USGS Watershed Boundary Dataset, 12-digit HU (hydro.nationalmap.gov wbd/FeatureServer/6)
   Highways      US Census TIGERweb, Census2020/Transportation: Primary Roads (2) and Secondary Roads (5)
   Water         US Census TIGERweb, Census2020/Hydro: Areal Hydrography (1): bays, ocean, lakes and reservoirs
-  Cities        US Census TIGERweb, Census2020/Places_CouSub_ConCity_SubMCD: Incorporated Places (4; city limits
-                drawn and named) and Census Designated Places (5; unincorporated towns, named only)
+  Base map      Esri World Topographic Map (services.arcgisonline.com World_Topo_Map, a static export per map;
+                credited on the map and on the Creeks page)
   Gauges        OneRain sites in sites.json (data branch) by OneRain number; USGS gauges from USGS Water Services
 
 Usage:  python scripts/build_creek_maps.py SITES_JSON     (GitHub: .github/workflows/creek_maps.yml, run by hand)
@@ -56,12 +58,15 @@ WATER = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/Hydro/M
 PLACES = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/Places_CouSub_ConCity_SubMCD/MapServer/{}/query"
 # bays and estuaries, ocean, lakes and ponds, reservoirs: big enough to see (square meters of water)
 WATER_WHERE = "MTFCC IN ('H2051','H2053','H2030','H2040') AND AREAWATER > 40000"
+# Esri World Topographic Map (a static export per creek map; credit on the map and on the Creeks page)
+BASEMAP = "https://services.arcgisonline.com/arcgis/rest/services/World_Topo_Map/MapServer"
 NWIS = "https://waterservices.usgs.gov/nwis/site/?format=rdb&siteStatus=all&sites={}"
 
 # Creek names as NHD spells them (GNIS names). Add a name here if a creek's map comes out without its line.
 NHD_NAMES = {
     "colma": ["Colma Creek"],
-    "sanbruno": ["San Bruno Creek"],
+    # the upper creek is El Zanjon Creek in the County layers (staff, 2026-10-22)
+    "sanbruno": ["San Bruno Creek", "El Zanjon Creek"],
     "belmont": ["Belmont Creek"],
     "atherton": ["Atherton Creek", "Atherton Channel"],
     "sanfrancisquito": ["San Francisquito Creek"],
@@ -76,7 +81,11 @@ NHD_NAMES = {
     "butano": ["Butano Creek"],
 }
 # Words to look for in the County streams layer's NAME when NHD has no line (default: the creek's name without "Creek")
-COUNTY_STREAM_NAMES = {"greenhills": ["Green Hills", "Highline"]}
+COUNTY_STREAM_NAMES = {"greenhills": ["Green Hills", "Highline"], "sanbruno": ["San Bruno", "El Zanjon"]}
+# County watersheds (WATERSHED names) that together drain to a creek's level gauge, when the one the gauge sits in isn't
+# all of it. San Bruno Creek's First Avenue gauge sits on the line between SAN BRUNO CREEK and EL ZANJON CREEK (the
+# upper creek), so the gauge's own watershed alone showed only part of the creek.
+COUNTY_WATERSHEDS = {"sanbruno": ["SAN BRUNO CREEK", "EL ZANJON CREEK"]}
 
 
 # ---------------------------------------------------------------- downloads
@@ -190,12 +199,43 @@ DARK = """@media (prefers-color-scheme: dark){.bg{fill:#121a22}.hu{stroke:#3a465
 .gr{fill:#a3b0bd;stroke:#121a22}.wa{fill:#173049}.wt{fill:#86b2dc}.cl{stroke:#6c7783}.ct{fill:#a9b5c1}.gp{fill:#121a22;stroke:#a3b0bd}.na{fill:#e6edf5}.sb{stroke:#e6edf5}}"""
 
 
-def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, water=None, places=None):
+def basemap_image(lo0, la0, lo1, la1, w, h, fetch=None):
+    """Esri World Topographic Map for this extent as a JPEG data URI, or None. Asked for in Web Mercator (the service's
+    own projection) at twice the map's size and 192 dpi, so its labels stay sharp and readable; the image's shape
+    matches the map's, so it lines up when stretched over it."""
+    import base64
+    def merc(lon, lat):
+        return lon * 20037508.34 / 180, math.log(math.tan(math.pi / 4 + math.radians(lat) / 2)) * 6378137
+    x0, y0 = merc(lo0, la0)
+    x1, y1 = merc(lo1, la1)
+    pw = 2 * w
+    ph = max(1, round(pw * (y1 - y0) / (x1 - x0)))
+    p = {"bbox": f"{x0:.1f},{y0:.1f},{x1:.1f},{y1:.1f}", "bboxSR": 3857, "imageSR": 3857, "size": f"{pw},{ph}",
+         "dpi": 192, "format": "jpg", "f": "image"}
+    url = BASEMAP + "/export?" + urllib.parse.urlencode(p)
+    try:
+        if fetch:
+            data = fetch(url)
+        else:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
+                data = r.read()
+    except Exception as e:   # noqa: BLE001
+        print(f"    base map unavailable ({type(e).__name__}); the plain map instead")
+        return None
+    if not data or data[:3] != b"\xff\xd8\xff":   # not a JPEG (an error message)
+        print("    base map service didn't return an image; the plain map instead")
+        return None
+    return "data:image/jpeg;base64," + base64.b64encode(data).decode("ascii")
+
+
+def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, water=None, places=None, basemap=None):
     """creek: {"id","name"}; line_feats/hu_feats/road_feats: GeoJSON features (lon/lat);
     gauges: [{"label","kind": stage|rain|support,"lon","lat"}]; basins: GeoJSON polygons of the area draining to the
     creek's level gauges (NLDI or data/creek_watersheds.geojson), used instead of the HUC-12 units when given.
     water: Census areal water polygons (properties NAME); places: Census places (properties NAME, and "city": True for
     an incorporated city, whose limits are drawn; other places are only named).
+    basemap: basemap_image-like function (lo0, la0, lo1, la1, w, h) -> data URI or None: when it gives an image, the map
+    is drawn over it (Esri World Topographic Map) and the Bay, highways and their names come from it instead.
     Returns (svg text, watershed names)."""
     water, places = water or [], places or []
     styled = [(line_kind(f), ln) for f in line_feats for ln in lines_of(f["geometry"])]
@@ -234,6 +274,10 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
     def xy(p):
         return (ox + (p[0] - lo0) * kx * s, oy + (la1 - p[1]) * s)
 
+    img = basemap(lo0 - ox / (kx * s), la1 - H / s + oy / s, lo0 + (W - ox) / (kx * s), la1 + oy / s, W, H) if basemap else None
+    if img:   # the base map shows the Bay, roads and names itself
+        water, road_feats, hu_feats = [], [], []
+
     def path(coords, closed=False, tol=0.6):
         q = [xy(p) for p in coords]
         if closed and len(q) > 3:   # a ring starts and ends on the same point: simplify its two halves
@@ -248,9 +292,11 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" '
            f'aria-labelledby="t" font-family="Arial, Helvetica, sans-serif">',
            f"<title id=\"t\">{escape(creek['name'])}: creek, watershed and gauges</title>",
-           f"<style>.t{{fill:{COL['ink']}}}.h{{stroke:{COL['halo']};stroke-width:3.5;stroke-linejoin:round;paint-order:stroke}}{DARK}</style>",
+           f"<style>.t{{fill:{COL['ink']}}}.h{{stroke:{COL['halo']};stroke-width:3.5;stroke-linejoin:round;paint-order:stroke}}{'' if img else DARK}</style>",
            f'<defs><clipPath id="c"><rect width="{W}" height="{H}"/></clipPath></defs>',
            f'<rect class="bg" width="{W}" height="{H}" fill="{COL["bg"]}"/>', '<g clip-path="url(#c)">']
+    if img:   # light in dark mode too: the photo-like base map stays as it is, so the drawing on it does as well
+        out.append(f'<image href="{img}" x="0" y="0" width="{W}" height="{H}" preserveAspectRatio="none"/>')
     # neighbouring subwatersheds (context), then this creek's, filled
     for f in hu_feats:
         if f in mine:
@@ -261,7 +307,10 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
     for f in mine:
         d = "".join(path(r, True) for r in rings_of(f["geometry"]))
         if d:
-            out.append(f'<path class="ws" d="{d}" fill="{COL["ws"]}" fill-rule="evenodd" stroke="{COL["wsl"]}" stroke-width="1.2"/>')
+            if img:   # see-through, so the streets and the Bay show; a darker green edge
+                out.append(f'<path class="ws" d="{d}" fill="#4f9a45" fill-opacity="0.18" fill-rule="evenodd" stroke="#3f7a37" stroke-width="2"/>')
+            else:
+                out.append(f'<path class="ws" d="{d}" fill="{COL["ws"]}" fill-rule="evenodd" stroke="{COL["wsl"]}" stroke-width="1.2"/>')
     # the Bay, ocean and reservoirs, over the watershed shading so the shoreline shows
     for f in water:
         d = "".join(path(r, True, 0.5) for r in rings_of(f["geometry"]))
@@ -448,7 +497,7 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
         elif sym == "l":
             out.append(f'<path class="cl" d="M{lx},{y - 4} h16" stroke="{COL["city"]}" stroke-width="1.5" stroke-dasharray="5 3"/>')
         elif sym == "w":
-            out.append(f'<rect class="ws" x="{lx + 2}" y="{y - 10}" width="13" height="12" fill="{COL["ws"]}" stroke="{COL["wsl"]}" stroke-width="1.2"/>')
+            out.append(f'<rect class="ws" x="{lx + 2}" y="{y - 10}" width="13" height="12" fill="{"#d3e5cf" if img else COL["ws"]}" stroke="{"#3f7a37" if img else COL["wsl"]}" stroke-width="{2 if img else 1.2}"/>')
         elif sym == "c":
             out.append(f'<circle class="gs" cx="{lx + 8}" cy="{y - 4}" r="5.5" fill="{COL["stage"]}" stroke="#fff" stroke-width="1.5"/>')
         elif sym == "r":
@@ -456,6 +505,8 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
         else:
             out.append(f'<rect class="gp" x="{lx + 3}" y="{y - 9}" width="10" height="10" fill="#fff" stroke="{COL["rain"]}" stroke-width="2"/>')
         out.append(f'<text class="t" x="{lx + 22}" y="{y}" font-size="12">{txt}</text>')
+    if img:
+        out.append(f'<text class="t h" x="{W - 6}" y="{H - 6}" font-size="10" text-anchor="end">Base map: Esri</text>')
     out.append("</svg>")
     names = sorted({(f.get("properties") or {}).get("name") for f in mine} - {None, ""})
     return "\n".join(out) + "\n", names
@@ -544,9 +595,13 @@ def nldi_basin(g):
 
 def basins_for(c, override, county=()):
     """Polygons to shade for a creek, first that works: data/creek_watersheds.geojson if it has this creek; the County
-    watershed(s) a creek level gauge sits in; NLDI's drainage area above each level gauge (biggest first, so nested
+    watersheds named in COUNTY_WATERSHEDS; the County watershed(s) a creek level gauge sits in; NLDI's drainage area above each level gauge (biggest first, so nested
     areas draw in order). [] if none works; the map then falls back to HUC-12."""
     mine = [f for f in override if (f.get("properties") or {}).get("creek") == c["id"]]
+    if mine:
+        return mine
+    want = {n.upper() for n in COUNTY_WATERSHEDS.get(c["id"], [])}
+    mine = [f for f in county if ((f.get("properties") or {}).get("name") or "").upper() in want]
     if mine:
         return mine
     pts = [(g["lon"], g["lat"]) for g in c.get("stages", []) if "lon" in g]
@@ -721,7 +776,7 @@ def main():
                     if x["kind"] == "stage" and x["label"] == (g.get("label") or g.get("site_name")):
                         g["lon"], g["lat"] = x["lon"], x["lat"]
             basins = basins_for(c, override, county)
-            svg, ws = build_svg(c, line, hu, roads, gs, basins, water, places)
+            svg, ws = build_svg(c, line, hu, roads, gs, basins, water, [], basemap=basemap_image)   # no city limits or names (staff, 2026-10-23)
             if not svg:
                 print(f"  {c['id']}: nothing to draw; skipped")
                 continue

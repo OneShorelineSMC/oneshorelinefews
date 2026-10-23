@@ -61,7 +61,7 @@ check("Highline: NHD name from the FEWS aliases; creek end used when it doesn't 
       h["creek"] == "Highline Canal" and h["fews_creek"] == "greenhills" and h["lon"] == -122.2525 and "ends 22" in h["method"])
 s = by["Seal Slough"]
 check("Seal Slough: no NHD line, the shoreline opening next to it, flagged",
-      s["method"].startswith("no creek line in NHD: shoreline opening") and s["lat"] == 37.54 and s["shore_class"] == "Channel or Opening")
+      s["method"].startswith("no creek line in NHD or the County streams layer: shoreline opening") and s["lat"] == 37.54 and s["shore_class"] == "Channel or Opening")
 # Redwood Creek: NHD has no line by that name; an aqueduct crosses the watershed and a named creek runs through it
 ws2 = [{"name": "REDWOOD CREEK", "geometry": box(-122.30, 37.45, -122.249, 37.50)}]
 flow2 = [{"type": "Feature", "properties": {"gnis_name": "Hetch Hetchy Aqueduct", "ftype": 428},
@@ -70,6 +70,14 @@ flow2 = [{"type": "Feature", "properties": {"gnis_name": "Hetch Hetchy Aqueduct"
 r2 = B.build(ws2, shore, flow2)[0]
 check("an aqueduct is never a watershed's creek; the main named creek is used and flagged",
       r2["creek"] == "Arroyo Test" and r2["lat"] == 37.47 and "NHD has no Redwood Creek" in r2["method"])
+
+# San Bruno Creek: not named in NHD; the County streams layer has it, drawn upstream (Bay end first)
+ws3 = [{"name": "SAN BRUNO CREEK", "geometry": box(-122.30, 37.45, -122.249, 37.50)}]
+cty = [{"type": "Feature", "properties": {"NAME": "SAN BRUNO CREEK"},
+        "geometry": {"type": "LineString", "coordinates": [[-122.245, 37.48], [-122.29, 37.48]]}}]
+r3 = B.build(ws3, shore, [], county=cty)[0]
+check("County streams line used when NHD has none, either drawing direction; crossing found",
+      r3["lat"] == 37.48 and r3["lon"] == SHORE_X and "County streams layer" in r3["method"] and r3["fews_creek"] == "sanbruno")
 
 asked = []
 

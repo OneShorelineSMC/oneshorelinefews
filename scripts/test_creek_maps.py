@@ -6,6 +6,7 @@ import math
 import re
 import os
 import sys
+import urllib.parse
 import xml.dom.minidom
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -68,6 +69,10 @@ check(B.basins_for({"id": "t", "stages": []}, [{"type": "Feature", "properties":
 cty = poly(-122.44, 37.66, 0.02, "Colma Creek"); cty["properties"]["source"] = "county"
 got = B.basins_for({"id": "t", "stages": [{"label": "A", "lon": -122.44, "lat": 37.66}]}, [], [cty, poly(-122.3, 37.5, 0.02, "Elsewhere")])
 check(len(got) == 1 and got[0]["properties"]["name"] == "Colma Creek", "County watershed containing the level gauge wins over NLDI")
+sb = [poly(-122.42, 37.63, 0.02, "SAN BRUNO CREEK"), poly(-122.40, 37.62, 0.02, "EL ZANJON CREEK")]
+got_sb = B.basins_for({"id": "sanbruno", "stages": [{"label": "First Avenue", "lon": -122.40, "lat": 37.62}]}, [], sb + [cty])
+check(sorted(f["properties"]["name"] for f in got_sb) == ["EL ZANJON CREEK", "SAN BRUNO CREEK"],
+      "COUNTY_WATERSHEDS: San Bruno Creek shades both its County watersheds, not just the one the gauge sits in")
 svg5, _ = B.build_svg(creek, line, hu, roads, gauges, got)
 check("Watershed (San Mateo County)" in svg5, "County watershed named in the legend")
 
@@ -101,5 +106,29 @@ lg = [{"label": "Below Crystal Springs Reservoir Spillway", "kind": "stage", "lo
 svg8, _ = B.build_svg(creek, line, [], roads, lg)
 m = re.search(r'x="([0-9.]+)" y="[0-9.]+" font-size="14"[^>]*>Below Crystal', svg8)
 check(m and float(m.group(1)) >= 2 and float(m.group(1)) + 7.6 * len(lg[0]["label"]) <= 420, "long gauge label stays inside the map")
+
+# over Esri's topographic base map: the image under the drawing, extent in Web Mercator matching the map's shape,
+# no Census water or highways, no dark-mode recolouring, credited; a non-image answer means the plain map
+asked = []
+JPEG = b"\xff\xd8\xff\xe0" + b"0" * 40
+
+
+def fake(url):
+    asked.append(url)
+    return JPEG
+
+
+svg9, _ = B.build_svg(creek, line, hu, roads, gauges, basemap=lambda *a: B.basemap_image(*a, fetch=fake))
+q = urllib.parse.parse_qs(urllib.parse.urlparse(asked[0]).query)
+x0, y0, x1, y1 = map(float, q["bbox"][0].split(","))
+pw, ph = map(int, q["size"][0].split(","))
+vb = xml.dom.minidom.parseString(svg9).documentElement.getAttribute("viewBox").split()
+check(asked[0].startswith(B.BASEMAP + "/export?") and q["imageSR"] == ["3857"] and q["f"] == ["image"] and pw == 840
+      and abs(ph / pw - (y1 - y0) / (x1 - x0)) < 0.005 and abs(ph / pw - float(vb[3]) / float(vb[2])) < 0.01,
+      "base map asked for this map's extent, twice its size, same shape")
+check('<image href="data:image/jpeg;base64,' in svg9 and ">101<" not in svg9 and "prefers-color-scheme" not in svg9
+      and "Base map: Esri" in svg9, "drawn over the base map; its own roads and names, credited")
+check(B.basemap_image(-122.5, 37.6, -122.4, 37.7, 420, 320, fetch=lambda u: b'{"error":{"code":400}}') is None
+      and "<image" not in B.build_svg(creek, line, hu, roads, gauges, basemap=lambda *a: None)[0], "no base map: the plain map")
 
 print(f"creek maps: {checks} checks passed")

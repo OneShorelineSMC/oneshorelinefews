@@ -6,7 +6,8 @@ Sources (public, read when the build runs, so it runs on GitHub: Actions > Build
   Watersheds    data/watersheds.geojson (San Mateo County / C/CAG watersheds, already in the repo); a watershed is on
                 the Bay side if it comes within BAY_NEAR_M of the Bay shoreline
   Bay shoreline SFEI San Francisco Bay Shore Inventory lines for San Mateo County (BCDC RSAP open data), all classes
-  Creek lines   USGS National Hydrography Dataset, Flowline - Large Scale, named lines (GNIS name)
+  Creek lines   USGS National Hydrography Dataset, Flowline - Large Scale, named lines (GNIS name); San Mateo
+                County's Streams and Creeks layer (Flows to Bay map) for creeks NHD doesn't name
 
 For each Bay-side watershed:
   1. The creek line: NHD lines named like the watershed (or a FEWS creek's NHD names, build_creek_maps.NHD_NAMES);
@@ -27,6 +28,7 @@ import csv
 import json
 import math
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -77,8 +79,22 @@ def bay_side(watersheds, shore_union):
     return out
 
 
-def creek_pieces(w, flow, alias):
-    """(name used, [LineString]) for the watershed's creek."""
+def county_words(w, alias):
+    """Words to look for in the County streams layer's NAME: the watershed's name without Creek / Channel etc., and the
+    FEWS creek's (build_creek_maps.COUNTY_STREAM_NAMES)."""
+    wname = title(w["name"])
+    fews = alias.get(wname.lower(), (None, []))[0]
+    words = list(M.COUNTY_STREAM_NAMES.get(fews, []))
+    base = wname
+    for t in (" Creek", " Channel", " Canal", " Drainage", " Slough"):
+        base = base.replace(t, "")
+    return [x.lower() for x in words + [base] if len(x.strip()) >= 4]   # not "Bay" (Bay Slough): too common
+
+
+def creek_pieces(w, flow, alias, county=()):
+    """(fews id, name used, [LineString], how) for the watershed's creek; how = "nhd" (NHD line named like the
+    watershed), "county" (County streams layer by name; not drawn in the direction of flow) or "main" (the main named
+    NHD stream in the watershed)."""
     from shapely.geometry import shape
     wname = title(w["name"])
     fews, names = alias.get(wname.lower(), (None, [wname]))
@@ -87,6 +103,14 @@ def creek_pieces(w, flow, alias):
               if (f["properties"].get("gnis_name") or "").lower() in want]
     near = w["shape"].buffer(0.005)
     pieces = [(g, n) for g, n in pieces if g.intersects(near)]
+    if not pieces and county:   # San Mateo County's Streams and Creeks layer (Flows to Bay) by name
+        words = county_words(w, alias)
+        got = [(shape(f["geometry"]), (f.get("properties") or {}).get("NAME") or "") for f in county
+               if any(re.search(r"\b" + re.escape(x) + r"\b", ((f.get("properties") or {}).get("NAME") or "").lower()) for x in words)]
+        got = [(g, n) for g, n in got if g.intersects(near)]
+        if got:
+            n = max({n for _, n in got}, key=lambda k: sum(g.intersection(w["shape"]).length for g, m in got if m == k))
+            return fews, n, [g for g, m in got if m == n], "county"
     if not pieces:   # the named stream with the most length in the watershed (not an aqueduct or pipeline)
         by = {}
         for f in flow:
@@ -97,10 +121,10 @@ def creek_pieces(w, flow, alias):
             if g.intersects(w["shape"]):
                 by.setdefault(n, []).append(g)
         if not by:
-            return fews, "", [], False
+            return fews, "", [], ""
         n = max(by, key=lambda k: sum(g.intersection(w["shape"]).length for g in by[k]))
-        return fews, n, by[n], False
-    return fews, pieces[0][1], [g for g, _ in pieces], True
+        return fews, n, by[n], "main"
+    return fews, pieces[0][1], [g for g, _ in pieces], "nhd"
 
 
 def not_creek(props):
@@ -135,14 +159,14 @@ def nearest_on(pt, geom):
     return (q.x, q.y)
 
 
-def outlet(w, flow, alias, shore, shore_union, openings):
+def outlet(w, flow, alias, shore, shore_union, openings, county=()):
     """One review row for a Bay-side watershed."""
     from shapely.geometry import Point
     import shapely
-    fews, nname, pieces, by_name = creek_pieces(w, flow, alias)
+    fews, nname, pieces, how = creek_pieces(w, flow, alias, county)
     row = {"creek": title(w["name"]), "watershed": title(w["name"]), "fews_creek": fews or "", "nhd_name": nname}
     if pieces:
-        ends = downstream_ends(pieces)
+        ends = downstream_ends(pieces) if how != "county" else []
         if not ends:   # a loop or odd drawing: the end nearest the shoreline
             ends = [c for ln in lines(pieces) for c in (ln.coords[0], ln.coords[-1])]
         end = min(ends, key=lambda e: L.dist_m(e, nearest_on(e, shore_union)))
@@ -161,19 +185,21 @@ def outlet(w, flow, alias, shore, shore_union, openings):
             gap = L.dist_m(end, nearest_on(end, shore_union))
             row["method"] = f"creek line ends {gap:.0f} m from the Bay shoreline"
         row["end_to_outlet_m"] = round(L.dist_m(pt, end))
-        if not by_name:
+        if how == "county":
+            row["method"] += " (County streams layer; NHD has no line by this name)"
+        if how == "main":
             row["method"] += f" (NHD has no {row['creek']}: used {nname}, the main named stream in the watershed; check)"
         row["creek"] = nname or row["creek"]
     else:
         near = [o for o in openings if o[0].distance(w["shape"]) * 111320 * 0.79 <= BAY_NEAR_M]
         if not near:
-            row.update(method="no creek line in NHD and no shoreline opening nearby: set by hand", lat="", lon="",
+            row.update(method="no creek line and no shoreline opening nearby: set by hand", lat="", lon="",
                        shore_class="", end_to_outlet_m="")
             return row
         g = max(near, key=lambda o: o[0].intersection(w["shape"].buffer(0.003)).length)[0]
         c = g.interpolate(0.5, normalized=True)
         pt = (c.x, c.y)
-        row["method"] = "no creek line in NHD: shoreline opening next to the watershed (check)"
+        row["method"] = "no creek line in NHD or the County streams layer: shoreline opening next to the watershed (check)"
         row["end_to_outlet_m"] = ""
     cls = min(shore, key=lambda s: s[0].distance(Point(pt)))[1] if shore else ""
     row.update(lat=round(pt[1], 5), lon=round(pt[0], 5), shore_class=cls, _pt=pt, _lines=[list(ln.coords) for ln in lines(pieces)])
@@ -189,7 +215,7 @@ def city_of(pt, places):
     return min(places, key=lambda pl: min(L.dist_m(pt, q) for poly in pl["polys"] for q in poly[0][::25]))["name"] + " (nearest)"
 
 
-def build(watersheds, shore_feats, flow, places=()):
+def build(watersheds, shore_feats, flow, places=(), county=()):
     """Rows, north to south. shore_feats: [(shapely line, attributes)]; flow: NHD GeoJSON features."""
     import shapely
     shore = [(g, (a.get("Class") or "").strip()) for g, a in shore_feats
@@ -197,7 +223,7 @@ def build(watersheds, shore_feats, flow, places=()):
     shore_union = shapely.union_all([g for g, _ in shore])
     openings = [(g, c) for g, c in shore if c == OPENING]
     alias = aliases()
-    rows = [outlet(w, flow, alias, shore, shore_union, openings) for w in bay_side(watersheds, shore_union)]
+    rows = [outlet(w, flow, alias, shore, shore_union, openings, county) for w in bay_side(watersheds, shore_union)]
     by_ws = {r["watershed"]: r for r in rows}
     for r in rows:
         to = by_ws.get(SAME_OUTLET.get(r["watershed"]))
@@ -230,6 +256,30 @@ def write(rows, csv_path=OUT_CSV, geo_path=OUT_GEO):
     os.makedirs(os.path.dirname(geo_path), exist_ok=True)
     with open(geo_path, "w") as f:
         json.dump({"type": "FeatureCollection", "source": SOURCE, "features": feats}, f, separators=(",", ":"))
+
+
+def county_lines(watersheds, arcgis=None):
+    """Named lines from San Mateo County's Streams and Creeks layer, asked watershed by watershed (Bay area only)."""
+    arcgis = arcgis or M.arcgis
+    out, seen = [], set()
+    bx0, by0, bx1, by1 = L.BAY_BOX
+    for w in watersheds:
+        xs = [p[0] for poly in M.polys_of(w["geometry"]) for p in poly[0]]
+        ys = [p[1] for poly in M.polys_of(w["geometry"]) for p in poly[0]]
+        if not xs or max(xs) < bx0 or min(xs) > bx1 or max(ys) < by0 or min(ys) > by1:
+            continue
+        try:
+            got = arcgis(M.COUNTY_STREAMS, "NAME IS NOT NULL AND NAME <> ''", "NAME", 0.00003, (min(xs), min(ys), max(xs), max(ys)))
+        except Exception as e:   # noqa: BLE001
+            print(f"  County streams in {title(w['name'])} unavailable ({type(e).__name__})", flush=True)
+            continue
+        for f in got:
+            key = json.dumps(f["geometry"]["coordinates"][:2])
+            if key not in seen:
+                seen.add(key)
+                out.append(f)
+    print(f"{len(out)} named County stream pieces", flush=True)
+    return out
 
 
 def nhd_lines(watersheds, arcgis=None):
@@ -285,7 +335,7 @@ def main():
                 places.append({"name": (f.get("properties") or {}).get("BASENAME") or "", "polys": M.polys_of(f["geometry"])})
         except Exception as e:   # noqa: BLE001
             print(f"Census places (layer {layer}) unavailable ({type(e).__name__}); rows without cities", flush=True)
-    rows = build(watersheds, shore, flow, places)
+    rows = build(watersheds, shore, flow, places, county_lines(watersheds))
     write(rows)
     for r in rows:
         print(f"  {r['id']} {r['creek']:28s} {r['lat']!s:>9} {r['lon']!s:>10}  {r['method']}", flush=True)
