@@ -329,9 +329,15 @@ function render() {
   $("updated").textContent = "Tides from NOAA at Redwood City · updated " + TS.clock(now) + " · refreshes automatically";
 }
 
-/* Base map: OpenStreetMap, or satellite (Esri World Imagery) with road and place names on top; the choice is remembered */
+/* Base map: gray (Esri Light Gray Canvas, the default here), the street map (OpenStreetMap), or satellite (Esri World Imagery) with road and place names on top; the choice is remembered */
 function addBasemaps(map, extraAttr, pos) {
+  // Gray first (Esri Light Gray Canvas): quiet, so the low points and FEMA's flood zones stand out; the street map
+  // (OpenStreetMap) and satellite stay one tap away. The choice is remembered for this page.
   var esri = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+  var gray = L.layerGroup([
+    L.tileLayer(esri + "Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, maxNativeZoom: 16,
+      attribution: "Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community" + (extraAttr || "") }),
+    L.tileLayer(esri + "Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, maxNativeZoom: 16 })]);
   var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' + (extraAttr || "") });
   var sat = L.layerGroup([
@@ -339,10 +345,10 @@ function addBasemaps(map, extraAttr, pos) {
       attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" + (extraAttr || "") }),
     L.tileLayer(esri + "Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, opacity: 0.8 }),
     L.tileLayer(esri + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 })]);
-  var pick = null; try { pick = localStorage.getItem("fews_basemap"); } catch (e) {}
-  (pick === "sat" ? sat : osm).addTo(map);
-  var ctrl = L.control.layers({ "Map": osm, "Satellite": sat }, null, { position: pos || "topright", collapsed: false }).addTo(map);
-  map.on("baselayerchange", function (e) { try { localStorage.setItem("fews_basemap", e.layer === sat ? "sat" : "map"); } catch (x) {} });
+  var KEY = "fews_shore_basemap", pick = null; try { pick = localStorage.getItem(KEY); } catch (e) {}
+  (pick === "sat" ? sat : pick === "map" ? osm : gray).addTo(map);
+  var ctrl = L.control.layers({ "Gray": gray, "Map": osm, "Satellite": sat }, null, { position: pos || "topright", collapsed: false }).addTo(map);
+  map.on("baselayerchange", function (e) { try { localStorage.setItem(KEY, e.layer === sat ? "sat" : e.layer === osm ? "map" : "gray"); } catch (x) {} });
   return ctrl;
 }
 /* FEMA flood zones (National Flood Hazard Layer, layer 28 Flood Hazard Zones), drawn by FEMA's map service as an image of
