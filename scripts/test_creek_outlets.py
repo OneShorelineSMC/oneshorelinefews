@@ -37,16 +37,21 @@ shore = [(LineString([(SHORE_X, 37.40), (SHORE_X, 37.535)]), dict(SM, Class="Eng
 ws = [{"name": "COLMA CREEK", "geometry": box(-122.30, 37.60, -122.249, 37.65)},
       {"name": "HIGHLINE CREEK", "geometry": box(-122.30, 37.56, -122.249, 37.60)},
       {"name": "SEAL SLOUGH", "geometry": box(-122.30, 37.52, -122.249, 37.56)},
+      {"name": "EL ZANJON CREEK", "geometry": box(-122.30, 37.651, -122.249, 37.66)},     # joins Colma in this test
       {"name": "INLAND CREEK", "geometry": box(-122.40, 37.45, -122.33, 37.50)},       # 7 km from the shoreline
       {"name": "PILARCITOS CREEK", "geometry": box(-122.50, 37.45, -122.44, 37.50)}]  # Coastside
 flow = [nhd("Colma Creek", (-122.29, 37.62), (-122.27, 37.62)),          # upper piece flows into the lower one
         nhd("Colma Creek", (-122.27, 37.62), (-122.24, 37.62)),          # crosses the shoreline, ends in the Bay
         nhd("Highline Canal", (-122.29, 37.58), (-122.2525, 37.58)),     # ends about 220 m short of the shoreline
         nhd("Inland Creek", (-122.39, 37.47), (-122.34, 37.47))]
+B.SAME_OUTLET = {"El Zanjon Creek": "Colma Creek"}   # made up for the test
 rows = B.build(ws, shore, flow)
 by = {r["watershed"]: r for r in rows}
+z = next(r for r in rows if r["watershed"] == "El Zanjon Creek")
+check("El Zanjon: another creek's outlet (SAME_OUTLET)", z["lat"] == 37.62 and z["method"] == "joins Colma Creek before the Bay: same outlet")
 check("Bay-side watersheds only (inland and Coastside left out), north to south",
-      [r["watershed"] for r in rows] == ["Colma Creek", "Highline Creek", "Seal Slough"])
+      sorted(r["watershed"] for r in rows) == ["Colma Creek", "El Zanjon Creek", "Highline Creek", "Seal Slough"]
+      and rows[-1]["watershed"] == "Seal Slough")
 c = by["Colma Creek"]
 check("Colma: where the creek line crosses the shoreline", c["lat"] == 37.62 and c["lon"] == SHORE_X and c["method"].startswith("creek line crosses"))
 check("Colma: distance from the creek's downstream end to the outlet (about 880 m)", 850 <= c["end_to_outlet_m"] <= 900)
@@ -57,14 +62,36 @@ check("Highline: NHD name from the FEWS aliases; creek end used when it doesn't 
 s = by["Seal Slough"]
 check("Seal Slough: no NHD line, the shoreline opening next to it, flagged",
       s["method"].startswith("no creek line in NHD: shoreline opening") and s["lat"] == 37.54 and s["shore_class"] == "Channel or Opening")
+# Redwood Creek: NHD has no line by that name; an aqueduct crosses the watershed and a named creek runs through it
+ws2 = [{"name": "REDWOOD CREEK", "geometry": box(-122.30, 37.45, -122.249, 37.50)}]
+flow2 = [{"type": "Feature", "properties": {"gnis_name": "Hetch Hetchy Aqueduct", "ftype": 428},
+          "geometry": {"type": "LineString", "coordinates": [[-122.30, 37.46], [-122.25, 37.49], [-122.20, 37.49]]}},
+         nhd("Arroyo Test", (-122.28, 37.47), (-122.24, 37.47))]
+r2 = B.build(ws2, shore, flow2)[0]
+check("an aqueduct is never a watershed's creek; the main named creek is used and flagged",
+      r2["creek"] == "Arroyo Test" and r2["lat"] == 37.47 and "NHD has no Redwood Creek" in r2["method"])
+
+asked = []
+
+
+def fake_arcgis(url, where, fields, off, bbox):
+    asked.append((where, bbox))
+    return [nhd("Colma Creek", (-122.29, 37.62), (-122.27, 37.62))]
+
+
+got = B.nhd_lines(ws, fake_arcgis)
+check("NHD asked by name (UPPER, quoted) and then per Bay-area watershed box; repeats dropped",
+      len(got) == 1 and asked[0][0].startswith("UPPER(gnis_name) IN ('ATHERTON CHANNEL','ATHERTON CREEK'") and
+      sum(w == "gnis_name IS NOT NULL" for w, _ in asked) == 6)
+
 with tempfile.TemporaryDirectory() as d:
     B.write(rows, os.path.join(d, "o.csv"), os.path.join(d, "o.geojson"))
     raw = open(os.path.join(d, "o.csv"), "rb").read()
     got = list(csv.DictReader(open(os.path.join(d, "o.csv"), newline="")))
     g = json.load(open(os.path.join(d, "o.geojson")))
     check("CSV: CRLF, the review columns, ids CO-001..", raw.startswith(b"id,creek,watershed,fews_creek,city,lat,lon") and b"\r\n" in raw
-          and [r["id"] for r in got] == ["CO-001", "CO-002", "CO-003"] and got[0]["include"] == "review")
-    check("map file: a point per row plus the creek lines used", sum(f["geometry"]["type"] == "Point" for f in g["features"]) == 3
+          and [r["id"] for r in got] == ["CO-001", "CO-002", "CO-003", "CO-004"] and got[0]["include"] == "review")
+    check("map file: a point per row plus the creek lines used", sum(f["geometry"]["type"] == "Point" for f in g["features"]) == 4
           and sum(f["geometry"]["type"] == "MultiLineString" for f in g["features"]) == 2)
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)

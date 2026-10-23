@@ -44,6 +44,8 @@ SNAP_M = 2           # piece ends this close together are joined
 OPENING = "Channel or Opening"
 COLUMNS = ["id", "creek", "watershed", "fews_creek", "city", "lat", "lon", "method", "nhd_name", "shore_class",
            "end_to_outlet_m", "include", "notes", "source", "checked_by", "checked_on"]
+# Watersheds whose creek joins another creek before the Bay: they share that creek's outlet (staff knowledge)
+SAME_OUTLET = {"El Zanjon Creek": "San Bruno Creek"}
 SOURCE = "USGS NHD flowlines; SFEI Bay Shore Inventory (BCDC RSAP); San Mateo County watersheds"
 
 
@@ -85,18 +87,26 @@ def creek_pieces(w, flow, alias):
               if (f["properties"].get("gnis_name") or "").lower() in want]
     near = w["shape"].buffer(0.005)
     pieces = [(g, n) for g, n in pieces if g.intersects(near)]
-    if not pieces:   # the named stream with the most length in the watershed
+    if not pieces:   # the named stream with the most length in the watershed (not an aqueduct or pipeline)
         by = {}
         for f in flow:
+            n = f["properties"].get("gnis_name") or ""
+            if not_creek(f["properties"]):
+                continue
             g = shape(f["geometry"])
             if g.intersects(w["shape"]):
-                n = f["properties"].get("gnis_name") or ""
                 by.setdefault(n, []).append(g)
         if not by:
-            return fews, "", []
+            return fews, "", [], False
         n = max(by, key=lambda k: sum(g.intersection(w["shape"]).length for g in by[k]))
-        return fews, n, by[n]
-    return fews, pieces[0][1], [g for g, _ in pieces]
+        return fews, n, by[n], False
+    return fews, pieces[0][1], [g for g, _ in pieces], True
+
+
+def not_creek(props):
+    """Aqueducts and pipelines (NHD FType 428) carry water across watersheds; they aren't the watershed's creek."""
+    n = (props.get("gnis_name") or "").lower()
+    return str(props.get("ftype") or "") == "428" or any(w in n for w in ("aqueduct", "pipeline", "tunnel"))
 
 
 def lines(geoms):
@@ -129,7 +139,7 @@ def outlet(w, flow, alias, shore, shore_union, openings):
     """One review row for a Bay-side watershed."""
     from shapely.geometry import Point
     import shapely
-    fews, nname, pieces = creek_pieces(w, flow, alias)
+    fews, nname, pieces, by_name = creek_pieces(w, flow, alias)
     row = {"creek": title(w["name"]), "watershed": title(w["name"]), "fews_creek": fews or "", "nhd_name": nname}
     if pieces:
         ends = downstream_ends(pieces)
@@ -151,6 +161,8 @@ def outlet(w, flow, alias, shore, shore_union, openings):
             gap = L.dist_m(end, nearest_on(end, shore_union))
             row["method"] = f"creek line ends {gap:.0f} m from the Bay shoreline"
         row["end_to_outlet_m"] = round(L.dist_m(pt, end))
+        if not by_name:
+            row["method"] += f" (NHD has no {row['creek']}: used {nname}, the main named stream in the watershed; check)"
         row["creek"] = nname or row["creek"]
     else:
         near = [o for o in openings if o[0].distance(w["shape"]) * 111320 * 0.79 <= BAY_NEAR_M]
@@ -186,6 +198,12 @@ def build(watersheds, shore_feats, flow, places=()):
     openings = [(g, c) for g, c in shore if c == OPENING]
     alias = aliases()
     rows = [outlet(w, flow, alias, shore, shore_union, openings) for w in bay_side(watersheds, shore_union)]
+    by_ws = {r["watershed"]: r for r in rows}
+    for r in rows:
+        to = by_ws.get(SAME_OUTLET.get(r["watershed"]))
+        if to and to.get("lat") != "":
+            r.update({k: to.get(k, "") for k in ("lat", "lon", "shore_class", "_pt")}, creek=r["watershed"], nhd_name="",
+                     end_to_outlet_m="", _lines=[], method=f"joins {to['watershed']} before the Bay: same outlet")
     rows.sort(key=lambda r: -(r["lat"] or 0))
     for k, r in enumerate(rows, start=1):
         r.update(id=f"CO-{k:03d}", city=city_of(r.get("_pt"), places), include="review", notes="", source=SOURCE,
@@ -214,6 +232,43 @@ def write(rows, csv_path=OUT_CSV, geo_path=OUT_GEO):
         json.dump({"type": "FeatureCollection", "source": SOURCE, "features": feats}, f, separators=(",", ":"))
 
 
+def nhd_lines(watersheds, arcgis=None):
+    """NHD lines by name (each watershed's name and the FEWS creeks' NHD names), then the named lines in each Bay-area
+    watershed's own box. Asked in small pieces: one query for every named line in the Bay side is cut off at the
+    service's record limit, which left creeks out the first time."""
+    arcgis = arcgis or M.arcgis
+    names = sorted({title(w["name"]) for w in watersheds} | {n for v in M.NHD_NAMES.values() for n in v})
+    out, seen = [], set()
+
+    def add(feats):
+        for f in feats:
+            key = json.dumps(f["geometry"]["coordinates"][:2])
+            if key not in seen:
+                seen.add(key)
+                out.append(f)
+    for k in range(0, len(names), 20):
+        part = names[k:k + 20]
+        q = "UPPER(gnis_name) IN (" + ",".join("'" + n.upper().replace("'", "''") + "'" for n in part) + ")"
+        add(arcgis(M.NHD, q, "gnis_name,ftype,fcode", 0.00003, L.BAY_BOX))
+    print(f"{len(out)} NHD line pieces named like a watershed or FEWS creek", flush=True)
+    bx0, by0, bx1, by1 = L.BAY_BOX
+    for w in watersheds:
+        xs = [p[0] for poly in M.polys_of(w["geometry"]) for p in poly[0]]
+        ys = [p[1] for poly in M.polys_of(w["geometry"]) for p in poly[0]]
+        if not xs or max(xs) < bx0 or min(xs) > bx1 or max(ys) < by0 or min(ys) > by1:
+            continue
+        try:
+            got = arcgis(M.NHD, "gnis_name IS NOT NULL", "gnis_name,ftype,fcode", 0.00003, (min(xs), min(ys), max(xs), max(ys)))
+        except Exception as e:   # noqa: BLE001
+            print(f"  NHD lines in {title(w['name'])} unavailable ({type(e).__name__})", flush=True)
+            continue
+        if len(got) >= 1000:
+            print(f"  {title(w['name'])}: {len(got)} NHD lines (may be cut off)", flush=True)
+        add(got)
+    print(f"{len(out)} NHD line pieces in all", flush=True)
+    return out
+
+
 def main():
     import shoreline_exposure as E
     with open(WATERSHEDS) as f:
@@ -222,8 +277,7 @@ def main():
     print(f"{len(watersheds)} watersheds", flush=True)
     shore = E.layer_features(L.SHORE, L.BAY_BOX, lambda u: M.get(u, tries=3))
     print(f"{len(shore)} Shore Inventory lines", flush=True)
-    flow = M.arcgis(M.NHD, "gnis_name IS NOT NULL", "gnis_name,ftype,fcode", 0.00003, L.BAY_BOX)
-    print(f"{len(flow)} named NHD line pieces", flush=True)
+    flow = nhd_lines(watersheds)
     places = []
     for layer in (4, 5):
         try:
