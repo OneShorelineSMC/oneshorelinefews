@@ -240,8 +240,8 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
     is drawn over it (Esri World Topographic Map) and the Bay, highways and their names come from it instead.
     Returns (svg text, watershed names)."""
     water, places = water or [], places or []
-    styled = [(line_kind(f), ln) for f in line_feats for ln in lines_of(f["geometry"])]
-    lines = [ln for _, ln in styled]
+    styled = [(line_kind(f), ln, bool((f.get("properties") or {}).get("side"))) for f in line_feats for ln in lines_of(f["geometry"])]
+    lines = [ln for _, ln, side in styled if not side]   # side creeks and pipes never set the map's extent
     probe = [p for ln in lines for p in ln[::3]] + [(g["lon"], g["lat"]) for g in gauges if g["kind"] != "support"]
     if basins:
         mine, hu_feats = basins, []   # the gauge's own drainage area; the HUC-12 units stay off the map
@@ -352,14 +352,19 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
                     best[name] = (L, vis[len(vis) // 2])
     # the creek
     kinds_drawn = set()
-    for k in ("ug", "int", "chan", "per"):   # underground first, so the open creek draws over it
-        for kk, ln in styled:
-            if kk != k:
-                continue
-            d = path(ln, tol=0.5)
-            if d:
-                kinds_drawn.add(k)
-                out.append(f'<path class="ck" d="{d}" fill="none" stroke="{COL["creek"]}" {LINE_STYLE[k]} stroke-linejoin="round"/>')
+    for side in (True, False):   # side creeks and pipes first (thinner), the creek itself over them
+        for k in ("ug", "int", "chan", "per"):   # underground first, so the open creek draws over it
+            for kk, ln, sd in styled:
+                if kk != k or sd != side:
+                    continue
+                d = path(ln, tol=0.5)
+                if d:
+                    kinds_drawn.add(k)
+                    st = LINE_STYLE[k]
+                    if side:   # about 60% as wide
+                        w = float(re.search(r'stroke-width="([\d.]+)"', st).group(1))
+                        st = re.sub(r'stroke-width="[\d.]+"', f'stroke-width="{w * 0.6:.1f}"', st)
+                    out.append(f'<path class="ck" d="{d}" fill="none" stroke="{COL["creek"]}" {st} stroke-linejoin="round"/>')
     out.append("</g>")
     # gauges: creek level = circle, rain = square, supporting rain = open square; a rain gauge at a creek gauge's spot
     # (same site) shows as a small square beside the circle, with one label
@@ -636,13 +641,9 @@ def bridge_gaps(line_feats, nhd_feats, snap_m=GAP_SNAP_M, max_m=GAP_MAX_M):
     return out
 
 
-# Creeks drawn in more detail (staff, 2026-10-23): stretches of the creek line that run along an NHD culvert or pipe are
-# drawn underground, and the longest side creeks in the watershed (NHD or the County streams layer, named or not, often
-# underground) are added. San Bruno Creek: culverted stretches, and the underground creek that drains the north of the
-# watershed and joins at Pine.
-NHD_DETAIL = {"sanbruno"}
-BRANCH_MIN_M = 400   # shortest side creek added
-BRANCH_MAX = 3       # most side creeks added per creek
+# Underground stretches (staff, 2026-10-23): on every creek map, the creek line runs underground where it follows an
+# NHD culvert or pipe (FType 420, 428), and the side creeks, culverts and pipes that feed it inside its watershed are
+# drawn too, thinner (NHD only; the County streams layer doesn't say which stretches are underground).
 UNDERGROUND_M = 25   # a creek line stretch this close to an NHD culvert or pipe runs in it
 UG_WORDS = re.compile(r"culvert|pipe|underground|conduit|storm ?drain|buried|enclosed|tunnel|closed channel|piped", re.I)
 
@@ -726,11 +727,11 @@ def simplify_ll(pts, tol_m=2):
     return out
 
 
-def add_branches(line_feats, cand_feats, polys, near_m=60, min_m=BRANCH_MIN_M, most=BRANCH_MAX):
-    """Side creeks: from candidate lines (NHD and County streams, named or not) inside the watershed, the longest way
-    out from the creek line along lines not already drawn, then the next longest from the line as it now is, up to
-    `most`, each at least min_m. Returns [[features], ...], longest first. Lines keep their properties, so NHD
-    culverts and County streams marked underground draw underground."""
+def network_extras(line_feats, nhd_feats, polys, near_m=60):
+    """NHD lines inside the watershed connected to the creek line: the side creeks, culverts and pipes that feed it
+    (named or not), but not copies of the creek line itself. GeoJSON features marked side=True
+    (drawn thinner), with NHD ftype/fcode (a culvert draws underground)."""
+    drawn = [ln for f in line_feats for ln in lines_of(f.get("geometry")) if len(ln) >= 2]
     node, xy, adj = {}, [], {}
 
     def nid(p):
@@ -739,59 +740,42 @@ def add_branches(line_feats, cand_feats, polys, near_m=60, min_m=BRANCH_MIN_M, m
             node[k] = len(xy)
             xy.append(k)
         return node[k]
-    for f in cand_feats:
+    edges = []
+    for f in nhd_feats:
         pr = f.get("properties") or {}
         for ln in lines_of(f.get("geometry")):
             for a, b in zip(ln, ln[1:]):
                 i, j = nid(a), nid(b)
                 if i != j:
-                    d = _m(a, b)
-                    adj.setdefault(i, []).append((j, d, pr))
-                    adj.setdefault(j, []).append((i, d, pr))
-    if not xy:
+                    edges.append((i, j, pr))
+                    adj.setdefault(i, []).append(j)
+                    adj.setdefault(j, []).append(i)
+    if not xy or not drawn:
         return []
-    inside_ws = [any(inside(p, poly) for poly in polys) for p in xy]
-    drawn = [ln for f in line_feats for ln in lines_of(f.get("geometry")) if len(ln) >= 2]
-    out = []
-    for _ in range(most):
-        near = [_near_line(p, drawn, near_m) for p in xy]
-        starts = [i for i in range(len(xy)) if near[i] and inside_ws[i]]
-        dist, prev, q = {}, {}, []
-        for i in starts:
-            dist[i] = 0.0
-            heapq.heappush(q, (0.0, i))
-        while q:
-            d, u = heapq.heappop(q)
-            if d > dist.get(u, 1e18):
-                continue
-            for v, w, pr in adj.get(u, []):
-                if not inside_ws[v] or (near[u] and near[v]):
-                    continue
-                if d + w < dist.get(v, 1e18):
-                    dist[v], prev[v] = d + w, (u, pr)
-                    heapq.heappush(q, (d + w, v))
-        far = max(dist, key=dist.get) if dist else None
-        if far is None or dist[far] < min_m:
-            break
-        path, u = [], far
-        while u in prev:
-            p_u, pr = prev[u]
-            path.append((p_u, u, pr))
-            u = p_u
-        path.reverse()
-        feats, run, run_pr = [], [], None
-        for a, b, pr in path:
-            if run and pr is not run_pr:
-                feats.append({"type": "Feature", "properties": dict(run_pr, side=True), "geometry": {"type": "LineString", "coordinates": run}})
-                run = [run[-1]]
-            if not run:
-                run = [list(xy[a])]
-            run.append(list(xy[b]))
-            run_pr = pr
-        if len(run) >= 2:
-            feats.append({"type": "Feature", "properties": dict(run_pr or {}, side=True), "geometry": {"type": "LineString", "coordinates": run}})
-        out.append(feats)
-        drawn += [f["geometry"]["coordinates"] for f in feats]
+    ins = [any(inside(p, poly) for poly in polys) for p in xy]
+    near = [_near_line(p, drawn, near_m) if ins[k] else False for k, p in enumerate(xy)]
+    seen = {k for k in range(len(xy)) if near[k]}
+    todo = list(seen)
+    while todo:   # everything inside the watershed that connects to the creek line
+        u = todo.pop()
+        for v in adj.get(u, []):
+            if v not in seen and ins[v]:
+                seen.add(v)
+                todo.append(v)
+    out, cur, cur_pr, last = [], [], None, None
+    for i, j, pr in edges:
+        keep = i in seen and j in seen and not (near[i] and near[j])
+        if not keep:
+            continue
+        if cur and pr is cur_pr and last == i:
+            cur.append(list(xy[j]))
+        else:
+            if len(cur) >= 2:
+                out.append({"type": "Feature", "properties": dict(cur_pr, side=True), "geometry": {"type": "LineString", "coordinates": cur}})
+            cur, cur_pr = [list(xy[i]), list(xy[j])], pr
+        last = j
+    if len(cur) >= 2:
+        out.append({"type": "Feature", "properties": dict(cur_pr, side=True), "geometry": {"type": "LineString", "coordinates": cur}})
     return out
 
 
@@ -1059,33 +1043,6 @@ def main():
                     line = arcgis(NHD, q, "gnis_name,ftype,fcode", 0.00015)
             if not line:
                 print(f"  {c['id']}: no NHD creek line for {sorted(want) or '(no name set)'}; map without it")
-            if line and nhd_ok and c["id"] in NHD_DETAIL:   # culverts and side creeks from NHD and the County (NHD_DETAIL)
-                try:
-                    ws_polys = [poly for f in basins_for(c, override, county) for poly in polys_of(f["geometry"])]
-                    pts = [p for poly in ws_polys for p in poly[0]] or [p for f in line for ln in lines_of(f["geometry"]) for p in ln]
-                    box = (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
-                    nhd_all = arcgis(NHD, "1=1", "gnis_name,ftype,fcode", 0.00005, box)
-                    line, n_ug = mark_underground(line, nhd_all)
-                    print(f"  {c['id']}: {n_ug / 1000:.1f} km of the creek line runs along an NHD culvert or pipe: drawn underground")
-                    try:
-                        cty_all = arcgis(COUNTY_STREAMS, "1=1", "*", 0.00005, box)
-                        for f in cty_all:
-                            if county_underground(f.get("properties") or {}):
-                                f["properties"]["underground"] = True
-                    except Exception as e:   # noqa: BLE001
-                        cty_all = []
-                        print(f"  {c['id']}: County streams (all) unavailable ({type(e).__name__})")
-                    more = add_branches(line, nhd_all + cty_all, ws_polys)
-                    for k, br in enumerate(more, start=1):
-                        L = sum(_m(a, b) for f in br for a, b in zip(f["geometry"]["coordinates"], f["geometry"]["coordinates"][1:]))
-                        ug = sum(_m(a, b) for f in br if line_kind(f) == "ug" for a, b in zip(f["geometry"]["coordinates"], f["geometry"]["coordinates"][1:]))
-                        names = sorted({(f["properties"].get("gnis_name") or f["properties"].get("NAME") or "(unnamed)") for f in br})
-                        print(f"  {c['id']}: side creek {k}: {L / 1000:.1f} km ({ug / 1000:.1f} km underground): {', '.join(names)}")
-                        line = line + br
-                    if not more:
-                        print(f"  {c['id']}: no side creeks of at least {BRANCH_MIN_M} m in NHD or the County streams layer")
-                except Exception as e:   # noqa: BLE001
-                    print(f"  {c['id']}: culvert / side creek lookup failed ({type(e).__name__}: {e})")
             if line and len(pieces_of(line)) > 1 and nhd_ok:   # in pieces: join them along NHD (the culverts, mostly unnamed)
                 try:
                     pts = [p for f in line for ln in lines_of(f["geometry"]) for p in ln]
@@ -1106,6 +1063,22 @@ def main():
                     if x["kind"] == "stage" and x["label"] == (g.get("label") or g.get("site_name")):
                         g["lon"], g["lat"] = x["lon"], x["lat"]
             basins = basins_for(c, override, county)
+            if line and nhd_ok and basins:   # culverts and pipes from NHD: on the creek line, and the ones that feed it
+                try:
+                    ws_polys = [poly for f in basins for poly in polys_of(f["geometry"])]
+                    pts = [p for poly in ws_polys for p in poly[0]]
+                    box = (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
+                    nhd_all = arcgis(NHD, "1=1", "gnis_name,ftype,fcode", 0.00005, box)
+                    line, n_ug = mark_underground(line, nhd_all)
+                    extra = network_extras(line, nhd_all, ws_polys)
+                    L = lambda fs: sum(_m(a, b) for f in fs for a, b in zip(f["geometry"]["coordinates"], f["geometry"]["coordinates"][1:]))  # noqa: E731
+                    ug = [f for f in extra if line_kind(f) == "ug"]
+                    print(f"  {c['id']}: {n_ug / 1000:.1f} km of the creek line along an NHD culvert or pipe; "
+                          f"{L(ug) / 1000:.1f} km of culverts and pipes and {L(extra) / 1000 - L(ug) / 1000:.1f} km of open "
+                          f"side creeks feeding it (NHD, {len(nhd_all)} lines in the area)")
+                    line = line + extra
+                except Exception as e:   # noqa: BLE001
+                    print(f"  {c['id']}: NHD culverts and side creeks unavailable ({type(e).__name__}: {e})")
             svg, ws = build_svg(c, line, hu, roads, gs, basins, water, [], basemap=basemap_image)   # no city limits or names (staff, 2026-10-23)
             if not svg:
                 print(f"  {c['id']}: nothing to draw; skipped")

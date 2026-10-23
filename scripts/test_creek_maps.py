@@ -159,11 +159,17 @@ cands = [ln((-122.47, 37.645), (-122.45, 37.64), ftype=460, fcode=46006),       
          ln((-122.40, 37.655), (-122.401, 37.6265), NAME="", TYPE="Storm drain pipe", underground=True),   # north side creek (County)
          ln((-122.42, 37.6201), (-122.39, 37.6301), ftype=460, fcode=46006),               # NHD's copy of the drawn creek
          ln((-122.60, 37.70), (-122.47, 37.645), ftype=460, fcode=46006)]                  # from outside the watershed
-br = B.add_branches([lower_cty], cands, [wsq])
-check(len(br) == 2 and [B.line_kind(f) for f in br[0]] == ["ug", "per"] and [B.line_kind(f) for f in br[1]] == ["ug"]
-      and all(p[0] >= -122.48 for b in br for f in b for p in f["geometry"]["coordinates"]),
-      "side creeks: the upper creek through its culvert, then the north side creek (underground), inside the watershed")
-check(B.add_branches([lower_cty], cands[3:4], [wsq]) == [], "nothing added when the candidates only repeat the drawn line")
+nhd_net = cands[:2] + [ln((-122.40, 37.655), (-122.401, 37.6265), ftype=420, fcode=42002),   # pipe from the north
+                       ln((-122.43, 37.650), (-122.4305, 37.6235), ftype=460, fcode=46006),   # doesn't reach the creek: left out
+                       ln((-122.405, 37.652), (-122.40, 37.655), ftype=428, fcode=42800),     # a pipe feeding that pipe
+                       ln((-122.46, 37.61), (-122.45, 37.61), ftype=420, fcode=42002)] + cands[3:]   # not connected: left out
+ex = B.network_extras([lower_cty], nhd_net, [wsq])
+xs = {round(f["geometry"]["coordinates"][0][0], 3) for f in ex}
+check(all(f["properties"]["side"] for f in ex) and {B.line_kind(f) for f in ex} == {"ug", "per"} and -122.43 not in xs
+      and -122.46 not in xs and -122.405 in xs and -122.6 not in xs,
+      "side creeks, culverts and pipes connected to the creek inside the watershed; unconnected and outside lines left out")
+svg11, _ = B.build_svg(creek, [lower_cty] + ex, [], [], gauges)
+check(re.search(r'stroke-width="1\.4" stroke-dasharray="0\.1 5"', svg11) is not None, "side pipes drawn thinner, dotted")
 check(B.county_underground({"NAME": "Pipe Creek", "TYPE": "Open channel"}) is False and B.county_underground({"TYPE": "Culvert"}),
       "County stream underground from its attributes, not its name")
 # a stretch of the creek line along an NHD culvert is split off and drawn underground
