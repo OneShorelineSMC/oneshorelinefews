@@ -150,4 +150,20 @@ check(B.bridge_gaps([upper], nhd_all) == [] and B.bridge_gaps([upper, ln((-122.3
 svg10, _ = B.build_svg(creek, [upper, lower] + gap, [], [], gauges)
 check("Creek underground (culvert or pipe)" in svg10, "the culvert in the legend")
 
+# the upper creek from NHD (EXTEND_UPSTREAM): its longest way up from the creek line, inside the watershed,
+# with the culvert that joins it; side drains and lines outside the watershed left out
+wsq = [[[-122.48, 37.60], [-122.38, 37.60], [-122.38, 37.66], [-122.48, 37.66], [-122.48, 37.60]]]
+lower_cty = ln((-122.42, 37.62), (-122.39, 37.63))                                          # the named lower creek
+nhd_up = [ln((-122.47, 37.645), (-122.45, 37.64), ftype=460, fcode=46006),                    # upper creek (flows east)
+          ln((-122.45, 37.64), (-122.42, 37.6201), ftype=420, fcode=42002),                   # culvert down to the lower creek
+          ln((-122.44, 37.65), (-122.4395, 37.6455), ftype=420, fcode=42001),                 # a short drain nearby (not connected)
+          ln((-122.42, 37.6201), (-122.39, 37.6301), ftype=460, fcode=46006),                 # NHD's copy of the lower creek
+          ln((-122.60, 37.70), (-122.47, 37.645), ftype=460, fcode=46006)]                    # comes from outside the watershed
+up = B.extend_upstream([lower_cty], nhd_up, [wsq])
+kinds = [B.line_kind(f) for f in up]
+ends = [p for f in up for p in (f["geometry"]["coordinates"][0], f["geometry"]["coordinates"][-1])]
+check(kinds == ["ug", "per"] and [-122.47, 37.645] in ends and all(p[0] >= -122.48 for f in up for p in f["geometry"]["coordinates"]),
+      "upper creek added from the creek line up through the culvert to its top, inside the watershed")
+check(B.extend_upstream([lower_cty], nhd_up[3:4], [wsq]) == [], "nothing added when NHD only repeats the drawn line")
+
 print(f"creek maps: {checks} checks passed")

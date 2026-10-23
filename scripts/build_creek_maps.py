@@ -635,6 +635,97 @@ def bridge_gaps(line_feats, nhd_feats, snap_m=GAP_SNAP_M, max_m=GAP_MAX_M):
     return out
 
 
+# Creeks whose named line stops short of the upper creek: NHD's main stem above it is added (often unnamed in NHD,
+# with the culvert that joins it). San Bruno Creek: the upper creek in Crestmoor Canyon runs underground to the
+# lower creek (staff, 2026-10-23).
+EXTEND_UPSTREAM = {"sanbruno"}
+
+
+def _seg_m(p, a, b):
+    """Metres from point p to segment a-b (lon/lat)."""
+    kx = 111320 * math.cos(math.radians(p[1]))
+    px, py, ax, ay, bx, by = p[0] * kx, p[1] * 110540, a[0] * kx, a[1] * 110540, b[0] * kx, b[1] * 110540
+    dx, dy = bx - ax, by - ay
+    t = 0 if dx == dy == 0 else max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(px - ax - t * dx, py - ay - t * dy)
+
+
+def _near_line(p, lines, m):
+    return any(_seg_m(p, a, b) <= m for ln in lines for a, b in zip(ln, ln[1:]))
+
+
+def extend_upstream(line_feats, nhd_feats, polys, near_m=60, skip_m=60, min_m=300):
+    """NHD's longest way upstream from the creek line, inside the creek's watershed (polys) and away from the line
+    already drawn: the upper creek, with any culvert on the way (NHD lines are drawn in the direction of flow).
+    Returns GeoJSON features (with NHD ftype/fcode), [] if there is none at least min_m long."""
+    lines = [ln for f in line_feats for ln in lines_of(f.get("geometry")) if len(ln) >= 2]
+    if not lines or not nhd_feats:
+        return []
+    node, xy, up = {}, [], {}
+
+    def nid(p):
+        k = (round(p[0], 5), round(p[1], 5))
+        if k not in node:
+            node[k] = len(xy)
+            xy.append(k)
+        return node[k]
+    ok = {}
+
+    def inside_ws(i):
+        if i not in ok:
+            ok[i] = any(inside(xy[i], poly) for poly in polys)
+        return ok[i]
+    for f in nhd_feats:
+        pr = f.get("properties") or {}
+        for ln in lines_of(f.get("geometry")):
+            for a, b in zip(ln, ln[1:]):
+                i, j = nid(a), nid(b)
+                if i != j:
+                    up.setdefault(j, []).append((i, _m(a, b), pr))   # flows i -> j
+    near = {i: _near_line(xy[i], lines, skip_m) for i in range(len(xy))}
+    best_len, best_up = {}, {}
+
+    def longest(v):   # longest way up from v (iterative, NHD has no loops but guard anyway)
+        stack, seen = [(v, False)], set()
+        while stack:
+            u, done = stack.pop()
+            if u in best_len:
+                continue
+            ups = [(w, d, pr) for w, d, pr in up.get(u, []) if inside_ws(w) and not (near[w] and near[u])]
+            if not done:
+                if u in seen:
+                    best_len[u] = 0.0
+                    continue
+                seen.add(u)
+                stack.append((u, True))
+                stack += [(w, False) for w, _, _ in ups if w not in best_len]
+                continue
+            b = (0.0, None)
+            for w, d, pr in ups:
+                L = d + best_len.get(w, 0.0)
+                if L > b[0]:
+                    b = (L, (w, pr))
+            best_len[u], best_up[u] = b
+        return best_len[v]
+    starts = [i for i in range(len(xy)) if inside_ws(i) and _near_line(xy[i], lines, near_m)]
+    if not starts:
+        return []
+    s0 = max(starts, key=longest)
+    if best_len[s0] < min_m:
+        return []
+    out, run, run_pr, u = [], [list(xy[s0])], None, s0
+    while best_up.get(u):
+        w, pr = best_up[u]
+        if run_pr is not None and pr is not run_pr:
+            out.append({"type": "Feature", "properties": dict(run_pr, upper=True), "geometry": {"type": "LineString", "coordinates": run}})
+            run = [run[-1]]
+        run.append(list(xy[w]))
+        run_pr, u = pr, w
+    if len(run) >= 2:
+        out.append({"type": "Feature", "properties": dict(run_pr or {}, upper=True), "geometry": {"type": "LineString", "coordinates": run}})
+    return out
+
+
 # creek line styles by NHD feature type
 LINE_STYLE = {"per": 'stroke-width="3" stroke-linecap="round"',
               "int": 'stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt"',
@@ -893,7 +984,23 @@ def main():
                     line = arcgis(NHD, q, "gnis_name,ftype,fcode", 0.00015)
             if not line:
                 print(f"  {c['id']}: no NHD creek line for {sorted(want) or '(no name set)'}; map without it")
-            elif len(pieces_of(line)) > 1 and nhd_ok:   # in pieces: join them along NHD (the culverts, mostly unnamed)
+            if line and nhd_ok and c["id"] in EXTEND_UPSTREAM:   # the upper creek from NHD (EXTEND_UPSTREAM)
+                try:
+                    ws_polys = [poly for f in basins_for(c, override, county) for poly in polys_of(f["geometry"])]
+                    pts = [p for poly in ws_polys for p in poly[0]] or [p for f in line for ln in lines_of(f["geometry"]) for p in ln]
+                    box = (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
+                    upper = extend_upstream(line, arcgis(NHD, "1=1", "gnis_name,ftype,fcode", 0.00005, box), ws_polys)
+                    if upper:
+                        L = sum(_m(a, b) for f in upper for a, b in zip(f["geometry"]["coordinates"], f["geometry"]["coordinates"][1:]))
+                        ug = sum(_m(a, b) for f in upper if line_kind(f) == "ug" for a, b in zip(f["geometry"]["coordinates"], f["geometry"]["coordinates"][1:]))
+                        names = sorted({(f["properties"].get("gnis_name") or "(unnamed)") for f in upper})
+                        print(f"  {c['id']}: upper creek from NHD, {L / 1000:.1f} km ({ug / 1000:.1f} km underground): {', '.join(names)}")
+                        line = line + upper
+                    else:
+                        print(f"  {c['id']}: no NHD line above the creek line inside its watershed")
+                except Exception as e:   # noqa: BLE001
+                    print(f"  {c['id']}: upper creek lookup failed ({type(e).__name__}: {e})")
+            if line and len(pieces_of(line)) > 1 and nhd_ok:   # in pieces: join them along NHD (the culverts, mostly unnamed)
                 try:
                     pts = [p for f in line for ln in lines_of(f["geometry"]) for p in ln]
                     d = 0.01
