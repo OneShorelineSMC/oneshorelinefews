@@ -124,6 +124,21 @@ check("shoreline type listed with its share", rows2 and rows2[0]["shore_type"] =
 check("24 in: about 200 m", 180 <= sum(B.run_len(r) for r, _ in ot[24]) <= 200)
 check("a flooded area whose edge only just crosses the shoreline line (2 m) isn't counted", ot[36] == [])
 
+# developed or open land: a County building or street within DEV_NEAR_M of the overtopped shoreline
+import shoreline_exposure as E
+from shapely.geometry import Polygon, LineString as LS
+near_b = Polygon([(-122.2800 + 50 * W, 37.5150 + 150 / 110540), (-122.2800 + 60 * W, 37.5150 + 150 / 110540),
+                  (-122.2800 + 60 * W, 37.5150 + 160 / 110540), (-122.2800 + 50 * W, 37.5150 + 160 / 110540)])
+far_s = LS([(-122.2800, 37.5150 + 900 / 110540), (-122.2700, 37.5150 + 900 / 110540)])
+rd = [dict(r) for r in rows2]
+B.mark_developed(rd, E.Developed([(near_b, {})], []))
+check("a building 150 m behind the low point: developed", rd[0]["developed"] == "yes")
+B.mark_developed(rd, E.Developed([], [(far_s, {})]))
+check("nothing within 200 m (a street 900 m away): open land", rd[0]["developed"] == "no")
+B.mark_developed(rd, E.Developed(None, None))
+check("County data unavailable: left blank (counts as developed)", rd[0]["developed"] == "")
+check("developed column written", "developed" in B.COLUMNS)
+
 check("levels from layer names", [B.level_from_text(t) for t in ("Overtopping 12 in", "Shoreline overtopping 2 ft", 'SLR 36"', "2.0 ft (24 in)", "Overtop")] == [12, 24, 36, 24, None])
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)

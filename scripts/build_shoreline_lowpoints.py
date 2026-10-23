@@ -13,6 +13,10 @@ Writes, for staff review (the same files the Shoreline tab already reads):
   lookups/proposed/shoreline_hotspots.csv           one row per low point, include = review
   data/shoreline_hotspots_candidates.geojson        the overtopped shoreline of each row (lines), for the map
 
+Each low point also gets developed = yes / no: whether any County building or street is within DEV_NEAR_M of it
+(no = open land, mostly pond and marsh berms; the Shoreline page draws those faintly and leaves them out of its red
+headline).
+
 Each low point: the shoreline that first overtops at that level (a stretch already overtopped at a lower level belongs to
 that lower level), stretches within MERGE_M of each other joined, at least MIN_LEN_M long, in or next to a San Mateo
 County watershed (C/CAG), named after its Census city and watershed. Run by hand: Actions > Build shoreline hotspots.
@@ -47,8 +51,9 @@ RSAP_MAP = "7535792221cb4ae5a9f022ff5dbaf94a"   # RSAP Open Data: Physical Condi
 SHORE = "https://services2.arcgis.com/4Z9x989NrBVrvFwm/arcgis/rest/services/Physical_Conditions_Vector/FeatureServer/217"
 SHORE_SKIP = {"Wetland", "Channel or Opening"}   # marsh edges and creek mouths: water there at high tide is normal
 INSIDE_M = 3          # a shoreline point counts as under water only if at least this far inside BCDC's flooded area
+DEV_NEAR_M = 200      # a low point with no building or street this close is open land (pond and marsh berms, mostly)
 BAY_BOX = (-122.53, 37.44, -122.08, 37.72)      # San Mateo County's Bay side, with a margin (lon, lat)
-COLUMNS = ["id", "name", "city", "watershed", "lat", "lon", "level_in", "length_m", "max_depth_ft", "stretches", "shore_type",
+COLUMNS = ["id", "name", "city", "watershed", "lat", "lon", "level_in", "length_m", "max_depth_ft", "stretches", "shore_type", "developed",
            "include", "notes", "source", "checked_by", "checked_on"]
 SOURCE = "BCDC Adapting to Rising Tides (2017), shoreline overtopping"
 
@@ -330,6 +335,29 @@ def low_points(by_level, watersheds, places):
     return rows
 
 
+def mark_developed(rows, dev, near_m=DEV_NEAR_M):
+    """developed = yes if any County building or street is within near_m of the overtopped shoreline, else no (open
+    land: the Bay would come over a pond or marsh berm into more pond or marsh). The Shoreline page draws open land
+    faintly and doesn't count it in its red headline. Left blank (counts as developed) when the County data couldn't
+    be read."""
+    import shapely
+    from shapely.geometry import LineString, Point
+    for r in rows:
+        if dev is None or not dev.known:
+            r["developed"] = ""
+            continue
+        parts = [LineString(ln) if len(ln) >= 2 else Point(ln[0]) for ln in r["_lines"] if ln]
+        if not parts:
+            r["developed"] = ""
+            continue
+        lat = r["lat"] if isinstance(r.get("lat"), (int, float)) else 37.55
+        area = shapely.union_all(parts).buffer(near_m / (111320 * math.cos(math.radians(lat))))
+        hit = (dev.bt is not None and len(dev.bt.query(area, predicate="intersects")) > 0) or \
+              (dev.st is not None and len(dev.st.query(area, predicate="intersects")) > 0)
+        r["developed"] = "yes" if hit else "no"
+    return rows
+
+
 def load_watersheds(path=WATERSHEDS):
     with open(path) as f:
         return [{"name": (ft.get("properties") or {}).get("name") or "", "polys": M.polys_of(ft["geometry"])}
@@ -374,6 +402,15 @@ def main():
         except Exception as e:   # noqa: BLE001
             print(f"Census places (layer {layer}) unavailable ({type(e).__name__}); names without them", flush=True)
     rows = low_points(by_level, load_watersheds(), places)
+    try:   # County buildings and streets: is anything developed behind each low point?
+        import shoreline_exposure as E
+        dev = E.load_developed(BAY_BOX)
+    except Exception as e:   # noqa: BLE001
+        print(f"County buildings and streets unavailable ({type(e).__name__}: {str(e)[:200]}); developed left blank", flush=True)
+        dev = None
+    mark_developed(rows, dev)
+    n_open = sum(1 for r in rows if r.get("developed") == "no")
+    print(f"{n_open} of {len(rows)} low points are open land (no building or street within {DEV_NEAR_M} m)", flush=True)
     write(rows)
     for x in LEVELS_IN:
         sel = [r for r in rows if r["level_in"] == x]
