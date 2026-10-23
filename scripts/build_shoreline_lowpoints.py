@@ -50,6 +50,7 @@ RSAP_MAP = "7535792221cb4ae5a9f022ff5dbaf94a"   # RSAP Open Data: Physical Condi
 # SFEI San Francisco Bay Shore Inventory (2016), as published in that RSAP map: the shoreline as lines, by class
 SHORE = "https://services2.arcgis.com/4Z9x989NrBVrvFwm/arcgis/rest/services/Physical_Conditions_Vector/FeatureServer/217"
 SHORE_SKIP = {"Wetland", "Channel or Opening"}   # marsh edges and creek mouths: water there at high tide is normal
+FILL_PTS = 3          # a break of up to this many points (30 m) in an overtopped stretch is closed
 INSIDE_M = 3          # a shoreline point counts as under water only if at least this far inside BCDC's flooded area
 DEV_NEAR_M = 200      # a low point with no building or street this close is open land (pond and marsh berms, mostly)
 BAY_BOX = (-122.53, 37.44, -122.08, 37.72)      # San Mateo County's Bay side, with a margin (lon, lat)
@@ -197,6 +198,14 @@ def from_shore_and_art(get, box=BAY_BOX, log=print):
                 for ox, oy in ((dx, 0), (-dx, 0), (0, dy), (0, -dy)):
                     ok &= shapely.contains_xy(part, X[idx] + ox, Y[idx] + oy)
                 hit[idx[ok]] = True
+        # close short breaks (a point or few just outside the simplified flooded outline): one stretch, not a dashed line
+        k0 = 0
+        for pts, _ in lines:
+            idx = [k0 + i for i in range(len(pts)) if hit[k0 + i]]
+            for a, b in zip(idx, idx[1:]):
+                if 1 < b - a <= FILL_PTS + 1:
+                    hit[a + 1:b] = True
+            k0 += len(pts)
         runs, k = [], 0
         for pts, cls in lines:
             cur = []
@@ -302,10 +311,48 @@ def near_poly(pt, poly, within_m):
     return M.inside(pt, poly) or any(dist_m(pt, q) <= within_m for q in poly[0][:: max(1, len(poly[0]) // 400)])
 
 
-def low_points(by_level, watersheds, places):
+def split_developed(runs, dev, near_m=DEV_NEAR_M):
+    """Runs cut where they pass from developed (a County building or street within near_m) to open land and back:
+    (developed runs, open runs). A long berm that is near houses at one end and out in the ponds at the other becomes
+    two low points, so the open part doesn't ride on the developed part."""
+    import shapely
+    from shapely.geometry import Point
+    trees = [t for t in (dev.bt, dev.st) if t is not None]
+    near = {}
+
+    def is_dev(p):
+        k = (round(p[0], 5), round(p[1], 5))
+        if k not in near:
+            area = Point(p).buffer(near_m / (111320 * math.cos(math.radians(p[1]))))
+            near[k] = any(len(t.query(area, predicate="intersects")) for t in trees)
+        return near[k]
+    yes, no = [], []
+    for r, m in runs:
+        cur, cur_dev = [], None
+        for p in r:
+            d = is_dev(p)
+            if cur and d != cur_dev:
+                (yes if cur_dev else no).append((cur, m))
+                cur = [cur[-1]]
+            cur.append(p)
+            cur_dev = d
+        if cur:
+            (yes if cur_dev else no).append((cur, m))
+    return [x for x in yes if len(x[0]) >= 2], [x for x in no if len(x[0]) >= 2]
+
+
+def low_points(by_level, watersheds, places, dev=None):
+    """Rows, one per low point. With dev (County buildings and streets), developed and open-land shoreline are grouped
+    separately and each row says which (developed = yes / no)."""
+    usable = dev is not None and (dev.bt is not None or dev.st is not None)
     rows = []
     for lv, runs in sorted(new_runs(by_level).items()):
-        for g in group(runs):
+        if usable:
+            y, n = split_developed(runs, dev)
+            groups = [(g, "yes") for g in group(y)] + [(g, "no") for g in group(n)]
+        else:
+            groups = [(g, "") for g in group(runs)]
+        for g, devd in groups:
             length = sum(run_len(r) for r, _ in g)
             if length < MIN_LEN_M:
                 continue
@@ -327,7 +374,7 @@ def low_points(by_level, watersheds, places):
             shore_type = "; ".join(f"{k} {v / length:.0%}" for k, v in sorted(by_cls.items(), key=lambda kv: -kv[1])[:3])
             rows.append({"lat": round(c[1], 5), "lon": round(c[0], 5), "level_in": lv, "length_m": round(length),
                          "max_depth_ft": round(max(deps), 1) if deps else "", "stretches": len(g), "shore_type": shore_type, "city": city or "",
-                         "watershed": ws.title(), "_lines": [r for r, _ in g]})
+                         "watershed": ws.title(), "developed": devd, "_lines": [r for r, _ in g]})
     rows.sort(key=lambda r: (r["level_in"], -r["length_m"]))
     for k, r in enumerate(rows, start=1):
         r.update(id=f"SH-{k:03d}", name=f"{r['city'].replace(' (nearest)', '')} shoreline, {r['watershed']} watershed",
@@ -359,9 +406,15 @@ def mark_developed(rows, dev, near_m=DEV_NEAR_M):
     return rows
 
 
+# Census road types that mean a developed area: highways, main and neighbourhood streets, ramps, service drives.
+# Left out: dirt tracks (S1500), walkways and stairs (S1710, S1720), alleys (S1730), private roads (S1740: the service
+# roads on top of salt pond and marsh levees), parking lots (S1780), bike paths (S1820) and trails (S1830).
+STREET_MTFCC = {"S1100", "S1200", "S1400", "S1630", "S1640"}
+
+
 def census_roads(box=BAY_BOX, arcgis=None, get=None):
-    """Every road in the box from US Census TIGERweb (Census2020 Transportation: the layers with "Road" in their
-    name, not railroads), as [(shapely line, attributes)]; [] if the service can't be read."""
+    """The streets in the box from US Census TIGERweb (Census2020 Transportation: the layers with "Road" in their
+    name, not railroads; only the road types in STREET_MTFCC, not levee service roads), as [(shapely line, attributes)]; [] if the service can't be read."""
     from shapely.geometry import shape
     arcgis, get = arcgis or M.arcgis, get or M.get
     base = M.ROADS.rsplit("/{}", 1)[0]
@@ -374,7 +427,8 @@ def census_roads(box=BAY_BOX, arcgis=None, get=None):
     out = []
     for lid, name in layers:
         try:
-            feats = arcgis(M.ROADS.format(lid), "1=1", "NAME", 0.0001, box)
+            feats = arcgis(M.ROADS.format(lid), "1=1", "NAME,MTFCC", 0.0001, box)
+            feats = [f for f in feats if ((f.get("properties") or {}).get("MTFCC") or "S1400") in STREET_MTFCC]
             out += [(shape(f["geometry"]), f.get("properties") or {}) for f in feats if f.get("geometry")]
             print(f"  Census {name}: {len(feats)} pieces", flush=True)
         except Exception as e:   # noqa: BLE001
@@ -425,8 +479,7 @@ def main():
                 places.append({"name": (f.get("properties") or {}).get("BASENAME") or "", "polys": M.polys_of(f["geometry"])})
         except Exception as e:   # noqa: BLE001
             print(f"Census places (layer {layer}) unavailable ({type(e).__name__}); names without them", flush=True)
-    rows = low_points(by_level, load_watersheds(), places)
-    try:   # County buildings and streets: is anything developed behind each low point?
+    try:   # County buildings and streets: is anything developed behind each stretch of shoreline?
         import shoreline_exposure as E
         dev = E.load_developed(BAY_BOX)
         if dev.st is None:   # the County's streets download fails at times: US Census roads instead
@@ -436,7 +489,7 @@ def main():
     except Exception as e:   # noqa: BLE001
         print(f"County buildings and streets unavailable ({type(e).__name__}: {str(e)[:200]}); developed left blank", flush=True)
         dev = None
-    mark_developed(rows, dev)
+    rows = low_points(by_level, load_watersheds(), places, dev)
     n_open = sum(1 for r in rows if r.get("developed") == "no")
     print(f"{n_open} of {len(rows)} low points are open land (no building or street within {DEV_NEAR_M} m)", flush=True)
     write(rows)

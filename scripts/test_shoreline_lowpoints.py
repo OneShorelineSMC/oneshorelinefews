@@ -138,13 +138,22 @@ check("nothing within 200 m (a street 900 m away): open land", rd[0]["developed"
 B.mark_developed(rd, E.Developed(None, None))
 check("County data unavailable: left blank (counts as developed)", rd[0]["developed"] == "")
 check("developed column written", "developed" in B.COLUMNS)
+# a stretch near a building at one end and out in the open at the other becomes two low points, one of each
+long_run = [[-122.2800 + k * 10 * W, 37.5150] for k in range(100)]                     # 1 km east from the building
+bld = Polygon([(-122.2800, 37.5152), (-122.2799, 37.5152), (-122.2799, 37.5153), (-122.2800, 37.5153)])
+yv, nv = B.split_developed([(long_run, (None, "Berm"))], E.Developed([(bld, {})], []))
+check("split at the edge of developed land", len(yv) == 1 and len(nv) == 1 and 180 <= B.run_len(yv[0][0]) <= 230)
+rows3 = B.low_points({12: [(long_run, (None, "Berm"))], 24: [], 36: []}, WS, PL, E.Developed([(bld, {})], []))
+check("low points: one developed, one open land", sorted(r["developed"] for r in rows3) == ["no", "yes"])
 B.mark_developed(rd, E.Developed([(near_b, {})], None))
 check("streets unreadable: judged by buildings alone", rd[0]["developed"] == "yes")
-got_r = B.census_roads(arcgis=lambda url, where, fields, off, box: [{"type": "Feature", "properties": {"NAME": "Main St"},
-                       "geometry": {"type": "LineString", "coordinates": [[-122.28, 37.515], [-122.27, 37.515]]}}],
+got_r = B.census_roads(arcgis=lambda url, where, fields, off, box: [{"type": "Feature", "properties": {"NAME": "Main St", "MTFCC": "S1400"},
+                       "geometry": {"type": "LineString", "coordinates": [[-122.28, 37.515], [-122.27, 37.515]]}},
+                      {"type": "Feature", "properties": {"NAME": "", "MTFCC": "S1740"},   # a levee service road: not a street
+                       "geometry": {"type": "LineString", "coordinates": [[-122.28, 37.52], [-122.27, 37.52]]}}],
                        get=lambda url: json.dumps({"layers": [{"id": 2, "name": "Primary Roads"}, {"id": 8, "name": "Local Roads"},
                                                               {"id": 9, "name": "Railroads"}]}))
-check("Census roads: every layer named Road (not rail)", len(got_r) == 2 and got_r[0][1]["NAME"] == "Main St")
+check("Census roads: every layer named Road (not rail), streets only (not levee service roads)", len(got_r) == 2 and got_r[0][1]["NAME"] == "Main St")
 
 check("levels from layer names", [B.level_from_text(t) for t in ("Overtopping 12 in", "Shoreline overtopping 2 ft", 'SLR 36"', "2.0 ft (24 in)", "Overtop")] == [12, 24, 36, 24, None])
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
