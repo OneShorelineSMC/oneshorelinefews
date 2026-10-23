@@ -384,35 +384,46 @@
     var late = rows.some(function (r) { return r.late; });
     var groups = ["likely", "ready", "alert"].map(function (k) { return { k: k, rows: rows.filter(function (r) { return r.k === k; }) }; })
       .filter(function (g) { return g.rows.length; });
-    var quiet = rows.filter(function (r) { return r.k === "none" || r.k === "offline"; });
     var likely = rows.filter(function (r) { return r.k === "likely"; });
     var banner = likely.length ? '<div class="cs-banner" role="alert">' + (late ? esc("As of " + clock(data.generated) + ": ") : "") +
       esc(T("banner_likely", { creeks: list(likely.map(function (r) { return r.c.name; })) })) + "</div>" : "";
-    var h = '<div class="cs-home">';
-    if (late) h += '<div class="cs-hlate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing the last statuses.</div>";
-    // No alerts: say only what was measured, name any creek whose gauge is down, and where it comes from (not an all-clear)
-    var down = quiet.filter(function (r) { return r.k === "offline"; }).map(function (r) { return r.c.short || r.c.name; });
-    if (!groups.length) h += '<section class="cs-hg cs-hg-none"><div class="cs-verdict cs-v-none">' + icon("none") + esc(T("home_none")) + "</div>" +
-      '<p class="cs-hscope">' + esc(T("home_none_note")) + "</p>" +   // what "no alerts" covers, right under it
-      (down.length ? '<p class="cs-hdown">⚠ ' + esc(T("home_none_offline", { creeks: list(down) })) + "</p>" : "") + "</section>";   // then any gauge out, set apart
-    groups.forEach(function (g) {
-      h += '<section class="cs-hg cs-hg-' + g.k + '" aria-label="' + esc(T("verdict_" + g.k)) + '"><div class="cs-verdict cs-v-' + g.k + '">' + icon(g.k) + esc(T("verdict_" + g.k)) + "</div>" +
-        '<ul class="cs-hrows">' + g.rows.map(function (r) {
-          var href = linkFor ? linkFor(r.c) : "";
-          return "<li>" + (href ? '<a class="cs-hrow" href="' + esc(href) + '">' : '<span class="cs-hrow">') + '<span class="cs-hx"><span class="cs-hn">' + esc(r.c.name) +
-            "</span>" + review(r.c) + '<span class="cs-hy">' + esc(plain(r.v.st)) + "</span></span>" + (href ? '<span class="cs-hc" aria-hidden="true">›</span></a>' : "</span>") + "</li>";
-        }).join("") + "</ul>" +
-        '<p class="cs-hdo"><span class="cs-hdo-l">What to do</span>' + esc(T("verdict_" + g.k + "_todo")) + "</p></section>";
-    });
+    // The kiosk's status board, for the web (staff, 2026-10-23): one row per creek with a status, worst first: status,
+    // why, rain now, since; the creeks with no alerts in one line under it. Rows link to the creek's page.
+    var act = rows.filter(function (r) { return r.k !== "none"; }).sort(function (a, b) { return (RANK[b.k] || 0) - (RANK[a.k] || 0) || allCreeks(data).indexOf(a.c) - allCreeks(data).indexOf(b.c); });
+    var nq = rows.filter(function (r) { return r.k === "none"; });
+    var h = '<div class="cs-home"><div class="cs-board cs-wboard"><div class="cs-bhead"><b>Creeks</b><span>' +
+      (act.length ? act.length + " with a status · " : "") + nq.length + " with no alerts · updated " + esc(clock(data.generated)) + "</span></div>";
+    if (late) h += '<div class="cs-blate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing each creek’s status at that time.</div>";
+    if (!act.length) {   // say only what was measured (not an all-clear), then the scope
+      h += '<div class="cs-wnone">' + icon("none") + "<span>" + esc(T("home_none")) + '</span></div><p class="cs-wscope">' + esc(T("home_none_note")) + "</p>";
+    } else {
+      h += '<div class="cs-bcols cs-wcols" aria-hidden="true"><i></i><span>' + esc(T("board_col_creek")) + "</span><span>" + esc(T("board_col_status")) + "</span><span>" +
+        esc(T("board_col_why")) + "</span><span>" + esc(T("board_col_rain")) + '</span><span class="cs-bsince">' + esc(T("board_col_since")) + "</span><i></i></div>";
+      h += '<ul class="cs-wrows' + (late ? " cs-dimmed" : "") + '">' + act.map(function (r) {
+        var st = r.v.st, rl = (st.rain || {}).level || 0, rn = !!(st.rain || {}).now, off = r.k === "offline", href = linkFor ? linkFor(r.c) : "";
+        var word = off && (st.out_of_service || []).length ? T("gauge_out") : T("verdict_" + r.k);
+        var label = r.c.name + ": " + word + ". " + brief(st, r.k);
+        return "<li>" + (href ? '<a class="cs-brow cs-wrow cs-b-' + r.k + '" href="' + esc(href) + '" aria-label="' + esc(label) + '">' : '<div class="cs-brow cs-wrow cs-b-' + r.k + '">') +
+          '<i class="cs-bbar" style="background:' + COL[r.k] + '"></i>' +
+          '<span class="cs-bname">' + esc(r.c.short || r.c.name) + "</span>" +
+          '<span class="cs-bword cs-v-' + r.k + '">' + icon(r.k) + esc(word) + "</span>" +
+          '<span class="cs-bwhy">' + review(r.c, true) + esc(brief(st, r.k)) + "</span>" +
+          '<span class="cs-brain">' + (rl || rn ? chip(rl, rn) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
+          '<span class="cs-bsince">' + (st.since && !off ? "since " + esc(clock(st.since)) : "") + "</span>" +
+          '<span class="cs-wgo" aria-hidden="true">' + (href ? "›" : "") + "</span>" + (href ? "</a>" : "</div>") + "</li>";
+      }).join("") + "</ul>";
+    }
+    if (nq.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + nq.map(function (r) {
+      var href = linkFor ? linkFor(r.c) : "";
+      return href ? '<a href="' + esc(href) + '">' + esc(r.c.short || r.c.name) + "</a>" : esc(r.c.short || r.c.name);
+    }).join(" · ") + "</div>";
+    h += "</div>";
+    if (groups.length) h += '<p class="cs-wdo"><b>What to do:</b> ' + esc(T("verdict_" + groups[0].k + "_todo")) + "</p>";   // for the worst status
     if (groups.some(function (g) { return g.k === "likely" || g.k === "ready"; })) {
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac cs-evacb" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
     }
     h += '<div class="cs-hmore">';
-    if (quiet.length && groups.length) h += '<p><b>' + esc(T("home_quiet")) + ":</b> " + esc(quiet.map(function (r) {
-      return r.c.name + (r.k === "offline" ? " (" + T("home_gauge_down") + ")" : ""); }).join(" · ")) + "</p>";
-    else if (groups.length && quiet.some(function (r) { return r.k === "offline"; })) h += "<p>" + esc(quiet.filter(function (r) { return r.k === "offline"; }).map(function (r) { return r.c.name; }).join(", ")) +
-      ": " + esc(T("home_gauge_down")) + ".</p>";
     h += '<p><a href="SiteMap.html">' + esc(T("home_map_link")) + " ›</a></p>";
     h += '<p class="cs-hsm">' + esc(T("home_updated", { time: clock(data.generated) })) + "</p></div></div>";
     return { banner: banner, html: h };
@@ -589,7 +600,20 @@
     ".cs-blate{padding:6px 12px;background:#fff3cd;color:#5c4a00;font-weight:700;font-size:14px}",
     ".cs-bquiet{margin-top:auto;padding:7px 12px;font-size:13.5px;color:var(--ink,#16202b);border-top:1px solid var(--line,#e3e8ee)}",
     ".cs-bnone{flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--ink,#16202b)}",
-    ".cs-changed{font-size:13.5px;margin:6px 0 8px}"
+    ".cs-changed{font-size:13.5px;margin:6px 0 8px}",
+    // the kiosk board on the home page: rows are links; on a phone each row folds to name + status, then why, then rain
+    ".cs-wboard{flex:none;margin:0 0 10px}.cs-wrows{list-style:none;margin:0;padding:0}",
+    ".cs-wcols,.cs-wrow{grid-template-columns:8px 130px 160px 1fr 110px 84px 14px}",
+    "a.cs-wrow{color:inherit;text-decoration:none;min-height:44px;cursor:pointer}a.cs-wrow:hover{background:rgba(10,85,135,.05)}",
+    "a.cs-wrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:-3px}.cs-wgo{font-size:20px;color:var(--muted,#556274);text-align:right}",
+    ".cs-wrow .cs-bwhy{-webkit-line-clamp:3}",
+    ".cs-wnone{display:flex;align-items:center;gap:10px;padding:16px 14px 6px;font-size:18px;font-weight:700;color:var(--ink,#16202b)}",
+    ".cs-wscope{margin:0;padding:0 14px 14px;font-size:14px;line-height:1.45;color:var(--muted,#556274)}",
+    ".cs-wboard .cs-bquiet a{font-weight:600}.cs-wdo{margin:0 0 10px;font-size:14.5px;line-height:1.45}",
+    "@media (max-width:640px){.cs-wcols{display:none}.cs-bhead{flex-wrap:wrap;gap:2px 10px}" +
+    ".cs-wrow{grid-template-columns:8px 1fr auto 14px;grid-template-areas:'b n w g' 'b y y g' 'b r s g';row-gap:3px;padding:7px 10px 7px 0}" +
+    ".cs-wrow .cs-bbar{grid-area:b}.cs-wrow .cs-bname{grid-area:n;white-space:normal}.cs-wrow .cs-bword{grid-area:w}" +
+    ".cs-wrow .cs-bwhy{grid-area:y;padding:0}.cs-wrow .cs-brain{grid-area:r}.cs-wrow .cs-bsince{grid-area:s}.cs-wrow .cs-wgo{grid-area:g;align-self:center}}"
   ].join("\n");
   var styleEl = document.createElement("style"); styleEl.textContent = css; document.head.appendChild(styleEl);
 
