@@ -75,6 +75,16 @@ check("an aqueduct is never a watershed's creek; the main named creek is used an
 ws3 = [{"name": "SAN BRUNO CREEK", "geometry": box(-122.30, 37.45, -122.249, 37.50)}]
 cty = [{"type": "Feature", "properties": {"NAME": "SAN BRUNO CREEK"},
         "geometry": {"type": "LineString", "coordinates": [[-122.245, 37.48], [-122.29, 37.48]]}}]
+cty.append({"type": "Feature", "properties": {"NAME": "EL ZANJON CREEK"},   # also San Bruno Creek's (COUNTY_STREAM_NAMES)
+            "geometry": {"type": "LineString", "coordinates": [[-122.29, 37.46], [-122.26, 37.46]]}})
+ws4 = [{"name": "ATHERTON CREEK", "geometry": box(-122.30, 37.40, -122.249, 37.45)}]
+cty4 = [{"type": "Feature", "properties": {"NAME": "ATHERTON CREEK"},     # ends inland ...
+         "geometry": {"type": "LineString", "coordinates": [[-122.30, 37.42], [-122.27, 37.42]]}},
+        {"type": "Feature", "properties": {"NAME": "ATHERTON CHANNEL"},   # ... and goes on as the channel
+         "geometry": {"type": "LineString", "coordinates": [[-122.27, 37.42], [-122.245, 37.42]]}}]
+r4 = B.build(ws4, shore, [], county=cty4)[0]
+check("County streams: a creek that changes name on the way down is followed to the shoreline; names in title case",
+      r4["lon"] == SHORE_X and r4["creek"] == "Atherton Creek" and r4["nhd_name"] == "Atherton Creek; Atherton Channel")
 r3 = B.build(ws3, shore, [], county=cty)[0]
 check("County streams line used when NHD has none, either drawing direction; crossing found",
       r3["lat"] == 37.48 and r3["lon"] == SHORE_X and "County streams layer" in r3["method"] and r3["fews_creek"] == "sanbruno")

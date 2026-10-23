@@ -131,4 +131,23 @@ check('<image href="data:image/jpeg;base64,' in svg9 and ">101<" not in svg9 and
 check(B.basemap_image(-122.5, 37.6, -122.4, 37.7, 420, 320, fetch=lambda u: b'{"error":{"code":400}}') is None
       and "<image" not in B.build_svg(creek, line, hu, roads, gauges, basemap=lambda *a: None)[0], "no base map: the plain map")
 
+# a creek line in two pieces (it goes underground): joined along NHD's unnamed culvert, drawn as underground
+def ln(*pts, **pr):
+    return {"type": "Feature", "properties": pr, "geometry": {"type": "LineString", "coordinates": [list(p) for p in pts]}}
+
+
+upper = ln((-122.46, 37.62), (-122.44, 37.62))
+lower = ln((-122.42, 37.625), (-122.40, 37.625))
+nhd_all = [ln((-122.4399, 37.6201), (-122.43, 37.622), (-122.4201, 37.6249), ftype=420, fcode=42002),   # the culvert
+           ln((-122.43, 37.622), (-122.43, 37.64), ftype=460, fcode=46006, gnis_name="Other Creek"),     # a side branch
+           ln((-122.4201, 37.6249), (-122.40, 37.6251), ftype=460, fcode=46006)]                          # NHD's lower creek
+gap = B.bridge_gaps([upper, lower], nhd_all)
+check(len(gap) == 1 and B.line_kind(gap[0]) == "ug" and gap[0]["geometry"]["coordinates"][0] == [-122.44, 37.62]
+      and gap[0]["geometry"]["coordinates"][-1] == [-122.42, 37.625] and len(B.pieces_of([upper, lower] + gap)) == 1,
+      "a gap in the creek line joined along NHD's culvert, end to end, drawn as underground; the side branch left out")
+check(B.bridge_gaps([upper], nhd_all) == [] and B.bridge_gaps([upper, ln((-122.30, 37.50), (-122.29, 37.50))], nhd_all) == [],
+      "nothing added for a line in one piece, or pieces NHD doesn't join")
+svg10, _ = B.build_svg(creek, [upper, lower] + gap, [], [], gauges)
+check("Creek underground (culvert or pipe)" in svg10, "the culvert in the legend")
+
 print(f"creek maps: {checks} checks passed")

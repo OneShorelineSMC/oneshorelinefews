@@ -29,6 +29,7 @@ Usage:  python scripts/build_creek_maps.py SITES_JSON     (GitHub: .github/workf
 Only rebuild when a gauge is added or moved, or a creek is added. A creek whose name isn't in NHD gets a map without
 the creek line (the script says so).
 """
+import heapq
 import json
 import math
 import time
@@ -512,6 +513,128 @@ def build_svg(creek, line_feats, hu_feats, road_feats, gauges, basins=None, wate
     return "\n".join(out) + "\n", names
 
 
+# ---------------------------------------------------------------- gaps in a creek line
+GAP_SNAP_M = 150    # a creek line's end this close to an NHD line joins it
+GAP_MAX_M = 5000    # longest stretch of NHD line used to join two pieces of a creek
+
+
+def _m(a, b):
+    kx = 111320 * math.cos(math.radians((a[1] + b[1]) / 2))
+    return math.hypot((a[0] - b[0]) * kx, (a[1] - b[1]) * 110540)
+
+
+def pieces_of(line_feats, join_m=30):
+    """The creek line's connected pieces: [[line coords, ...], ...] (ends within join_m count as joined)."""
+    lines = [ln for f in line_feats for ln in lines_of(f.get("geometry")) if len(ln) >= 2]
+    group = list(range(len(lines)))
+
+    def root(i):
+        while group[i] != i:
+            group[i] = group[group[i]]
+            i = group[i]
+        return i
+    for i in range(len(lines)):
+        for j in range(i + 1, len(lines)):
+            if any(_m(a, b) <= join_m for a in (lines[i][0], lines[i][-1]) for b in (lines[j][0], lines[j][-1])):
+                group[root(i)] = root(j)
+    out = {}
+    for i, ln in enumerate(lines):
+        out.setdefault(root(i), []).append(ln)
+    return list(out.values())
+
+
+def bridge_gaps(line_feats, nhd_feats, snap_m=GAP_SNAP_M, max_m=GAP_MAX_M):
+    """Where a creek line comes in pieces (it goes underground, or the named lines stop), the NHD lines that join the
+    pieces: often the culvert or pipe (NHD FType 420/428, usually unnamed). Shortest way along NHD lines from an end of
+    one piece to an end of another; kept if no longer than max_m. Returns GeoJSON features (with NHD ftype/fcode, so the
+    map styles a culvert as underground), [] if nothing joins."""
+    parts = pieces_of(line_feats)
+    if len(parts) < 2 or not nhd_feats:
+        return []
+    # NHD as a graph: every vertex a node (rounded to about 1 m), consecutive vertices an edge
+    node = {}
+    xy = []
+    adj = {}
+    edge_props = {}
+
+    def nid(p):
+        k = (round(p[0], 5), round(p[1], 5))
+        if k not in node:
+            node[k] = len(xy)
+            xy.append(k)
+        return node[k]
+    for f in nhd_feats:
+        pr = f.get("properties") or {}
+        for ln in lines_of(f.get("geometry")):
+            for a, b in zip(ln, ln[1:]):
+                i, j = nid(a), nid(b)
+                if i == j:
+                    continue
+                d = _m(a, b)
+                adj.setdefault(i, []).append((j, d))
+                adj.setdefault(j, []).append((i, d))
+                edge_props[(min(i, j), max(i, j))] = pr
+    if not xy:
+        return []
+
+    def nearest(p):
+        i = min(range(len(xy)), key=lambda k: _m(p, xy[k]))
+        return i if _m(p, xy[i]) <= snap_m else None
+    ends = [[(nearest(p), p) for ln in part for p in (ln[0], ln[-1])] for part in parts]
+
+    def shortest(src, dst_set):
+        dist, prev, q = {src: 0.0}, {}, [(0.0, src)]
+        while q:
+            d, u = heapq.heappop(q)
+            if u in dst_set:
+                path = [u]
+                while path[-1] != src:
+                    path.append(prev[path[-1]])
+                return d, path[::-1]
+            if d > dist.get(u, 1e18) or d > max_m:
+                continue
+            for v, w in adj.get(u, []):
+                if d + w < dist.get(v, 1e18):
+                    dist[v], prev[v] = d + w, u
+                    heapq.heappush(q, (d + w, v))
+        return None
+    # join the pieces one at a time, each time by the shortest NHD stretch between a joined piece and a new one
+    joined, out = {0}, []
+    while len(joined) < len(parts):
+        best = None
+        for a in joined:
+            for b in range(len(parts)):
+                if b in joined:
+                    continue
+                targets = {e: p for e, p in ends[b] if e is not None}
+                for s, sp in ends[a]:
+                    if s is None or not targets:
+                        continue
+                    r = shortest(s, set(targets))
+                    if r:
+                        d = r[0] + _m(sp, xy[s]) + _m(targets[r[1][-1]], xy[r[1][-1]])   # with the hops on and off NHD
+                        if best is None or d < best[0]:
+                            best = (d, r[1], b, sp, targets[r[1][-1]])
+        if not best:
+            break
+        _, path, b, sp, tp = best
+        joined.add(b)
+        run, run_pr = [list(sp[:2])], None   # from the creek's end, one feature per stretch of the same NHD properties
+        for u, v in zip(path, path[1:]):
+            pr = edge_props.get((min(u, v), max(u, v)), {})
+            if run_pr is not None and pr is not run_pr:
+                out.append({"type": "Feature", "properties": dict(run_pr or {}, gap=True), "geometry": {"type": "LineString", "coordinates": run}})
+                run = [run[-1]]
+            if len(run) == 1 and run[0] != list(xy[u]):
+                run.append(list(xy[u]))
+            run.append(list(xy[v]))
+            run_pr = pr
+        run.append(list(tp[:2]))   # on to the other piece's end
+        if len(run) >= 2:
+            out.append({"type": "Feature", "properties": dict(run_pr or {}, gap=True), "geometry": {"type": "LineString", "coordinates": run}})
+    return out
+
+
 # creek line styles by NHD feature type
 LINE_STYLE = {"per": 'stroke-width="3" stroke-linecap="round"',
               "int": 'stroke-width="2.6" stroke-dasharray="7 4" stroke-linecap="butt"',
@@ -770,6 +893,20 @@ def main():
                     line = arcgis(NHD, q, "gnis_name,ftype,fcode", 0.00015)
             if not line:
                 print(f"  {c['id']}: no NHD creek line for {sorted(want) or '(no name set)'}; map without it")
+            elif len(pieces_of(line)) > 1 and nhd_ok:   # in pieces: join them along NHD (the culverts, mostly unnamed)
+                try:
+                    pts = [p for f in line for ln in lines_of(f["geometry"]) for p in ln]
+                    d = 0.01
+                    box = (min(p[0] for p in pts) - d, min(p[1] for p in pts) - d, max(p[0] for p in pts) + d, max(p[1] for p in pts) + d)
+                    gap = bridge_gaps(line, arcgis(NHD, "1=1", "gnis_name,ftype,fcode", 0.00005, box))
+                    if gap:
+                        line = line + gap
+                        ug = sum(1 for f in gap if line_kind(f) == "ug")
+                        print(f"  {c['id']}: {len(pieces_of(line))} piece(s) after joining gaps along NHD ({len(gap)} NHD lines, {ug} underground)")
+                    else:
+                        print(f"  {c['id']}: creek line in {len(pieces_of(line))} pieces; no NHD line joins them")
+                except Exception as e:   # noqa: BLE001
+                    print(f"  {c['id']}: joining the creek line's gaps failed ({type(e).__name__}: {e})")
             gs = gauges_for(c, onerain, usgs)
             for g in c.get("stages", []):   # NLDI needs each level gauge's location
                 for x in gs:

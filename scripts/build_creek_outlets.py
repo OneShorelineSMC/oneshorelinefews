@@ -109,8 +109,10 @@ def creek_pieces(w, flow, alias, county=()):
                if any(re.search(r"\b" + re.escape(x) + r"\b", ((f.get("properties") or {}).get("NAME") or "").lower()) for x in words)]
         got = [(g, n) for g, n in got if g.intersects(near)]
         if got:
-            n = max({n for _, n in got}, key=lambda k: sum(g.intersection(w["shape"]).length for g, m in got if m == k))
-            return fews, n, [g for g, m in got if m == n], "county"
+            # every matching name together: a creek can change names on its way down (Atherton Creek, then Atherton
+            # Channel); the one with the most length in the watershed names the row
+            names = sorted({n for _, n in got}, key=lambda k: -sum(g.intersection(w["shape"]).length for g, m in got if m == k))
+            return fews, "; ".join(title(n) for n in names), [g for g, _ in got], "county"
     if not pieces:   # the named stream with the most length in the watershed (not an aqueduct or pipeline)
         by = {}
         for f in flow:
@@ -189,7 +191,7 @@ def outlet(w, flow, alias, shore, shore_union, openings, county=()):
             row["method"] += " (County streams layer; NHD has no line by this name)"
         if how == "main":
             row["method"] += f" (NHD has no {row['creek']}: used {nname}, the main named stream in the watershed; check)"
-        row["creek"] = nname or row["creek"]
+        row["creek"] = title(nname.split(";")[0]) if nname else row["creek"]
     else:
         near = [o for o in openings if o[0].distance(w["shape"]) * 111320 * 0.79 <= BAY_NEAR_M]
         if not near:
