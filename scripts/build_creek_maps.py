@@ -953,8 +953,10 @@ def main():
         flow = arcgis(NHD, where, "gnis_name,ftype,fcode", 0.00015)
         print(f"{len(flow)} creek line pieces (USGS NHD)")
     except Exception as e:   # noqa: BLE001
-        flow, nhd_ok = [], False
-        print(f"USGS NHD unavailable ({type(e).__name__}); creek lines from the County streams layer instead")
+        # without NHD every map would lose its culverts, dry-season and canal styles: keep the maps as they are
+        print(f"USGS NHD unavailable ({type(e).__name__}: {str(e)[:120]}); maps NOT rebuilt (the current ones are kept). "
+              "Run the workflow again later.")
+        sys.exit(1)
     roads = []
     for layer, primary in ((2, True), (5, False)):
         try:
