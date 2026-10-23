@@ -26,8 +26,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Install the map library
-        run: pip install shapely
+      - name: Install the map libraries
+        run: pip install shapely pyproj pyshp   # pyproj and pyshp: the County buildings and streets (developed or open land)
       - name: Build the draft list
         run: python -u scripts/build_shoreline_lowpoints.py
       - name: Commit if anything changed
