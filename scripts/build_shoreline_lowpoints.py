@@ -342,8 +342,9 @@ def mark_developed(rows, dev, near_m=DEV_NEAR_M):
     be read."""
     import shapely
     from shapely.geometry import LineString, Point
+    have = dev is not None and (dev.bt is not None or dev.st is not None)
     for r in rows:
-        if dev is None or not dev.known:
+        if not have:   # neither buildings nor streets could be read
             r["developed"] = ""
             continue
         parts = [LineString(ln) if len(ln) >= 2 else Point(ln[0]) for ln in r["_lines"] if ln]
@@ -356,6 +357,29 @@ def mark_developed(rows, dev, near_m=DEV_NEAR_M):
               (dev.st is not None and len(dev.st.query(area, predicate="intersects")) > 0)
         r["developed"] = "yes" if hit else "no"
     return rows
+
+
+def census_roads(box=BAY_BOX, arcgis=None, get=None):
+    """Every road in the box from US Census TIGERweb (Census2020 Transportation: the layers with "Road" in their
+    name, not railroads), as [(shapely line, attributes)]; [] if the service can't be read."""
+    from shapely.geometry import shape
+    arcgis, get = arcgis or M.arcgis, get or M.get
+    base = M.ROADS.rsplit("/{}", 1)[0]
+    try:
+        layers = [(x["id"], x.get("name") or "") for x in json.loads(get(base + "?f=json")).get("layers", [])
+                  if "road" in (x.get("name") or "").lower() and "rail" not in (x.get("name") or "").lower()]
+    except Exception as e:   # noqa: BLE001
+        print(f"  Census roads unavailable ({type(e).__name__}); open land judged by buildings only", flush=True)
+        return []
+    out = []
+    for lid, name in layers:
+        try:
+            feats = arcgis(M.ROADS.format(lid), "1=1", "NAME", 0.0001, box)
+            out += [(shape(f["geometry"]), f.get("properties") or {}) for f in feats if f.get("geometry")]
+            print(f"  Census {name}: {len(feats)} pieces", flush=True)
+        except Exception as e:   # noqa: BLE001
+            print(f"  Census {name} unavailable ({type(e).__name__})", flush=True)
+    return out
 
 
 def load_watersheds(path=WATERSHEDS):
@@ -405,6 +429,10 @@ def main():
     try:   # County buildings and streets: is anything developed behind each low point?
         import shoreline_exposure as E
         dev = E.load_developed(BAY_BOX)
+        if dev.st is None:   # the County's streets download fails at times: US Census roads instead
+            roads = census_roads()
+            if roads:
+                dev = E.Developed([(g, {}) for g in dev.b], roads)
     except Exception as e:   # noqa: BLE001
         print(f"County buildings and streets unavailable ({type(e).__name__}: {str(e)[:200]}); developed left blank", flush=True)
         dev = None

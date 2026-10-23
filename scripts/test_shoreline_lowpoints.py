@@ -138,6 +138,13 @@ check("nothing within 200 m (a street 900 m away): open land", rd[0]["developed"
 B.mark_developed(rd, E.Developed(None, None))
 check("County data unavailable: left blank (counts as developed)", rd[0]["developed"] == "")
 check("developed column written", "developed" in B.COLUMNS)
+B.mark_developed(rd, E.Developed([(near_b, {})], None))
+check("streets unreadable: judged by buildings alone", rd[0]["developed"] == "yes")
+got_r = B.census_roads(arcgis=lambda url, where, fields, off, box: [{"type": "Feature", "properties": {"NAME": "Main St"},
+                       "geometry": {"type": "LineString", "coordinates": [[-122.28, 37.515], [-122.27, 37.515]]}}],
+                       get=lambda url: json.dumps({"layers": [{"id": 2, "name": "Primary Roads"}, {"id": 8, "name": "Local Roads"},
+                                                              {"id": 9, "name": "Railroads"}]}))
+check("Census roads: every layer named Road (not rail)", len(got_r) == 2 and got_r[0][1]["NAME"] == "Main St")
 
 check("levels from layer names", [B.level_from_text(t) for t in ("Overtopping 12 in", "Shoreline overtopping 2 ft", 'SLR 36"', "2.0 ft (24 in)", "Overtop")] == [12, 24, 36, 24, None])
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
