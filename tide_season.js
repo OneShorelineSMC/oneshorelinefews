@@ -102,22 +102,62 @@
     if (!(age >= 0 && age <= LK.num("BAY_OFFSET_MAX_AGE_HOURS")) || r.offset_ft < LK.num("BAY_OFFSET_MIN_FT")) return null;
     return { ft: r.offset_ft, days: r.days_used || r.days, from: r.from, to: r.to, recent7: r.recent7_ft };
   }
-  /* Days after the NOAA projection: each day's highest tide-table high tide plus the offset, {date: {t, v, table, off}}.
-     Only days the projection doesn't cover (expected()), high tides still ahead, and no further than BAY_OFFSET_AHEAD_DAYS
-     (a month: an offset seen over the last month says little about the months after). */
+  /* The calendar outlook from the data job (tide_offset.json "outlook", weekly; scripts/tide_offset.py): the usual height
+     above the tide table for each month, the month-to-month persistence (r1) and El Niño's winter effect. null when off,
+     missing or too old. THRESHOLDS_BASIS.md §4b. */
+  function outlookData() {
+    var o = OFF.data && OFF.data.outlook;
+    if (!o || !o.normal_ft || !o.computed_utc || LK.num("TIDE_OUTLOOK_SHOW") !== 1) return null;
+    var age = (Date.now() - Date.parse(o.computed_utc.replace(/Z$/, ":00Z"))) / 86400000;
+    return age >= 0 && age <= LK.num("TIDE_OUTLOOK_MAX_AGE_DAYS") ? o : null;
+  }
+  function usual(o, ms) {   // the usual height above the tide table in that month (ft), or null
+    var v = o.normal_ft[iso(ms).slice(0, 7)];
+    return typeof v === "number" ? v : null;
+  }
+  /* Days after the NOAA projection, up to BAY_OFFSET_AHEAD_DAYS (6 weeks): each day's highest tide-table high tide plus
+     the recent offset, fading by damped persistence (NOAA's method, Dusek et al. 2022): the usual height for that month,
+     plus today's departure from the usual times r1 ^ (days / 30.4). Without the outlook data: the offset as it is.
+     {date: {t, v, table, off}}. Only days the projection doesn't cover and high tides still ahead. */
   function offsetDays(now) {
     now = now || nowLocal();
-    var o = offset(), out = {};
+    var o = offset(), ol = outlookData(), out = {};
     if (!o || !S.highs) return out;
-    var ex = expected(now);
+    var ex = expected(now), u0 = ol ? usual(ol, now) : null, r1 = ol && typeof ol.r1 === "number" ? Math.max(0, Math.min(0.95, ol.r1)) : null;
     S.highs.forEach(function (h) {
       var d = iso(h.t);
       if (h.t < now - MATCH_MIN * 60000 || ex[d] || h.t > now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000) return;
       if (modelOK(now) && h.t <= S.ofs[S.ofs.length - 1].t) return;   // still inside the projection
-      var x = { t: h.t, v: h.v + o.ft, table: h.v, off: o.ft };
+      var add = o.ft, u = ol ? usual(ol, h.t) : null;
+      if (u0 != null && u != null && r1 != null) add = u + (o.ft - u0) * Math.pow(r1, (h.t - now) / (30.4 * 86400000));
+      var x = { t: h.t, v: h.v + add, table: h.v, off: add };
       if (!out[d] || x.v > out[d].v) out[d] = x;
     });
     return out;
+  }
+  /* Seasonal outlook, after BAY_OFFSET_AHEAD_DAYS to the end of the calendar: the usual height above the tide table for
+     each month, plus El Niño (or La Niña) in its months when the latest ONI is at least ENSO_MIN_ONI from 0 and the
+     San Francisco record shows a significant effect. Not marks on days: a line under the calendar, with the days that
+     would reach the flood level at that height. null without the outlook data. */
+  function seasonOutlook(now) {
+    now = now || nowLocal();
+    var ol = outlookData();
+    if (!ol || !S.highs) return null;
+    var en = ol.enso, useEnso = !!(en && en.significant && typeof en.oni === "number" && Math.abs(en.oni) >= LK.num("ENSO_MIN_ONI"));
+    var from = now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000, days = [], adds = [], last = null;
+    S.highs.forEach(function (h) {
+      if (h.t <= from) return;
+      var u = usual(ol, h.t);
+      if (u == null) return;
+      var m = new Date(h.t).getUTCMonth() + 1, e = useEnso && en.months.indexOf(m) >= 0 ? en.slope_ft_per_c * en.oni : 0;
+      var add = u + e, v = h.v + add, d = iso(h.t);
+      adds.push(u); last = h.t;   // the usual part alone (El Niño is given separately)
+      if (level(v) === 2 && level(h.v) < 2 && (!days.length || days[days.length - 1].date !== d)) days.push({ date: d, t: h.t, v: v, add: add });
+    });
+    if (!adds.length) return null;
+    return { from: iso(from), to: iso(last), usual: Math.min.apply(null, adds), usualMax: Math.max.apply(null, adds),
+      enso: useEnso ? { oni: en.oni, season: en.oni_season, add: en.slope_ft_per_c * en.oni, phase: en.oni > 0 ? "El Niño" : "La Niña", months: en.months } : null,
+      days: days, data: ol };
   }
 
   function mhhw() { return LK.mhhw(STATION); }
@@ -187,7 +227,7 @@
   }
 
   return { load: function () { return Promise.all([loadTable(), loadModel(), loadOffsetFile()]); }, loadTable: loadTable, loadModel: loadModel, setModel: setModel,
-    loadOffset: loadOffsetFile, offset: offset, offsetDays: offsetDays,
+    loadOffset: loadOffsetFile, offset: offset, offsetDays: offsetDays, seasonOutlook: seasonOutlook, outlook: outlookData,
     onUpdate: function (fn) { listeners.push(fn); },
     dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote, txt: txt,
     clock: clock, ft: ft, mhhw: mhhw, red: red, king: king, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };

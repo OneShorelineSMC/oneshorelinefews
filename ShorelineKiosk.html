@@ -85,6 +85,7 @@
   .kgrid .d.sel { outline: 3px double var(--ink); outline-offset: 1px; }
   #kckey { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
   #kckey i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; font-style: normal; font-size: 9px; color: #fff; text-align: center; line-height: 13px; font-weight: bold; }
+  #kcout { font-size: 13.5px; line-height: 1.35; margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: rgba(26,58,92,.06); color: var(--ink); }
   #kcsel { font-size: 15px; min-height: 22px; margin-top: 6px; color: var(--ink); }
   .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed var(--mhhw); vertical-align: middle; margin-right: 4px; }
   /* Headline banner, under the NWS bar on the tide tabs (staff, 2026-10-23): solid colors and white text, like the NWS
@@ -516,9 +517,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261023e"></script>
-<script src="tide_season.js?v=20261023e"></script>
-<script src="creek_status.js?v=20261023e"></script>
+<script src="lookups.js?v=20261023f"></script>
+<script src="tide_season.js?v=20261023f"></script>
+<script src="creek_status.js?v=20261023f"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1466,7 +1467,17 @@ function showCalendar() {
     html += "</div></div>";
   }
   html = html.replace("@@OFKEY@@", anyOf ? '<span><i style="border:2px dashed var(--red);box-sizing:border-box"></i>' + esc(LK.text("tide_offset_cal_key", { red: TSN.red().toFixed(1), water: waterWord() })) + "</span>" : "");
-  html += '</div><div id="kcsel" aria-live="polite">Tap a day for its highest tide and time.</div>' +
+  // Seasonal outlook past the next 6 weeks (tide_season.js; THRESHOLDS_BASIS.md §4b): a line, not marks on days
+  var so = isFinite(TSN.red()) ? TSN.seasonOutlook() : null, otx = "";
+  if (so) {
+    var f2 = function (v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + " ft"; };
+    var rg = Math.abs(so.usualMax - so.usual) < 0.05 ? f2(so.usual) : f2(so.usual) + " to " + f2(so.usualMax);
+    otx = '<div id="kcout"><b>Outlook after ' + esc(tsDay(so.from)) + ":</b> high tides usually run " + esc(rg) + " vs the tide table" +
+      (so.enso ? "; " + esc(so.enso.phase) + " (ONI " + so.enso.oni.toFixed(1) + ") about " + esc(f2(so.enso.add)) + " more Nov–Mar" : "") + ". " +
+      (so.days.length ? "Could reach the flood level: " + esc(so.days.slice(0, 5).map(function (x) { return tsDay(x.date); }).join(", ")) + (so.days.length > 5 ? " +" + (so.days.length - 5) + " more" : "")
+        : "No day reaches the flood level at that height") + ". From past years, not a forecast.</div>";
+  }
+  html += '</div><div id="kcsel" aria-live="polite">Tap a day for its highest tide and time.</div>' + otx +
     '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) })) + "</div>";
   openDetail("High tides and King Tides · " + LK.station(TSN.station).name, html);
 }

@@ -28,7 +28,7 @@
     MODEL_MAX_AGE_HOURS: [12, 1, 72], MODEL_MIN_AHEAD_HOURS: [6, 0, 72],
     OFFSET_RECENT_HIGHS: [4, 1, 14], OFFSET_NOTE_FT: [0.2, 0.01, 5], OFFSET_HIGH_FT: [0.5, 0.01, 10],
     // recent offset after the NOAA projection (tide_offset.json from scripts/tide_offset.py, which uses BAY_OFFSET_DAYS)
-    BAY_OFFSET_DAYS: [30, 7, 31], BAY_OFFSET_SHOW: [1, 0, 1], BAY_OFFSET_MIN_FT: [0.1, 0, 2], BAY_OFFSET_MAX_AGE_HOURS: [48, 6, 168], BAY_OFFSET_AHEAD_DAYS: [30, 3, 90],
+    BAY_OFFSET_DAYS: [30, 7, 31], BAY_OFFSET_SHOW: [1, 0, 1], BAY_OFFSET_MIN_FT: [0.1, 0, 2], BAY_OFFSET_MAX_AGE_HOURS: [48, 6, 168], BAY_OFFSET_AHEAD_DAYS: [42, 3, 90], TIDE_OUTLOOK_SHOW: [1, 0, 1], ENSO_MIN_ONI: [0.5, 0, 2], TIDE_OUTLOOK_MAX_AGE_DAYS: [21, 7, 60],
     // creek status layer (the data job uses the same ranges, scripts/creek_signals.py)
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
