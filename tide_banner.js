@@ -54,11 +54,23 @@
     return null;
   }
 
-  function render() {
-    if (!T.state.highs) return;
-    var b = place(), now = T.now(), hw = highWater(now);
-    if (!hw) { b.hidden = true; return; }
-    var day = hw.day === 0 ? "Today" : hw.day === 1 ? "Tomorrow" :
+  // The last answer is kept for a while (this browser only), so the bar shows at once on the next page instead of
+  // waiting for NOAA's tide table and forecast to download again. Fresh data replaces it as soon as it arrives.
+  var CACHE = "fews_tideban", CACHE_MIN = 60;
+  function save(hw) { try { localStorage.setItem(CACHE, JSON.stringify({ hw: hw, saved: Date.now() })); } catch (e) {} }
+  function cached() {
+    try {
+      var c = JSON.parse(localStorage.getItem(CACHE) || "null");
+      return c && Date.now() - c.saved < CACHE_MIN * 60000 ? c : null;
+    } catch (e) { return null; }
+  }
+
+  function show(hw, now) {
+    var b = place();
+    if (!hw || hw.t < now - MATCH_MIN * 60000) { b.hidden = true; return; }
+    var n = Math.round((Date.UTC(new Date(hw.t).getUTCFullYear(), new Date(hw.t).getUTCMonth(), new Date(hw.t).getUTCDate()) -
+      Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate())) / 86400000);
+    var day = n === 0 ? "Today" : n === 1 ? "Tomorrow" :
       new Date(hw.t).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
     // Short for the public: what, when, what to do. The heights are one tap away on Bayside Tides.
     b.innerHTML = '<span class="ti" aria-hidden="true">⚠</span><span class="tx"><b>' + esc(LK.text("tide_head_red")) +
@@ -70,10 +82,23 @@
     b.hidden = false;
   }
 
-  T.onUpdate(render);
+  var haveModel = false;
+  function render() {
+    if (!T.state.highs) return;
+    var now = T.now(), hw = highWater(now);
+    // until NOAA's forecast is in, the tide table alone can only add a bar, not take a remembered one away
+    if (!hw && !haveModel && cached() && cached().hw) return;
+    show(hw, now);
+    if (haveModel || hw) save(hw);
+  }
+
+  T.onUpdate(function () { if (T.state.ofs) haveModel = true; render(); });
+  // start both downloads right away (they don't need the lookup tables); a page that already loads them shares them
+  T.loadTable();
+  if (!T.state.ofs) T.loadModel();
   (LK.ready || Promise.resolve()).then(function () {
-    T.loadTable();                                  // shared: a page that already loads it (Shoreline) isn't asked twice
-    setTimeout(function () { if (!T.state.ofs) T.loadModel(); }, 3000);
+    var c = cached();
+    if (c && !T.state.highs) show(c.hw, T.now());   // the remembered answer first
     setInterval(T.loadModel, 30 * 60000);
     setInterval(T.loadTable, 12 * 3600000);
     setInterval(render, 5 * 60000);                 // the time passes: a tide that has gone by drops off
