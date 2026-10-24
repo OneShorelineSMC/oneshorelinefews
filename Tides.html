@@ -174,6 +174,12 @@
   .head .hm .hd { display: block; margin-top: 3px; font-size: 14.5px; font-weight: 400; color: var(--text); line-height: 1.4; }
   .head .hm .hd b { color: var(--ink); }
   .head .hm .hi { font-size: 15px; margin-right: 4px; }
+  /* the headline as a banner under the NWS bar (single gauge pages): solid colors, white text, like the NWS bar */
+  .head.ban { margin: 0; border: 0; border-radius: 0; padding: 10px 16px; background: #6b7a8c; }
+  .head.ban.red { background: #c62828; } .head.ban.over { background: #0a5587; } .head.ban.ok { background: #2e7d32; }
+  .head.ban .hm, .head.ban.red .hm, .head.ban.over .hm, .head.ban.ok .hm, .head.ban .hm span, .head.ban .hm .hd, .head.ban .hm .hd b { color: #fff; }
+  .head.ban .hm { font-size: 16.5px; } .head.ban .hm .hd { font-size: 14px; opacity: .95; }
+  .head.ban .hm .maybe { color: #fff; border-top: 1px solid rgba(255,255,255,.35); padding-top: 5px; }
   .nowl { font-size: 14px; margin: 8px 2px 0; color: var(--muted); }
   .mhhwq { margin: 6px 2px 0; font-size: 14px; } .mhhwq summary { cursor: pointer; color: var(--info); font-weight: 600; display: inline-block; padding: 4px 0; min-height: 24px; }
   .mhhwq summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; } .mhhwq p { margin: 2px 0 4px; line-height: 1.45; }
@@ -206,7 +212,8 @@
   .head .hm .maybe { display: block; margin-top: 6px; font-size: 14.5px; font-weight: 700; color: var(--red); line-height: 1.4; }
   .tag { font-size: 11.5px; font-weight: 700; } .hd .wsep { display: none; }
   .tag.fc { color: var(--fc); } .tag.ms { color: var(--info); }
-  .day .dof { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }   /* "≈ 8.12 if the Bay stays high" (after the NOAA projection) */
+  .day .dof { display: block; font-size: 12px; font-weight: 400; color: var(--muted); white-space: normal; }   /* "≈ 8.12 if the Bay stays high" (after the NOAA projection): wraps in its column, never runs into the next */
+  .day.maybe .dxw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* "· +0.87 ft above MHHW in the tide table": read aloud, not shown (the row says it) */
   @media (min-width: 760px) {
     .days { grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 0; margin-left: 38px; }   /* 38px = graph's y-axis, so days line up */
     .day > span { display: block; }
@@ -746,6 +753,11 @@ if (!EMBED && S.length === 1) (function () {
   row.className = "ptitle"; h1.parentNode.insertBefore(row, h1); row.appendChild(h1);
   h1.innerHTML = esc(SIDE.name) + '<span class="pst"> · ' + esc(S[0].st.name) + "</span>";
   row.appendChild(th.querySelector(".side")); row.appendChild(th.querySelector(".lbl")); th.parentNode.removeChild(th);
+  // The tide headline is a banner under the National Weather Service bar (staff, 2026-10-23): red at the flood level,
+  // blue when higher than usual, green when no tide goes above MHHW this week
+  var hd = $("st0").querySelector(".head");
+  hd.id = "tban"; hd.classList.add("ban"); hd.setAttribute("role", "status");
+  $("alertList").parentNode.insertBefore(hd, $("alertList").nextSibling);
 })();
 
 function render() {
@@ -755,13 +767,14 @@ function render() {
     var useModel = !!s.pred && modelOK(s, now), fe = useModel ? modelEnd(s) : now;
 
     // Headline: is the Bay going above MHHW in the next 7 days, and when?
-    var hd = q(".head"), hm = q(".hm"), ups = s.pred ? upcomingAbove(s, now) : [];
+    var hd = q(".head") || $("tban"), hm = hd.querySelector(".hm"), ups = s.pred ? upcomingAbove(s, now) : [];   // (the banner, once moved)
     if (!s.pred) { hd.className = "head unknown"; hm.textContent = s.failed ? "Tide table unavailable — retrying" : "Loading tides…"; }
     else if (!ups.length) { hd.className = "head ok"; hm.textContent = "No tides above MHHW in the next " + DAYS + " days"; }
     else {
       hd.className = ups.some(function (w) { return w.peak >= redFor(st); }) ? "head red" : "head over";
       hm.innerHTML = headHtml(ups, st, now, s);
     }
+    if (hd.id === "tban") hd.classList.add("ban");
     var md = s.pred ? maybeDays(s, now, fe) : [];
     if (md.length) {
       var dl = md.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fmt(x.t, { day: "numeric" }); });

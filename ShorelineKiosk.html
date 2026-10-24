@@ -87,25 +87,26 @@
   #kckey i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; font-style: normal; font-size: 9px; color: #fff; text-align: center; line-height: 13px; font-weight: bold; }
   #kcsel { font-size: 15px; min-height: 22px; margin-top: 6px; color: var(--ink); }
   .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed var(--mhhw); vertical-align: middle; margin-right: 4px; }
-  /* Headline band: the one line a responder reads first. The color goes around the whole box. */
-  #thead { flex: none; display: flex; align-items: center; gap: 12px; border: 3px solid #8a96a3; border-radius: 8px;
-    padding: 4px 12px; min-height: 38px; box-sizing: border-box; background: rgba(138,150,163,.08); cursor: pointer; }
-  /* Above MHHW = higher than usual: blue, for information (MHHW is a tidal reference, not a flood level). Red only at the flood level. */
-  #thead.over { border-color: var(--infob); background: var(--infobg); }
-  #thead.red { border-color: #c62828; background: rgba(198,40,40,.08); }
-  #thead.ok { border-color: #2e7d32; background: rgba(46,125,50,.07); }
-  #thead .hm { flex: 1; min-width: 0; font-size: 16.5px; font-weight: bold; line-height: 1.2; overflow: hidden;
-    display: block; }
-  #thead.over .hm { color: var(--info); } #thead.red .hm { color: var(--red); } #thead.ok .hm { color: var(--green); }
-  #thead .hm span { font-weight: normal; color: var(--ink); }
-  #thead .hm .hd { display: block; font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Headline banner, under the NWS bar on the tide tabs (staff, 2026-10-23): solid colors and white text, like the NWS
+     bar. Red only at the flood level; blue = higher than usual (above MHHW, information); green = none this week. */
+  #thead { position: absolute; left: 0; top: 68px; width: 800px; height: 44px; box-sizing: border-box; display: none;
+    align-items: center; gap: 12px; padding: 0 16px; background: #5b6877; color: #fff; cursor: pointer;
+    border-top: 2px solid rgba(255,255,255,.6); }
+  #stage.tidesOn #thead { display: flex; }
+  #thead.over { background: #0a5587; } #thead.red { background: #c62828; } #thead.ok { background: #2e7d32; }
+  #thead .hm { flex: 1; min-width: 0; font-size: 16.5px; font-weight: bold; line-height: 1.2; overflow: hidden; white-space: nowrap;
+    text-overflow: ellipsis; display: block; color: #fff; }
+  #thead .hm span { font-weight: normal; color: #fff; }
+  #thead .hm .hd { display: block; font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .95; }
   #thead .hm .hd b { font-weight: bold; }
   #thead .hm .hi { margin-right: 5px; }
-  #thead .hnow { flex: none; text-align: right; font-size: 12.5px; color: var(--muted); line-height: 1.25; white-space: nowrap; }
-  #thead .hnow b { font-size: 17px; color: var(--ink); }
-  #stage.creekalert #thead .hm { font-size: 15.5px; white-space: nowrap; text-overflow: ellipsis; }
-  #stage.creekalert #thead .hm .hd { display: none; }   /* small screen space during a creek alert: title line only */
-  #stage.creekalert #thead { min-height: 32px; padding: 2px 12px; }
+  #thead .hnow { flex: none; text-align: right; font-size: 12.5px; color: #fff; opacity: .95; line-height: 1.25; white-space: nowrap; }
+  #thead .hnow b { font-size: 17px; color: #fff; }
+  /* make room: the tide panel moves down under the banner (and under the creek strip during a creek alert) */
+  #stage.tidesOn #tides { top: 120px; height: 308px; }
+  #stage.tidesOn.creekalert #thead { top: 98px; height: 34px; }
+  #stage.tidesOn.creekalert #thead .hm { font-size: 15.5px; } #stage.tidesOn.creekalert #thead .hm .hd { display: none; }   /* title line only */
+  #stage.tidesOn.creekalert #tides { top: 140px; height: 288px; }
 
   /* Right: 3-day look-ahead (the main element): the last 24 hours and the next 48, with a one-line "Later" for the rest of the week */
   #tright { flex: 1; min-height: 0; display: flex; flex-direction: column; cursor: pointer; }
@@ -431,10 +432,11 @@
     <span class="sicon" id="csIcon">▲</span><span class="stext" id="csText"></span><span class="stap" id="csTap">creeks tab ›</span>
   </div>
 
+  <div id="thead" class="unknown" role="status"><div class="hm" id="thm">Loading tides…</div><div class="hnow" id="thnow"></div></div>
+
   <div id="tides">
     <div class="th"><span class="tname" id="tname">Redwood City · Bay tide</span><span class="tid" id="tid">NOAA 9414523 · ft NAVD88</span>
       <span class="tcalb" id="tcalb" role="button" tabindex="0">High tides calendar ›</span></div>
-    <div id="thead" class="unknown"><div class="hm" id="thm">Loading tides…</div><div class="hnow" id="thnow"></div></div>
     <div id="tright">
       <div class="tsec"><span><b id="tsechead">Next 3 days</b> · <span id="tsechint">highest tide each day</span><span id="tlater"></span></span><span class="tap">Tap for times ›</span></div>
       <div id="tdays"></div>
@@ -2065,6 +2067,7 @@ function showTab(name) {
   document.getElementById("maptab").classList.toggle("show", name === "map");
   if (name === "map") showMapTab();
   document.getElementById("tides").classList.toggle("hide", !tides);
+  document.getElementById("stage").classList.toggle("tidesOn", tides);   // the tide headline banner under the NWS bar
   if (about) { drawQRs(); fitAbout(); }
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
     t.classList.toggle("on", t.dataset.tab === name);
