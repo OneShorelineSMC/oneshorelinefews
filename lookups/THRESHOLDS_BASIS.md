@@ -195,8 +195,8 @@ steps, each as far ahead as NOAA's own research supports:
 | How far ahead | Height used | Shown as |
 |---|---|---|
 | While the NOAA projection lasts (≈ 3 days) | NOAA projection | status colors, banners (§4) |
-| From then to `BAY_OFFSET_AHEAD_DAYS` (42 days, 6 weeks) | tide table + the recent offset, **fading** (damped persistence) | "Possible flood level" days (dashed red), never a status |
-| From 6 weeks to the end of the calendar (≈ 7 months) | tide table + the **usual height for that month** (+ El Niño in Nov–Mar) | a seasonal outlook line under the calendar, not marks on days |
+| From then to `BAY_OFFSET_AHEAD_DAYS` (42 days, 6 weeks) | tide table + the recent offset, **fading** toward the expected level (damped persistence) | "≈" heights in the Tides page day list and graph; "Possible flood level" days (dashed red), never a status |
+| From 6 weeks to the end of the calendar (≈ 7 months) | the same formula: by then mostly the **expected level** (usual for the month + El Niño in Nov–Mar) | a seasonal outlook line under the calendar and dashed red rings; listed with the forecast and estimate days |
 
 **1. Recent offset** (`scripts/tide_offset.py`, data branch `tide_offset.json`, once a day): for each of the last
 `BAY_OFFSET_DAYS` (30) whole days, the day's average of NOAA's measured water level minus NOAA's tide table (6-minute
@@ -210,13 +210,18 @@ constant, because its correlation "drops quickly between 1 and 3 months"; on the
 3 months was mostly not significant. A 2025 subseasonal study found useful skill at California gauges out to about
 6 weeks. So, for a high tide *d* days ahead:
 
-  height = tide table + usual(month) + (offset − usual(this month)) × r1^(d / 30.4)
+  height = tide table + base(then) + (offset − base(now)) × r1^(d / 30.4)
 
-where usual(month) is the Bay's usual height above the tide table in that month (step 3) and r1 is the lag-1 month
-autocorrelation of the monthly departures at San Francisco (step 3). Without the outlook data the offset is used as it
-is. Shown only when the water has run at least `BAY_OFFSET_MIN_FT` (0.1 ft) higher than the tide table, the offset is
-less than `BAY_OFFSET_MAX_AGE_HOURS` (48) old and `BAY_OFFSET_SHOW` = 1. Where: the Tides page "More detail" fold, the
-calendar's dashed red rings (Tides page and kiosk) and the Shoreline page. Within the 7-day day lists the kiosk still
+where base = the usual height above the tide table for that month plus El Niño's usual effect in its months (step 3),
+and r1 is the lag-1 month autocorrelation of the monthly departures at San Francisco (step 3; 0.62 on Oct 23, 2026).
+One formula for every lead time, as in NOAA's model: the recent part fades by itself (about a third left after 2
+months, 5% after 6), so there is no jump at 6 weeks; 6 weeks only decides how the result is shown. Without the
+outlook data the offset is used as it is. Shown only when the water has run at least `BAY_OFFSET_MIN_FT` (0.1 ft) higher than the tide table, the offset is
+less than `BAY_OFFSET_MAX_AGE_HOURS` (48) old and `BAY_OFFSET_SHOW` = 1. Where (revised Oct 23 after staff review: the
+recent offset must show in the near term): the Tides page 7-day list as "≈" heights with "Possible flood level" or
+"Higher than usual", a dotted "Estimate (≈)" line on its graph and a one-line note; the calendar card's list "Tides
+that could reach the flood level" (forecast, estimate and outlook days together); the calendar's dashed red rings
+(Tides page and kiosk); the Shoreline page. Within the 7-day day lists the kiosk still
 uses the offset as it is (over one week the fading is small). Never a status, a headline color or a King Tide star.
 
 **3. Seasonal outlook, 6 weeks to 7 months** (computed weekly in `tide_offset.py`, `outlook()`):
@@ -240,6 +245,10 @@ uses the offset as it is (over one week the fading is small). Never a status, a 
 Marine Science, doi:10.3389/fmars.2022.1073792; NOAA CO-OPS, *NOAA High Tide Flooding Outlooks* (methodology),
 repository.library.noaa.gov/view/noaa/70863; *Assessing subseasonal forecast skill for use in predicting US coastal
 inundation risk*, Ocean Science 21, 1761 (2025); NOAA CPC Oceanic Niño Index (oni.ascii.txt).
+
+**King Tides** (Oct 23, 2026): no longer pointed to on their own (no "Next King Tide" line, no King Tide card). With
+the Bay running high, ordinary tides now go above the 1-year tide, so pointing to the tide table's King Tide days sent
+people to the wrong dates. The stars and the King Tide list stay in the full calendar.
 
 **To review:** the 6-week limit, the 20-year window, using San Francisco for the whole Bay, the latest observed ONI
 standing for the winter (a staff override could be added), and showing a Bay running lower too.
