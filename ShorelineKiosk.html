@@ -465,9 +465,9 @@
       <h3>About this screen</h3>
       <p><b>Bayside Tides:</b> NOAA's Redwood City gauge. Cards show each day's highest tide (NOAA projection for about 2 days, then the
         tide table); blue = above MHHW, the average daily high (higher than usual), red = the provisional flood level. The line under the
-        The National Weather Service row names the next King Tide (the tide table reaches the 1-year tide) or a tide expected to reach the flood level.</p>
+        The National Weather Service row names a tide expected to reach the flood level.</p>
       <p><b>Coastside Tides:</b> the same for the ocean at NOAA's Monterey gauge, the nearest with live readings on the open coast south of
-        San Francisco. No coastside flood level yet; King Tide level provisional. Waves are not included and can push water much farther up a beach.</p>
+        San Francisco. No coastside flood level yet. Waves are not included and can push water much farther up a beach.</p>
       <p><b>Creeks:</b> water level (stage) at OneShoreline's creek gauges with their flood thresholds, nearby rainfall, and the Bay tide, all on one timeline.</p>
       <p data-text="tide_words" data-lead></p>
      <p class="emerg" data-text="e911"></p>
@@ -517,9 +517,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261024b"></script>
-<script src="tide_season.js?v=20261024b"></script>
-<script src="creek_status.js?v=20261024b"></script>
+<script src="lookups.js?v=20261024c"></script>
+<script src="tide_season.js?v=20261024c"></script>
+<script src="creek_status.js?v=20261024c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1453,7 +1453,6 @@ function showCalendar() {
   (so ? so.days : []).forEach(function (x) { sod[x.date] = x; });
   html += '<div id="kckey"><span><i style="background:var(--infobg);box-shadow:inset 0 -3px 0 var(--infob)"></i>' + esc(LK.text("tide_day_amber")) + "</span>" +
     (red ? '<span><i style="background:#c62828">!</i>' + esc(LK.text("tide_red_key", { ft: TSN.red().toFixed(1) })) + "</span>" : "") +
-    '<span><i style="background:#6A3D8F">★</i>' + esc(LK.text("tide_day_king")) + " " + (+TSN.king().toFixed(2)) + " ft</span>" +
     '<span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>' +
     '<span><i style="border:2px dotted var(--ink);box-sizing:border-box"></i>NOAA projection</span>@@OFKEY@@</div><div id="kcal">';
   var anyOf = false;
@@ -1464,7 +1463,7 @@ function showCalendar() {
     for (var i = 0; i < first.getUTCDay(); i++) html += "<span></span>";
     for (var t = first.getTime(); new Date(t).toISOString().slice(0, 7) === mm.slice(0, 7); t += 86400000) {
       var day = new Date(t).toISOString().slice(0, 10), hi = dh[day], xp = ex[day], lv = xp ? TSN.level(xp.v) : hi ? TSN.level(hi.v) : 0, c = "d";
-      if (lv === 2) c += kd[day] ? " r kr" : " r"; else if (kd[day]) c += " k"; else if (lv === 1) c += " a";
+      if (lv === 2) c += " r"; else if (lv === 1) c += " a";   // no King Tide marks (staff, 2026-10-24)
       if (xp) c += " xp"; if (ofReach(day) || (sod[day] && lv < 2)) { c += " of"; anyOf = true; } if (day < today) c += " past"; if (day === today) c += " today";
       html += '<span class="' + c + '" data-d="' + day + '" role="button" aria-label="' + esc(calLine(day)) + '">' + (+day.slice(8)) + "</span>";
     }
@@ -1484,7 +1483,7 @@ function showCalendar() {
   }
   html += '</div><div id="kcsel" aria-live="polite">Tap a day for its highest tide and time.</div>' + otx +
     '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) })) + "</div>";
-  openDetail("High tides and King Tides · " + LK.station(TSN.station).name, html);
+  openDetail(LK.text("tide_cal_title") + " · " + LK.station(TSN.station).name, html);
 }
 $t("tcalb").addEventListener("click", function (e) { e.stopPropagation(); showCalendar(); });
 $t("dbody").addEventListener("click", function (e) {

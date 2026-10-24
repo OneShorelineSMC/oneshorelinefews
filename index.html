@@ -264,10 +264,10 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261024b"></script>
-<script src="tide_season.js?v=20261024b"></script>
-<script src="tide_banner.js?v=20261024b"></script>
-<script src="creek_status.js?v=20261024b"></script>
+<script src="lookups.js?v=20261024c"></script>
+<script src="tide_season.js?v=20261024c"></script>
+<script src="tide_banner.js?v=20261024c"></script>
+<script src="creek_status.js?v=20261024c"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // National Weather Service first, then creeks, tides, sign-up; the sensor map card goes (the creek list links to the map);
@@ -681,9 +681,7 @@ function renderTide(T) {
     var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
     bits.push("Peak " + top.peak.toFixed(1) + " ft, " + (top.peak - m).toFixed(1) + " ft above an average high tide");
     if (isFinite(redLvl)) bits.push((top.peak >= redLvl ? "at or above" : "below") + " the " + redLvl.toFixed(1) + " ft flood level");
-    // King Tide (the 1-year tide) in the coming week: the tide table reaching it, as on the Tides page calendar
-    var k = null; D.pred.forEach(function (p) { if (!k && p.v >= kingLvl && p.t >= dayStart(now) && p.t < dayStart(now) + TIDE_DAYS * 864e5) k = p; });
-    if (k) bits.push("★ King Tide " + dayWord(k.t));
+    // (no "King Tide" mention: the designation was dropped, staff 2026-10-24)
   }
   // Bayside only: say so when the Bay is running well above the tide table (storms, wind, runoff)
   var last = D.obs && D.obs.length ? D.obs[D.obs.length - 1] : null;

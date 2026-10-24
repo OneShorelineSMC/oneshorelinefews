@@ -149,7 +149,9 @@
     var ex = expected(now);
     S.highs.forEach(function (h) {
       var d = iso(h.t);
-      if (h.t < now - MATCH_MIN * 60000 || ex[d] || h.t > now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000) return;
+      // each high tide after the projection gets its estimate, even on a day whose earlier tide the projection covers
+      // (staff, 2026-10-24: the projection ending at 2 AM no longer hides that afternoon's higher tide)
+      if (h.t < now - MATCH_MIN * 60000 || h.t > now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000) return;
       if (modelOK(now) && h.t <= S.ofs[S.ofs.length - 1].t) return;   // still inside the projection
       var add = addAt(h.t, now), x = { t: h.t, v: h.v + add, table: h.v, off: add };
       if (!out[d] || x.v > out[d].v) out[d] = x;
@@ -193,13 +195,11 @@
     (S.highs || []).forEach(function (h) { var d = iso(h.t); if (!out[d] || h.v > out[d].v) out[d] = h; });
     return out;
   }
-  /* King Tide days: days whose highest tide-table high tide reaches the 1-year tide (KING_TIDE_FT_RWC). The tide table only,
-     so the stars are known months ahead and don't come and go with the NOAA projection. */
-  function kingDays() {
-    var dh = dayHighs(), k = king(), out = {};
-    Object.keys(dh).forEach(function (d) { if (dh[d].v >= k) out[d] = dh[d]; });
-    return out;
-  }
+  /* King Tide days: none. The "King Tide" designation was dropped (staff, 2026-10-24): it made the tide table's 1-year-tide
+     days look like the riskiest ones while ordinary tides, pushed up by the Bay running high, were already going above them.
+     The pages no longer star or color any day for it; the 1-year tide (king()) is only quoted in the calendar's footnote.
+     Kept as an empty answer so the pages that ask for it need no other change. */
+  function kingDays() { return {}; }
   /* NOAA projection (next TIDE_EXPECTED_HOURS): the model's peak near each tide-table high tide, highest per day */
   function expected(now) {
     now = now || nowLocal();
