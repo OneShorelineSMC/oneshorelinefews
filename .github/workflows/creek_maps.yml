@@ -13,6 +13,7 @@ on:
       - "lookups/creeks.csv"
       - "lookups/creek_gauges.csv"
       - "scripts/build_creek_maps.py"
+      - "data/storm_drains/**"
 
 permissions:
   contents: write
@@ -43,5 +44,7 @@ jobs:
           git add img/creekmaps data/watersheds.geojson
           if git diff --cached --quiet; then echo "Creek maps already up to date."; exit 0; fi
           git commit -q -m "Rebuild creek maps"
-          git pull -q --rebase origin main
+          # two builds close together (an upload and a manual run): this build is the newer one, so where both
+          # changed the same map, this build's map wins (-X theirs = the commit being replayed) instead of failing
+          git pull -q --rebase -X theirs origin main
           git push -q origin HEAD:main
