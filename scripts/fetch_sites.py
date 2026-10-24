@@ -34,6 +34,7 @@ TIDE_MLLW_TO_NAVD88 = {k: v["mllw_to_navd88"] for k, v in TIDE_STATIONS.items() 
 
 HISTORY_HOURS = 24   # history kept per sensor for the small graphs and the 24-hour rain total
 RAIN_WINDOWS_H = (1, 3, 6)   # shorter rain totals on the sensor map (with rain24)
+RAIN_WINDOWS_MIN = (15, 30)  # and the shortest: rain15m, rain30m (staff, 2026-10-24)
 MAX_POINTS = 96      # graph points kept per sensor (keeps the file small)
 PAUSE_SEC = 0.25     # pause between requests, to be gentle on OneRain
 
@@ -142,6 +143,8 @@ def summarize(sensor, hist, start, now):
         sensor["rain24"] = round(sum(hours.values()), 2) if hist else None
         for h in RAIN_WINDOWS_H:   # rain1, rain3, rain6: the sensor map's 1 / 3 / 6 / 24-hour switch
             sensor[f"rain{h}"] = round(sum(max(v, 0) for t, v in hist if t > now - dt.timedelta(hours=h)), 2) if hist else None
+        for m in RAIN_WINDOWS_MIN:   # rain15m, rain30m: the switch's 15 and 30 minutes
+            sensor[f"rain{m}m"] = round(sum(max(v, 0) for t, v in hist if t > now - dt.timedelta(minutes=m)), 2) if hist else None
         sensor["hourly"] = [[h.strftime("%Y-%m-%d %H:%M"), round(v, 2)] for h, v in sorted(hours.items())]
         return
     if kind == "accumulation" and len(hist) >= 2:
@@ -149,6 +152,9 @@ def summarize(sensor, hist, start, now):
         for h in RAIN_WINDOWS_H:   # running total: now minus the last reading at or before h hours ago
             before = [v for t, v in hist if t <= now - dt.timedelta(hours=h)]
             sensor[f"rain{h}"] = round(max(hist[-1][1] - before[-1], 0), 2) if before else None
+        for m in RAIN_WINDOWS_MIN:
+            before = [v for t, v in hist if t <= now - dt.timedelta(minutes=m)]
+            sensor[f"rain{m}m"] = round(max(hist[-1][1] - before[-1], 0), 2) if before else None
     step = max(1, -(-len(hist) // MAX_POINTS))
     keep = hist[::step]
     if hist and keep[-1] != hist[-1]:
