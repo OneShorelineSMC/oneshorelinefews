@@ -97,7 +97,7 @@
     brief_location: "Monitoring location",
     brief_level: "Creek level",
     rain_none_card: "None recorded",
-    quiet_title: "Monitored creeks",
+    quiet_title: "All monitored creeks",
     quiet_some: "Creeks with no alerts ({n})",
     city_coverage: "Streets and low areas elsewhere in {city} can flood too.",
     city_all: "Show all monitored creeks",

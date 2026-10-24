@@ -291,21 +291,53 @@
     return h;
   }
 
-  /* All creeks for a page: summary, cards for creeks with a status, the rest folded away */
+  /* The Creeks page (staff, 2026-10-24): the home page's status board at the top, then the city finder and "How to read
+     this page", then a card for every creek, quiet ones too. Order: most serious first during a storm, otherwise Bay
+     side north to south then coast north to south; buttons switch between those and A–Z (the choice is kept). */
+  var NS = ["colma", "sanbruno", "greenhills", "sanmateo", "belmont", "atherton", "sanfrancisquito",   // Bay side, north to south (by outlet)
+    "pilarcitos", "sangregorio", "pescadero", "butano"];                                               // then the coast, north to south
+  var SORT = null;   // null: by the situation; "sev", "ns" or "az" once someone picks
+  try { SORT = sessionStorage.getItem("fews_creek_sort"); } catch (e) {}
+  function nsKey(c, i) { var k = NS.indexOf(c.id); return k >= 0 ? k : 100 + i; }
   function page(data, linkFor, opts) {
     opts = opts || {};
-    var rows = allCreeks(data).map(function (c) { return { c: c, v: view(data, c) }; });
-    rows.sort(function (a, b) { return b.v.rank - a.v.rank; });
+    var all = allCreeks(data), rows = all.map(function (c, i) { return { c: c, v: view(data, c), i: i }; });
     var link = function (c) { return !linkFor || (c.preview_only && !opts.previewLinks) ? null : linkFor(c); };   // preview creeks: detail page on Creeks.html only
     var co = function (c, quiet) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes, quiet: !!quiet }; };
-    var active = rows.filter(function (x) { return x.v.key !== "none"; }), quiet = rows.filter(function (x) { return x.v.key === "none"; });
-    var h = badge() + summary(data, !!opts.compactNotes) + '<div id="cpSlot"></div>' + howTo() +   // cpSlot: the page puts its city finder here
-      '<div class="cs-grid">' + active.map(function (x) { return card(data, x.c, co(x.c)); }).join("") + "</div>";
-    var cards = '<div class="cs-grid">' + quiet.map(function (x) { return card(data, x.c, co(x.c, true)); }).join("") + "</div>";
-    if (quiet.length && !active.length) h += '<h2 class="cs-qh">' + esc(T("quiet_title")) + "</h2>" + cards;
-    else if (quiet.length) h += '<details class="cs-quiet"><summary>' + esc(T("quiet_some", { n: quiet.length })) + "</summary>" + cards + "</details>";
+    var stormy = rows.some(function (x) { return x.v.key !== "none" && x.v.key !== "offline" && x.v.key !== "delayed"; });
+    var by = SORT || (stormy ? "sev" : "ns");
+    var hm = home(data, linkFor);   // the same status board as the home page
+    var h = badge() + hm.banner + hm.html + '<div id="cpSlot"></div>' + howTo() +   // cpSlot: the page puts its city finder here
+      '<div class="cs-allh"><h2 class="cs-qh">' + esc(T("quiet_title")) + '</h2><div class="cs-sort" role="group" aria-label="Order the creeks">' +
+      [["sev", "Most serious first"], ["ns", "North to south"], ["az", "A–Z"]].map(function (b) {
+        return '<button type="button" data-sort="' + b[0] + '" aria-pressed="' + (b[0] === by) + '">' + b[1] + "</button>"; }).join("") + "</div></div>" +
+      '<div class="cs-grid" id="csAll">' + rows.map(function (x) {
+        var q = x.v.key === "none";
+        return card(data, x.c, co(x.c, q)).replace(/^<article /, '<article data-sev="' + (x.v.rank || 0) + '" data-ns="' + nsKey(x.c, x.i) + '" data-az="' + esc(x.c.name.toLowerCase()) + '" ');
+      }).join("") + "</div>";
+    setTimeout(function () { sortCards(by); }, 0);   // once the page has put the html in place
     return h + (opts.staff === false || !STAFF ? "" : staffTable(data));
   }
+  function sortCards(by) {
+    var g = document.getElementById("csAll");
+    if (!g) return;
+    var kids = Array.prototype.slice.call(g.children);
+    kids.sort(function (a, b) {
+      var ns = (+a.dataset.ns || 0) - (+b.dataset.ns || 0);
+      if (by === "az") return (a.dataset.az || "").localeCompare(b.dataset.az || "");
+      if (by === "sev") return (+b.dataset.sev || 0) - (+a.dataset.sev || 0) || ns;
+      return ns;
+    });
+    kids.forEach(function (k) { g.appendChild(k); });
+    Array.prototype.forEach.call(document.querySelectorAll(".cs-sort button"), function (b) { b.setAttribute("aria-pressed", String(b.dataset.sort === by)); });
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest(".cs-sort button");
+    if (!b) return;
+    SORT = b.dataset.sort;
+    try { sessionStorage.setItem("fews_creek_sort", SORT); } catch (x) {}
+    sortCards(SORT);
+  });
   function badge() {
     if (!STAFF) return "";
     return '<div class="cs-badge">STAFF VIEW · ' + (LK.num("STATUS_PUBLIC") === 1 ? "staff table below" : "creek status layer in testing · not shown to the public") + "</div>";
@@ -562,6 +594,10 @@
     ".cs-glance .cs-calm{margin:6px 0 0;font-size:15.5px;line-height:1.45;color:var(--ink,#16202b)}.cs-glance .cs-caveat{font-size:14.5px;color:var(--text,#22303f)}",
     ".cs-glance .cs-asof{font-weight:600}.cs-new{margin:10px 0 0;font-size:15px}.cs-new a{font-weight:700;color:var(--link,#0A5587);text-underline-offset:3px}",
     ".cs-qh{font-size:17px;margin:16px 2px 8px;color:var(--ink,#16202b)}",
+    ".cs-allh{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin:16px 2px 8px}.cs-allh .cs-qh{margin:0}",
+    ".cs-sort{display:inline-flex;border:2px solid #003B5C;border-radius:10px;overflow:hidden}.cs-sort button{font:inherit;font-size:14px;font-weight:600;min-height:40px;padding:6px 12px;border:0;background:var(--card,#fff);color:#003B5C;cursor:pointer}",
+    ".cs-sort button+button{border-left:2px solid #003B5C}.cs-sort button[aria-pressed=true]{background:#003B5C;color:#fff}.cs-sort button:focus-visible{outline:3px solid #1e6fd9;outline-offset:-3px}",
+    "@media (prefers-color-scheme:dark){.cs-sort{border-color:#8cc8ff}.cs-sort button{color:#8cc8ff;background:transparent}.cs-sort button+button{border-left-color:#8cc8ff}.cs-sort button[aria-pressed=true]{background:#8cc8ff;color:#0b1520}}",
     ".cs-quiet>summary::before,.cs-how>summary::before{content:'\\25B8';display:inline-block;width:1.1em;transition:transform .15s}.cs-quiet[open]>summary::before,.cs-how[open]>summary::before{transform:rotate(90deg)}",
     ".cs-how>summary{font-size:15px}.cs-quiet>summary,.cs-how>summary,.cs-num>summary{list-style:none}.cs-quiet>summary::-webkit-details-marker,.cs-how>summary::-webkit-details-marker{display:none}",
     ".cs-how>summary:focus-visible,.cs-quiet>summary:focus-visible,.cs-new a:focus-visible,.cs-more a:focus-visible{outline:3px solid #1e6fd9;outline-offset:2px}",
