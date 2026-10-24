@@ -234,7 +234,7 @@ verdict_delayed,Not updated since {time},creek status cards and kiosk tiles (sta
 since_line,Since {time},under the status on cards and kiosk tiles,When the creek got its current status,,
 was_line,before that: {status},"under the status, after since_line",The status before the current one,,
 numbers_title,See the numbers,card section with gauge readings,Closed on the public cards; open in the staff view,,
-howto_title,How to read this page: what the alerts and creek levels mean,collapsible panel above the creek cards,,,
+howto_title,What the alerts and creek levels mean,collapsible panel above the creek cards,,,
 howto_likely,Flooding likely: move away from the creek and low areas now.,How to read this page,,,
 howto_ready,Be ready: the creek could flood. Be ready to move to higher ground.,How to read this page,,,
 howto_alert,Stay alert: conditions are getting worse. Avoid creek banks and check back often.,How to read this page,,,
