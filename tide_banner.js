@@ -1,6 +1,6 @@
 /* High water banner, on every page but Tides (which has its own tide banner) and the kiosk (which says it in its strip).
  * When NOAA's projection, or else the tide table, puts the Bay at Redwood City (9414523) at or above the flood level
- * (TIDE_RED_FT_RWC in settings.csv) today or tomorrow, a red bar under the National Weather Service bar says so and links
+ * (TIDE_RED_FT_RWC in settings.csv) in the next 7 days (the same as the Tides page's red banner), a red bar under the National Weather Service bar says so and links
  * to Bayside Tides. Only red: higher-than-usual tides and "possible flood level if the Bay stays high" days are left to
  * the Tides page. Needs lookups.js and tide_season.js (loaded before this file). Staff, 2026-10-23.
  */
@@ -32,10 +32,10 @@
     return el;
   }
 
-  /* The first high tide today or tomorrow at or above the flood level that hasn't passed: {t, v, src} or null */
+  /* The first high tide in the next 7 days at or above the flood level that hasn't passed: {t, v, src} or null */
   function highWater(now) {
     var ex = T.expected(now), dh = T.dayHighs();
-    for (var n = 0; n < 2; n++) {
+    for (var n = 0; n < 7; n++) {   // the same week the Tides page banner looks at, so both always agree
       var d = T.iso(now + n * 86400000), x = ex[d], h = dh[d];
       if (x && T.level(x.v) === 2 && x.t >= now - MATCH_MIN * 60000) return { t: x.t, v: x.v, src: "projection", day: n };
       if (!x && h && T.level(h.v) === 2 && h.t >= now - MATCH_MIN * 60000) return { t: h.t, v: h.v, src: "table", day: n };
@@ -47,7 +47,8 @@
     if (!T.state.highs) return;
     var b = place(), now = T.now(), hw = highWater(now);
     if (!hw) { b.hidden = true; return; }
-    var day = hw.day === 0 ? "Today" : "Tomorrow";
+    var day = hw.day === 0 ? "Today" : hw.day === 1 ? "Tomorrow" :
+      new Date(hw.t).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
     // Short for the public: what, when, what to do. The heights are one tap away on Bayside Tides.
     b.innerHTML = '<span class="ti" aria-hidden="true">⚠</span><span class="tx"><b>' + esc(LK.text("tide_head_red")) +
       " along the Bay shoreline</b>" + '<span class="sub">' + esc(day) + " about " + esc(T.clock(hw.t)) +
