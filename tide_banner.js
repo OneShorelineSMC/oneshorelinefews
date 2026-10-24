@@ -32,13 +32,22 @@
     return el;
   }
 
-  /* The first high tide in the next 7 days at or above the flood level that hasn't passed: {t, v, src} or null */
+  /* The first high tide in the next 7 days at or above the flood level that hasn't passed: {t, v, src, day} or null.
+     Same heights as the Tides page: the NOAA projection for as far as it goes (about 3 days), the tide table after it. */
   function highWater(now) {
-    var ex = T.expected(now), dh = T.dayHighs();
-    for (var n = 0; n < 7; n++) {   // the same week the Tides page banner looks at, so both always agree
-      var d = T.iso(now + n * 86400000), x = ex[d], h = dh[d];
-      if (x && T.level(x.v) === 2 && x.t >= now - MATCH_MIN * 60000) return { t: x.t, v: x.v, src: "projection", day: n };
-      if (!x && h && T.level(h.v) === 2 && h.t >= now - MATCH_MIN * 60000) return { t: h.t, v: h.v, src: "table", day: n };
+    var S = T.state, ofs = S.ofs || [];
+    var model = ofs.length && Date.now() - S.tOfs < LK.num("MODEL_MAX_AGE_HOURS") * 3600000 ? ofs : [];
+    var mEnd = model.length ? model[model.length - 1].t : -Infinity;
+    var highs = (S.highs || []).filter(function (h) { return h.t >= now - MATCH_MIN * 60000 && h.t < now + 7 * 86400000; });
+    for (var k = 0; k < highs.length; k++) {
+      var h = highs[k], best = null;
+      if (h.t <= mEnd - MATCH_MIN * 60000) model.forEach(function (o) { if (Math.abs(o.t - h.t) <= MATCH_MIN * 60000 && (!best || o.v > best.v)) best = o; });
+      var x = best ? { t: best.t, v: best.v, src: "projection" } : { t: h.t, v: h.v, src: "table" };
+      if (T.level(x.v) === 2 && x.t >= now - MATCH_MIN * 60000) {
+        x.day = Math.round((Date.UTC(new Date(x.t).getUTCFullYear(), new Date(x.t).getUTCMonth(), new Date(x.t).getUTCDate()) -
+          Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate())) / 86400000);
+        return x;
+      }
     }
     return null;
   }
