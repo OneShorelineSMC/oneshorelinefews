@@ -517,9 +517,9 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261023g"></script>
-<script src="tide_season.js?v=20261023g"></script>
-<script src="creek_status.js?v=20261023g"></script>
+<script src="lookups.js?v=20261023h"></script>
+<script src="tide_season.js?v=20261023h"></script>
+<script src="creek_status.js?v=20261023h"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -900,18 +900,20 @@ function renderDays(s, now) {
     var inView = (Math.min(b, x1) - Math.max(a, x0)) / 3600000 >= CARD_MIN_H;
     if (!inView) {   // after the graph: one line, colored when the day is above MHHW or at the flood level
       if (top) later.push('<span class="' + (top.v >= redFor(st) ? "red" : top.v > st.mhhw ? "over" : "") + '">' + esc(name) + " " + top.v.toFixed(2) + "</span>");
-      if (top && off && top.src === "pred") laterOff.push('<span class="' + (top.v + off.ft >= redFor(st) ? "red" : "") + '">' + esc(name) + " " + (top.v + off.ft).toFixed(2) + (top.v + off.ft >= redFor(st) ? " ⚠" : "") + "</span>");
+      var ae = top && off && top.src === "pred" ? (TSN && TSN.station === st.id ? TSN.addAt(top.t, now) : off.ft) : null;   // the recent offset, easing (THRESHOLDS_BASIS §4b)
+      if (ae != null) laterOff.push('<span class="' + (top.v + ae >= redFor(st) ? "red" : "") + '">' + esc(name) + " " + (top.v + ae).toFixed(2) + (top.v + ae >= redFor(st) ? " ⚠" : "") + "</span>");
       continue;
     }
     cards++;
     if (!top) { h += '<div class="tday" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">–</div></div>'; continue; }
     var over = top.v > st.mhhw, isRed = top.v >= redFor(st);
-    var mRed = !!(off && top.src === "pred" && !isRed && top.v + off.ft >= redFor(st));   // possible flood level if the Bay stays high
+    var ad = off && top.src === "pred" ? (TSN && TSN.station === st.id ? TSN.addAt(top.t, now) : off.ft) : null;   // the recent offset, easing
+    var mRed = !!(ad != null && !isRed && top.v + ad >= redFor(st));   // possible flood level if the Bay stays high
     var tag = top.src === "fcst" ? ' <span class="fc">projected</span>' : top.src === "measured" ? ' <span class="ms">measured</span>' : "";
     if (top.src === "fcst") fcDays++;
     h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + (mRed ? " mred" : "") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + top.v.toFixed(2) + '<span class="du"> ft</span>' +
       '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (isRed ? esc(LK.text("tide_red_day"))
-        : mRed ? "⚠ " + esc(LK.text("tide_maybe_day")) + " (≈" + (top.v + off.ft).toFixed(2) + ")" : over ? "MHHW " + sgn(top.v - st.mhhw) : "") + "</div></div>";
+        : mRed ? "⚠ " + esc(LK.text("tide_maybe_day")) + " (≈" + (top.v + ad).toFixed(2) + ")" : ad != null ? "≈" + (top.v + ad).toFixed(2) + " estimate" : over ? "MHHW " + sgn(top.v - st.mhhw) : "") + "</div></div>";
   }
   el.innerHTML = h;
   $t("tsechead").textContent = cards === 1 ? "Today" : "Next " + cards + " days";
@@ -1447,6 +1449,8 @@ function showCalendar() {
   }
   var today = TSN.iso(TSN.now()), dh = TSN.dayHighs(), kd = TSN.kingDays(), ex = TSN.expected(), m0 = new Date(TSN.state.from), html = "";
   var red = isFinite(TSN.red());
+  var so = red ? TSN.seasonOutlook() : null, sod = {};   // seasonal outlook days (after 6 weeks) get the dashed ring too
+  (so ? so.days : []).forEach(function (x) { sod[x.date] = x; });
   html += '<div id="kckey"><span><i style="background:var(--infobg);box-shadow:inset 0 -3px 0 var(--infob)"></i>' + esc(LK.text("tide_day_amber")) + "</span>" +
     (red ? '<span><i style="background:#c62828">!</i>' + esc(LK.text("tide_red_key", { ft: TSN.red().toFixed(1) })) + "</span>" : "") +
     '<span><i style="background:#6A3D8F">★</i>' + esc(LK.text("tide_day_king")) + " " + (+TSN.king().toFixed(2)) + " ft</span>" +
@@ -1461,19 +1465,20 @@ function showCalendar() {
     for (var t = first.getTime(); new Date(t).toISOString().slice(0, 7) === mm.slice(0, 7); t += 86400000) {
       var day = new Date(t).toISOString().slice(0, 10), hi = dh[day], xp = ex[day], lv = xp ? TSN.level(xp.v) : hi ? TSN.level(hi.v) : 0, c = "d";
       if (lv === 2) c += kd[day] ? " r kr" : " r"; else if (kd[day]) c += " k"; else if (lv === 1) c += " a";
-      if (xp) c += " xp"; if (ofReach(day)) { c += " of"; anyOf = true; } if (day < today) c += " past"; if (day === today) c += " today";
+      if (xp) c += " xp"; if (ofReach(day) || (sod[day] && lv < 2)) { c += " of"; anyOf = true; } if (day < today) c += " past"; if (day === today) c += " today";
       html += '<span class="' + c + '" data-d="' + day + '" role="button" aria-label="' + esc(calLine(day)) + '">' + (+day.slice(8)) + "</span>";
     }
     html += "</div></div>";
   }
   html = html.replace("@@OFKEY@@", anyOf ? '<span><i style="border:2px dashed var(--red);box-sizing:border-box"></i>' + esc(LK.text("tide_offset_cal_key", { red: TSN.red().toFixed(1), water: waterWord() })) + "</span>" : "");
   // Seasonal outlook past the next 6 weeks (tide_season.js; THRESHOLDS_BASIS.md §4b): a line, not marks on days
-  var so = isFinite(TSN.red()) ? TSN.seasonOutlook() : null, otx = "";
+  var otx = "";
   if (so) {
     var f2 = function (v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + " ft"; };
     var rg = Math.abs(so.usualMax - so.usual) < 0.05 ? f2(so.usual) : f2(so.usual) + " to " + f2(so.usualMax);
-    otx = '<div id="kcout"><b>Outlook after ' + esc(tsDay(so.from)) + ":</b> high tides usually run " + esc(rg) + " vs the tide table" +
-      (so.enso ? "; " + esc(so.enso.phase) + " (ONI " + so.enso.oni.toFixed(1) + ") about " + esc(f2(so.enso.add)) + " more Nov–Mar" : "") + ". " +
+    var tt = Math.abs(so.addMax - so.addMin) < 0.05 ? f2(so.addMin) : f2(so.addMin) + " to " + f2(so.addMax);
+    otx = '<div id="kcout"><b>Outlook after ' + esc(tsDay(so.from)) + ":</b> high tides about " + esc(tt) + " vs the tide table (usual " + esc(rg) +
+      (so.enso ? "; " + esc(so.enso.phase) + " ONI " + so.enso.oni.toFixed(1) + " about " + esc(f2(so.enso.add)) + " Nov–Mar" : "") + "; plus what remains of today’s offset). " +
       (so.days.length ? "Could reach the flood level: " + esc(so.days.slice(0, 5).map(function (x) { return tsDay(x.date); }).join(", ")) + (so.days.length > 5 ? " +" + (so.days.length - 5) + " more" : "")
         : "No day reaches the flood level at that height") + ". From past years, not a forecast.</div>";
   }

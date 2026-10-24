@@ -119,18 +119,39 @@
      the recent offset, fading by damped persistence (NOAA's method, Dusek et al. 2022): the usual height for that month,
      plus today's departure from the usual times r1 ^ (days / 30.4). Without the outlook data: the offset as it is.
      {date: {t, v, table, off}}. Only days the projection doesn't cover and high tides still ahead. */
+  /* How much to add to the tide table at time t (ms, Pacific wall clock) for the estimate: the recent offset fading
+     toward the usual height for that month (above). null without a recent offset. */
+  function ensoOn(ol) {
+    var en = ol && ol.enso;
+    return !!(en && en.significant && typeof en.oni === "number" && Math.abs(en.oni) >= LK.num("ENSO_MIN_ONI"));
+  }
+  function ensoAt(ol, t) {   // El Niño / La Niña's usual effect in that month (ft): 0 outside its months or when off
+    return ensoOn(ol) && ol.enso.months.indexOf(new Date(t).getUTCMonth() + 1) >= 0 ? ol.enso.slope_ft_per_c * ol.enso.oni : 0;
+  }
+  function baseAt(ol, t) {   // what the Bay is expected to run above the tide table then: usual for the month + El Niño
+    var u = usual(ol, t);
+    return u == null ? null : u + ensoAt(ol, t);
+  }
+  /* How much to add to the tide table at time t (ms, Pacific wall clock): damped persistence toward the expected level,
+     base(t) + (recent offset − base(now)) × r1^(months ahead). Far ahead the recent part fades out by itself (r1 ≈ 0.6:
+     about a third after 2 months, 5% after 6). Without a recent offset: base(t); without the outlook: the offset. */
+  function addAt(t, now) {
+    now = now || nowLocal();
+    var o = offset(), ol = outlookData();
+    var b0 = ol ? baseAt(ol, now) : null, b = ol ? baseAt(ol, t) : null, r1 = ol && typeof ol.r1 === "number" ? Math.max(0, Math.min(0.95, ol.r1)) : null;
+    if (!o) return b;
+    return b0 != null && b != null && r1 != null ? b + (o.ft - b0) * Math.pow(r1, Math.max(0, t - now) / (30.4 * 86400000)) : o.ft;
+  }
   function offsetDays(now) {
     now = now || nowLocal();
-    var o = offset(), ol = outlookData(), out = {};
+    var o = offset(), out = {};
     if (!o || !S.highs) return out;
-    var ex = expected(now), u0 = ol ? usual(ol, now) : null, r1 = ol && typeof ol.r1 === "number" ? Math.max(0, Math.min(0.95, ol.r1)) : null;
+    var ex = expected(now);
     S.highs.forEach(function (h) {
       var d = iso(h.t);
       if (h.t < now - MATCH_MIN * 60000 || ex[d] || h.t > now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000) return;
       if (modelOK(now) && h.t <= S.ofs[S.ofs.length - 1].t) return;   // still inside the projection
-      var add = o.ft, u = ol ? usual(ol, h.t) : null;
-      if (u0 != null && u != null && r1 != null) add = u + (o.ft - u0) * Math.pow(r1, (h.t - now) / (30.4 * 86400000));
-      var x = { t: h.t, v: h.v + add, table: h.v, off: add };
+      var add = addAt(h.t, now), x = { t: h.t, v: h.v + add, table: h.v, off: add };
       if (!out[d] || x.v > out[d].v) out[d] = x;
     });
     return out;
@@ -143,22 +164,23 @@
     now = now || nowLocal();
     var ol = outlookData();
     if (!ol || !S.highs) return null;
-    var en = ol.enso, useEnso = !!(en && en.significant && typeof en.oni === "number" && Math.abs(en.oni) >= LK.num("ENSO_MIN_ONI"));
-    var from = now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000, days = [], adds = [], last = null;
+    var useEnso = ensoOn(ol), en = ol.enso;
+    var from = now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000, days = [], us = [], as = [], last = null;
     S.highs.forEach(function (h) {
       if (h.t <= from) return;
-      var u = usual(ol, h.t);
-      if (u == null) return;
-      var m = new Date(h.t).getUTCMonth() + 1, e = useEnso && en.months.indexOf(m) >= 0 ? en.slope_ft_per_c * en.oni : 0;
-      var add = u + e, v = h.v + add, d = iso(h.t);
-      adds.push(u); last = h.t;   // the usual part alone (El Niño is given separately)
+      var u = usual(ol, h.t), add = addAt(h.t, now);
+      if (u == null || add == null) return;
+      var v = h.v + add, d = iso(h.t);
+      us.push(u); as.push(add); last = h.t;
       if (level(v) === 2 && level(h.v) < 2 && (!days.length || days[days.length - 1].date !== d)) days.push({ date: d, t: h.t, v: v, add: add });
     });
-    if (!adds.length) return null;
-    return { from: iso(from), to: iso(last), usual: Math.min.apply(null, adds), usualMax: Math.max.apply(null, adds),
+    if (!us.length) return null;
+    return { from: iso(from), to: iso(last), usual: Math.min.apply(null, us), usualMax: Math.max.apply(null, us),
+      addMin: Math.min.apply(null, as), addMax: Math.max.apply(null, as),
       enso: useEnso ? { oni: en.oni, season: en.oni_season, add: en.slope_ft_per_c * en.oni, phase: en.oni > 0 ? "El Niño" : "La Niña", months: en.months } : null,
       days: days, data: ol };
   }
+
 
   function mhhw() { return LK.mhhw(STATION); }
   function red() { return cfg.red ? LK.num(cfg.red) : Infinity; }
@@ -204,7 +226,7 @@
 
   /* The line (kiosk) / card (Tides page), or null. Looks at today and the next 6 days.
      1. Red first: a day expected (or in the tide table) to reach TIDE_RED_FT_RWC.
-     2. Otherwise a King Tide day coming up, with the NOAA projection note when it is within the projection window.
+     (2. A King Tide day coming up: no longer shown, see below.)
      Ordinary days above MHHW are left to the day cards. dayName(iso) = the page's "Sat Dec 12". */
   function line(dayName, now) {
     now = now || nowLocal();
@@ -217,17 +239,13 @@
         main: label(d) + " " + clock(x ? x.t : h.t) + ": " + (x ? LK.text("tide_expected_ft", { ft: ft(v) }) : LK.text("tide_table_ft", { ft: ft(v) })) + ", " + LK.text("tide_level_red"),
         sub: kd[d] ? LK.text("tide_day_king_short") : "", what: LK.text("tide_red_what") };
     }
-    if (out) return out;
-    var ks = Object.keys(kd).sort().filter(function (d) { return d >= today && d <= iso(now + 6 * 86400000); });
-    if (!ks.length) return null;
-    var d = ks[0], k = kd[d], x = ex[d], v = x ? x.v : k.v;
-    return { cls: "king", chip: LK.text("tide_king_chip"), date: d,
-      main: LK.text("tide_king_line", { day: label(d), time: clock(k.t), ft: ft(k.v) }),
-      sub: [weatherNote(x), level(v) === 1 ? LK.text("tide_level_amber") : ""].filter(Boolean).join(" · "), what: txt("king_tide_what") };
+    // King Tides are no longer pointed to on their own (staff, 2026-10-23): with the Bay running high, ordinary tides now
+    // go above the 1-year tide, so a "next King Tide" line sent people to the wrong days. The stars stay on the calendar.
+    return out;
   }
 
   return { load: function () { return Promise.all([loadTable(), loadModel(), loadOffsetFile()]); }, loadTable: loadTable, loadModel: loadModel, setModel: setModel,
-    loadOffset: loadOffsetFile, offset: offset, offsetDays: offsetDays, seasonOutlook: seasonOutlook, outlook: outlookData,
+    loadOffset: loadOffsetFile, offset: offset, offsetDays: offsetDays, addAt: addAt, seasonOutlook: seasonOutlook, outlook: outlookData,
     onUpdate: function (fn) { listeners.push(fn); },
     dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote, txt: txt,
     clock: clock, ft: ft, mhhw: mhhw, red: red, king: king, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };
