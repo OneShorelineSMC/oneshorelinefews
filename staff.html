@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>Staff tools · OneShoreline Flood Early Warning</title>
+<!-- Staff tools (staff, 2026-10-24): one easy address for the staff views and the beta tools that aren't linked from the
+     public pages. Not secret: anyone with the address can open it. Each link adds ?preview=1, which turns on the staff
+     view of that page. -->
+<style>
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff; } }
+  :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap, main { max-width: 860px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header img { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; }
+  main { padding: 14px 16px 40px; }
+  h2 { font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 20px 2px 8px; }
+  .note { font-size: 14px; color: var(--muted); margin: 4px 2px 0; }
+  ul { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  li + li { border-top: 1px solid var(--line); }
+  li a { display: block; padding: 12px 14px; min-height: 44px; color: var(--ink); text-decoration: none; }
+  li a b { color: var(--link); }
+  li a span { display: block; font-size: 14px; color: var(--muted); }
+  li a:hover b { text-decoration: underline; }
+  li a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: -3px; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <img src="img/oneshoreline-mark-white.png" alt="">
+  <div><h1>Staff tools</h1><div class="org">OneShoreline Flood Early Warning · not linked from the public pages</div></div>
+</div></header>
+<main>
+  <p class="note">Bookmark this page. Each link opens the staff view (it adds <code>?preview=1</code> to the address). This page isn't
+    secret: anyone with the address can open it.</p>
+
+  <h2>Beta tools</h2>
+  <ul>
+    <li><a href="Shoreline.html?preview=1"><b>Shoreline low spots</b><span class="tag">BETA</span>
+      <span>Where the Bay could come over the shoreline (BCDC ART), against the coming tides, with FEMA flood zones.</span></a></li>
+  </ul>
+
+  <h2>Staff views of the public pages</h2>
+  <ul>
+    <li><a href="index.html?preview=1"><b>Home</b><span>With the staff badges.</span></a></li>
+    <li><a href="Creeks.html?preview=1"><b>Creeks</b><span>Plus the staff table: what is behind each status.</span></a></li>
+    <li><a href="Tides.html?preview=1"><b>Tides</b><span>Bayside and Coastside.</span></a></li>
+    <li><a href="SiteMap.html?preview=1"><b>Sensor map</b></a></li>
+    <li><a href="CommunityFloodReports.html?preview=1"><b>Community flood reports</b><span>The report form and the reports waiting for review.</span></a></li>
+    <li><a href="ShorelineKiosk.html?preview=1"><b>EOC kiosk</b><span>The 800 × 480 screen.</span></a></li>
+  </ul>
+
+  <h2>Drafts to review (GitHub)</h2>
+  <ul>
+    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/proposed/shoreline_hotspots.csv" target="_blank" rel="noopener"><b>Shoreline low spots, draft list</b>
+      <span>Review, then save as lookups/shoreline_hotspots.csv.</span></a></li>
+    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/proposed/creek_outlets.csv" target="_blank" rel="noopener"><b>Creek outlets, draft list</b>
+      <span>Review, then save as lookups/creek_outlets.csv.</span></a></li>
+    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/THRESHOLDS_BASIS.md" target="_blank" rel="noopener"><b>Thresholds and methods</b>
+      <span>Why each level and estimate is what it is.</span></a></li>
+    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/actions" target="_blank" rel="noopener"><b>Data jobs and builds (Actions)</b>
+      <span>Creek maps, shoreline hotspots, creek outlets; their logs.</span></a></li>
+  </ul>
+</main>
+</body>
+</html>
