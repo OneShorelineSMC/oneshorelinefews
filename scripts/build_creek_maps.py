@@ -18,6 +18,11 @@ Sources (public, no keys; read when the script runs, so it runs on GitHub, not i
                 matched by GNIS name (NHD_NAMES below); styled by NHD feature type (FType/FCode): flowing all year
                 solid, intermittent or ephemeral dashed, canal or ditch thinner, underground conduit or pipeline
                 (culverted) dotted and faded. San Mateo County's Streams and Creeks layer when NHD has no line
+  Side lines    California Aquatic Resources Inventory (CARI) Streams, SFEI (EcoAtlas, ds2836): every stream, ditch and
+                "Sub-surface Drainage" line (culverts, buried creeks, storm drains) in the creek's watershed, and the
+                creek line's underground stretches; NHD's culverts and side creeks when CARI can't be had (staff, 2026-10-24)
+  Storm drains  data/storm_drains/<creek>.geojson when a city has given its storm drain lines (LineStrings, lon/lat):
+                drawn as underground lines on that creek's map
   Watersheds    USGS Watershed Boundary Dataset, 12-digit HU (hydro.nationalmap.gov wbd/FeatureServer/6)
   Highways      US Census TIGERweb, Census2020/Transportation: Primary Roads (2) and Secondary Roads (5)
   Water         US Census TIGERweb, Census2020/Hydro: Areal Hydrography (1): bays, ocean, lakes and reservoirs
@@ -55,6 +60,8 @@ COUNTY_WS = "https://services.arcgis.com/yq3FgOI44hYHAFVZ/arcgis/rest/services/W
 COUNTY_STREAMS = "https://services.arcgis.com/yq3FgOI44hYHAFVZ/arcgis/rest/services/Streams_Watersheds/FeatureServer/0/query"
 WBD = "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/FeatureServer/6/query"
 NHD = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6/query"
+CARI = "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds2836_fnu/FeatureServer/0/query"
+DRAINS_DIR = os.path.join(ROOT, "data", "storm_drains")
 ROADS = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/Transportation/MapServer/{}/query"
 WATER = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/Hydro/MapServer/1/query"
 PLACES = "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2020/Places_CouSub_ConCity_SubMCD/MapServer/{}/query"
@@ -715,6 +722,71 @@ def mark_underground(line_feats, nhd_feats, within_m=UNDERGROUND_M):
     return out, total
 
 
+# CARI (staff, 2026-10-24): SFEI's statewide stream inventory, which adds "Sub-surface Drainage" (legcode SD: culverted
+# and buried creeks, storm drains) to NHD's lines. Each CARI line is given an NHD-style FType/FCode so it draws in the
+# same styles: SD = underground (420), ditches and canals = 336, intermittent or ephemeral = dashed (460/46003),
+# everything else = a creek (460).
+CARI_FIELDS = "name,legcode,leglabel,orig_class,orig_dataset,anthropogenic_modifier"
+DITCH = re.compile(r"ditch|canal|aqueduct|flume", re.I)
+DRY = re.compile(r"intermittent|ephemeral", re.I)
+
+
+def cari_kind(pr):
+    """(ftype, fcode) for a CARI line's attributes."""
+    words = " ".join(str(pr.get(k) or "") for k in ("leglabel", "orig_class", "anthropogenic_modifier"))
+    if pr.get("legcode") == "SD" or UG_WORDS.search(words):
+        return 420, 42000
+    if DITCH.search(words):
+        return 336, 33600
+    if DRY.search(words):
+        return 460, 46003
+    return 460, 46006
+
+
+def cari_lines(feats):
+    """CARI features -> lines in the NHD shape this script draws (gnis_name, ftype, fcode), keeping CARI's own fields."""
+    out = []
+    for f in feats:
+        pr = dict(f.get("properties") or {})
+        ft, fc = cari_kind(pr)
+        pr.update({"gnis_name": pr.get("name") or None, "ftype": ft, "fcode": fc, "src": "cari"})
+        out.append({"type": "Feature", "properties": pr, "geometry": f["geometry"]})
+    return out
+
+
+def cari_summary(feats):
+    """For the log: km by CARI class, and the source datasets behind the underground lines."""
+    km, ds = {}, {}
+    for f in feats:
+        pr = f["properties"]
+        L = sum(_m(a, b) for ln in lines_of(f["geometry"]) for a, b in zip(ln, ln[1:])) / 1000
+        k = pr.get("legcode") or "?"
+        km[k] = km.get(k, 0) + L
+        if pr["ftype"] == 420:
+            key = f"{pr.get('orig_dataset') or '?'} / {pr.get('orig_class') or '?'}"
+            ds[key] = ds.get(key, 0) + L
+    top = sorted(ds.items(), key=lambda x: -x[1])[:5]
+    return (", ".join(f"{k} {v:.1f} km" for k, v in sorted(km.items())) +
+            ("; underground from: " + "; ".join(f"{k} {v:.1f} km" for k, v in top) if top else "; no underground lines"))
+
+
+def storm_drains(creek_id):
+    """data/storm_drains/<creek>.geojson: a city's storm drain lines, drawn underground. [] when there is no file."""
+    path = os.path.join(DRAINS_DIR, creek_id + ".geojson")
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        feats = json.load(f).get("features", [])
+    out = []
+    for f in feats:
+        for ln in lines_of(f.get("geometry")):
+            if len(ln) >= 2:
+                out.append({"type": "Feature", "properties": {"ftype": 420, "fcode": 42000, "src": "city", "side": True,
+                                                              "name": (f.get("properties") or {}).get("name")},
+                            "geometry": {"type": "LineString", "coordinates": [list(p[:2]) for p in ln]}})
+    return out
+
+
 def simplify_ll(pts, tol_m=2):
     """Drop points closer than tol_m to the straight line through their neighbours (undoes the 10 m densifying)."""
     if len(pts) <= 2:
@@ -760,11 +832,11 @@ LINE_STYLE = {"per": 'stroke-width="3" stroke-linecap="round"',
               "chan": 'stroke-width="2" stroke-linecap="round"',
               "ug": 'stroke-width="2.4" stroke-dasharray="0.1 5" stroke-linecap="round" opacity="0.6"'}
 LINE_LABEL = {"per": "Creek", "int": "Creek, dry part of the year", "chan": "Canal or ditch",
-              "ug": "Creek underground (culvert or pipe)"}
+              "ug": "Underground (culvert, pipe or storm drain)"}
 
 
 def line_kind(f):
-    """NHD FType/FCode -> line style. Lines without them (County streams) draw as a creek."""
+    """NHD FType/FCode (CARI lines are given them too) -> line style. Lines without them (County streams) draw as a creek."""
     pr = f.get("properties") or {}
     if pr.get("underground"):   # a County stream marked culvert / pipe, or a stretch NHD shows as a conduit
         return "ug"
@@ -1046,12 +1118,22 @@ def main():
                     pts = [p for poly in ws_polys for p in poly[0]]
                     box = (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
                     nhd_all = arcgis(NHD, "1=1", "gnis_name,ftype,fcode", 0.00005, box)
-                    line, n_ug = mark_underground(line, nhd_all)
-                    extra = watershed_lines(line, nhd_all, ws_polys)
+                    cari = []
+                    try:   # CARI includes NHD's lines and adds the culverted and buried ones (Sub-surface Drainage)
+                        cari = cari_lines(arcgis(CARI, "1=1", CARI_FIELDS, 0.00005, box))
+                        print(f"  {c['id']}: CARI: {len(cari)} lines in the area: {cari_summary(cari)}")
+                    except Exception as e:   # noqa: BLE001
+                        print(f"  {c['id']}: CARI unavailable ({type(e).__name__}: {str(e)[:120]}); NHD only")
+                    drains = storm_drains(c["id"])
+                    if drains:
+                        print(f"  {c['id']}: data/storm_drains/{c['id']}.geojson: {len(drains)} storm drain lines")
+                    line, n_ug = mark_underground(line, nhd_all + [f for f in cari if f["properties"]["ftype"] == 420] + drains)
+                    extra = watershed_lines(line, cari or nhd_all, ws_polys) + drains
                     L = lambda fs: sum(_m(a, b) for f in fs for a, b in zip(f["geometry"]["coordinates"], f["geometry"]["coordinates"][1:]))  # noqa: E731
                     ug = [f for f in extra if line_kind(f) == "ug"]
-                    print(f"  {c['id']}: {n_ug / 1000:.1f} km of the creek line along an NHD culvert or pipe; "
-                          f"watershed: {L(extra) / 1000:.1f} km of NHD lines, {L(ug) / 1000:.1f} km of them culverts or pipes "
+                    print(f"  {c['id']}: {n_ug / 1000:.1f} km of the creek line underground; "
+                          f"watershed: {L(extra) / 1000:.1f} km of {'CARI' if cari else 'NHD'} lines"
+                          f"{' and storm drains' if drains else ''}, {L(ug) / 1000:.1f} km of them underground "
                           f"({len(nhd_all)} NHD lines in the area)")
                     line = line + extra
                 except Exception as e:   # noqa: BLE001

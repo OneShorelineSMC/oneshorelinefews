@@ -2,6 +2,7 @@
 Checks for the static creek maps (scripts/build_creek_maps.py) with made-up shapes: no network.
 Run from the repo:  python scripts/test_creek_maps.py
 """
+import json
 import math
 import re
 import os
@@ -97,7 +98,7 @@ def piece(ft, fc, x0):
 check([B.line_kind(piece(*a, 0)) for a in ((460, 46006), (460, 46003), (420, 42000), (336, 33600), (558, 55800))]
       == ["per", "int", "ug", "chan", "per"] and B.line_kind(line[0]) == "per", "line kinds from NHD FType/FCode")
 svg7, _ = B.build_svg(creek, [piece(460, 46006, -122.45), piece(420, 42001, -122.438)], hu, roads, gauges)
-check('stroke-dasharray="0.1 5"' in svg7 and "Creek underground (culvert or pipe)" in svg7 and "dry part of the year" not in svg7,
+check('stroke-dasharray="0.1 5"' in svg7 and "Underground (culvert, pipe or storm drain)" in svg7 and "dry part of the year" not in svg7,
       "underground stretch dotted and in the legend; no dashed entry when none is drawn")
 check(svg7.index('stroke-dasharray="0.1 5"') < svg7.index('stroke-width="3" stroke-linecap="round"'), "open creek draws over the culvert")
 
@@ -148,7 +149,7 @@ check(len(gap) == 1 and B.line_kind(gap[0]) == "ug" and gap[0]["geometry"]["coor
 check(B.bridge_gaps([upper], nhd_all) == [] and B.bridge_gaps([upper, ln((-122.30, 37.50), (-122.29, 37.50))], nhd_all) == [],
       "nothing added for a line in one piece, or pieces NHD doesn't join")
 svg10, _ = B.build_svg(creek, [upper, lower] + gap, [], [], gauges)
-check("Creek underground (culvert or pipe)" in svg10, "the culvert in the legend")
+check("Underground (culvert, pipe or storm drain)" in svg10, "the culvert in the legend")
 
 # NHD_DETAIL: side creeks (NHD and County, named or not) from the creek line, inside the watershed, longest first,
 # keeping their own style (culvert = underground); lines outside the watershed and copies of the drawn line left out
@@ -177,5 +178,27 @@ cl = ln((-122.42, 37.62), (-122.41, 37.62), (-122.40, 37.62))
 cv = [ln((-122.4151, 37.6201), (-122.4049, 37.6201), ftype=420, fcode=42002)]
 mk, m = B.mark_underground([cl], cv)
 check([B.line_kind(f) for f in mk] == ["per", "ug", "per"] and 850 <= m <= 950, f"culverted stretch of the creek line drawn underground ({m:.0f} m)")
+
+# CARI lines (staff, 2026-10-24): Sub-surface Drainage underground, ditches thinner, intermittent dashed, else a creek
+cf = B.cari_lines([ln((0, 0), (0.01, 0), name="San Bruno Creek", legcode="SD", orig_class="Sub-surface Drainage"),
+                   ln((0, 0), (0.01, 0), name=None, legcode="R", orig_class="Fluvial, intermittent"),
+                   ln((0, 0), (0.01, 0), legcode="R", orig_class="Ditch"),
+                   ln((0, 0), (0.01, 0), legcode="R", orig_class="Fluvial", anthropogenic_modifier="Culverted"),
+                   ln((0, 0), (0.01, 0), legcode="TR", orig_class="Tidal Riverine")])
+check([B.line_kind(f) for f in cf] == ["ug", "int", "chan", "ug", "per"] and cf[0]["properties"]["gnis_name"] == "San Bruno Creek"
+      and all(f["properties"]["src"] == "cari" for f in cf), "CARI classes drawn in NHD's styles")
+check("SD 1.1 km" in B.cari_summary(cf) and "underground from:" in B.cari_summary(cf), "CARI summary for the log")
+# a CARI storm drain under the creek line marks that stretch underground, like an NHD culvert
+mk2, m2 = B.mark_underground([cl], [f for f in B.cari_lines([ln((-122.4151, 37.6201), (-122.4049, 37.6201), legcode="SD")])])
+check([B.line_kind(f) for f in mk2] == ["per", "ug", "per"], "CARI Sub-surface Drainage marks the creek line underground")
+# a city's storm drain file: its lines drawn underground, as side lines
+import tempfile  # noqa: E402
+B.DRAINS_DIR = tempfile.mkdtemp()
+with open(os.path.join(B.DRAINS_DIR, "testcreek.geojson"), "w") as f:
+    json.dump({"type": "FeatureCollection", "features": [ln((-122.41, 37.62, 0), (-122.40, 37.63, 0), name="Pine Ave box"),
+               {"type": "Feature", "properties": {}, "geometry": {"type": "MultiLineString", "coordinates": [[[-122.4, 37.6], [-122.39, 37.6]]]}}]}, f)
+sd = B.storm_drains("testcreek")
+check(len(sd) == 2 and all(B.line_kind(f) == "ug" and f["properties"]["side"] for f in sd) and sd[0]["geometry"]["coordinates"][0] == [-122.41, 37.62]
+      and B.storm_drains("nofile") == [], "storm drain file: underground side lines (no file: none)")
 
 print(f"creek maps: {checks} checks passed")
