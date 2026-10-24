@@ -30,7 +30,7 @@
   a { color: inherit; }
 
   /* Title bar */
-  header { background: #0A5587; color: #fff; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  header { background: #0A5587; color: #fff; padding: calc(10px + env(safe-area-inset-top)) max(16px, calc((100% - 860px) / 2)) 10px;
     display: flex; align-items: center; gap: 11px; }
   header .hmark { width: 38px; height: 38px; flex: none; }
   header h1 { margin: 0; font-size: 19px; }
@@ -41,7 +41,7 @@
   .owner img { display: block; margin: 0 auto 6px; height: 37px; width: auto; }
   .owner a { color: inherit; }
   /* NWS alert banner */
-  #alert { color: #fff; background: #5b6877; padding: 10px 16px; display: flex; gap: 10px; align-items: center; cursor: pointer; }
+  #alert { color: #fff; background: #5b6877; padding: 10px max(16px, calc((100% - 860px) / 2 + 16px)); display: flex; gap: 10px; align-items: center; cursor: pointer; }
   #alert.none { background: #2e7d32; } #alert.warning { background: #b71c1c; }
   #alert.watch, #alert.advisory { background: #9a5b00; } #alert.statement { background: #455a75; }
   #alert .ic { font-size: 22px; line-height: 1; }
@@ -49,7 +49,7 @@
   #alert .main { font-weight: bold; font-size: 16px; }
   #alert .sub { font-size: 12.5px; opacity: .92; }
   #alert .more { font-size: 12px; background: rgba(0,0,0,.22); border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
-  #alertList { display: none; background: var(--card); padding: 4px 16px 10px; border-bottom: 1px solid var(--line); }
+  #alertList { display: none; background: var(--card); padding: 4px max(16px, calc((100% - 860px) / 2 + 16px)) 10px; border-bottom: 1px solid var(--line); }
   #alertList.open { display: block; }
   .al { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .al:last-child { border-bottom: 0; }
@@ -340,10 +340,10 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261023d"></script>
-<script src="tide_season.js?v=20261023d"></script>
-<script src="tide_banner.js?v=20261023d"></script>
-<script src="creek_status.js?v=20261023d"></script>
+<script src="lookups.js?v=20261023e"></script>
+<script src="tide_season.js?v=20261023e"></script>
+<script src="tide_banner.js?v=20261023e"></script>
+<script src="creek_status.js?v=20261023e"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
