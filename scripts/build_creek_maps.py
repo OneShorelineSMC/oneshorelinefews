@@ -98,13 +98,13 @@ COUNTY_WATERSHEDS = {"sanbruno": ["SAN BRUNO CREEK", "EL ZANJON CREEK"]}
 
 
 # ---------------------------------------------------------------- downloads
-def get(url, params=None, tries=4):
+def get(url, params=None, tries=4, timeout=120):
     """GET with retries: the USGS map services sometimes drop a connection or time out."""
     if params:
         url += ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
     for k in range(tries):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=120) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
                 return r.read().decode("utf-8")
         except Exception as e:   # noqa: BLE001
             if k == tries - 1:
@@ -114,7 +114,7 @@ def get(url, params=None, tries=4):
             time.sleep(wait)
 
 
-def arcgis(url, where, fields, offset_deg, bbox=COUNTY_BBOX):
+def arcgis(url, where, fields, offset_deg, bbox=COUNTY_BBOX, tries=4, timeout=120):
     """All features in the box (default: the county) as GeoJSON (lon/lat), simplified on the server, paging if needed."""
     feats, start = [], 0
     while True:
@@ -122,7 +122,7 @@ def arcgis(url, where, fields, offset_deg, bbox=COUNTY_BBOX):
              "inSR": 4326, "spatialRel": "esriSpatialRelIntersects", "outFields": fields, "returnGeometry": "true",
              "outSR": 4326, "maxAllowableOffset": offset_deg, "geometryPrecision": 5, "resultOffset": start,
              "resultRecordCount": 1000, "f": "geojson"}
-        d = json.loads(get(url, p))
+        d = json.loads(get(url, p, tries, timeout))
         if "error" in d:
             raise RuntimeError(f"{url}: {d['error']}")
         feats += [f for f in d.get("features", []) if f.get("geometry") and (f["geometry"].get("coordinates"))]   # skip shapeless rows
@@ -1037,8 +1037,9 @@ def main():
         print(f"data/creek_watersheds.geojson: {len(override)} polygons (used before NLDI)")
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    failed = []
+    failed, cari_down, t_run = [], False, time.time()
     for c in CREEKS:
+        t_c = time.time()
         try:   # one creek's problem never stops the others (or the watershed file)
             want = set(NHD_NAMES.get(c["id"], []))
             line = [f for f in flow if (f.get("properties") or {}).get("gnis_name") in want]
@@ -1119,11 +1120,17 @@ def main():
                     box = (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
                     nhd_all = arcgis(NHD, "1=1", "gnis_name,ftype,fcode", 0.00005, box)
                     cari = []
-                    try:   # CARI includes NHD's lines and adds the culverted and buried ones (Sub-surface Drainage)
-                        cari = cari_lines(arcgis(CARI, "1=1", CARI_FIELDS, 0.00005, box))
-                        print(f"  {c['id']}: CARI: {len(cari)} lines in the area: {cari_summary(cari)}")
-                    except Exception as e:   # noqa: BLE001
-                        print(f"  {c['id']}: CARI unavailable ({type(e).__name__}: {str(e)[:120]}); NHD only")
+                    # CARI includes NHD's lines and adds the culverted and buried ones (Sub-surface Drainage). A slow
+                    # or failing CARI is given up quickly, and not asked again this run (the build has 45 minutes)
+                    if not cari_down:
+                        t0 = time.time()
+                        try:
+                            cari = cari_lines(arcgis(CARI, "1=1", CARI_FIELDS, 0.00005, box, tries=2, timeout=60))
+                            print(f"  {c['id']}: CARI: {len(cari)} lines in the area ({time.time() - t0:.0f} s): {cari_summary(cari)}")
+                        except Exception as e:   # noqa: BLE001
+                            cari_down = True
+                            print(f"  {c['id']}: CARI unavailable ({type(e).__name__}: {str(e)[:120]}, {time.time() - t0:.0f} s); "
+                                  "NHD only for this and the remaining maps")
                     drains = storm_drains(c["id"])
                     if drains:
                         print(f"  {c['id']}: data/storm_drains/{c['id']}.geojson: {len(drains)} storm drain lines")
@@ -1145,11 +1152,12 @@ def main():
             with open(os.path.join(OUT_DIR, c["id"] + ".svg"), "w", encoding="utf-8") as f:
                 f.write(svg)
             how = "" if not basins else (basins[0].get("properties") or {}).get("source", "")
-            print(f"  {c['id']}: {len(svg) // 1024} KB; " + ("County watershed: " if how == "county" else "drains to gauge (NLDI): " if how == "USGS NLDI" else "creek_watersheds.geojson: " if basins else "HUC-12: ") + (", ".join(ws) or "-"))
+            print(f"  {c['id']}: {len(svg) // 1024} KB, {time.time() - t_c:.0f} s; " + ("County watershed: " if how == "county" else "drains to gauge (NLDI): " if how == "USGS NLDI" else "creek_watersheds.geojson: " if basins else "HUC-12: ") + (", ".join(ws) or "-"))
 
         except Exception as e:   # noqa: BLE001
             failed.append(c["id"])
-            print(f"  {c['id']}: FAILED ({type(e).__name__}: {e}); its old map is kept")
+            print(f"  {c['id']}: FAILED ({type(e).__name__}: {e}, {time.time() - t_c:.0f} s); its old map is kept")
+    print(f"All maps: {(time.time() - t_run) / 60:.1f} min")
     # watershed boundaries for the sensor map switch: the County's creek watersheds when available, else HUC-12
     os.makedirs(os.path.dirname(WATERSHEDS), exist_ok=True)
     use = county or hu
