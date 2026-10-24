@@ -99,5 +99,51 @@ check("...then tries again", len(calls) == 1)
 err = T.update({}, NOW, ST, 30, lambda u: {"error": {"message": "No data was found."}})[0]["stations"]["9414523"]
 check("NOAA error reply: no offset, error kept", err.get("offset_ft") is None and "No data" in (err.get("error") or ""))
 
+# ---- the calendar outlook: usual height above the tide table by month, damped persistence, El Nino (made-up NOAA/CPC)
+import random
+rnd = random.Random(4)
+SEAS = {1: 0.10, 2: 0.08, 3: 0.02, 4: -0.05, 5: -0.08, 6: -0.09, 7: -0.08, 8: -0.05, 9: -0.02, 10: 0.02, 11: 0.06, 12: 0.09}
+ONI, dep, prev = {}, {}, 0.0
+for y in range(2004, 2026):
+    for m in range(1, 13):
+        ONI[(y, m)] = 1.5 * math.sin((y * 12 + m) / 9.0)
+        prev = 0.6 * prev + rnd.gauss(0, 0.05)
+        dep[(y, m)] = prev + (0.15 * ONI[(y, m)] if m in (11, 12, 1, 2, 3) else 0)
+
+
+def ol_fetch(url):
+    q = dict(p.split("=", 1) for p in url.split("?", 1)[1].split("&"))
+    b, e = int(q["begin_date"][:4]), int(q["end_date"][:4])
+    if q["product"] == "monthly_mean":
+        return {"data": [{"year": str(y), "month": str(m), "MSL": str(3.0 + 0.2 + 0.01 * (y + (m - 0.5) / 12 - 2015.5) + SEAS[m] + dep[(y, m)])}
+                         for y in range(b, e + 1) for m in range(1, 13)]}
+    t, rows = dt.datetime(b, 1, 1), []
+    while t.year == b:
+        rows.append({"t": t.strftime("%Y-%m-%d %H:%M"), "v": "3.0"}); t += dt.timedelta(hours=1)
+    return {"predictions": rows}
+
+
+oni_txt = "SEAS  YR   TOTAL   ANOM\n" + "\n".join(f"{T.ONI_SEASONS[m - 1]} {y} 27.0 {ONI[(y, m)]:.2f}" for y in range(2004, 2026) for m in range(1, 13)) + "\nASO 2026 27.9 1.40\n"
+ol = T.outlook(dt.datetime(2026, 10, 23, 12), fetch=ol_fetch, fetch_text=lambda u: oni_txt)
+check("outlook: 20 years of San Francisco monthly means, NOAA's monthly_mean and hourly tide table", ol["years"] == [2006, 2025] and ol["months_used"] == 240)
+check("outlook: trend about 0.01 ft a year", abs(ol["trend_ft_per_year"] - 0.01) < 0.004)
+check("outlook: usual height above the tide table for this month and the next 8 (trend + season)",
+      list(ol["normal_ft"])[0] == "2026-10" and len(ol["normal_ft"]) == 9 and abs(ol["normal_ft"]["2026-12"] - (0.2 + 0.01 * 11 + 0.09)) < 0.06)
+check("outlook: month-to-month persistence (lag-1 correlation; 0.6 made up, plus the slow El Nino part)", 0.5 <= ol["r1"] <= 0.9 and ol["r2"] < ol["r1"])
+check("outlook: El Nino about 0.15 ft per degree in winter, significant, with the latest ONI",
+      ol["enso"] and abs(ol["enso"]["slope_ft_per_c"] - 0.15) < 0.04 and ol["enso"]["significant"] and ol["enso"]["oni"] == 1.4 and ol["enso"]["oni_season"] == "ASO 2026")
+nocpc = T.outlook(dt.datetime(2026, 10, 23, 12), fetch=ol_fetch, fetch_text=lambda u: (_ for _ in ()).throw(OSError("down")))
+check("outlook: CPC down: the monthly heights still, El Nino left out", nocpc["enso"] is None and "down" in nocpc["enso_error"] and nocpc["normal_ft"])
+calls = []
+fn = lambda local: (calls.append(local), {"normal_ft": {"2026-10": 0.3}})[1]
+now0 = dt.datetime(2026, 10, 23, 15, tzinfo=dt.timezone.utc)
+r1o, _ = T.update({}, now0, {"9414523": {"name": "Redwood City"}}, 30, fake({}), outlook_fn=fn)
+r2o, _ = T.update(r1o, now0 + dt.timedelta(days=3), {"9414523": {"name": "Redwood City"}}, 30, fake({}), outlook_fn=fn)
+r3o, _ = T.update(r2o, now0 + dt.timedelta(days=8), {"9414523": {"name": "Redwood City"}}, 30, fake({}), outlook_fn=fn)
+check("outlook: computed once a week, kept in between", len(calls) == 2 and r2o["outlook"]["computed_utc"] == r1o["outlook"]["computed_utc"])
+bad = lambda local: (_ for _ in ()).throw(ValueError("NOAA down"))
+r4o, p4 = T.update(r3o, now0 + dt.timedelta(days=16), {"9414523": {"name": "Redwood City"}}, 30, fake({}), outlook_fn=bad)
+check("outlook: NOAA down: last outlook kept with the error", r4o["outlook"]["normal_ft"] == {"2026-10": 0.3} and "NOAA down" in r4o["outlook"]["error"] and any("outlook" in x for x in p4))
+
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)
