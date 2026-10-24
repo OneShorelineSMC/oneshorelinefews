@@ -306,8 +306,9 @@
     var co = function (c, quiet) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes, quiet: !!quiet }; };
     var stormy = rows.some(function (x) { return x.v.key !== "none" && x.v.key !== "offline" && x.v.key !== "delayed"; });
     var by = SORT || (stormy ? "sev" : "ns");
-    var hm = home(data, linkFor);   // the same status board as the home page
-    var h = badge() + hm.banner + hm.html + '<div id="cpSlot"></div>' + howTo() +   // cpSlot: the page puts its city finder here
+    var hm = home(data, linkFor, { noMore: true });   // the same status board as the home page
+    // then one "find your creek" block: the city box (with the map link) and "How to read this page" as a plain link under it
+    var h = badge() + hm.banner + hm.html + '<div class="cs-find"><div id="cpSlot"></div>' + howTo() + "</div>" +   // cpSlot: the page puts its city finder here
       '<div class="cs-allh"><h2 class="cs-qh">' + esc(T("quiet_title")) + '</h2><div class="cs-sort" role="group" aria-label="Order the creeks">' +
       [["sev", "Most serious first"], ["ns", "North to south"], ["az", "A–Z"]].map(function (b) {
         return '<button type="button" data-sort="' + b[0] + '" aria-pressed="' + (b[0] === by) + '">' + b[1] + "</button>"; }).join("") + "</div></div>" +
@@ -407,7 +408,7 @@
     return t;
   }
   // { banner, html }: banner = the red "Flooding is likely" box (it carries the 911 line), or "" when nothing is likely
-  function home(data, linkFor) {
+  function home(data, linkFor, hopts) {
     var rows = allCreeks(data).map(function (c) {
       var v = view(data, c), k = v.key, late = k === "delayed";
       if (late) k = (c.status || {}).key || "none";
@@ -455,6 +456,7 @@
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac cs-evacb" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
     }
+    if (hopts && hopts.noMore) return { banner: banner, html: h + "</div>" };   // Creeks page: the map link sits in its city box
     h += '<div class="cs-hmore">';
     h += '<p><a href="SiteMap.html">' + esc(T("home_map_link")) + " ›</a></p>";
     h += '<p class="cs-hsm">' + esc(T("home_updated", { time: clock(data.generated) })) + "</p></div></div>";
@@ -582,6 +584,11 @@
     ".cs-glance .cs-main+.cs-main{margin-top:4px}.cs-late{color:var(--muted,#556274)!important;font-size:15px!important}",
     ".cs-num{margin:0 14px 10px}.cs-num>summary,.cs-how>summary{cursor:pointer;font-weight:600;font-size:14px;min-height:36px;display:flex;align-items:center;color:var(--ink,#16202b)}",
     ".cs-how{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:10px;padding:2px 14px;margin:0 0 12px}",
+    // Creeks page: "How to read this page" right under the city box, as a plain link (opens in place), not another box
+    ".cs-find{margin:0 0 6px}.cs-find .cp{margin:0}.cs-find .cs-how{background:none;border:0;border-radius:0;padding:0 4px;margin:4px 0 0}",
+    ".cs-find .cs-how>summary{min-height:40px;font-size:15px;font-weight:600;color:#0A5587;text-decoration:underline;text-underline-offset:3px}",
+    ".cs-find .cs-how[open]{background:var(--card,#fff);border:1px solid var(--line,#d5dae1);border-radius:10px;padding:2px 14px;margin-top:8px}",
+    "@media (prefers-color-scheme:dark){.cs-find .cs-how>summary{color:#8cc8ff}}",
     ".cs-howb ul{list-style:none;margin:4px 0 8px;padding:0}.cs-howb li{display:flex;gap:8px;align-items:flex-start;margin:0 0 6px;font-size:14.5px}",
     ".cs-howb li .cs-ic{margin-top:1px}",
     ".cs-howb p{font-size:14px;line-height:1.45;margin:0 0 8px;color:var(--text,var(--ink))}",

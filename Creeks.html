@@ -95,6 +95,9 @@
   .cp select { display: block; margin: 0 14px 10px; width: calc(100% - 28px); font: inherit; font-size: 16px; padding: 10px; border-radius: 8px;
     border: 2px solid var(--line); background: var(--card); color: var(--ink); min-height: 44px; }
   #cpOut { padding: 0 14px 6px; }
+  .cp-map { margin: 0; padding: 0 14px 12px; font-size: 14.5px; color: var(--muted); }
+  .cp-map a { font-weight: 700; color: #0A5587; text-underline-offset: 3px; }
+  @media (prefers-color-scheme: dark) { .cp-map a { color: #8cc8ff; } }
   #cpOut:empty { display: none; }
   .cp-h { margin: 0 0 6px; font-size: 14px; font-weight: 700; color: var(--muted); }
   .cp-list { list-style: none; margin: 0; padding: 0; }
@@ -254,6 +257,7 @@
         <label class="vh" for="cpSel" data-text="city_choose">Choose a city or community</label>
         <select id="cpSel"></select>
         <div id="cpOut" aria-live="polite"></div>
+        <p class="cp-map">Not sure which creek is near you? <a href="SiteMap.html">See the map ›</a></p>
       </div>
     </section>
     <div id="allView"></div>
@@ -339,10 +343,10 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261024a"></script>
-<script src="tide_season.js?v=20261024a"></script>
-<script src="tide_banner.js?v=20261024a"></script>
-<script src="creek_status.js?v=20261024a"></script>
+<script src="lookups.js?v=20261024b"></script>
+<script src="tide_season.js?v=20261024b"></script>
+<script src="tide_banner.js?v=20261024b"></script>
+<script src="creek_status.js?v=20261024b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).

@@ -283,7 +283,7 @@
     since_line: "Since {time}",
     was_line: "before that: {status}",
     numbers_title: "See the numbers",
-    howto_title: "How to read this page: what the alerts and creek levels mean",
+    howto_title: "What the alerts and creek levels mean",
     howto_likely: "Flooding likely: move away from the creek and low areas now.",
     howto_ready: "Be ready: the creek could flood. Be ready to move to higher ground.",
     howto_alert: "Stay alert: conditions are getting worse. Avoid creek banks and check back often.",
