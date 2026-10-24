@@ -71,7 +71,7 @@ howto_nws_h,OneShoreline and the National Weather Service,"How to read this page
 brief_location,Monitoring location,Creek card (no alert): label,,,
 brief_level,Creek level,Creek card (no alert): label,,,
 rain_none_card,None recorded,Creek cards: rainfall when no rain has fallen recently (the kiosk keeps rain_none),,,
-quiet_title,Monitored creeks,Creeks page heading when no creek has an alert,,,
+quiet_title,All monitored creeks,"Creeks page heading over every creek's card (with the order buttons: most serious first, north to south, A-Z)",,,
 quiet_some,Creeks with no alerts ({n}),Creeks page: the folded list below creeks with an alert,{n} = number,,
 city_coverage,Streets and low areas elsewhere in {city} can flood too.,City finder,{city},,
 city_all,Show all monitored creeks,City finder: clears the city,,,
