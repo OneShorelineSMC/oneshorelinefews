@@ -25,7 +25,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -36,7 +36,7 @@ jobs:
           git fetch -q origin data
           git show origin/data:sites.json > "$RUNNER_TEMP/sites.json"
       - name: Build
-        run: python scripts/build_creek_maps.py "$RUNNER_TEMP/sites.json"
+        run: python -u scripts/build_creek_maps.py "$RUNNER_TEMP/sites.json"   # -u: the log shows each map as it is drawn
       - name: Commit if anything changed
         run: |
           git config user.name  "fews-creek-maps-bot"
