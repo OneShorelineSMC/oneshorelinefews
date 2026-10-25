@@ -264,10 +264,10 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261024c"></script>
-<script src="tide_season.js?v=20261024c"></script>
-<script src="tide_banner.js?v=20261024c"></script>
-<script src="creek_status.js?v=20261024c"></script>
+<script src="lookups.js?v=20261025a"></script>
+<script src="tide_season.js?v=20261025a"></script>
+<script src="tide_banner.js?v=20261025a"></script>
+<script src="creek_status.js?v=20261025a"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // National Weather Service first, then creeks, tides, sign-up; the sensor map card goes (the creek list links to the map);
@@ -532,7 +532,7 @@ function renderCreeks() {
     var style = s.ok ? "" : ' style="border-color:' + s.color + ";background:color-mix(in srgb," + s.color + (s.lvl ? " 9%" : " 5%") + ',var(--card))"';
     var h = '<a class="box ck' + (s.ok ? " ok" : "") + '" href="Creeks.html#' + encodeURIComponent(c.id) + '"' + style +
       ' aria-label="' + esc(c.name) + ": " + esc(s.w) + '">' +
-      '<span class="nm">' + esc(c.short || c.name) + "</span>" +
+      '<span class="nm">' + esc(c.name) + "</span>" +
       '<span class="badge" style="background:' + s.color + ";color:" + s.ink + '">' + esc(s.w) + "</span>" +
       (st.top && st.top.minutes ? '<span class="met">Met: ' + esc(st.top.label || "rain trigger") + "</span>" : "");
     st.stages.forEach(function (x) {
@@ -581,7 +581,7 @@ function renderCreeks() {
   var all = [], off = [];
   states.forEach(function (st) { st.stages.forEach(function (x) { all.push(x); if (x.quiet) off.push({ st: st, x: x }); }); });
   sys("dGauges", "vGauges", off.length ? "dq" : "ok", (all.length - off.length) + " of " + all.length + " reporting" + (off.length ? " · not reporting: " + off.map(function (o) {
-    return (o.st.c.short || o.st.c.name) + (o.st.c.stages.length > 1 ? " (" + o.x.g.label + ")" : "") + (o.x.last ? " since " + fmt(o.x.last.t, { month: "short", day: "numeric" }) : "");
+    return o.st.c.name + (o.st.c.stages.length > 1 ? " (" + o.x.g.label + ")" : "") + (o.x.last ? " since " + fmt(o.x.last.t, { month: "short", day: "numeric" }) : "");
   }).join(", ") : ""));
 }
 // Only shown when a lookups/ file couldn't be read or has a mistake (the page then uses its built-in values)

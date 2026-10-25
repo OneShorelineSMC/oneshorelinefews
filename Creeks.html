@@ -343,10 +343,10 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261024c"></script>
-<script src="tide_season.js?v=20261024c"></script>
-<script src="tide_banner.js?v=20261024c"></script>
-<script src="creek_status.js?v=20261024c"></script>
+<script src="lookups.js?v=20261025a"></script>
+<script src="tide_season.js?v=20261025a"></script>
+<script src="tide_banner.js?v=20261025a"></script>
+<script src="creek_status.js?v=20261025a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -680,7 +680,7 @@ function render() {
     var s = statusWord(x);
     if (PV) { var pv = CS.view(D.creek, x.c); s = { w: pv.word, bar: pv.color, col: pv.key === "alert" ? "#8a6d00" : pv.rank <= 1 ? "var(--muted)" : pv.color }; }
     return '<button data-creek="' + esc(x.c.id) + '" class="' + (x.c === c ? "on" : "") + '" style="border-top-color:' + s.bar + '"' +
-      ' aria-label="' + esc(x.c.name) + ": " + esc(s.w) + '"><span class="nm">' + esc(x.c.short || x.c.name.replace(/ (Creek|Channel)$/, "")) + '</span><span class="stt" style="color:' + s.col + '">' + esc(s.w) + "</span></button>";
+      ' aria-label="' + esc(x.c.name) + ": " + esc(s.w) + '"><span class="nm">' + esc(x.c.name) + '</span><span class="stt" style="color:' + s.col + '">' + esc(s.w) + "</span></button>";
   }).join("");
   var worst = states.filter(function (x) { return x.top; }).sort(function (a, b) { return b.top.level - a.top.level; })[0];
   $("navDot").style.display = worst ? "inline-block" : "none";

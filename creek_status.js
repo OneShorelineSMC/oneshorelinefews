@@ -438,7 +438,7 @@
         var label = r.c.name + ": " + word + ". " + brief(st, r.k);
         return "<li>" + (href ? '<a class="cs-brow cs-wrow cs-b-' + r.k + '" href="' + esc(href) + '" aria-label="' + esc(label) + '">' : '<div class="cs-brow cs-wrow cs-b-' + r.k + '">') +
           '<i class="cs-bbar" style="background:' + COL[r.k] + '"></i>' +
-          '<span class="cs-bname">' + esc(r.c.short || r.c.name) + "</span>" +
+          '<span class="cs-bname">' + esc(r.c.name) + "</span>" +
           '<span class="cs-bword cs-v-' + r.k + '">' + icon(r.k) + esc(word) + "</span>" +
           '<span class="cs-bwhy">' + review(r.c, true) + esc(brief(st, r.k)) + "</span>" +
           '<span class="cs-brain">' + (rl || rn ? chip(rl, rn) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
@@ -448,7 +448,7 @@
     }
     if (nq.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + nq.map(function (r) {
       var href = linkFor ? linkFor(r.c) : "";
-      return href ? '<a href="' + esc(href) + '">' + esc(r.c.short || r.c.name) + "</a>" : esc(r.c.short || r.c.name);
+      return href ? '<a href="' + esc(href) + '">' + esc(r.c.name) + "</a>" : esc(r.c.name);
     }).join(" · ") + "</div>";
     h += "</div>";
     if (groups.length) h += '<p class="cs-wdo"><b>What to do:</b> ' + esc(T("verdict_" + groups[0].k + "_todo")) + "</p>";   // for the worst status
@@ -669,7 +669,7 @@
     var quiet = (data.creeks_preview || []).filter(function (c) { return view(data, c).key === "none"; });
     return { tiles: show.map(function (x) { return tile(data, x.c); }),
       note: [hidden ? "+" + hidden + " more with a status (see the Creeks page)" : "",
-        quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.short || c.name; })) : ""].filter(Boolean).join(" · ") };
+        quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.name; })) : ""].filter(Boolean).join(" · ") };
   }
 
   window.CREEK_STATUS = { staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
