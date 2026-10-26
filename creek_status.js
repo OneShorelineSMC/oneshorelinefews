@@ -407,60 +407,99 @@
     if (has("why_gauge_offline")) t = t ? t + " (" + T("home_reason_offline") + ")" : T("home_reason_offline").replace(/^./, function (c) { return c.toUpperCase(); });
     return t;
   }
-  // { banner, html }: banner = the red "Flooding is likely" box (it carries the 911 line), or "" when nothing is likely
+  // { banner, html, level, likely }: banner = the red "Flooding is likely" box (it carries the 911 line), or "" when
+  // nothing is likely (the home page puts that in its one alert at the top instead); level = the creeks' severity on the
+  // shared scale (severity.js), for the order of the home page's sections; likely = the names of creeks where flooding
+  // is likely.
+  // Home page redesign (staff, 2026-10-26): no navy header; with no creek alerts, one line ("No creek alerts. All 10
+  // working creek gauges are normal.", counted) instead of the table; with alerts, rows for those creeks only, then the
+  // creeks with no alerts; an out-of-service or silent gauge is not a status: a muted note under the summary. Colors from
+  // severity.js when it is loaded: the status word is an icon + word on a tint, never a solid fill (the page's one solid
+  // fill is its alert at the top). opts.nws (the active NWS alerts): a creek's level never shows above the NWS level for
+  // flooding unless its creek gauge measured it (severity.js cap).
   function home(data, linkFor, hopts) {
+    hopts = hopts || {};
+    var SV = window.SEVERITY, nwsFlood = SV && hopts.nws ? SV.nwsFor(hopts.nws, "creek") : null;
+    function measured(st) { return (st.reasons || []).some(function (r) { return /^why_(warning|watch|monitoring)$/.test(r.code); }); }
     var rows = allCreeks(data).map(function (c) {
       var v = view(data, c), k = v.key, late = k === "delayed";
       if (late) k = (c.status || {}).key || "none";
-      return { c: c, v: v, k: k, late: late };
+      var lv = SV ? SV.cap(SV.creekLevel(k), nwsFlood, measured(v.st)) : null;
+      return { c: c, v: v, k: k, late: late, lv: lv };
     });
     var late = rows.some(function (r) { return r.late; });
+    var ALERT = { likely: 1, ready: 1, alert: 1 };
     var groups = ["likely", "ready", "alert"].map(function (k) { return { k: k, rows: rows.filter(function (r) { return r.k === k; }) }; })
       .filter(function (g) { return g.rows.length; });
     var likely = rows.filter(function (r) { return r.k === "likely"; });
     var banner = likely.length ? '<div class="cs-banner" role="alert">' + (late ? esc("As of " + clock(data.generated) + ": ") : "") +
       esc(T("banner_likely", { creeks: list(likely.map(function (r) { return r.c.name; })) })) + "</div>" : "";
-    // The kiosk's status board, for the web (staff, 2026-10-23): one row per creek with a status, worst first: status,
-    // why, rain now, since; the creeks with no alerts in one line under it. Rows link to the creek's page.
-    var act = rows.filter(function (r) { return r.k !== "none"; }).sort(function (a, b) { return (RANK[b.k] || 0) - (RANK[a.k] || 0) || allCreeks(data).indexOf(a.c) - allCreeks(data).indexOf(b.c); });
+    var idx = function (r) { return allCreeks(data).indexOf(r.c); };
+    var act = rows.filter(function (r) { return ALERT[r.k]; }).sort(function (a, b) { return (RANK[b.k] || 0) - (RANK[a.k] || 0) || idx(a) - idx(b); });
     var nq = rows.filter(function (r) { return r.k === "none"; });
-    var h = '<div class="cs-home"><div class="cs-board cs-wboard"><div class="cs-bhead"><b>Creeks</b><span>' +
-      (act.length ? act.length + " with a status · " : "") + nq.length + " with no alerts · updated " + esc(clock(data.generated)) + "</span></div>";
+    var level = SV ? (act.length ? SV.top(act.map(function (r) { return r.lv; })) : "normal") : null;
+    // creek gauges: working = reporting and not out of service; the others are listed in a muted note, never as a status
+    var gauges = 0, working = 0, notes = [];
+    rows.forEach(function (r) {
+      var down = [];
+      (r.c.stages || []).forEach(function (g) {
+        var e = (data.sensors || {})[g.key] || {};
+        gauges++;
+        if (e.out_of_service) down.push({ out: true, g: g, note: e.out_of_service.note || "" });
+        else if (!(e.signals || {}).trend) down.push({ out: false, g: g });
+        else working++;
+      });
+      down.forEach(function (d) {
+        var where = r.c.stages.length > 1 ? r.c.name + " (" + (d.g.label || "") + ")" : r.c.name;
+        notes.push(d.out ? T("home_gauge_out_note", { creek: where }) + (d.note ? " " + d.note : "")
+          : T("home_gauge_silent_note", { creek: where }));
+      });
+    });
+    var sev = function (k, lv) { return SV ? " sv-badge sv-" + lv : " cs-v-" + k; };
+    var ic = function (k, lv) { return SV ? SV.icon(lv) : icon(k); };
+    var h = '<div class="cs-home"><div class="cs-board cs-wboard cs-plain' + (SV ? " sv-card sv-" + level : "") + '">';
     if (late) h += '<div class="cs-blate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing each creek’s status at that time.</div>";
-    if (!act.length) {   // say only what was measured (not an all-clear), then the scope
-      h += '<div class="cs-wnone">' + icon("none") + "<span>" + esc(T("home_none")) + '</span></div><p class="cs-wscope">' + esc(T("home_none_note")) + "</p>";
+    if (!act.length) {   // one line, counted: what was measured, not an all-clear
+      h += '<div class="cs-wnone">' + (SV ? '<span class="sv-ink sv-normal">' + SV.icon("normal") + "</span>" : icon("none")) + "<span>" +
+        esc(T(working ? "home_none_count" : "home_none", { n: working })) + "</span></div>";
     } else {
+      h += '<div class="cs-bsum">' + esc(T(act.length === 1 ? "home_alerts_one" : "home_alerts_many", { n: act.length })) +
+        ' <span class="cs-dim">· updated ' + esc(clock(data.generated)) + "</span></div>";
       h += '<div class="cs-bcols cs-wcols" aria-hidden="true"><i></i><span>' + esc(T("board_col_creek")) + "</span><span>" + esc(T("board_col_status")) + "</span><span>" +
         esc(T("board_col_why")) + "</span><span>" + esc(T("board_col_rain")) + '</span><span class="cs-bsince">' + esc(T("board_col_since")) + "</span><i></i></div>";
       h += '<ul class="cs-wrows' + (late ? " cs-dimmed" : "") + '">' + act.map(function (r) {
-        var st = r.v.st, rl = (st.rain || {}).level || 0, rn = !!(st.rain || {}).now, off = r.k === "offline", href = linkFor ? linkFor(r.c) : "";
-        var word = off && (st.out_of_service || []).length ? T("gauge_out") : T("verdict_" + r.k);
-        var label = r.c.name + ": " + word + ". " + brief(st, r.k);
+        var st = r.v.st, rl = (st.rain || {}).level || 0, rn = !!(st.rain || {}).now, hasRain = !!st.rain, href = linkFor ? linkFor(r.c) : "";
+        var word = T("verdict_" + r.k), label = r.c.name + ": " + word + ". " + brief(st, r.k);
         return "<li>" + (href ? '<a class="cs-brow cs-wrow cs-b-' + r.k + '" href="' + esc(href) + '" aria-label="' + esc(label) + '">' : '<div class="cs-brow cs-wrow cs-b-' + r.k + '">') +
-          '<i class="cs-bbar" style="background:' + COL[r.k] + '"></i>' +
+          '<i class="cs-bbar" style="background:' + (SV ? "var(--sv-" + r.lv + "-stripe)" : COL[r.k]) + '"></i>' +
           '<span class="cs-bname">' + esc(r.c.name) + "</span>" +
-          '<span class="cs-bword cs-v-' + r.k + '">' + icon(r.k) + esc(word) + "</span>" +
+          '<span class="cs-bword' + sev(r.k, r.lv) + '">' + ic(r.k, r.lv) + esc(word) + "</span>" +
           '<span class="cs-bwhy">' + review(r.c, true) + esc(brief(st, r.k)) + "</span>" +
-          '<span class="cs-brain">' + (rl || rn ? chip(rl, rn) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
-          '<span class="cs-bsince">' + (st.since && !off ? "since " + esc(clock(st.since)) : "") + "</span>" +
+          // no rain data / no start time: no cell content at all (not an empty or "–" cell)
+          '<span class="cs-brain">' + (hasRain ? (rl || rn ? chip(rl, rn) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") : "") + "</span>" +
+          '<span class="cs-bsince">' + (st.since ? "since " + esc(clock(st.since)) : "") + "</span>" +
           '<span class="cs-wgo" aria-hidden="true">' + (href ? "›" : "") + "</span>" + (href ? "</a>" : "</div>") + "</li>";
       }).join("") + "</ul>";
+      if (nq.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + nq.map(function (r) {
+        var href = linkFor ? linkFor(r.c) : "";
+        return href ? '<a href="' + esc(href) + '">' + esc(r.c.name) + "</a>" : esc(r.c.name);
+      }).join(" · ") + "</div>";
     }
-    if (nq.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + nq.map(function (r) {
-      var href = linkFor ? linkFor(r.c) : "";
-      return href ? '<a href="' + esc(href) + '">' + esc(r.c.name) + "</a>" : esc(r.c.name);
-    }).join(" · ") + "</div>";
+    if (notes.length) h += '<div class="cs-bnotes">' + (SV ? '<span class="sv-ink sv-offline">' + SV.icon("offline") + "</span>" : "") +
+      "<span>" + notes.map(esc).join("<br>") + "</span></div>";
+    if (!act.length) h += '<p class="cs-wscope">' + esc(T("home_none_note")) + ' <span class="cs-dim">Updated ' + esc(clock(data.generated)) + ".</span></p>";
     h += "</div>";
     if (groups.length) h += '<p class="cs-wdo"><b>What to do:</b> ' + esc(T("verdict_" + groups[0].k + "_todo")) + "</p>";   // for the worst status
     if (groups.some(function (g) { return g.k === "likely" || g.k === "ready"; })) {
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac cs-evacb" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
     }
-    if (hopts && hopts.noMore) return { banner: banner, html: h + "</div>" };   // Creeks page: the map link sits in its city box
-    h += '<div class="cs-hmore">';
-    h += '<p><a href="SiteMap.html">' + esc(T("home_map_link")) + " ›</a></p>";
-    h += '<p class="cs-hsm">' + esc(T("home_updated", { time: clock(data.generated) })) + "</p></div></div>";
-    return { banner: banner, html: h };
+    var out = { banner: banner, level: level, likely: likely.map(function (r) { return r.c.name; }), notes: notes, working: working, gauges: gauges };
+    if (hopts.noMore) { out.html = h + "</div>"; return out; }   // Creeks page: the map link sits in its city box
+    // the creek gauge map link stays with the creek section (it moves with it when the home page reorders)
+    h += '<p class="cs-hmap"><a href="SiteMap.html">' + esc(T("home_map_link")) + " ›</a></p></div>";
+    out.html = h;
+    return out;
   }
 
   /* ---------- EOC kiosk (staff preview): a status board, one row per creek, worst first ---------- */
@@ -646,7 +685,15 @@
     ".cs-changed{font-size:13.5px;margin:6px 0 8px}",
     // the kiosk board on the home page: rows are links; on a phone each row folds to name + status, then why, then rain
     ".cs-wboard{flex:none;margin:0 0 10px}.cs-wrows{list-style:none;margin:0;padding:0}",
-    ".cs-wcols,.cs-wrow{grid-template-columns:8px 130px 160px 1fr 110px 84px 14px}",
+    // home page board (2026-10-26): a standard card (no navy header), a summary line, muted notes for gauges not working
+    ".cs-plain{border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}",
+    ".cs-bsum{padding:10px 14px 8px;font-size:15px;font-weight:700;color:var(--ink,#16202b);border-bottom:1px solid var(--line,#e3e8ee)}.cs-bsum .cs-dim{font-weight:400;font-size:13px}",
+    ".cs-bnotes{display:flex;gap:8px;align-items:flex-start;padding:8px 14px;font-size:13.5px;line-height:1.4;color:var(--muted,#556274);border-top:1px solid var(--line,#e3e8ee)}.cs-bnotes .sv-ic{width:16px;height:16px;margin-top:2px}",
+    ".cs-plain .cs-wnone{padding:12px 14px 6px;font-size:16.5px}.cs-plain .cs-wscope{padding:4px 14px 12px;font-size:13.5px}",
+    ".cs-plain .cs-wnone + .cs-bnotes{border-top:0;padding-top:2px}",
+    ".cs-bword.sv-badge{font-weight:700}.cs-bword .sv-ic{width:16px;height:16px}",
+    ".cs-hmap{margin:0 2px 4px;font-size:14px}.cs-hmap a{font-weight:600}",
+    ".cs-wcols,.cs-wrow{grid-template-columns:8px 185px 150px 1fr 110px 84px 14px}",   // full creek names (Oct 25)
     "a.cs-wrow{color:inherit;text-decoration:none;min-height:44px;cursor:pointer}a.cs-wrow:hover{background:rgba(10,85,135,.05)}",
     "a.cs-wrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:-3px}.cs-wgo{font-size:20px;color:var(--muted,#556274);text-align:right}",
     ".cs-wrow .cs-bwhy{-webkit-line-clamp:3}",
