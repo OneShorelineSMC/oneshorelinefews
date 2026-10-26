@@ -349,10 +349,17 @@
   .mgrid .d.r, .mgrid .d.r:not(.past) { background: var(--sv-advisory-tint); color: var(--sv-advisory-ink); box-shadow: inset 0 0 0 2px var(--sv-advisory-stripe); }
   .mgrid .d.past.r { box-shadow: none; }
   .mgrid .d.of:not(.past) { border-color: var(--sv-advisory-stripe); }
-  .mgrid .d.xp.r:not(.past) { border-color: var(--sv-advisory-ink); }
+  /* Calendar marks, each one distinct (staff, 2026-10-26):
+       flood level (tide table or NOAA projection) = orange tint, solid orange edge, "!" badge in the corner;
+       NOAA projection (next 2 days) = dotted dark outline (also on a flood-level day: dark dots outside the orange edge);
+       possible flood level if the Bay stays high = dashed orange outline; higher than usual = yellow with a bar under it */
+  .mgrid .d.xp.r:not(.past) { border-color: var(--ink); }
+  .mgrid .d.r::after, .ckey i.lgr::after { content:"!";position:absolute;top:-5px;right:-4px;width:12px;height:12px;border-radius:50%;background:var(--sv-advisory-stripe);color:#fff;font-size:9.5px;font-weight:800;line-height:12px;text-align:center; }
+  .mgrid .d.past.r::after { background: var(--muted); }
+  .ckey i.lgr { position: relative; background: var(--sv-advisory-tint); box-shadow: inset 0 0 0 2px var(--sv-advisory-stripe); }
   details.more .maybe, .tech .maybe, .flist b, .flist .go { color: var(--sv-advisory-ink); }
   .tech .maybe { font-weight: 700; font-size: 14.5px; line-height: 1.4; margin: 8px 0 6px; }
-  .ckey .sym.sev { background: var(--sv-advisory-stripe) !important; }
+
   .flist .go:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 3px; }
   details.calfull > summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px; display: flex; align-items: center; }
   details.more > summary::before, details.calfull > summary::before { content: "▸"; margin-right: 8px; }
@@ -395,7 +402,7 @@
     <p class="outl hide" id="outl"></p>
     <div class="calfull" id="calfull"><h3 class="clh" id="calh">Calendar</h3>
     <div class="ckey"><span><i style="background:var(--ambbg);box-shadow:inset 0 -3px 0 var(--amb)"></i><span data-text="tide_day_amber"></span></span>
-      <span><i class="sym sev" style="background:#c05000">!</i><span data-text="tide_day_red"></span></span>
+      <span><i class="lgr"></i><span data-text="tide_day_red"></span></span>
       <span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>
       <span><i style="outline:4px double var(--ink);outline-offset:-4px"></i>Selected</span>
       <span id="fckey" class="hide"><i style="border:2px dotted var(--ink);box-sizing:border-box"></i><span data-text="tide_day_expected"></span></span>
@@ -437,10 +444,10 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261026d"></script>
-<script src="tide_season.js?v=20261026d"></script>
-<script src="severity.js?v=20261026d"></script>
-<script src="hero.js?v=20261026d"></script>
+<script src="lookups.js?v=20261026e"></script>
+<script src="tide_season.js?v=20261026e"></script>
+<script src="severity.js?v=20261026e"></script>
+<script src="hero.js?v=20261026e"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }

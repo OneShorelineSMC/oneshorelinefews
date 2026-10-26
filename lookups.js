@@ -216,7 +216,7 @@
     tide_offset_note: "After the NOAA projection ends, the estimate (≈, the gray dotted line) is the tide table plus how much higher the {water} has run over the past {days} days: {ft} ft on average, easing back toward what is usual for the season over the coming weeks. It isn’t a forecast, and storms can add more.",
     tide_offset_day: "≈ {ft} if the {water} stays high",
     tide_offset_cal: "could reach the flood level: about {ft} if the {water} stays as high as it has been running (an estimate)",
-    tide_offset_cal_key: "Red dashed ring: possible flood level ({red} ft) if the {water} stays this high",
+    tide_offset_cal_key: "Dashed orange ring: possible flood level ({red} ft) if the {water} stays this high",
     tide_maybe_head: "Possible flood-level tides {days} if the {water} stays about {off} ft higher than the tide table, its average over the past month.",
     tide_maybe_day: "Possible flood level",
     tide_offset_later: "If the {water} stays {off} ft higher than the tide table (its average this past month): {list}",
