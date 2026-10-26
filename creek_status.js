@@ -438,21 +438,25 @@
     var act = rows.filter(function (r) { return ALERT[r.k]; }).sort(function (a, b) { return (RANK[b.k] || 0) - (RANK[a.k] || 0) || idx(a) - idx(b); });
     var nq = rows.filter(function (r) { return r.k === "none"; });
     var level = SV ? (act.length ? SV.top(act.map(function (r) { return r.lv; })) : "normal") : null;
-    // creek gauges: working = reporting and not out of service; the others are listed in a muted note, never as a status
-    var gauges = 0, working = 0, notes = [];
+    // Counted by creek, not by gauge (staff, 2026-10-26: "all 16 working gauges are normal" above "Belmont Creek gauge out
+    // of service" read as a contradiction). A creek whose every creek gauge is out of service or silent: its level isn't
+    // known, so it is left out of the count and named in a muted note; a creek with one of two gauges down still counts.
+    var gauges = 0, working = 0, known = 0, unknown = 0, notes = [];
     rows.forEach(function (r) {
-      var down = [];
+      var down = [], up = 0;
       (r.c.stages || []).forEach(function (g) {
         var e = (data.sensors || {})[g.key] || {};
         gauges++;
         if (e.out_of_service) down.push({ out: true, g: g, note: e.out_of_service.note || "" });
         else if (!(e.signals || {}).trend) down.push({ out: false, g: g });
-        else working++;
+        else { working++; up++; }
       });
+      var all = down.length && !up;
+      if (all) unknown++; else known++;
       down.forEach(function (d) {
-        var where = r.c.stages.length > 1 ? r.c.name + " (" + (d.g.label || "") + ")" : r.c.name;
-        notes.push(d.out ? T("home_gauge_out_note", { creek: where }) + (d.note ? " " + d.note : "")
-          : T("home_gauge_silent_note", { creek: where }));
+        var tail = d.out && d.note ? " " + d.note : "";
+        if (all) notes.push(T(d.out ? "home_gauge_out_note" : "home_gauge_silent_note", { creek: r.c.name }) + tail);
+        else notes.push(T("home_gauge_part_note", { creek: r.c.name, gauge: d.g.label || "" }) + tail);
       });
     });
     var sev = function (k, lv) { return SV ? " sv-badge sv-" + lv : " cs-v-" + k; };
@@ -461,7 +465,7 @@
     if (late) h += '<div class="cs-blate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing each creek’s status at that time.</div>";
     if (!act.length) {   // one line, counted: what was measured, not an all-clear
       h += '<div class="cs-wnone">' + (SV ? '<span class="sv-ink sv-normal">' + SV.icon("normal") + "</span>" : icon("none")) + "<span>" +
-        esc(T(working ? "home_none_count" : "home_none", { n: working })) + "</span></div>";
+        esc(!known ? T("home_none") : unknown ? T("home_none_some", { n: known }) : T("home_none_count", { n: known })) + "</span></div>";
     } else {
       h += '<div class="cs-bsum">' + esc(T(act.length === 1 ? "home_alerts_one" : "home_alerts_many", { n: act.length })) +
         ' <span class="cs-dim">· updated ' + esc(clock(data.generated)) + "</span></div>";
@@ -494,7 +498,7 @@
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac cs-evacb" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
     }
-    var out = { banner: banner, level: level, likely: likely.map(function (r) { return r.c.name; }), notes: notes, working: working, gauges: gauges };
+    var out = { banner: banner, level: level, likely: likely.map(function (r) { return r.c.name; }), notes: notes, working: working, gauges: gauges, known: known, unknown: unknown };
     if (hopts.noMore) { out.html = h + "</div>"; return out; }   // Creeks page: the map link sits in its city box
     // the creek gauge map link stays with the creek section (it moves with it when the home page reorders)
     h += '<p class="cs-hmap"><a href="SiteMap.html">' + esc(T("home_map_link")) + " ›</a></p></div>";
