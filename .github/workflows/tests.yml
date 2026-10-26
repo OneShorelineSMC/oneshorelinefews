@@ -12,6 +12,7 @@ on:
       - "scripts/**"
       - "lookups/*.csv"
       - "index.html"
+      - "severity.js"
       - ".github/workflows/tests.yml"
   workflow_dispatch:
 
@@ -66,3 +67,5 @@ jobs:
         run: python scripts/test_shoreline_lowpoints.py
       - name: Creek outlets
         run: python scripts/test_creek_outlets.py
+      - name: Home page severity scale, section order and colors
+        run: node scripts/test_home.js
