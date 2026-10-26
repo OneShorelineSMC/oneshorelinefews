@@ -196,8 +196,14 @@
     if (bay && bay.flood) cands.push({ kind: "tide", level: bay.level, order: 0 });
     else if (tideP.length) cands.push({ kind: "nws", p: tideP[0], level: SV.nwsLevel(tideP[0].event), order: 0 });
     if (CR && CR.level && SV.RANK[CR.level] >= SV.RANK.watch) cands.push({ kind: "creek", level: CR.level, order: 1 });
-    list.forEach(function (p) {   // each other product (the coastal flood product that names the tide's source isn't repeated)
-      if (p === tideP[0]) return;
+    // each other product, once: NWS often issues the same alert per forecast zone (the Bay shoreline, the coast), so the
+    // same name and end time is one alert here (staff, 2026-10-26); the coastal flood product that names the tide's source
+    // isn't repeated either
+    var seen = {}, key = function (p) { return p.event + "|" + (p.ends || p.expires || ""); };
+    if (tideP.length) seen[key(tideP[0])] = true;
+    list.forEach(function (p) {
+      if (seen[key(p)]) return;
+      seen[key(p)] = true;
       cands.push({ kind: "nws", p: p, level: SV.nwsLevel(p.event), order: SV.hazardOf(p.event) === "creek" ? 1 : 2 });
     });
     cands.sort(function (a, b) { return SV.RANK[b.level] - SV.RANK[a.level] || a.order - b.order; });
@@ -236,8 +242,10 @@
     }
     var others = P.cands.slice(1).map(function (c) { return otherText(c, s); });
     if (others.length) h += '<p class="also"><b>Also in effect:</b> ' + others.map(esc).join(" · ") + "</p>";
+    var names = {}; list.forEach(function (p) { names[p.event] = (names[p.event] || 0) + 1; });
     if (list.length) h += '<details class="nwsfull-d"><summary>National Weather Service text (' + list.length + ')</summary><div class="nwsfull">' + list.map(function (p) {
-      return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + " · National Weather Service San Francisco Bay Area</div>" + alertBody(p) + "</div>";
+      return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + (names[p.event] > 1 && p.areaDesc ? " · " + esc(p.areaDesc) : "") +
+        " · National Weather Service San Francisco Bay Area</div>" + alertBody(p) + "</div>";
     }).join("") + "</div></details>";
     // compact: the Creeks page, when the Bay tide or a coastal flood product leads: one narrow bar linking to the Tides page
     var compact = !!(s.compactTide && lead && (lead.kind === "tide" || (lead.kind === "nws" && SV.hazardOf(lead.p.event) === "tide")));
