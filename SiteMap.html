@@ -140,6 +140,9 @@
   .rsum { font-size: 15px; margin-top: 10px; line-height: 1.45; }
   #listfoot { font-size: 12px; color: var(--muted); margin: 18px 4px 0; line-height: 1.45; }
   #listfoot a { color: inherit; }
+  /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
 </style>
 </head>
 <body>
@@ -150,6 +153,7 @@
       <div id="sub">Loading…</div></div>
     </div>
     <div class="seg"><button data-view="map" class="on">Map</button><button data-view="list">List</button></div>
+    <div class="h911" style="margin-left:0" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
 <div id="legend">
@@ -184,9 +188,9 @@
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261026b"></script>
-<script src="tide_season.js?v=20261026b"></script>
-<script src="tide_banner.js?v=20261026b"></script>
+<script src="lookups.js?v=20261026c"></script>
+<script src="tide_season.js?v=20261026c"></script>
+<script src="tide_banner.js?v=20261026c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)

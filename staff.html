@@ -34,12 +34,16 @@
   li a:hover b { text-decoration: underline; }
   li a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: -3px; }
   .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
+  /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
 </style>
 </head>
 <body>
 <header><div class="wrap">
   <img src="img/oneshoreline-mark-white.png" alt="">
   <div><h1>Staff tools</h1><div class="org">OneShoreline Flood Early Warning · not linked from the public pages</div></div>
+  <div class="h911" data-text="e911">In an emergency, call 911.</div>
 </div></header>
 <main>
   <p class="note">Bookmark this page. Each link opens the staff view (it adds <code>?preview=1</code> to the address). This page isn't

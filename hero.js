@@ -48,6 +48,9 @@
       ".hero h2{margin:0;font-size:20px;line-height:1.25;color:inherit}",
       ".hero p{margin:6px 0 0;font-size:15.5px;line-height:1.4}.hero .act{font-weight:700}.hero .src,.hero .also{font-size:14px}",
       ".hero a{color:inherit;font-weight:700}",
+      // compact (the Creeks page when the Bay tide leads): one narrow bar, the time window and a link to the Tides page
+      ".hero.hcompact .hh{align-items:center;gap:8px}.hero.hcompact .hh .sv-ic{width:20px;height:20px;margin-top:0}",
+      ".hero.hcompact h2{font-size:15.5px;font-weight:700}.hero.hcompact h2 a{white-space:nowrap;margin-left:4px}.hero.hcompact .hmore p{margin:3px 0 0;font-size:13.5px}",
       ".hero details{margin-top:8px;font-size:14px}.hero summary{cursor:pointer;font-weight:700;min-height:32px;display:flex;align-items:center;list-style:none}",
       ".hero summary::-webkit-details-marker{display:none}.hero summary::before{content:'▸';margin-right:6px}.hero details[open]>summary::before{content:'▾'}",
       ".hero summary:focus-visible{outline:3px solid currentColor;outline-offset:2px;border-radius:4px}",
@@ -236,11 +239,19 @@
     if (list.length) h += '<details class="nwsfull-d"><summary>National Weather Service text (' + list.length + ')</summary><div class="nwsfull">' + list.map(function (p) {
       return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + " · National Weather Service San Francisco Bay Area</div>" + alertBody(p) + "</div>";
     }).join("") + "</div></details>";
+    // compact: the Creeks page, when the Bay tide or a coastal flood product leads: one narrow bar linking to the Tides page
+    var compact = !!(s.compactTide && lead && (lead.kind === "tide" || (lead.kind === "nws" && SV.hazardOf(lead.p.event) === "tide")));
+    if (compact) {
+      head = lead.kind === "tide" ? LK.text("hero_tide_head", { when: s.bay.when }) + "." : lead.p.event + " " + nwsUntil(lead.p) + ".";
+      h = others.length ? '<p class="also"><b>Also in effect:</b> ' + others.map(esc).join(" · ") + "</p>" : "";
+    }
+    el.classList.toggle("hcompact", compact);
     var d0 = q(".nwsfull-d"), wasOpen = d0 && d0.open;
-    el.className = "hero sv-hero sv-" + P.level;
+    el.className = "hero sv-hero sv-" + P.level + (compact ? " hcompact" : "");
     el.setAttribute("role", lead && SV.RANK[P.level] >= SV.RANK.advisory ? "alert" : "status");
     q(".hic").innerHTML = SV.icon(lead ? P.level : "normal");
     q(".hhd").textContent = head;
+    if (compact) q(".hhd").insertAdjacentHTML("beforeend", ' <a href="Tides.html' + hasPreview() + '">Tide details ›</a>');
     q(".hsub").textContent = sub; q(".hsub").hidden = !sub;
     if (q(".hmore").innerHTML !== h) { q(".hmore").innerHTML = h; if (wasOpen && q(".nwsfull-d")) q(".nwsfull-d").open = true; }
     return P;

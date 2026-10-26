@@ -17,11 +17,11 @@
   :root {
     --lv1: #7a6400; --lv2: #b45a00; --lv3: #c62828;   /* creek levels Monitoring / Watch / Warning: lines, labels and icons (same as the status icons) */
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5b6877; --line: #e3e8ee;
-    --red: #c0392b; --amber: #a35f00; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #5f6b78; --tidetbl: #4a4f55; --fcline: #00838f; --fc: #005A70;
+    --red: #c0392b; --amber: #a35f00; --green: #2e7d32; --blue: #1e88e5; --purple: #7e57c2; --soft: rgba(26,58,92,.05); --mhhw: #5f6b78; --tidetbl: #4a4f55; --fcline: #00838f; --fc: #005A70; --link: #0A5587;
   }
   @media (prefers-color-scheme: dark) {
     :root { --lv1: #f2d544; --lv2: #ffa94d; --lv3: #f47c79; --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
-      --red: #f47c79; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --mhhw: #9aa8b8; --tidetbl: #a7b0ba; --fcline: #4fc3d9; --fc: #4fc3d9; }
+      --red: #f47c79; --amber: #ffa726; --green: #66bb6a; --soft: rgba(255,255,255,.05); --mhhw: #9aa8b8; --tidetbl: #a7b0ba; --fcline: #4fc3d9; --fc: #4fc3d9; --link: #8cc8ff; }   /* links 4.5:1 on the dark card (were 2.08:1, Oct 26) */
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text);
@@ -44,6 +44,8 @@
   /* The alert at the top (National Weather Service, the Bay tide, the creeks): hero.js, shared with the other pages */
   .heroWrap { max-width: 720px; margin: 0 auto; padding: 12px 12px 0; }
   .heroWrap .hero { margin: 0; }
+  /* the Bay tide in a narrow bar here (staff, 2026-10-26): this page is about creeks; the full tide card is on Tides */
+  .heroWrap .hero.hcompact { padding: 8px 14px; border-radius: 10px; }
   .al { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .al:last-child { border-bottom: 0; }
   .al h3 { margin: 0 0 2px; font-size: 16px; }
@@ -222,6 +224,9 @@
   @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav button.on { color: var(--ink); font-weight: bold; }
   nav button .dot { display: none; width: 9px; height: 9px; border-radius: 50%; position: absolute; margin-left: 22px; }
+  /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
 </style>
 </head>
 <body>
@@ -231,6 +236,7 @@
   <h1>Creek Conditions</h1>
   <div class="sub">OneShoreline Early Warning · San Mateo County</div>
   </div>
+  <div class="h911" data-text="e911">In an emergency, call 911.</div>
 </header>
 
 <div class="heroWrap"><section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section></div>
@@ -333,10 +339,10 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261026b"></script>
-<script src="severity.js?v=20261026b"></script>
-<script src="creek_status.js?v=20261026b"></script>
-<script src="hero.js?v=20261026b"></script>
+<script src="lookups.js?v=20261026c"></script>
+<script src="severity.js?v=20261026c"></script>
+<script src="creek_status.js?v=20261026c"></script>
+<script src="hero.js?v=20261026c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -430,7 +436,7 @@ function loadAlerts() {
 function loadBay() { HERO.loadBay(function (bd) { HB.D = bd; renderHero(); }); }
 function renderHero() {
   if (HB.D) HB.bay = HERO.tideState({ D: HB.D, mhhw: LK.mhhw("9414523"), red: LK.num("TIDE_RED_FT_RWC"), water: "Bay", nws: D.alerts || [] });
-  HERO.render($("hero"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, bay: HB.bay, creeks: D.creek ? HERO.creeks(D.creek, D.alerts || []) : null, creekLink: false });
+  HERO.render($("hero"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, bay: HB.bay, creeks: D.creek ? HERO.creeks(D.creek, D.alerts || []) : null, creekLink: false, compactTide: true });
 }
 
 

@@ -90,6 +90,9 @@
   @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav a.on { color: var(--ink); font-weight: bold; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
 </style>
 </head>
 <body>
@@ -98,6 +101,7 @@
     <img class="mark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="36" height="36">
     <div><div class="ht">Flood Early Warning</div>
       <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
+    <div class="h911" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
 <a id="alert" href="index.html"><span class="ic" aria-hidden="true">⚠</span><span class="tx"><b id="aMain"></b><small id="aSub"></small></span></a>
@@ -147,9 +151,9 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261026b"></script>
-<script src="tide_season.js?v=20261026b"></script>
-<script src="tide_banner.js?v=20261026b"></script>
+<script src="lookups.js?v=20261026c"></script>
+<script src="tide_season.js?v=20261026c"></script>
+<script src="tide_banner.js?v=20261026c"></script>
 <script>
 /* Shoreline: low spots along San Mateo County's Bay shoreline (BCDC Adapting to Rising Tides maps) and whether the coming
    tides at Redwood City are high enough to reach them. lookups/THRESHOLDS_BASIS.md §4c.

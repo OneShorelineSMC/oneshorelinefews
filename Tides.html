@@ -358,6 +358,9 @@
   .wlist b { color: var(--kingtx); }
   .wlist .lv { font-size: 12.5px; color: var(--muted); }
   body.embed #calcard, body.embed #season .src { display: none; }
+  /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
 </style>
 </head>
 <body>
@@ -366,6 +369,7 @@
     <img class="mark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="36" height="36">
     <div><div class="ht">Flood Early Warning</div>
       <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
+    <div class="h911" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
 
@@ -429,10 +433,10 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261026b"></script>
-<script src="tide_season.js?v=20261026b"></script>
-<script src="severity.js?v=20261026b"></script>
-<script src="hero.js?v=20261026b"></script>
+<script src="lookups.js?v=20261026c"></script>
+<script src="tide_season.js?v=20261026c"></script>
+<script src="severity.js?v=20261026c"></script>
+<script src="hero.js?v=20261026c"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }

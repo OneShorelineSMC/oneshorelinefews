@@ -38,6 +38,7 @@
   #brand { position: absolute; left: 0; top: 0; width: 800px; height: 20px; box-sizing: border-box; padding: 0 16px;
     display: flex; align-items: center; gap: 8px; background: #0A5587; color: #fff; font-size: 12.5px; letter-spacing: .02em; white-space: nowrap; }
   #brand b { font-weight: bold; letter-spacing: .04em; }
+  #brand .b911 { margin-left: auto; letter-spacing: 0; }   /* in the logo bar, top right, on every page (staff, 2026-10-26) */
   #brand img { width: 15px; height: 15px; margin-right: 1px; }
   #brand .sep { opacity: .55; }
   /* Alert bar */
@@ -434,7 +435,7 @@
 </head>
 <body>
 <div id="stage">
-  <div id="brand"><img src="img/oneshoreline-mark-white.png" alt=""><b>FLOOD EARLY WARNING SYSTEM</b><span class="sep">|</span><span>OneShoreline</span><span class="sep">|</span><span>San Mateo County</span></div>
+  <div id="brand"><img src="img/oneshoreline-mark-white.png" alt=""><b>FLOOD EARLY WARNING SYSTEM</b><span class="sep">|</span><span>OneShoreline</span><span class="sep">|</span><span>San Mateo County</span><b class="b911" data-text="e911">In an emergency, call 911.</b></div>
   <div id="alertbar" class="unknown">
     <div id="alertIcon">…</div>
     <div id="alertText">
@@ -532,11 +533,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261026b"></script>
-<script src="tide_season.js?v=20261026b"></script>
-<script src="creek_status.js?v=20261026b"></script>
-<script src="severity.js?v=20261026b"></script>
-<script src="hero.js?v=20261026b"></script>
+<script src="lookups.js?v=20261026c"></script>
+<script src="tide_season.js?v=20261026c"></script>
+<script src="creek_status.js?v=20261026c"></script>
+<script src="severity.js?v=20261026c"></script>
+<script src="hero.js?v=20261026c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
