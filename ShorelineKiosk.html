@@ -41,17 +41,21 @@
   #brand img { width: 15px; height: 15px; margin-right: 1px; }
   #brand .sep { opacity: .55; }
   /* Alert bar */
+  /* The alert strip (staff, 2026-10-26): the same as the web pages' alert at the top (hero.js): National Weather
+     Service, the Bay at the flood level and the creeks in one line, colored by the highest level (severity.js). The
+     screen's only solid fill; nothing happening = a plain panel with a check mark. */
   #alertbar { position: absolute; left: 0; top: 20px; width: 800px; height: 48px; box-sizing: border-box;
-    padding: 0 16px; display: flex; align-items: center; gap: 12px; color: #fff; background: #2e7d32; }   /* fixed green: white text needs 4.5:1 in the dark theme too */
-  #alertbar.warning { background: #b71c1c; }
-  #alertbar.watch, #alertbar.advisory { background: #9a5b00; }
-  #alertbar.statement { background: #455a75; }
-  #alertbar.unknown { background: #5b6877; }
-  #alertIcon { font-size: 24px; line-height: 1; }
+    padding: 0 16px 0 12px; display: flex; align-items: center; gap: 12px; color: var(--ink); background: var(--panel);
+    border-bottom: 1px solid var(--line); cursor: pointer; }
+  #alertbar.sv-hero.sv-warning, #alertbar.sv-hero.sv-advisory, #alertbar.sv-hero.sv-watch { border-bottom: 0; }
+  #alertbar.sv-warning { background: var(--sv-warning-fill); color: var(--sv-warning-on); }
+  #alertbar.sv-advisory { background: var(--sv-advisory-fill); color: var(--sv-advisory-on); }
+  #alertbar.sv-watch { background: var(--sv-watch-fill); color: var(--sv-watch-on); }
+  #alertIcon { font-size: 24px; line-height: 1; display: flex; } #alertIcon .sv-ic { width: 28px; height: 28px; }
   #alertText { flex: 1; min-width: 0; }
   #alertMain { font-size: 20px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #alertSub { font-size: 13px; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #alertMore { font-size: 13px; background: rgba(0,0,0,.22); border-radius: 12px; padding: 4px 10px; white-space: nowrap; }
+  #alertMore { font-size: 13px; background: rgba(0,0,0,.12); border-radius: 12px; padding: 4px 10px; white-space: nowrap; }
 
   /* Bay Tides tab: Redwood City only */
   #tides { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
@@ -71,14 +75,14 @@
   .kgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .kgrid .wd { font-size: 10px; color: var(--muted); text-align: center; }
   .kgrid .d { position: relative; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; border-radius: 3px; color: var(--ink); }
-  .kgrid .d.a { background: var(--infobg); color: var(--info); font-weight: bold; box-shadow: inset 0 -3px 0 var(--infob); }
+  .kgrid .d.a { background: var(--sv-watch-tint); color: var(--sv-watch-ink); font-weight: bold; box-shadow: inset 0 -3px 0 var(--sv-watch-stripe); }
   .kgrid .d.k { background: #6A3D8F; color: #fff; font-weight: bold; }
-  .kgrid .d.r { background: #c62828; color: #fff; font-weight: bold; }
+  .kgrid .d.r { background: var(--sv-advisory-tint); color: var(--sv-advisory-ink); font-weight: bold; box-shadow: inset 0 0 0 2px var(--sv-advisory-stripe); }
   .kgrid .d.k::after, .kgrid .d.r::after { position: absolute; top: -1px; right: 1px; font-size: 7.5px; line-height: 1; }
   .kgrid .d.k::after { content: "★"; } .kgrid .d.r::after { content: "!"; } .kgrid .d.r.kr::before { content: "★"; position: absolute; top: -1px; left: 1px; font-size: 7.5px; line-height: 1; }
   .kgrid .d.xp { border: 2px dotted var(--ink); }
-  .kgrid .d.of:not(.past) { border: 2px dashed var(--red); }   /* possible flood level if the Bay stays this high (same as the Tides page) */
-  .kgrid .d.xp.r, .kgrid .d.xp.k { border-color: #fff; }
+  .kgrid .d.of:not(.past) { border: 2px dashed var(--sv-advisory-stripe); }   /* possible flood level if the Bay stays this high (same as the Tides page) */
+  .kgrid .d.xp.r, .kgrid .d.xp.k { border-color: var(--sv-advisory-ink); }
   .kgrid .d.past { background: transparent; color: var(--muted); font-weight: normal; box-shadow: none; }
   .kgrid .d.past.k { box-shadow: inset 0 0 0 1.5px #6A3D8F; color: var(--ink); }
   .kgrid .d.today { outline: 2px solid var(--ink); outline-offset: 1px; }
@@ -94,7 +98,8 @@
     align-items: center; gap: 12px; padding: 0 16px; background: #5b6877; color: #fff; cursor: pointer;
     border-top: 2px solid rgba(255,255,255,.6); }
   #stage.tidesOn #thead { display: flex; }
-  #thead.over { background: #0a5587; } #thead.red { background: #c62828; } #thead.ok { background: #2e7d32; }
+  /* the tab's tide headline (staff, 2026-10-26): a plain strip with the level's stripe and words (hero.js tideState),
+     the same words as the web pages' tide cards; not a solid fill */
   #thead .hm { flex: 1; min-width: 0; font-size: 16.5px; font-weight: bold; line-height: 1.2; overflow: hidden; white-space: nowrap;
     text-overflow: ellipsis; display: block; color: #fff; }
   #thead .hm span { font-weight: normal; color: #fff; }
@@ -103,6 +108,13 @@
   #thead .hm .hi { margin-right: 5px; }
   #thead .hnow { flex: none; text-align: right; font-size: 12.5px; color: #fff; opacity: .95; line-height: 1.25; white-space: nowrap; }
   #thead .hnow b { font-size: 17px; color: #fff; }
+  #thead { background: var(--panel); color: var(--ink); border-top: 0; border-bottom: 1px solid var(--line); }
+  #thead .hm, #thead .hm span, #thead .hnow, #thead .hnow b { color: var(--ink); }
+  #thead .hm .hd { opacity: 1; color: var(--muted); } #thead .hm .hd .lvw { font-weight: bold; color: var(--sv-ink-c, inherit); }
+  #thead .hm .lvw .sv-ic { width: 15px; height: 15px; margin-right: 3px; }
+  #thead.sv-card { border-left: 6px solid var(--line); }
+  #thead.sv-advisory .lvw { color: var(--sv-advisory-ink); } #thead.sv-watch .lvw { color: var(--sv-watch-ink); }
+  #thead.sv-normal .lvw { color: var(--sv-normal-ink); } #thead.sv-offline .lvw { color: var(--sv-offline-ink); }
   /* make room: the tide panel moves down under the banner (and under the creek strip during a creek alert) */
   #stage.tidesOn #tides { top: 120px; height: 308px; }
   #stage.tidesOn.creekalert #thead { top: 98px; height: 34px; }
@@ -117,8 +129,8 @@
   #tdays { display: grid; grid-template-columns: repeat(3, 1fr); flex: none; margin-left: 30px; }   /* placed over their days by dayAlign */
   /* the recent offset after the NOAA projection: its own line under "Later", with the heights (details on the look-ahead screen) */
   .toff { font-size: 12px; color: var(--muted); height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .toff b { color: var(--info); } .toff .red { color: var(--red); font-weight: bold; }
-  #tlater { color: var(--muted); } #tlater b { font-size: 12px; } #tlater .over { color: var(--info); font-weight: bold; } #tlater .red { color: var(--red); font-weight: bold; }
+  .toff b { color: var(--sv-watch-ink); } .toff .red { color: var(--sv-advisory-ink); font-weight: bold; }
+  #tlater { color: var(--muted); } #tlater b { font-size: 12px; } #tlater .over { color: var(--sv-watch-ink); font-weight: bold; } #tlater .red { color: var(--sv-advisory-ink); font-weight: bold; }
   .tday { border-top: 4px solid var(--line); padding: 4px 4px 5px; text-align: center; border-right: 1px solid var(--line); min-width: 0; }
   .tday:last-child { border-right: 0; }
   .tday .dn { font-size: 13px; font-weight: bold; white-space: nowrap; }
@@ -127,10 +139,11 @@
   .tday .dt { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
   .tday .dx { font-size: 11.5px; font-weight: bold; margin-top: 2px; line-height: 1.2; min-height: 14px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* one line, so the graph below keeps its height */
-  .tday.over { border-top-color: var(--infob); background: var(--infobg); }
-  .tday.over .dv, .tday.over .dx { color: var(--info); }
-  .tday.red { border-top-color: #c0392b; background: rgba(192,57,43,.09); }
-  .tday.red .dv, .tday.red .dx { color: var(--red); }
+  /* one severity scale with the web pages: higher than usual = watch (yellow), flood level = advisory (orange) */
+  .tday.over { border-top-color: var(--sv-watch-stripe); background: var(--sv-watch-tint); }
+  .tday.over .dv, .tday.over .dx { color: var(--sv-watch-ink); }
+  .tday.red { border-top-color: var(--sv-advisory-stripe); background: var(--sv-advisory-tint); }
+  .tday.red .dv, .tday.red .dx { color: var(--sv-advisory-ink); }
   /* after the NOAA projection, the tide table plus the recent offset reaches the flood level: possible, not projected
      (dashed red outline and the words, not the solid red fill) */
   .tday.mred { border-top: 4px dashed #c0392b; outline: 2px dashed var(--red); outline-offset: -2px; }
@@ -229,11 +242,13 @@
   #cleft.two { width: 236px; gap: 5px; }
   .ktile.two .klbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ktile.two { padding: 3px 10px; }
   .ktile .kfast { font-size: 14px; font-weight: bold; text-transform: none; } .ktile.two { padding: 3px 10px; }
-  .ktile.l0 { background: #2e7d32; border-color: #2e7d32; color: #fff; } .ktile.l1 { background: #f2d544; border-color: #f2d544; color: #1a1a1a; }
-  .ktile.l2 { background: #b45a00; border-color: #b45a00; color: #fff; } .ktile.l3, .ktile.l4 { background: #c62828; border-color: #c62828; color: #fff; }
-  .ktile.l0 .cs-ic, .ktile.l2 .cs-ic, .ktile.l3 .cs-ic, .ktile.l4 .cs-ic { color: #fff; } .ktile.l1 .cs-ic { color: #1a1a1a; }
-  .ktile.l2 .cs-ic-ready path { stroke: #b45a00; } .ktile.l2 .cs-ic-ready circle + path + circle { fill: #b45a00; }
-  .ktile.l3 .cs-ic-likely .x, .ktile.l4 .cs-ic-likely .x { stroke: #c62828; fill: #c62828; }
+  /* level tiles (staff, 2026-10-26, as on the Creeks page): the panel color with the level's stripe and colored words
+     (severity.js), not a solid fill: the screen's only solid fill is the alert strip at the top */
+  .ktile.l0, .ktile.l1, .ktile.l2, .ktile.l3, .ktile.l4 { background: var(--card); border-left-width: 6px; color: var(--ink); }
+  .ktile.l0 { border-left-color: var(--sv-normal-stripe); } .ktile.l0 .kw, .ktile.l0 .cs-ic { color: var(--sv-normal-ink); }
+  .ktile.l1 { border-left-color: var(--sv-watch-stripe); } .ktile.l1 .kw, .ktile.l1 .cs-ic { color: var(--sv-watch-ink); }
+  .ktile.l2 { border-left-color: var(--sv-advisory-stripe); } .ktile.l2 .kw, .ktile.l2 .cs-ic { color: var(--sv-advisory-ink); }
+  .ktile.l3, .ktile.l4 { border-left-color: var(--sv-warning-stripe); } .ktile.l3 .kw, .ktile.l4 .kw, .ktile.l3 .cs-ic, .ktile.l4 .cs-ic { color: var(--sv-warning-ink); }
   .ktile.off { border-style: dashed; border-color: #8a96a3; background: rgba(138,150,163,.10); } .ktile.off .kv { font-size: 20px; color: var(--muted); }
   .ktile.tide { padding: 4px 10px; } .ktile.tide .kt { font-size: 13px; } .ktile.info { border-color: var(--infob); background: var(--infobg); }
   .ktile .kt .m { color: inherit; opacity: .85; }
@@ -517,9 +532,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261026a"></script>
-<script src="tide_season.js?v=20261026a"></script>
-<script src="creek_status.js?v=20261026a"></script>
+<script src="lookups.js?v=20261026b"></script>
+<script src="tide_season.js?v=20261026b"></script>
+<script src="creek_status.js?v=20261026b"></script>
+<script src="severity.js?v=20261026b"></script>
+<script src="hero.js?v=20261026b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -854,17 +871,18 @@ function renderTides() {
   s.res = R; s.offset = off;
 
   // Headline: is the Bay going above MHHW in the next 7 days, and when?
+  // (staff, 2026-10-26: the same state and words as the web pages' tide cards, hero.js tideState)
   var hd = $t("thead"), hm = $t("thm");
   if (!s.pred) {
-    hd.className = "unknown"; hm.textContent = s.predFailed ? "Can't reach NOAA tide data — retrying" : "Loading tides…";
+    hd.className = "sv-card sv-offline"; hm.textContent = s.predFailed ? "Can't reach NOAA tide data — retrying" : "Loading tides…";
   } else {
-    var ups = upcomingAbove(s, now);
-    if (!ups.length) { hd.className = "ok"; hm.textContent = "No tides above MHHW in the next 7 days"; }
-    else {
-      hd.className = ups.some(function (w) { return w.peak >= redFor(st); }) ? "red" : "over";
-      hm.innerHTML = headHtml(ups, st, now, s);
-    }
-    if (typeof renderSeason === "function") renderSeason();   // the bottom line hides itself while the headline says high water
+    var ts = HERO.tideState({ D: { pred: s.pred, obs: s.obs, ofs: modelOK(s, now) ? s.ofs : null }, mhhw: st.mhhw, red: redFor(st),
+      water: st.id === "9414523" ? "Bay" : "ocean", nws: A.list || [], now: now });
+    hd.className = "sv-card sv-" + ts.level;
+    hm.innerHTML = esc(ts.head) + '<span class="hd"><span class="lvw sv-ink sv-' + ts.level + '">' + SEVERITY.icon(ts.level) + esc(ts.word) + "</span>" +
+      (ts.more > 0 ? " · +" + ts.more + " more this week" : "") + (ts.tech.length ? " · " + esc(ts.tech.join(" · ")) : "") + "</span>";
+    if (typeof renderSeason === "function") renderSeason();
+    if (st.id === "9414523") renderAlerts();   // the Bay window in the alert strip, from the same series
   }
 
   // Now: measured level, trend and difference from predicted (one short line)
@@ -1139,8 +1157,8 @@ function loadAlerts() {
     A.list = (j.features || []).map(function (f) { return f.properties; })
       .filter(function (p) { return (p.geocode && p.geocode.SAME || []).indexOf(COUNTY_SAME) >= 0 && p.status === "Actual" && p.messageType !== "Cancel"; })
       .sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
-    A.t = Date.now(); renderAlerts(); tick();
-  }).catch(function () { renderAlerts(); });
+    A.t = Date.now(); A.failed = false; renderAlerts(); tick();
+  }).catch(function () { if (A.list == null) A.failed = true; renderAlerts(); });
 }
 
 function untilText(iso) {
@@ -1148,22 +1166,24 @@ function untilText(iso) {
   return "until " + new Date(iso).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
 }
 
+SEVERITY.inject();   // the shared colors (severity.js): the alert strip, headline, calendar, day cards and creek board
+// The alert strip: hero.js strip(): the same lead, level and words as the web pages' alert at the top (staff, 2026-10-26)
 function renderAlerts() {
   var bar = document.getElementById("alertbar"), main = document.getElementById("alertMain"),
       sub = document.getElementById("alertSub"), icon = document.getElementById("alertIcon"),
-      more = document.getElementById("alertMore");
+      more = document.getElementById("alertMore"), now = nowLocal();
   renderNws();
-  if (A.list == null) { bar.className = "unknown"; icon.textContent = "?"; main.textContent = "National Weather Service alerts unavailable"; sub.textContent = "Retrying…"; return; }
-  if (!A.list.length) {
-    bar.className = ""; icon.textContent = "✓"; main.textContent = "No active National Weather Service alerts";
-    sub.textContent = "San Mateo County"; more.style.display = "none"; return;
-  }
-  var top = A.list[0], cls = classify(top.event);
-  bar.className = cls; icon.textContent = cls === "statement" ? "ℹ" : "⚠";
-  main.textContent = top.event.toUpperCase();
-  sub.textContent = untilText(top.ends || top.expires) + " · National Weather Service San Francisco Bay Area";
-  if (A.list.length > 1) { more.style.display = ""; more.textContent = "+" + (A.list.length - 1) + " more · tap"; }
-  else { more.style.display = ""; more.textContent = "Tap for details"; }
+  var rwc = S.filter(function (x) { return x.st.id === "9414523"; })[0];
+  var bay = rwc && rwc.pred ? HERO.tideState({ D: { pred: rwc.pred, obs: rwc.obs, ofs: modelOK(rwc, now) ? rwc.ofs : null }, mhhw: rwc.st.mhhw,
+    red: redFor(rwc.st), water: "Bay", nws: A.list || [], now: now }) : null;
+  var cr = C.data && window.CREEK_STATUS && CREEK_STATUS.preview ? HERO.creeks(C.data, A.list || []) : null;
+  var x = HERO.strip({ nws: A.list, nwsFailed: A.failed, bay: bay, creeks: cr });
+  bar.className = "sv-hero sv-" + x.level;
+  icon.innerHTML = SEVERITY.icon(x.level);
+  main.textContent = x.text;
+  sub.textContent = [x.sub].concat(x.others.length ? ["Also in effect: " + x.others.join(" · ")] : []).filter(Boolean).join(" · ");
+  if (A.list && A.list.length) { more.style.display = ""; more.textContent = "NWS text (" + A.list.length + ") ›"; }
+  else more.style.display = "none";
 }
 
 /* ---------- NWS text formatting (same as the dashboard alerts widget) ---------- */
@@ -1401,7 +1421,7 @@ function tsDay(iso) { var d = new Date(iso + "T12:00:00Z"); return d.toLocaleDat
 var TSN = window.TIDE_SEASON;
 function renderSeason() {
   var el = $t("tseason"), st = TSN ? TSN.line(tsDay) : null;
-  el.classList.toggle("hide", !st);
+  el.classList.add("hide"); if (el) return;   // (staff, 2026-10-26: the alert strip carries the Bay at the flood level)
   if (!st) return;
   el.className = st.cls;
   var rwc = S.filter(function (x) { return x.st.id === "9414523"; })[0];
@@ -1451,8 +1471,8 @@ function showCalendar() {
   var red = isFinite(TSN.red());
   var so = red ? TSN.seasonOutlook() : null, sod = {};   // seasonal outlook days (after 6 weeks) get the dashed ring too
   (so ? so.days : []).forEach(function (x) { sod[x.date] = x; });
-  html += '<div id="kckey"><span><i style="background:var(--infobg);box-shadow:inset 0 -3px 0 var(--infob)"></i>' + esc(LK.text("tide_day_amber")) + "</span>" +
-    (red ? '<span><i style="background:#c62828">!</i>' + esc(LK.text("tide_red_key", { ft: TSN.red().toFixed(1) })) + "</span>" : "") +
+  html += '<div id="kckey"><span><i style="background:var(--sv-watch-tint);box-shadow:inset 0 -3px 0 var(--sv-watch-stripe)"></i>' + esc(LK.text("tide_day_amber")) + "</span>" +
+    (red ? '<span><i style="background:var(--sv-advisory-stripe)">!</i>' + esc(LK.text("tide_red_key", { ft: TSN.red().toFixed(1) })) + "</span>" : "") +
     '<span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>' +
     '<span><i style="border:2px dotted var(--ink);box-sizing:border-box"></i>NOAA projection</span>@@OFKEY@@</div><div id="kcal">';
   var anyOf = false;
@@ -1829,8 +1849,9 @@ function updateCreekAlert(states) {
   // No creek at a level: the strip can still warn of Bayside high water (flood level) today or tomorrow, from any tab
   var bt = window.TIDE_SEASON ? window.TIDE_SEASON.line(tsDay) : null, now0 = nowLocal();
   var hw = !worst && bt && bt.cls === "red" && bt.date <= window.TIDE_SEASON.iso(now0 + 86400000) ? bt : null;
-  stage.classList.toggle("creekalert", !!(worst || (hw && currentTab !== "tides")));   // high water alone: the Bayside Tides tab headline says it
-  stage.classList.toggle("crk", !!worst);
+  // (staff, 2026-10-26: no separate creek / high water strip: the alert strip at the top says it, with the same words as
+  // the web pages; the panels keep their full height)
+  stage.classList.remove("creekalert", "crk");
   strip.dataset.go = hw ? "tides" : "creek";
   document.getElementById("csTap").textContent = hw ? "Bayside Tides ›" : currentTab === "creek" ? "graphs ›" : "creeks tab ›";
   if (hw) {
@@ -1864,7 +1885,8 @@ function updateCreekAlert(states) {
     }
     creekWarned[x.c.id] = warn;
   });
-  if (was !== !!(worst || hw)) renderTides();   // panel changed size
+  if (was) renderTides();   // panel changed size
+  renderAlerts();   // the alert strip carries the creeks
 }
 document.getElementById("creekStrip").addEventListener("click", function () {
   if (this.dataset.go === "tides") { closeDetail(); showTab("tides"); return; }

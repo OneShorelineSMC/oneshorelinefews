@@ -44,30 +44,14 @@
   .e911 a { color: var(--text); text-decoration: none; } .e911 a b { font-weight: 800; }
   .e911 a:hover, .e911 a:focus-visible { text-decoration: underline; }
 
-  /* The one alert at the top (staff, 2026-10-26): the National Weather Service products, the Bay tide and the creeks in
-     one card. Its color is the highest active level (severity.js); it is the page's only solid fill. */
-  .hero { border-radius: 12px; padding: 13px 16px 12px; margin: 0 0 6px; background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-  .hero .hh { display: flex; gap: 10px; align-items: flex-start; }
-  .hero .hh .sv-ic { width: 26px; height: 26px; margin-top: 1px; }
-  .hero h2 { margin: 0; font-size: 20px; line-height: 1.25; }
-  .hero p { margin: 6px 0 0; font-size: 15.5px; line-height: 1.4; }
-  .hero .act { font-weight: 700; }
-  .hero .src { font-size: 14px; }
-  .hero .also { font-size: 14px; }
-  .hero a { color: inherit; font-weight: 700; }
-  .hero details { margin-top: 8px; font-size: 14px; } .hero summary { cursor: pointer; font-weight: 700; min-height: 32px; display: flex; align-items: center; list-style: none; }
-  .hero summary::-webkit-details-marker { display: none; }
-  .hero summary::before { content: "▸"; margin-right: 6px; } .hero details[open] > summary::before { content: "▾"; }
-  .hero summary:focus-visible { outline: 3px solid currentColor; outline-offset: 2px; border-radius: 4px; }
-  .hero .nwsfull { background: var(--card); color: var(--text); border-radius: 8px; padding: 2px 12px; margin-top: 6px; }
-  .hero .nwsfull a { color: var(--link); }
+  /* The one alert at the top and the tide cards: hero.js (shared with the Creeks and Tides pages and the kiosk) */
+  .tides2 .tcard2 { min-height: 100%; }
 
   main { padding: 14px 16px 32px; }
   h2.sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 22px 0 8px;
     display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   main > h2.sec:first-child { margin-top: 4px; }
   h2.sec a { font-size: 12.5px; text-transform: none; letter-spacing: 0; font-weight: 600; white-space: nowrap; }
-
   /* Status boxes: the status color goes all the way around the box */
   .box { background: var(--card); border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
     border: 3px solid var(--line); }
@@ -191,15 +175,12 @@
 
 <main class="wrap">
   <!-- The one alert at the top: National Weather Service products, the Bay tide and the creeks (renderHero) -->
-  <section id="hero" class="hero sv-hero sv-normal" aria-labelledby="heroH">
-    <div class="hh"><span id="heroIc"></span><div><h2 id="heroH">Checking National Weather Service alerts…</h2><p id="heroSub" class="src">San Mateo County</p></div></div>
-    <div id="heroMore"></div>
-  </section>
+  <section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section>
   <!-- Tides and creeks: put in order by renderOrder (an active condition first, the more severe first) -->
   <div id="secTides"><h2 class="sec"><span id="hTide">Tides</span> <a href="Tides.html">Tide details ›</a></h2>
   <div class="tides2">
-    <a class="box tide" id="tide" href="Tides.html"><span class="th"><span class="sd">Bayside</span> Loading…</span></a>
-    <a class="box tide" id="tideCoast" href="Tides.html?side=coast"><span class="th"><span class="sd">Coastside</span> Loading…</span></a>
+    <a class="tcard2" id="tide" href="Tides.html"><span class="sd">Bayside</span><span class="th">Loading…</span></a>
+    <a class="tcard2" id="tideCoast" href="Tides.html?side=coast"><span class="sd">Coastside</span><span class="th">Loading…</span></a>
   </div></div>
   <div id="secCreeks"><h2 class="sec"><span id="hCreeks">Creeks</span> <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
   <div id="csPreview"></div>
@@ -266,9 +247,10 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261026a"></script>
-<script src="severity.js?v=20261026a"></script>
-<script src="creek_status.js?v=20261026a"></script>
+<script src="lookups.js?v=20261026b"></script>
+<script src="severity.js?v=20261026b"></script>
+<script src="creek_status.js?v=20261026b"></script>
+<script src="hero.js?v=20261026b"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -345,98 +327,18 @@ function untilText(iso) {
 function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
 function labelCase(s) { return s.toLowerCase().replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }); }
 
-/* ---------- NWS alerts, shown in full ---------- */
-function classify(e) { return /warning|emergency/i.test(e) ? "warning" : /watch/i.test(e) ? "watch" : /advisory/i.test(e) ? "advisory" : "statement"; }
-var RANK = { warning: 0, watch: 1, advisory: 2, statement: 3 };
-function alertBody(p) {   // "* WHAT...", "* WHERE..." sections as a list; anything else under "More details"
-  var rows = "", extra = "";
-  String(p.description || "").split(/\n\s*\n/).forEach(function (b) {
-    b.split(/(?=^\*\s+[A-Z][A-Z /&-]+\.\.\.)/m).forEach(function (part) {
-      part = part.trim(); if (!part) return;
-      var m = part.match(/^\*\s+([A-Z][A-Z /&-]+?)\.\.\.([\s\S]*)$/);
-      if (m) rows += "<dt>" + esc(labelCase(m[1])) + "</dt><dd>" + esc(unwrap(m[2])) + "</dd>";
-      else extra += "<p>" + esc(unwrap(part).replace(/^\.\.\.|\.\.\.$/g, "")) + "</p>";
-    });
-  });
-  var h = rows ? "<dl>" + rows + "</dl>" : extra;
-  if (p.instruction) h += "<p><b>What to do:</b> " + esc(unwrap(p.instruction)) + "</p>";
-  if (rows && extra) h += "<details><summary>More details</summary>" + extra + "</details>";
-  return h;
-}
-function nws() {
-  getJSON("https://api.weather.gov/alerts/active?area=CA", "application/geo+json").then(function (d) {
-    var list = (d.features || []).map(function (f) { return f.properties; }).filter(function (p) {
-      return ((p.geocode && p.geocode.SAME) || []).some(function (s) { return String(s).slice(-6) === COUNTY_SAME; }) &&
-        p.status === "Actual" && p.messageType !== "Cancel";
-    }).sort(function (a, b) { return RANK[classify(a.event)] - RANK[classify(b.event)] || new Date(b.sent) - new Date(a.sent); });
-    NWS.list = list; NWS.failed = false; renderAlerts(); renderTide();
-  }).catch(function () { if (NWS.list == null) { NWS.failed = true; renderHero(); } });
-}
+/* ---------- National Weather Service and the one alert at the top: hero.js ---------- */
 var NWS = { list: null, failed: false };
-function nwsWhat(p) {   // the "* WHAT..." part of the description: NWS's own plain words for what is expected
-  var m = /\*\s*WHAT\.\.\.([\s\S]*?)(?=\n\s*\n|\n\*|$)/.exec(String(p.description || ""));
-  return m ? unwrap(m[1]) : "";
+function nws() {
+  HERO.loadNWS(function (list, failed) {
+    if (list) { NWS.list = list; NWS.failed = false; if (C.data) renderCreeks(); renderTide(); renderHero(); }
+    else if (NWS.list == null) { NWS.failed = true; renderHero(); }
+  });
 }
-function renderAlerts() { renderHero(); }
-
-/* ---------- The one alert at the top ---------- */
-// Candidates: the Bay tide at the flood level (NOAA projection, same window as the Bayside card), the creeks with an
-// alert, and each National Weather Service product. The most severe leads (ties: tide, then creeks, then the others);
-// every other one is named under it. The card's color is the highest level; only warning, advisory and watch are a fill.
 var TIDE_STATE = { bay: null, coast: null };
-var CR = null;   // the creek board (creek_status.js home)
-function nwsUntil(p) { return untilText(p.ends || p.expires); }
+var CR = null;   // the creeks' line for the card (hero.js creeks)
 function renderHero() {
-  var el = $("hero"), list = NWS.list || [], now = nowLocal(), cands = [];
-  var nwsTide = SV.nwsFor(list, "tide"), tideP = list.filter(function (p) { return SV.hazardOf(p.event) === "tide"; });
-  var bay = TIDE_STATE.bay;
-  if (bay && bay.flood) cands.push({ kind: "tide", level: bay.level, order: 0 });
-  else if (tideP.length) cands.push({ kind: "nws", p: tideP[0], level: SV.nwsLevel(tideP[0].event), order: 0 });
-  if (CR && CR.level && SV.RANK[CR.level] >= SV.RANK.watch) cands.push({ kind: "creek", level: CR.level, order: 1 });
-  list.forEach(function (p) {   // each other product; the coastal flood product that names the tide's source isn't repeated
-    var hz = SV.hazardOf(p.event);
-    if (hz === "tide" && ((bay && bay.flood) || p === tideP[0]) && p === tideP[0]) return;
-    cands.push({ kind: "nws", p: p, level: SV.nwsLevel(p.event), order: hz === "creek" ? 1 : 2 });
-  });
-  cands.sort(function (a, b) { return SV.RANK[b.level] - SV.RANK[a.level] || a.order - b.order; });
-  var lead = cands[0], level = lead ? SV.top(cands.map(function (c) { return c.level; })) : "normal", h = "", head = "", sub = "";
-  if (!lead) {
-    if (NWS.list == null) { head = NWS.failed ? "National Weather Service alerts unavailable" : "Checking National Weather Service alerts…"; sub = NWS.failed ? "Retrying…" : "San Mateo County"; }
-    else { head = LK.text("hero_none"); sub = (bay && CR) ? LK.text("hero_none_sub") : "San Mateo County"; }
-  } else if (lead.kind === "tide") {
-    var w = bay.flood;
-    head = LK.text("hero_tide_head", { when: bay.when }) + (bay.peakT && Math.abs(bay.peakT - w.end) > 30 * 60000 && w.start > now ? ", " + LK.text("hero_tide_peak", { time: bay.peakClock }) : "") + ".";
-    h += '<p class="act">' + esc(LK.text("tide_red_what")) + "</p>";
-    h += '<p class="src">' + (tideP.length ? "National Weather Service " + esc(tideP[0].event) + " in effect " + esc(nwsUntil(tideP[0])) + "." : esc(LK.text("hero_tide_source"))) + "</p>";
-  } else if (lead.kind === "creek") {
-    head = CR.likely.length ? LK.text("banner_likely", { creeks: CR.likely.join(", ") }) : CR.headline;
-    h += '<p class="act">' + esc(CR.todo) + "</p>";
-    h += '<p class="src">' + esc(CR.source) + ' <a href="Creeks.html' + PV_Q + '">Creek details ›</a></p>';
-  } else {
-    head = lead.p.event + " " + nwsUntil(lead.p);
-    var what = nwsWhat(lead.p);
-    if (what) h += "<p>" + esc(what) + "</p>";
-    if (lead.p.instruction) h += '<p class="act">' + esc(unwrap(lead.p.instruction)) + "</p>";
-    h += '<p class="src">National Weather Service San Francisco Bay Area.</p>';
-  }
-  // everything else in effect, by name
-  var others = cands.slice(1).map(function (c) {
-    if (c.kind === "creek") return "Creeks: " + CR.headline;
-    if (c.kind === "tide") return "Bay tide: " + LK.text("hero_tide_head", { when: bay.when });
-    return c.p.event + " " + nwsUntil(c.p);
-  });
-  if (others.length) h += '<p class="also"><b>Also in effect:</b> ' + others.map(esc).join(" · ") + "</p>";
-  // the National Weather Service text in full, one tap away
-  if (list.length) h += '<details id="nwsfull"><summary>National Weather Service text (' + list.length + ")</summary><div class=\"nwsfull\">" + list.map(function (p) {
-    return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + " · National Weather Service San Francisco Bay Area</div>" + alertBody(p) + "</div>";
-  }).join("") + "</div></details>";
-  var wasOpen = $("nwsfull") && $("nwsfull").open;
-  el.className = "hero sv-hero sv-" + level;
-  el.setAttribute("role", lead && SV.RANK[level] >= SV.RANK.advisory ? "alert" : "status");
-  $("heroIc").innerHTML = SV.icon(lead ? level : "normal");
-  $("heroH").textContent = head;
-  $("heroSub").textContent = sub; $("heroSub").hidden = !sub;
-  if ($("heroMore").innerHTML !== h) { $("heroMore").innerHTML = h; if (wasOpen && $("nwsfull")) $("nwsfull").open = true; }
+  HERO.render($("hero"), { nws: NWS.list, nwsFailed: NWS.failed, bay: TIDE_STATE.bay, creeks: CR });
   renderOrder();
 }
 // Tides and creeks in order: an active condition first, the more severe first (severity.js order; tested)
@@ -619,12 +521,7 @@ function renderCreeks() {
   if (CS && CS.preview) {   // creek status layer (STATUS_PUBLIC, or ?preview=1) in place of the creek cards and rapid-rise cards
     var HM = CS.home(C.data, function (c) { return "Creeks.html" + PV_Q + "#" + encodeURIComponent(c.id); }, { nws: NWS.list || [] });
     $("csPreview").innerHTML = HM.html;
-    // for the alert at the top: the worst creek status, its creeks and what to do (the same words as the creek board)
-    var allC = (C.data.creeks || []).concat(C.data.creeks_preview || []);
-    var worst = ["likely", "ready", "alert"].filter(function (k) { return allC.some(function (c) { return (c.status || {}).key === k; }); })[0];
-    var wn = worst ? allC.filter(function (c) { return (c.status || {}).key === worst; }).map(function (c) { return c.name; }) : [];
-    CR = { level: HM.level, likely: HM.likely, headline: worst ? LK.text("verdict_" + worst) + ": " + wn.join(", ") : "",
-      todo: worst ? LK.text("verdict_" + worst + "_todo") : "", source: "From OneShoreline’s creek gauges and rain gauges." };
+    CR = HERO.creeks(C.data, NWS.list || []);   // for the alert at the top: the same words as the creek board
     renderHero();
     $("creeks").style.display = $("rising").style.display = $("calm").style.display = "none";
     $("creeksLink").href = "Creeks.html" + PV_Q;
@@ -690,18 +587,6 @@ function noaaURL(station, product, b, e) {
     "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
 }
 function toPts(a) { return (a || []).map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); }); }
-function findWindows(pts, lvl) {
-  var out = [], cur = null;
-  pts.forEach(function (p, i) {
-    var prev = pts[i - 1];
-    if (p.v > lvl) { if (!cur) cur = { start: prev ? prev.t + (lvl - prev.v) / (p.v - prev.v) * (p.t - prev.t) : p.t, peak: p.v, peakT: p.t, src: p.src };
-      if (p.v > cur.peak) { cur.peak = p.v; cur.peakT = p.t; cur.src = p.src; } }
-    else if (cur) { cur.end = prev.t + (lvl - prev.v) / (p.v - prev.v) * (p.t - prev.t); out.push(cur); cur = null; }
-  });
-  if (cur) { cur.end = pts[pts.length - 1].t; out.push(cur); }
-  out.forEach(function (w) { w.start = Math.round(w.start / 60000) * 60000; w.end = Math.round(w.end / 60000) * 60000; });
-  return out;
-}
 function loadTide() {
   var now = nowLocal(), y = ymd(now - 864e5), t0 = ymd(now), t6 = ymd(now + 6 * 864e5), t3 = ymd(now + 3 * 864e5);
   TSIDES.forEach(function (T) {
@@ -713,53 +598,14 @@ function loadTide() {
     ]).then(function () { D.tried = true; renderTide(T); }).catch(function () { D.tried = true; renderTide(T); });
   });
 }
-function sgn(v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
 function renderTide(T) {
   if (!T) { TSIDES.forEach(function (x) { renderTide(x); }); return; }
   if (!T.d.tried) return;   // still loading
-  var el = $(T.el), D = T.d, now = nowLocal(), m = LK.mhhw(T.id), sd = '<span class="sd">' + esc(T.name) + "</span>", go = '<span class="go2" aria-hidden="true">›</span>';
-  if (!D.pred || !D.pred.length) { el.className = "box tide sv-card sv-offline"; el.innerHTML = '<span class="th">' + sd + "Tide data unavailable right now</span>" + go; return; }
-  var ser = [], tail = -Infinity;
-  (D.obs || []).forEach(function (o) { ser.push({ t: o.t, v: o.v, src: "measured" }); tail = o.t; });
-  if (D.ofs && D.ofs[D.ofs.length - 1].t >= now + MODEL_MIN_AHEAD_HOURS * 36e5) { D.ofs.forEach(function (o) { if (o.t > tail) ser.push({ t: o.t, v: o.v, src: "forecast" }); }); tail = Math.max(tail, D.ofs[D.ofs.length - 1].t); }
-  D.pred.forEach(function (p) { if (p.t > tail) ser.push({ t: p.t, v: p.v, src: "predicted" }); });
-  ser = ser.filter(function (p) { return p.t >= now - 12 * 36e5 && p.t <= dayStart(now) + TIDE_DAYS * 864e5; });
-  var ups = findWindows(ser, m).filter(function (w) { return w.end > now; });
-  function r15(t) { return Math.round(t / 9e5) * 9e5; }
-  function clock(t) { return fTime(r15(t)).replace(":00", ""); }
-  function span(w) { var a = clock(w.start), b = clock(w.end); return (a.slice(-2) === b.slice(-2) ? a.slice(0, -3) : a) + "–" + b; }
-  function dayWord(t) { var d = Math.round((dayStart(t) - dayStart(now)) / 864e5); return d === 0 ? "today" : d === 1 ? "tomorrow" : fmt(t, { weekday: "long" }); }
-  // when a window is: "now until 1:45 PM", or "today, 12:15–1:45 PM" / "tomorrow, …" / "Thursday, …" (severity.js windowText)
-  function when(w) { return w.start <= now ? SV.windowText(w.start, w.end, now, clock) : dayWord(w.start) + ", " + SV.windowText(w.start, w.end, now, clock); }
-  var redLvl = T.red ? LK.num(T.red) : Infinity, flood = isFinite(redLvl) ? findWindows(ser, redLvl).filter(function (w) { return w.end > now; }) : [];
-  var lvl, head, more = 0, tech = [], st = { level: "normal" };
-  if (flood.length) {
-    // flooding likely in low areas: advisory; never above the NWS coastal flood product unless the gauge measures it now
-    var last0 = D.obs && D.obs.length ? D.obs[D.obs.length - 1] : null, observed = !!(last0 && now - last0.t < 36e5 && last0.v >= redLvl);
-    lvl = SV.cap("advisory", SV.nwsFor(NWS.list || [], "tide"), observed);
-    var f = flood[0];
-    head = (lvl === "advisory" ? "Flooding likely in low areas near the " + T.water + " " : "Flooding possible in low areas near the " + T.water + " ") + when(f);
-    more = flood.length - 1;
-    st = { level: lvl, flood: f, when: when(f), peakT: f.peakT, peakClock: clock(f.peakT) };
-  } else if (ups.length) {
-    lvl = "watch"; head = "Higher than usual tide " + when(ups[0]) + (isFinite(redLvl) ? ". No flooding expected" : "");
-    more = ups.length - 1; st = { level: lvl };
-  } else { lvl = "normal"; head = "No higher-than-usual tides in the next " + TIDE_DAYS + " days"; }
-  if (ups.length) {   // the numbers, one comparison only (above an average high tide), on both cards
-    var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
-    tech.push("Peak " + top.peak.toFixed(1) + " ft, " + (top.peak - m).toFixed(1) + " ft above an average high tide");
-    if (isFinite(redLvl)) tech.push("flood level " + redLvl.toFixed(1) + " ft");
-  }
-  if (!isFinite(redLvl)) tech.push(LK.text("coast_no_level"));
-  var word = { advisory: "Flooding likely", watch: lvl === "watch" && flood.length ? "Flooding possible" : "Higher than usual", normal: "Normal" }[lvl] || "";
+  var el = $(T.el), st = HERO.tideState({ D: T.d, mhhw: LK.mhhw(T.id), red: T.red ? LK.num(T.red) : Infinity, water: T.water, nws: NWS.list || [], days: TIDE_DAYS });
+  var c = HERO.tideCard(st, T.name);
   if (T.el === "tide") TIDE_STATE.bay = st; else TIDE_STATE.coast = st;
-  el.className = "box tide sv-card sv-" + lvl;
-  var moreTxt = more > 0 ? "+" + more + " more " + (more === 1 ? "time" : "times") + " this week" : "";
-  el.setAttribute("aria-label", T.name + " tides: " + word + ". " + head + "." + (moreTxt ? " " + moreTxt + "." : "") + (tech.length ? " " + tech.join(". ") + "." : "") + " Tide details.");
-  el.innerHTML = '<span class="th">' + sd + esc(head) + "</span>" +
-    '<span class="lv sv-badge sv-' + lvl + '">' + SV.icon(lvl) + esc(word) + "</span>" +
-    (moreTxt ? '<span class="t2">' + esc(moreTxt) + "</span>" : "") +
-    (tech.length ? '<span class="t2">' + esc(tech.join(" · ")) + "</span>" : "") + go;
+  el.className = c.cls; el.setAttribute("aria-label", c.label + " Tide details.");
+  el.innerHTML = c.html + '<span class="go2" aria-hidden="true">›</span>';
   if (T.el === "tide") renderHero(); else renderOrder();
 }
 

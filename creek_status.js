@@ -306,9 +306,9 @@
     var co = function (c, quiet) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes, quiet: !!quiet }; };
     var stormy = rows.some(function (x) { return x.v.key !== "none" && x.v.key !== "offline" && x.v.key !== "delayed"; });
     var by = SORT || (stormy ? "sev" : "ns");
-    var hm = home(data, linkFor, { noMore: true });   // the same status board as the home page
+    var hm = home(data, linkFor, { noMore: true, nws: opts.nws });   // the same status board as the home page
     // then one "find your creek" block: the city box (with the map link) and "How to read this page" as a plain link under it
-    var h = badge() + hm.banner + hm.html + '<div class="cs-find"><div id="cpSlot"></div>' + howTo() + "</div>" +   // cpSlot: the page puts its city finder here
+    var h = badge() + (opts.noBanner ? "" : hm.banner) + hm.html +   // noBanner: the page's alert at the top says it (hero.js) '<div class="cs-find"><div id="cpSlot"></div>' + howTo() + "</div>" +   // cpSlot: the page puts its city finder here
       '<div class="cs-allh"><h2 class="cs-qh">' + esc(T("quiet_title")) + '</h2><div class="cs-sort" role="group" aria-label="Order the creeks">' +
       [["sev", "Most serious first"], ["ns", "North to south"], ["az", "A–Z"]].map(function (b) {
         return '<button type="button" data-sort="' + b[0] + '" aria-pressed="' + (b[0] === by) + '">' + b[1] + "</button>"; }).join("") + "</div></div>" +
@@ -530,18 +530,23 @@
       if (k === "delayed") { late = true; k = (c.status || {}).key || "none"; v = Object.assign({}, v, { key: k, word: T("verdict_" + k), rank: RANK[k], color: COL[k] }); }
       return { c: c, v: v, k: k, i: i, dash: i < (data.creeks || []).length };
     });
-    var act = rows.filter(function (x) { return x.k !== "none"; }).sort(function (a, b) { return b.v.rank - a.v.rank || a.i - b.i; });
-    var quiet = rows.filter(function (x) { return x.k === "none"; });
-    var h = '<div class="cs-board"><div class="cs-bhead"><b>Creeks</b><span>' + act.length + " with a status · " + quiet.length + " with no alerts · updated " + esc(clock(data.generated)) + "</span></div>" +
+    // (staff, 2026-10-26, as on the web pages: a gauge that is out of service or not reporting is not a status: a muted
+    // note under the rows, not a row; the colors are severity.js's when it is loaded)
+    var SV = window.SEVERITY;
+    var act = rows.filter(function (x) { return x.k !== "none" && x.k !== "offline"; }).sort(function (a, b) { return b.v.rank - a.v.rank || a.i - b.i; });
+    var quiet = rows.filter(function (x) { return x.k === "none"; }), down = rows.filter(function (x) { return x.k === "offline"; });
+    var h = '<div class="cs-board"><div class="cs-bhead"><b>Creeks</b><span>' + (act.length ? act.length + (act.length === 1 ? " with an alert · " : " with alerts · ") : "") +
+      quiet.length + " with no alerts · updated " + esc(clock(data.generated)) + "</span></div>" +
       (late ? '<div class="cs-blate">⚠ ' + esc(T("verdict_delayed", { time: clock(data.generated) })) + ". Showing each creek’s status at that time.</div>" : "");
     if (act.length) h += '<div class="cs-bcols" aria-hidden="true"><i></i><span>' + esc(T("board_col_creek")) + "</span><span>" + esc(T("board_col_status")) + "</span><span>" +
       esc(T("board_col_why")) + "</span><span>" + esc(T("board_col_rain")) + '</span><span class="cs-bsince">' + esc(T("board_col_since")) + "</span></div>";
     if (!act.length) h += '<div class="cs-bnone">' + esc(T("summary_none")) + "</div>";
     else h += '<div class="cs-brows' + (late ? " cs-dimmed" : "") + '">' + act.map(function (x, n) {
       var st = x.v.st, rl = (st.rain || {}).level || 0, rn = !!(st.rain || {}).now, off = x.k === "offline";
-      var r = '<div class="cs-brow cs-b-' + x.k + '"' + ' data-creek="' + esc(x.c.id) + '"'  + '><i class="cs-bbar" style="background:' + COL[x.k] + '"></i>' +
+      var lv = SV ? SV.creekLevel(x.k) : null;
+      var r = '<div class="cs-brow cs-b-' + x.k + '"' + ' data-creek="' + esc(x.c.id) + '"'  + '><i class="cs-bbar" style="background:' + (SV ? "var(--sv-" + lv + "-stripe)" : COL[x.k]) + '"></i>' +
         '<span class="cs-bname">' + esc(x.c.short || x.c.name) + "</span>" +
-        '<span class="cs-bword cs-v-' + x.k + '">' + icon(x.k) + esc(x.k === "offline" && (st.out_of_service || []).length ? T("gauge_out") : T("verdict_" + x.k)) + "</span>" +
+        '<span class="cs-bword ' + (SV ? "sv-badge sv-" + lv : "cs-v-" + x.k) + '">' + (SV ? SV.icon(lv) : icon(x.k)) + esc(T("verdict_" + x.k)) + "</span>" +
         '<span class="cs-bwhy">' + review(x.c, true) + esc(brief(st, x.k)) + "</span>" +   // the tag goes with the reason: the name column is narrow
         '<span class="cs-brain">' + (rl || rn ? chip(rl, rn) : '<span class="cs-dim">' + esc(T("rain_none")) + "</span>") + "</span>" +
         '<span class="cs-bsince">' + (st.since && !off ? "since " + esc(clock(st.since)) : "") + "</span></div>";
@@ -549,6 +554,10 @@
       return r;
     }).join("") + "</div>";
     if (quiet.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + quiet.map(function (x) { return '<span data-creek="' + esc(x.c.id) + '">' + esc(x.c.short || x.c.name) + "</span>"; }).join(" · ") + "</div>";
+    if (down.length) h += '<div class="cs-bnotes cs-bdown">' + (SV ? '<span class="sv-ink sv-offline">' + SV.icon("offline") + "</span>" : "") + "<span>" + down.map(function (x) {
+      var o = (x.v.st.out_of_service || [])[0];
+      return '<span data-creek="' + esc(x.c.id) + '">' + esc(o ? T("home_gauge_out_note", { creek: x.c.short || x.c.name }) + (o.note ? " " + o.note : "") : T("home_gauge_silent_note", { creek: x.c.short || x.c.name })) + "</span>";
+    }).join(" ") + "</span></div>";
     return h + "</div>";
   }
 
@@ -572,12 +581,14 @@
     ".cs-lvi{display:inline-block;vertical-align:-3px;margin-right:4px}.cs-lvi .cs-ic{width:16px;height:16px}.cs-lvi .cs-ic-likely .x{stroke:#fff;fill:#fff}",
     ".cs-ic-likely{color:#c62828}.cs-ic-ready{color:#b45a00}.cs-ic-alert{color:#7a6400}.cs-ic-none{color:#6b7682}",
     "span.cs-ic-nodata{width:14px;height:14px;margin:3px;border:2px dashed #6b7682;border-radius:3px;box-sizing:border-box}",
-    ".cs-v-likely{background:#c62828;color:#fff}.cs-v-likely .cs-ic-likely{color:#fff}",
-    ".cs-ic-likely .x{stroke:#fff;fill:#fff}.cs-v-likely .cs-ic-likely .x{stroke:#c62828;fill:#c62828}",   // the "!" shows on a red triangle and on a white one
+    // Flooding likely: a tint with red words, not a solid red fill (staff, 2026-10-26: a page's only solid fill is its
+    // alert at the top; colors from severity.js when it is loaded, else the same values)
+    ".cs-v-likely{background:var(--sv-warning-tint,#fdecea);color:var(--sv-warning-ink,#b71c1c)}.cs-v-likely .cs-ic-likely{color:var(--sv-warning-ink,#b71c1c)}",
+    ".cs-ic-likely .x{stroke:#fff;fill:#fff}.cs-v-likely .cs-ic-likely .x{stroke:var(--sv-warning-tint,#fdecea);fill:var(--sv-warning-tint,#fdecea)}",
     ".cs-v-ready{background:" + TINT.ready + "}",
     ".cs-v-alert{background:" + TINT.alert + "}",
     ".cs-v-none,.cs-v-offline,.cs-v-delayed{background:" + TINT.none + ";font-size:17px;font-weight:600}",
-    "@media (prefers-color-scheme:dark){.cs-ic-ready{color:#ffa94d}.cs-ic-alert{color:#f2d544}.cs-ic-none{color:#9aa8b8}span.cs-ic-nodata{border-color:#9aa8b8}.cs-v-likely .cs-ic-likely{color:#fff}}",
+    "@media (prefers-color-scheme:dark){.cs-ic-ready{color:#ffa94d}.cs-ic-alert{color:#f2d544}.cs-ic-none{color:#9aa8b8}span.cs-ic-nodata{border-color:#9aa8b8}.cs-v-likely .cs-ic-likely{color:var(--sv-warning-ink,#ff8a80)}}",
     ".cs-why{margin:8px 14px 0;font-size:14.5px;line-height:1.45;color:var(--text,var(--ink))}",
     ".cs-body{padding:8px 14px 10px}.cs-body p{margin:0 0 4px;font-size:15px;line-height:1.45}",
     ".cs-danger{font-weight:700;color:#c62828}@media (prefers-color-scheme:dark){.cs-danger{color:#f47c79}}",
@@ -668,7 +679,7 @@
     ".cs-hmore p{margin:8px 0;font-size:14px;line-height:1.45}.cs-hmore a{font-weight:600}.cs-hsm{font-size:12.5px!important;color:var(--muted,#556274)}",
     // EOC kiosk board (staff preview)
     ".cs-board{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel,var(--card,#fff));border-radius:8px;overflow:hidden;border:1px solid var(--line,#d5dae1)}",
-    ".cs-bhead{display:flex;justify-content:space-between;align-items:baseline;padding:6px 12px;background:#003B5C;color:#fff;font-size:13px}.cs-bhead b{font-size:17px}",
+    ".cs-bhead{display:flex;justify-content:space-between;align-items:baseline;padding:6px 12px;background:transparent;color:var(--muted,#556274);border-bottom:1px solid var(--line,#e3e8ee);font-size:13px}.cs-bhead b{font-size:17px;color:var(--ink,#16202b)}",   // no navy: the brand bar only (2026-10-26)
     ".cs-brows{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}.cs-dimmed .cs-brow{opacity:.75}",
     ".cs-brow{display:grid;grid-template-columns:8px 130px 150px 1fr 110px 84px;align-items:center;gap:0 10px;min-height:36px;flex:none;padding:0 10px 0 0;border-bottom:1px solid var(--line,#e3e8ee);font-size:14px;cursor:default}",
     ".cs-brow[data-creek]{cursor:pointer}.cs-bbar{align-self:stretch}",
@@ -693,7 +704,7 @@
     ".cs-plain .cs-wnone + .cs-bnotes{border-top:0;padding-top:2px}",
     ".cs-bword.sv-badge{font-weight:700}.cs-bword .sv-ic{width:16px;height:16px}",
     ".cs-hmap{margin:0 2px 4px;font-size:14px}.cs-hmap a{font-weight:600}",
-    ".cs-wcols,.cs-wrow{grid-template-columns:8px 185px 150px 1fr 110px 84px 14px}",   // full creek names (Oct 25)
+    ".cs-wcols,.cs-wrow{grid-template-columns:8px 172px 138px 1fr 104px 76px 14px;column-gap:8px}",   // full creek names (Oct 25)
     "a.cs-wrow{color:inherit;text-decoration:none;min-height:44px;cursor:pointer}a.cs-wrow:hover{background:rgba(10,85,135,.05)}",
     "a.cs-wrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:-3px}.cs-wgo{font-size:20px;color:var(--muted,#556274);text-align:right}",
     ".cs-wrow .cs-bwhy{-webkit-line-clamp:3}",
