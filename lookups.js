@@ -145,6 +145,7 @@
     home_none: "No alerts at OneShoreline’s creek gauges right now",
     home_none_offline: "{creeks} gauge not reporting",
     home_none_note: "Conditions can change quickly in a storm; watch for National Weather Service alerts and flooding where you are.",
+    tide_upcoming_note: "Based on the tide table plus current conditions: NOAA’s projection for the next 2 days, then how high the {water} has been running. Coastal storms after that aren’t included and can push water higher.",
     home_none_some: "No creek alerts at the {n} creeks with working gauges.",
     home_gauge_part_note: "{creek} ({gauge}): one of its creek gauges is out of service; the other still reports.",
     gloss_mhhw: "Average high tide (MHHW, Mean Higher High Water): the average height of the higher of each day’s two high tides, {mhhw} ft here. A tide above it is higher than usual; it doesn’t necessarily mean flooding.",

@@ -93,6 +93,7 @@
   .kgrid .d.sel { outline: 3px double var(--ink); outline-offset: 1px; }
   #kckey { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
   #kckey i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; font-style: normal; font-size: 9px; color: #fff; text-align: center; line-height: 13px; font-weight: bold; }
+  #kcpre { font-size: 13px; line-height: 1.35; margin-top: 4px; color: var(--muted); }
   #kcout { font-size: 13.5px; line-height: 1.35; margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: rgba(26,58,92,.06); color: var(--ink); }
   #kcsel { font-size: 15px; min-height: 22px; margin-top: 6px; color: var(--ink); }
   .th .tmhhw i { display: inline-block; width: 16px; border-top: 1.5px dashed var(--mhhw); vertical-align: middle; margin-right: 4px; }
@@ -536,11 +537,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261026g"></script>
-<script src="tide_season.js?v=20261026g"></script>
-<script src="creek_status.js?v=20261026g"></script>
-<script src="severity.js?v=20261026g"></script>
-<script src="hero.js?v=20261026g"></script>
+<script src="lookups.js?v=20261027a"></script>
+<script src="tide_season.js?v=20261027a"></script>
+<script src="creek_status.js?v=20261027a"></script>
+<script src="severity.js?v=20261027a"></script>
+<script src="hero.js?v=20261027a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1500,12 +1501,10 @@ function showCalendar() {
     var f2 = function (v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + " ft"; };
     var rg = Math.abs(so.usualMax - so.usual) < 0.05 ? f2(so.usual) : f2(so.usual) + " to " + f2(so.usualMax);
     var tt = Math.abs(so.addMax - so.addMin) < 0.05 ? f2(so.addMin) : f2(so.addMin) + " to " + f2(so.addMax);
-    otx = '<div id="kcout"><b>Outlook after ' + esc(tsDay(so.from)) + ":</b> high tides about " + esc(tt) + " vs the tide table (usual " + esc(rg) +
-      (so.enso ? "; " + esc(so.enso.phase) + " ONI " + so.enso.oni.toFixed(1) + " about " + esc(f2(so.enso.add)) + " Nov–Mar" : "") + "; plus what remains of today’s offset). " +
-      (so.days.length ? "Could reach the flood level: " + esc(so.days.slice(0, 5).map(function (x) { return tsDay(x.date); }).join(", ")) + (so.days.length > 5 ? " +" + (so.days.length - 5) + " more" : "")
-        : "No day reaches the flood level at that height") + ". From past years, not a forecast.</div>";
+    // one line (staff, 2026-10-27; the numbers are in "For the technically minded" on the Tides page)
+    otx = '<div id="kcout">After ' + esc(tsDay(so.from)) + ": outlook from past years" + (so.enso ? " (" + esc(so.enso.phase) + ")" : "") + ", not a forecast.</div>";
   }
-  html += '</div><div id="kcsel" aria-live="polite">Tap a day for its highest tide and time.</div>' + otx +
+  html += '</div><div id="kcsel" aria-live="polite">Tap a day for its highest tide and time.</div>' + '<div id="kcpre">' + esc(LK.text("tide_upcoming_note", { water: waterWord() })) + "</div>" + otx +
     '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) })) + "</div>";
   openDetail(LK.text("tide_cal_title") + " · " + LK.station(TSN.station).name, html);
 }

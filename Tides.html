@@ -214,6 +214,7 @@
   .day .nrm { color: var(--muted); font-weight: 400; }
   .estn { margin: 6px 2px 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); } .estn:empty { display: none; }
   .estn a { color: var(--info); font-weight: 600; white-space: nowrap; }
+  .calpre { margin: 2px 0 8px; font-size: 14px; line-height: 1.45; color: var(--text); }
   .tech h3.clh { margin: 14px 0 4px; } .tech .afd { margin-top: 8px; }
   details.more { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 4px; }
   details.more > summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px; display: flex; align-items: center; }
@@ -394,12 +395,12 @@
   <div style="height:12px"></div>
   <div class="card hide" id="calcard">
     <h2 data-text="tide_cal_title">High tides and King Tides</h2>
+    <p class="calpre" id="calpre"></p>
     <!-- Staff, 2026-10-24: the tides that could reach the flood level as a few stretches of days (each opens that day in
          the calendar), then the calendar itself, no longer folded. No "King Tide" designation (the 1-year tide is in the
          footnote). The stretches are also the calendar's text version: what the red and dashed days show, in words. -->
     <h3 class="clh">Tides that could reach the flood level</h3>
     <ul class="flist" id="flist"></ul>
-    <p class="outl hide" id="outl"></p>
     <div class="calfull" id="calfull"><h3 class="clh" id="calh">Calendar</h3>
     <div class="ckey"><span><i style="background:var(--ambbg);box-shadow:inset 0 -3px 0 var(--amb)"></i><span data-text="tide_day_amber"></span></span>
       <span><i class="lgr"></i><span data-text="tide_day_red"></span></span>
@@ -444,10 +445,10 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261026g"></script>
-<script src="tide_season.js?v=20261026g"></script>
-<script src="severity.js?v=20261026g"></script>
-<script src="hero.js?v=20261026g"></script>
+<script src="lookups.js?v=20261027a"></script>
+<script src="tide_season.js?v=20261027a"></script>
+<script src="severity.js?v=20261027a"></script>
+<script src="hero.js?v=20261027a"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -774,6 +775,7 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<details class="card explain tech" id="tech' + i + '"><summary>For the technically minded</summary>' +
     '<div class="maybeb"></div>' +
     '<div class="afd" style="display:none"></div>' +
+    (i === 0 ? '<div id="outlw" class="hide"><h3 class="clh">Seasonal outlook (after 6 weeks)</h3><p class="outl hide" id="outl"></p></div>' : "") +   // (staff, 2026-10-27)
     '<h3 class="clh">Times above an average high tide (MHHW)</h3><div class="wl"></div>' +
     '<h3 class="clh">Now and the past 7 days</h3><div class="pw"></div>' +
     '<p class="lbl nlbl"></p></details>';
@@ -1255,6 +1257,8 @@ function renderCalendar() {
   $("flist").previousElementSibling.hidden = $("flist").hidden = !isFinite(TSN.red());   // Coastside: no flood level yet
   // Seasonal outlook past the next 6 weeks (tide_season.js seasonOutlook; THRESHOLDS_BASIS.md §4b): a line, not marks on days
   var ot = $("outl");
+  $("outlw").classList.toggle("hide", !so);
+  $("calpre").textContent = LK.text("tide_upcoming_note", { water: SIDE.water });
   ot.classList.toggle("hide", !so);
   if (so) {
     var ft2 = function (v) { return (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + " ft"; };
