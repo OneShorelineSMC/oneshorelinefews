@@ -254,6 +254,12 @@ line, on the Tides page, kiosk or home page). Calling out the tide table's 1-yea
 riskiest days while ordinary tides were already higher. The 1-year tide (8.3 ft NAVD88 at Redwood City) is quoted only
 in the calendar's footnote, for reference. (It is the 1-year tide, about once a year on average, not the 1% annual
 chance tide, which is far higher.)
+**Astronomical high tide mark** (Oct 28, 2026): days whose tide-table highest tide reaches the 1-year tide
+(`KING_TIDE_FT_RWC` 8.3 ft; Coastside `KING_TIDE_FT_MRY` 6.87 ft, provisional) get a small neutral moon (☾) in the corner
+of the calendar day, on the Tides page and the kiosk, with a key line and the words "Astronomical high tide" in the
+tapped-day line and screen-reader label (`tide_day_astro`, `tide_day_astro_short`; `TSN.astroDays()` in tide_season.js).
+No color, no alert, no "King Tide" name: it says the moon and sun alone bring a high tide, not that the day is risky. The
+flood level and the Bay running high still decide the colors. 2026-27 season: Nov 25, Dec 23, Dec 24.
 
 **To review:** the 6-week limit, the 20-year window, using San Francisco for the whole Bay, the latest observed ONI
 standing for the winter (a staff override could be added), and showing a Bay running lower too.
