@@ -92,6 +92,10 @@
   .kgrid .d.today { outline: 2px solid var(--ink); outline-offset: 1px; }
   .kgrid .d.sel { outline: 3px double var(--ink); outline-offset: 1px; }
   #kckey { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
+  /* astronomical high tide: a small moon in the top-left corner (the "!" badge is top right) */
+  .kgrid .d.ast::before { content: "☾"; position: absolute; top: -2px; left: 1px; font-size: 10px; font-weight: 700; line-height: 1; color: var(--ink); }
+  .kgrid .d.past.ast::before { color: var(--muted); }
+  #kckey i.last { position: relative; border: 1px solid var(--line); } #kckey i.last::before { content: "☾"; position: absolute; top: -1px; left: 1px; font-size: 11px; line-height: 1; color: var(--ink); font-style: normal; }
   #kckey i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; font-style: normal; font-size: 9px; color: #fff; text-align: center; line-height: 13px; font-weight: bold; }
   #kcpre { font-size: 13px; line-height: 1.35; margin-top: 4px; color: var(--muted); }
   #kcout { font-size: 13.5px; line-height: 1.35; margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: rgba(26,58,92,.06); color: var(--ink); }
@@ -537,11 +541,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261027a"></script>
-<script src="tide_season.js?v=20261027a"></script>
-<script src="creek_status.js?v=20261027a"></script>
-<script src="severity.js?v=20261027a"></script>
-<script src="hero.js?v=20261027a"></script>
+<script src="lookups.js?v=20261028a"></script>
+<script src="tide_season.js?v=20261028a"></script>
+<script src="creek_status.js?v=20261028a"></script>
+<script src="severity.js?v=20261028a"></script>
+<script src="hero.js?v=20261028a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1460,7 +1464,8 @@ function calLine(day) {
   var v = x ? x.v : h.v, lv = TSN.level(v), o = ofReach(day);
   return tsDay(day) + ": highest tide " + TSN.ft(h.v) + " at " + TSN.clock(h.t) + " (tide table)" + (x ? "; NOAA projects " + TSN.ft(x.v) : "") +
     (k ? " · " + LK.text("tide_day_king") : "") + (lv ? " · " + LK.text(lv === 2 ? "tide_level_red" : "tide_level_amber") : "") +
-    (o ? " · " + LK.text("tide_offset_cal", { off: o.off.toFixed(2), ft: TSN.ft(o.v), water: waterWord() }) : "") + ".";
+    (o ? " · " + LK.text("tide_offset_cal", { off: o.off.toFixed(2), ft: TSN.ft(o.v), water: waterWord() }) : "") +
+    (TSN.astroDays()[day] ? " · " + LK.text("tide_day_astro_short") : "") + ".";
 }
 function ofReach(day) {   // the offset would take this day to the flood level (the tide table or projection doesn't)
   var o = TSN.offsetDays()[day], h = TSN.dayHighs()[day], x = TSN.expected()[day];
@@ -1479,8 +1484,8 @@ function showCalendar() {
   html += '<div id="kckey"><span><i style="background:var(--sv-watch-tint);box-shadow:inset 0 -3px 0 var(--sv-watch-stripe)"></i>' + esc(LK.text("tide_day_amber")) + "</span>" +
     (red ? '<span><i class="lgr"></i>' + esc(LK.text("tide_red_key", { ft: TSN.red().toFixed(1) })) + "</span>" : "") +
     '<span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>' +
-    '<span><i style="border:2px dotted var(--ink);box-sizing:border-box"></i>NOAA projection</span>@@OFKEY@@</div><div id="kcal">';
-  var anyOf = false;
+    '<span><i style="border:2px dotted var(--ink);box-sizing:border-box"></i>NOAA projection</span>@@OFKEY@@@@ASTKEY@@</div><div id="kcal">';
+  var anyOf = false, ad = TSN.astroDays(), anyAst = false;
   for (var k = 0; k <= TSN.months; k++) {
     var mm = new Date(Date.UTC(m0.getUTCFullYear(), m0.getUTCMonth() + k, 1)).toISOString().slice(0, 10), first = new Date(mm + "T12:00:00Z");
     html += "<div><h4>" + esc(first.toLocaleDateString("en-US", { timeZone: "UTC", month: "long", year: "numeric" })) + '</h4><div class="kgrid">' +
@@ -1489,11 +1494,13 @@ function showCalendar() {
     for (var t = first.getTime(); new Date(t).toISOString().slice(0, 7) === mm.slice(0, 7); t += 86400000) {
       var day = new Date(t).toISOString().slice(0, 10), hi = dh[day], xp = ex[day], lv = xp ? TSN.level(xp.v) : hi ? TSN.level(hi.v) : 0, c = "d";
       if (lv === 2) c += " r"; else if (lv === 1) c += " a";   // no King Tide marks (staff, 2026-10-24)
+      if (ad[day]) { c += " ast"; anyAst = true; }   // astronomical high tide: the tide table reaches the 1-year tide (2026-10-28)
       if (xp) c += " xp"; if (ofReach(day) || (sod[day] && lv < 2)) { c += " of"; anyOf = true; } if (day < today) c += " past"; if (day === today) c += " today";
       html += '<span class="' + c + '" data-d="' + day + '" role="button" aria-label="' + esc(calLine(day)) + '">' + (+day.slice(8)) + "</span>";
     }
     html += "</div></div>";
   }
+  html = html.replace("@@ASTKEY@@", anyAst ? '<span><i class="last"></i>' + esc(LK.text("tide_day_astro", { ft: +TSN.king().toFixed(2) })) + "</span>" : "");
   html = html.replace("@@OFKEY@@", anyOf ? '<span><i style="border:2px dashed var(--red);box-sizing:border-box"></i>' + esc(LK.text("tide_offset_cal_key", { red: TSN.red().toFixed(1), water: waterWord() })) + "</span>" : "");
   // Seasonal outlook past the next 6 weeks (tide_season.js; THRESHOLDS_BASIS.md §4b): a line, not marks on days
   var otx = "";

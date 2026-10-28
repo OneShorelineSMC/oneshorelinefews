@@ -200,6 +200,15 @@
      The pages no longer star or color any day for it; the 1-year tide (king()) is only quoted in the calendar's footnote.
      Kept as an empty answer so the pages that ask for it need no other change. */
   function kingDays() { return {}; }
+  /* Astronomical high tide days (staff, 2026-10-28): days whose highest tide-table high tide reaches the 1-year tide
+     (king(): KING_TIDE_FT_RWC 8.3 ft, KING_TIDE_FT_MRY 6.87 ft). From the moon and sun alone, known months ahead; a neutral
+     moon mark on the calendar, never a color or an alert (the flood level and the Bay running high are the hazard). */
+  function astroDays() {
+    var dh = dayHighs(), k = king(), out = {};
+    if (!isFinite(k)) return out;
+    Object.keys(dh).forEach(function (d) { if (dh[d].v >= k) out[d] = dh[d]; });
+    return out;
+  }
   /* NOAA projection (next TIDE_EXPECTED_HOURS): the model's peak near each tide-table high tide, highest per day */
   function expected(now) {
     now = now || nowLocal();
@@ -247,7 +256,7 @@
   return { load: function () { return Promise.all([loadTable(), loadModel(), loadOffsetFile()]); }, loadTable: loadTable, loadModel: loadModel, setModel: setModel,
     loadOffset: loadOffsetFile, offset: offset, offsetDays: offsetDays, addAt: addAt, seasonOutlook: seasonOutlook, outlook: outlookData,
     onUpdate: function (fn) { listeners.push(fn); },
-    dayHighs: dayHighs, kingDays: kingDays, expected: expected, level: level, line: line, weatherNote: weatherNote, txt: txt,
+    dayHighs: dayHighs, kingDays: kingDays, astroDays: astroDays, expected: expected, level: level, line: line, weatherNote: weatherNote, txt: txt,
     clock: clock, ft: ft, mhhw: mhhw, red: red, king: king, state: S, station: STATION, months: MONTHS_AHEAD, now: nowLocal, iso: iso };
   }
   window.TIDE_SEASON = make({ station: "9414523", red: "TIDE_RED_FT_RWC", king: "KING_TIDE_FT_RWC" });
