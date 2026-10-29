@@ -17,6 +17,10 @@ What it does, each time NOAA publishes a new model run (4 a day: 03, 09, 15, 21 
      NAVD88 at the gauge. Each outlet gets the offset of the gauges weighted by distance (1 / distance squared).
      The comparison also checks this method: the spread left after the offset (check_rms_ft) should be small.
   5. The tide table and NOAA's projection at those three gauges, for comparison on the staff page.
+  6. The shoreline low points too (staff, Oct 29): lookups/shoreline_hotspots.csv once reviewed, else the draft
+     lookups/proposed/shoreline_hotspots.csv (the Shoreline page's list from BCDC's Adapting to Rising Tides maps). Each
+     overtops at level_in inches above MHHW; MHHW there is NOAA's MHHW at the three gauges (ft NAVD88, from NOAA's
+     datums), weighted by distance like the offset. The page compares the model's peak with that level.
 
 A projection, not a measurement: there are no gauges at the outlets. Nothing here sets a status or shows on the public
 pages. Writes outlet_tides.json (latest run) and adds to outlet_tides_log.csv (each run's peak at each outlet, and the
@@ -46,6 +50,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUTLETS = os.path.join(ROOT, "lookups", "creek_outlets.csv")
 OUTLETS_DRAFT = os.path.join(ROOT, "lookups", "proposed", "creek_outlets.csv")
+LOWPOINTS = os.path.join(ROOT, "lookups", "shoreline_hotspots.csv")
+LOWPOINTS_DRAFT = os.path.join(ROOT, "lookups", "proposed", "shoreline_hotspots.csv")
 
 BUCKET = "https://noaa-nos-ofs-pds.s3.amazonaws.com"
 MODEL = "sfbofs"
@@ -356,34 +362,47 @@ def dist_m(lat1, lon1, lat2, lon2):
     return 6371000 * math.hypot(x, math.radians(lat2 - lat1))
 
 
-def nearest(lat, lon, lats, lons, depth, min_depth=MIN_DEPTH_M):
+CELL = 0.01   # grid cell for the nearest-point search, degrees (about 1 km)
+
+
+def grid_of(lats, lons):
+    g = {}
+    for i in range(len(lats)):
+        g.setdefault((int(math.floor(lats[i] / CELL)), int(math.floor(lons[i] / CELL))), []).append(i)
+    return g
+
+
+def nearest(lat, lon, lats, lons, depth, min_depth=MIN_DEPTH_M, grid=None):
     """(index of the nearest node at least min_depth deep, its distance; index of the nearest node of any depth,
-    its distance). A box search first (about 5 km), then everything if nothing is in the box."""
+    its distance). Searches rings of grid cells outward until both are found and no nearer cell is left."""
+    grid = grid if grid is not None else grid_of(lats, lons)
     best = [None, 1e18, None, 1e18]
-    for box in (0.05, 9):
-        for i in range(len(lats)):
-            if abs(lats[i] - lat) > box or abs(lons[i] - lon) > box:
-                continue
-            d = dist_m(lat, lon, lats[i], lons[i])
-            if d < best[3]:
-                best[2], best[3] = i, d
-            if depth[i] >= min_depth and d < best[1]:
-                best[0], best[1] = i, d
-        if best[0] is not None:
+    ci, cj = int(math.floor(lat / CELL)), int(math.floor(lon / CELL))
+    cell_m = CELL * 111000 * math.cos(math.radians(lat))
+    for ring in range(0, 400):
+        cells = [(ci + a, cj + b) for a in range(-ring, ring + 1) for b in range(-ring, ring + 1) if max(abs(a), abs(b)) == ring]
+        for c in cells:
+            for i in grid.get(c, ()):
+                d = dist_m(lat, lon, lats[i], lons[i])
+                if d < best[3]:
+                    best[2], best[3] = i, d
+                if depth[i] >= min_depth and d < best[1]:
+                    best[0], best[1] = i, d
+        if best[0] is not None and best[1] < ring * cell_m:   # nothing in a farther ring can be nearer
             break
     return best
 
 
-def idw(lat, lon, refs):
-    """Offset at a point from the gauges' offsets, weighted by 1 / distance squared."""
+def idw(lat, lon, refs, key="offset_ft"):
+    """A gauge value (the offset, or MHHW) at a point, from the gauges' values weighted by 1 / distance squared."""
     w = s = 0.0
     for r in refs:
-        if r.get("offset_ft") is None:
+        if r.get(key) is None:
             continue
         d = max(dist_m(lat, lon, r["lat"], r["lon"]), 100.0)
         w += 1 / d ** 2
-        s += r["offset_ft"] / d ** 2
-    return s / w if w else None
+        s += r[key] / d ** 2
+    return round(s / w, 3) if w else None
 
 
 # ---------------------------------------------------------------------------------------------------- NOAA gauges
@@ -408,13 +427,12 @@ def noaa_series(product, station, begin, end, fetch=get_json, **extra):
     return out
 
 
-def msl_navd(station, fetch=get_json):
-    """NOAA's mean sea level at the gauge, in ft NAVD88 (from its published datums), or None."""
+def datums_navd(station, fetch=get_json):
+    """NOAA's MSL and MHHW at the gauge, in ft NAVD88 (from its published datums): {"MSL": x, "MHHW": y} (None if missing)."""
     j = fetch(MDAPI.format(station))
     d = {x.get("name"): x.get("value") for x in j.get("datums") or []}
-    if d.get("MSL") is None or d.get("NAVD88") is None:
-        return None
-    return round(float(d["MSL"]) - float(d["NAVD88"]), 3)
+    nv = d.get("NAVD88")
+    return {k: (None if nv is None or d.get(k) is None else round(float(d[k]) - float(nv), 3)) for k in ("MSL", "MHHW")}
 
 
 def offset_from(model, noaa):
@@ -449,13 +467,35 @@ def load_outlets(path=None):
     return list(pts.values()), os.path.relpath(path, ROOT)
 
 
+def load_lowpoints(path=None):
+    """The shoreline low points (the Shoreline page's list): include = no left out."""
+    path = path or (LOWPOINTS if os.path.exists(LOWPOINTS) else LOWPOINTS_DRAFT)
+    if not os.path.exists(path):
+        return [], None
+    out = []
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            if (r.get("include") or "").strip().lower() == "no":
+                continue
+            try:
+                lat, lon, lvl = float(r["lat"]), float(r["lon"]), float(r["level_in"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            out.append({"id": r.get("id", ""), "name": r.get("name", ""), "city": r.get("city", ""), "lat": lat, "lon": lon,
+                        "level_in": lvl, "developed": (r.get("developed") or "").strip().lower() == "yes",
+                        "length_m": r.get("length_m", "")})
+    return out, os.path.relpath(path, ROOT)
+
+
 # ---------------------------------------------------------------------------------------------------- the run
-def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_json, log=print):
+def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_json, log=print, lowpoints=None, lp_source=None):
     found = latest_run(now, get_list)
     if not found:
         raise RuntimeError("no complete SFBOFS run found on the NOAA archive for today or yesterday")
     cyc = found["cycle"]
-    sig = "|".join("%.5f,%.5f" % (o["lat"], o["lon"]) for o in outlets)
+    lowpoints = lowpoints or []
+    sig = "|".join("%.5f,%.5f" % (o["lat"], o["lon"]) for o in outlets) + "#" + "|".join(
+        "%s,%.5f,%.5f,%g" % (p["id"], p["lat"], p["lon"], p["level_in"]) for p in lowpoints)
     if previous.get("cycle_utc") == iso(cyc) and previous.get("outlets_sig") == sig:
         log("  model run %s already done" % iso(cyc))
         return None
@@ -469,17 +509,19 @@ def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_
     lons = [x - 360 if x > 180 else x for x in nc.values(vlon)]
     lats, depth = nc.values(vlat), nc.values(vh)
     log("  %s, %d mesh points" % (fmt, len(lats)))
+    grid = grid_of(lats, lons)
     refs = []
     for sid, name, la, lo in REFS:
-        i, d, j, dj = nearest(la, lo, lats, lons, depth)
+        i, d, j, dj = nearest(la, lo, lats, lons, depth, grid=grid)
         refs.append({"id": sid, "name": name, "lat": la, "lon": lo,
                      "node": {"i": i, "lat": round(lats[i], 5), "lon": round(lons[i], 5), "dist_m": round(d), "depth_m": round(depth[i], 2)}})
-    outs = []
-    for o in outlets:
-        i, d, j, dj = nearest(o["lat"], o["lon"], lats, lons, depth)
-        outs.append(dict(o, node={"i": i, "lat": round(lats[i], 5), "lon": round(lons[i], 5), "dist_m": round(d),
-                                  "depth_m": round(depth[i], 2), "nearest_any_m": round(dj), "far": d > MAX_NODE_M}))
-    idx = sorted({x["node"]["i"] for x in outs + refs})
+    def with_node(o):
+        i, d, j, dj = nearest(o["lat"], o["lon"], lats, lons, depth, grid=grid)
+        return dict(o, node={"i": i, "lat": round(lats[i], 5), "lon": round(lons[i], 5), "dist_m": round(d),
+                             "depth_m": round(depth[i], 2), "nearest_any_m": round(dj), "far": d > MAX_NODE_M})
+    outs = [with_node(o) for o in outlets]
+    lows = [with_node(p) for p in lowpoints]
+    idx = sorted({x["node"]["i"] for x in outs + lows + refs})
 
     # the water level at those nodes, hour by hour
     ser = {i: {} for i in idx}
@@ -511,10 +553,11 @@ def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_
         except Exception as e:   # noqa: BLE001
             log("  %s predictions: %s" % (r["id"], e))
         try:
-            r["offset_datum_ft"] = msl_navd(r["id"], fetch)
+            dn = datums_navd(r["id"], fetch)
         except Exception as e:   # noqa: BLE001
-            r["offset_datum_ft"] = None
+            dn = {"MSL": None, "MHHW": None}
             log("  %s datums: %s" % (r["id"], e))
+        r["offset_datum_ft"], r["mhhw_ft"] = dn["MSL"], dn["MHHW"]
         m = ser[r["node"]["i"]]
         off, rms, n = offset_from(m, noaa)
         r.update(offset_model_ft=off, check_rms_ft=rms, matched_hours=n)
@@ -531,16 +574,24 @@ def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_
         log("  %s %s: node %d m away, offset %s ft (%s), check %s ft over %d h" % (
             r["id"], r["name"], r["node"]["dist_m"], r["offset_ft"], r["offset_method"], rms, n))
 
-    for o in outs:
-        o["offset_ft"] = None if idw(o["lat"], o["lon"], refs) is None else round(idw(o["lat"], o["lon"], refs), 3)
+    for o in outs + lows:
+        o["offset_ft"] = idw(o["lat"], o["lon"], refs)
         o["nearest_gauge"] = min(refs, key=lambda r: dist_m(o["lat"], o["lon"], r["lat"], r["lon"]))["id"]
         s = ser[o["node"]["i"]]
         o["series"] = [] if o["offset_ft"] is None else [[iso(t), round(v + o["offset_ft"], 2)] for t, v in sorted(s.items())]
         fut = [p for p in o["series"] if p[0] >= iso(now)]
         o["peak"] = None if not fut else dict(zip(("t", "ft"), max(fut, key=lambda p: p[1])))
+    for p in lows:   # where the Bay comes over the shoreline: MHHW there + the ART level
+        p["mhhw_ft"] = idw(p["lat"], p["lon"], refs, "mhhw_ft")
+        p["overtop_ft"] = None if p["mhhw_ft"] is None else round(p["mhhw_ft"] + p["level_in"] / 12, 2)
+        p["margin_ft"] = None if p["overtop_ft"] is None or not p["peak"] else round(p["peak"]["ft"] - p["overtop_ft"], 2)
+        first = [q for q in p["series"] if q[0] >= iso(now) and p["overtop_ft"] is not None and q[1] >= p["overtop_ft"]]
+        p["reaches_utc"] = first[0][0] if first else None
+    log("  %d outlets, %d low points; %d low points reach their level in the model run" % (
+        len(outs), len(lows), sum(1 for p in lows if p["reaches_utc"])))
     return {"generated_utc": iso(now), "model": "SFBOFS", "cycle_utc": iso(cyc), "format": fmt, "mesh_points": len(lats),
-            "outlets_source": source, "outlets_sig": sig, "min_depth_m": MIN_DEPTH_M, "hours": len(hours),
-            "refs": refs, "outlets": outs}
+            "outlets_source": source, "lowpoints_source": lp_source, "outlets_sig": sig, "min_depth_m": MIN_DEPTH_M,
+            "hours": len(hours), "refs": refs, "outlets": outs, "lowpoints": lows}
 
 
 def log_rows(out):
@@ -549,12 +600,17 @@ def log_rows(out):
         if o.get("peak"):
             rows.append([out["cycle_utc"], "outlet", " ".join(o["ids"]), "; ".join(o["creeks"]), o["peak"]["ft"], o["peak"]["t"],
                          o["offset_ft"], o["node"]["dist_m"], ""])
+    for p in out.get("lowpoints", []):
+        if p.get("peak"):
+            rows.append([out["cycle_utc"], "lowpoint", p["id"], p["name"], p["peak"]["ft"], p["peak"]["t"], p["offset_ft"],
+                         p["node"]["dist_m"], "", p["overtop_ft"], p["margin_ft"]])
     for r in out["refs"]:
         rows.append([out["cycle_utc"], "gauge", r["id"], r["name"], "", "", r.get("offset_ft"), r["node"]["dist_m"], r.get("check_rms_ft")])
     return rows
 
 
-LOG_HEAD = ["cycle_utc", "kind", "id", "name", "peak_ft_navd88", "peak_utc", "offset_ft", "node_dist_m", "check_rms_ft"]
+LOG_HEAD = ["cycle_utc", "kind", "id", "name", "peak_ft_navd88", "peak_utc", "offset_ft", "node_dist_m", "check_rms_ft",
+            "overtop_ft_navd88", "peak_minus_overtop_ft"]
 
 
 def write_log(path, rows, now):
@@ -589,9 +645,10 @@ def main():
         print("  checked for a new model run at %s; not again yet" % last)
         return
     outlets, source = load_outlets()
-    print("  %d outlets from %s" % (len(outlets), source))
+    lows, lp_source = load_lowpoints()
+    print("  %d outlets from %s; %d shoreline low points from %s" % (len(outlets), source, len(lows), lp_source))
     try:
-        out = run(now, previous, outlets, source)
+        out = run(now, previous, outlets, source, lowpoints=lows, lp_source=lp_source)
     except Exception as e:   # noqa: BLE001
         print("  problem: %s (the last run's values are kept)" % e)
         if previous:

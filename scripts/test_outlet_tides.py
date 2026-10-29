@@ -140,7 +140,7 @@ O.open_nc = lambda url, fetch=None: orig_open(url, fetch_nc_for(url))
 
 def fetch(u):
     if "datums.json" in u:
-        return {"datums": [{"name": "MSL", "value": 6.0}, {"name": "NAVD88", "value": 2.85}]}
+        return {"datums": [{"name": "MSL", "value": 6.0}, {"name": "MHHW", "value": 9.0}, {"name": "NAVD88", "value": 2.85}]}
     q = dict(x.split("=", 1) for x in u.split("?", 1)[1].split("&"))
     st = q["station"]
     if st == "9414290" and q["product"] == "ofs_water_level":
@@ -154,7 +154,8 @@ def fetch(u):
 
 
 outlets = [{"ids": ["CO-002"], "creeks": ["Colma Creek"], "fews": ["colma"], "city": "South San Francisco", "lat": 37.64829, "lon": -122.40153}]
-out = O.run(NOW, {}, outlets, "test", get_list=get_list, fetch=fetch, log=lambda *a: None)
+lows = [{"id": "SH-001", "name": "Test shoreline", "city": "South San Francisco", "lat": 37.6481, "lon": -122.3992, "level_in": 12.0, "developed": True, "length_m": "500"}]
+out = O.run(NOW, {}, outlets, "test", get_list=get_list, fetch=fetch, log=lambda *a: None, lowpoints=lows, lp_source="lp")
 check("the run was found", out and out["cycle_utc"] == "2026-10-29T03:00Z" and out["hours"] == 55)
 r = {x["id"]: x for x in out["refs"]}
 check("Alameda offset from NOAA's projection = 3.2 ft", r["9414750"]["offset_ft"] == 3.2 and r["9414750"]["check_rms_ft"] < 0.01)
@@ -166,8 +167,17 @@ check("Colma series: 55 hours, last = 1.3 m + offset", len(o["series"]) == 55 an
 check("peak is in the future and the highest", o["peak"]["t"] == "2026-10-31T03:00Z")
 check("gauge series for the page", len(r["9414523"]["series"]["table"]) == 55 and len(r["9414523"]["series"]["model"]) == 55)
 check("bad values (9e36) left out", all(abs(p[1]) < 100 for p in o["series"]))
-again = O.run(NOW, out, outlets, "test", get_list=get_list, fetch=fetch, log=lambda *a: None)
+again = O.run(NOW, out, outlets, "test", get_list=get_list, fetch=fetch, log=lambda *a: None, lowpoints=lows, lp_source="lp")
 check("same run again: nothing to do", again is None)
+again = O.run(NOW, out, outlets, "test", get_list=get_list, fetch=fetch, log=lambda *a: None, lowpoints=[dict(lows[0], level_in=24.0)], lp_source="lp")
+check("a low point's level changed: run again", again is not None)
+lp = out["lowpoints"][0]
+check("low point: MHHW 6.15 ft NAVD88 (9.0 - 2.85 at every gauge)", lp["mhhw_ft"] == 6.15)
+check("low point: overtops at MHHW + 1 ft", lp["overtop_ft"] == 7.15)
+check("low point: margin = peak - overtop level", abs(lp["margin_ft"] - (lp["peak"]["ft"] - 7.15)) < 0.011)
+check("low point: first hour at or above its level", lp["reaches_utc"] is not None and
+      [q[1] for q in lp["series"] if q[0] == lp["reaches_utc"]][0] >= 7.15 and
+      all(q[1] < 7.15 for q in lp["series"] if "2026-10-29T06:00Z" <= q[0] < lp["reaches_utc"]))
 
 # ---- the log keeps LOG_DAYS and replaces a run that is written twice
 with tempfile.TemporaryDirectory() as d:
@@ -175,12 +185,29 @@ with tempfile.TemporaryDirectory() as d:
     O.write_log(p, O.log_rows(out), NOW)
     O.write_log(p, O.log_rows(out), NOW)
     rows = open(p).read().strip().splitlines()
-    check("log: header + one outlet + three gauges, once", len(rows) == 5 and rows[0].startswith("cycle_utc"))
+    check("log: header + one outlet + one low point + three gauges, once", len(rows) == 6 and rows[0].startswith("cycle_utc"))
     json.dumps(out)
 
+# ---- the grid search finds the same nearest points as checking every point
+import random
+random.seed(4)
+pts = [(37.4 + random.random() * 0.4, -122.5 + random.random() * 0.4, random.choice([0.1, 1.0, 3.0])) for _ in range(3000)]
+la, lo, de = [p[0] for p in pts], [p[1] for p in pts], [p[2] for p in pts]
+g = O.grid_of(la, lo)
+ok = True
+for q in [(37.5, -122.3), (37.61, -122.39), (37.79, -122.11), (37.0, -122.0)]:
+    brute = min((O.dist_m(q[0], q[1], la[i], lo[i]), i) for i in range(len(pts)) if de[i] >= O.MIN_DEPTH_M)[1]
+    ok = ok and O.nearest(q[0], q[1], la, lo, de, grid=g)[0] == brute
+check("grid search = brute force (including a point outside the mesh)", ok)
+
+# ---- the real lists load
+lp, lsrc = O.load_lowpoints()
+check("low point list loads", len(lp) > 50 and lsrc.endswith("shoreline_hotspots.csv") and all(p["level_in"] > 0 for p in lp))
+
 # ---- the real outlet list loads
-pts, src = O.load_outlets()
-check("outlet list loads, shared outlets read once", len(pts) > 10 and len(pts) < 27 and src.endswith("creek_outlets.csv"))
+
+pts2, src = O.load_outlets()
+check("outlet list loads, shared outlets read once", len(pts2) > 10 and len(pts2) < 27 and src.endswith("creek_outlets.csv"))
 
 print("outlet_tides: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
