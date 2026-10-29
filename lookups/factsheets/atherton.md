@@ -56,9 +56,9 @@
 | 1 | Flood Monitoring | 3.18 | OneRain sensor thresholds (Oct 2026) |  |
 | 2 | Flood Watch | 4.60 | OneRain sensor thresholds (Oct 2026) |  |
 | 3 | Flood Warning | 5.65 | OneRain sensor thresholds (Oct 2026) |  |
-| 4 | Roadway Flooded | 10.40 | OneRain sensor thresholds (Oct 2026) | Water detected on road |
+| 4 | Roadway Flooded | 10.40 | OneRain sensor thresholds (Oct 2026) | Spill elevation, in the same datum as the gauge (OneShoreline, Oct 29, 2026): water spills onto the road |
 
-What they mean: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely). Roadway Flooded = water detected on the road.
+What they mean: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely). Roadway Flooded = 10.40 ft at Alameda de las Pulgas, the spill elevation: water spills onto the road. Roadway Flooded = water detected on the road.
 
 By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 
@@ -102,7 +102,7 @@ How settings were chosen: the highest setting that still warned before all, or a
 | 2 | Flood Watch | 4.10 | OneRain sensor thresholds (Oct 2026) |  |
 | 3 | Flood Warning | 5.50 | OneRain sensor thresholds (Oct 2026) |  |
 
-What they mean: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely).
+What they mean: Flood Monitoring = potential for 50% channel capacity exceedance downstream; Flood Watch = 75%; Flood Warning = 100% (flooding likely). Roadway Flooded = 10.40 ft at Alameda de las Pulgas, the spill elevation: water spills onto the road.
 
 By this definition, Monitoring and Watch mean the water is still in the channel; only Flood Warning means flooding is likely.
 
