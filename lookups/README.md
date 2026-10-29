@@ -78,7 +78,9 @@ gauge: then fill `usgs_site` with the USGS number and leave the OneRain columns 
 `minutes` (rain only) · `level` (1 Flood Monitoring, 2 Flood Watch, 3 Flood Warning, 4 above Flood Warning; sets
 the color) · `name` (shown; blank = the standard name for the level) · `value` (ft for stage, in for rain) ·
 `tide_at_least_navd88` (rain + tide triggers: tide at the creek's station at or above this, ft NAVD88) · `source`
-· `notes` (shown with the threshold).
+· `notes` (shown with the threshold) · `public_note` (optional, stage levels: what happens on the ground at
+this level, e.g. Atherton's road spill. Its line is always drawn on the creek graph, and when the creek reaches a
+level 4 with a public note, the cards give the note as the reason instead of "at its Flood Warning level").
 
 **tide_stations.csv** — `station` (NOAA number) · `name` · `mhhw_navd88_ft` (the "average high tide" line on every
 tide graph and the threshold for "above MHHW") · `mllw_to_navd88_ft` (add to a MLLW height to get NAVD88; used to
