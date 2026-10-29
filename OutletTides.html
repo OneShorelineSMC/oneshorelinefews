@@ -23,11 +23,11 @@
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
-    --outlet: #7A1F5C; --gauge: #4F641C; --noaa: #00838f; --table: #4a4f55; --red: #c0392b; --warnbg: #fff4e5; --warnink: #7a3d00; --sel: #e8f1fa; }
+    --bfe: #4527a0; --outlet: #7A1F5C; --gauge: #4F641C; --noaa: #00838f; --table: #4a4f55; --red: #c0392b; --warnbg: #fff4e5; --warnink: #7a3d00; --sel: #e8f1fa; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
-    --outlet: #f08ac8; --gauge: #b5cc6a; --noaa: #4fc3d9; --table: #a7b0ba; --red: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; } }
+    --bfe: #b39ddb; --outlet: #f08ac8; --gauge: #b5cc6a; --noaa: #4fc3d9; --table: #a7b0ba; --red: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; } }
   :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
-    --outlet: #f08ac8; --gauge: #b5cc6a; --noaa: #4fc3d9; --table: #a7b0ba; --red: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; }
+    --bfe: #b39ddb; --outlet: #f08ac8; --gauge: #b5cc6a; --noaa: #4fc3d9; --table: #a7b0ba; --red: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
@@ -258,7 +258,8 @@ function render() {
       var o = x.o;
       return "<tr class='row' data-k='" + x.k + "'><td><button type='button' data-k='" + x.k + "'>" + esc(oName(o)) + "</button>" +
         "<span class='sm'>" + esc(o.ids.join(", ")) + "</span></td><td>" + esc(o.city) + "</td>" +
-        "<td class='n'><b>" + (x.pk ? ft(x.pk[1]) : "–") + "</b>" + (x.pk && x.pk[1] >= RED ? " <span class='flag'>≥ " + RED.toFixed(1) + "</span>" : "") + "</td>" +
+        "<td class='n'><b>" + (x.pk ? ft(x.pk[1]) : "–") + "</b>" + (x.pk && x.pk[1] >= RED ? " <span class='flag'>≥ " + RED.toFixed(1) + "</span>" : "") +
+        (o.bfe_ft != null ? "<span class='sm'>FEMA BFE " + ft(o.bfe_ft) + (x.pk ? " (" + sgn(x.pk[1] - o.bfe_ft) + ")" : "") + "</span>" : "") + "</td>" +
         "<td>" + (x.pk ? esc(when(x.pk[0])) : "") + "</td>" +
         "<td class='n'>" + sgn(x.diff) + "<span class='sm'>" + esc(x.r ? x.r.name : "") + "</span></td>" + nodeCell(o.node) + "</tr>";
     }).join("") + "</tbody>";
@@ -314,7 +315,7 @@ function pick(key, quiet) {
   var all = P(o.series).concat(r ? P(r.series.model).concat(P(r.series.table)) : []);
   var x0 = Math.min.apply(null, all.map(function (p) { return p.x; })), x1 = Math.max.apply(null, all.map(function (p) { return p.x; }));
   var lvl = low ? o.overtop_ft : RED;
-  var ys = all.map(function (p) { return p.y; }).concat(lvl != null ? [lvl] : []);
+  var ys = all.map(function (p) { return p.y; }).concat(lvl != null ? [lvl] : [], !low && o.bfe_ft != null ? [o.bfe_ft] : []);
   var y0 = Math.floor(Math.min.apply(null, ys)) - 0.5, y1 = Math.ceil(Math.max.apply(null, ys)) + 0.5;
   // Same lines as the Tides page for the same data (tide table thin gray, NOAA projection teal dotted, flood level red
   // dash-dot); the SFBOFS model points in colors the tide pages don't use: magenta (this place), olive dashed (the gauge's)
@@ -324,9 +325,11 @@ function pick(key, quiet) {
   var table = r ? { label: "Tide table at " + r.name, data: P(r.series.table), borderColor: css("--table"), borderWidth: 1.5, pointRadius: 0, tension: 0.3 } : null;
   var level = lvl == null ? null : { label: low ? "Comes over here at " + ft(lvl) + " ft (BCDC ART, MHHW + " + o.level_in + " in)" : "Flood level " + RED.toFixed(1) + " ft (Redwood City, provisional)",
       data: [{ x: x0, y: lvl }, { x: x1, y: lvl }], borderColor: css("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0 };
+  var bfe = !low && o.bfe_ft != null ? { label: "FEMA base flood elevation " + ft(o.bfe_ft) + " ft", data: [{ x: x0, y: o.bfe_ft }, { x: x1, y: o.bfe_ft }],
+      borderColor: css("--bfe"), borderWidth: 2.5, borderDash: [14, 5], pointRadius: 0 } : null;   // a reference, not a flood level the site uses
   var nowL = { label: "Now", data: [{ x: now, y: y0 }, { x: now, y: y1 }], borderColor: css("--muted"), borderWidth: 1, pointRadius: 0 };
-  var sets = [table, level, nowL, proj, gauge, mine].filter(Boolean);   // drawn in this order: this place's line on top
-  var keyOrder = [mine, gauge, proj, table, level].filter(Boolean);
+  var sets = [table, level, bfe, nowL, proj, gauge, mine].filter(Boolean);   // drawn in this order: this place's line on top
+  var keyOrder = [mine, gauge, proj, table, level, bfe].filter(Boolean);
   var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: "nearest", axis: "x", intersect: false },
     plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return fDay.format(new Date(it[0].parsed.x)); },
       label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
