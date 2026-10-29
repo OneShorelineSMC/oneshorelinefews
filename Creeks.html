@@ -339,10 +339,10 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261028a"></script>
-<script src="severity.js?v=20261028a"></script>
-<script src="creek_status.js?v=20261028a"></script>
-<script src="hero.js?v=20261028a"></script>
+<script src="lookups.js?v=20261029a"></script>
+<script src="severity.js?v=20261029a"></script>
+<script src="creek_status.js?v=20261029a"></script>
+<script src="hero.js?v=20261029a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -1039,7 +1039,7 @@ function drawCharts(st, now) {
     var ls = s.p.length ? s.p[s.p.length - 1] : null;
     if (ls && g.reports !== "interval" && now - ls.t < GAUGE_QUIET_HOURS * 3600000) sp.push({ x: 0, y: ls.v });   // level unchanged since last report
     var vmax = Math.max.apply(null, sp.map(function (p) { return p.y; }).concat([0]));
-    var shown = ths.filter(function (t) { return t.level <= 3 || vmax > t.value * 0.75; });
+    var shown = ths.filter(function (t) { return t.level <= 3 || t.public_note || vmax > t.value * 0.75; });   // a level with an effect on the ground (Atherton's road spill) always shows
     var smax = Math.max(shown.length ? shown[shown.length - 1].value + 0.4 : 1, vmax + 0.3);
     var stp = smax <= 6 ? 1 : smax <= 14 ? 2 : 5;
     var so = base(!c.tide && i === st.stages.length - 1); so.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);

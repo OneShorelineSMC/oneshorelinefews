@@ -541,11 +541,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261028a"></script>
-<script src="tide_season.js?v=20261028a"></script>
-<script src="creek_status.js?v=20261028a"></script>
-<script src="severity.js?v=20261028a"></script>
-<script src="hero.js?v=20261028a"></script>
+<script src="lookups.js?v=20261029a"></script>
+<script src="tide_season.js?v=20261029a"></script>
+<script src="creek_status.js?v=20261029a"></script>
+<script src="severity.js?v=20261029a"></script>
+<script src="hero.js?v=20261029a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -2049,10 +2049,10 @@ function drawCreekCharts(st, now) {
     if (lastS && g.reports !== "interval" && now - lastS.t < GAUGE_QUIET_HOURS * 3600000) sp.push({ x: 0, y: lastS.v });
     var vmax = Math.max.apply(null, sp.map(function (p) { return p.y; }).concat([0]));
     // Show thresholds up to Flood Warning (and higher ones only once the water gets near them)
-    var shown = ths.filter(function (t) { return t.level <= 3 || vmax > t.value * 0.75; });
+    var shown = ths.filter(function (t) { return t.level <= 3 || t.public_note || vmax > t.value * 0.75; });   // a level with an effect on the ground (Atherton's road spill) always shows
     var smax = Math.max(shown.length ? shown[shown.length - 1].value + 0.4 : 1, vmax + 0.3);
     var box = document.getElementById("chStage" + i).parentNode.clientHeight;
-    var stp = [1, 2, 4, 5, 10].filter(function (k) { return Math.ceil(smax / k) <= Math.max(2, Math.floor(box / 22)); })[0] || 10;
+    var stp = [1, 2, 4, 5, 10].filter(function (k) { return Math.ceil(smax / k) <= Math.max(shown.some(function (t) { return t.public_note; }) ? 3 : 2, Math.floor(box / 22)); })[0] || 10;   // a tall always-on line (Atherton 10.40): 0-15 ft, not 0-20
     var sopt = base(false);
     if (!C.nowTagged) { sopt.plugins.nowLine.label = true; sopt.layout.padding.top = 2; C.nowTagged = true; }   // one "Now" tag, on the top graph (the first stage graph); the line runs through every graph below
     sopt.scales.y = yScale(0, Math.ceil(smax / stp) * stp, stp);

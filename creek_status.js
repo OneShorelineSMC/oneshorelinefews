@@ -61,6 +61,7 @@
       eoc: key === "delayed" || key === "none" ? "" : T("eoc_action_" + key) };
   }
   function reason(r) {
+    if (r.code === "why_level_note") return r.text || T("why_warning");   // thresholds.csv public_note (Atherton: water on the road)
     if (r.code === "why_out_of_service") return T("why_out_of_service", { gauge: r.gauge }) + (r.note ? " " + r.note : "");
     var s = T(r.code, { rain: rainWord(r.rain).toLowerCase(), Rain: rainWord(r.rain), time: clock(r.time) });
     if (!s) return "";
@@ -516,7 +517,7 @@
       var t = { why_warning: "At Flood Warning level", why_watch: "At Flood Watch level", why_monitoring: "Higher than usual",
         why_rising_fast: "Rising fast", why_normal_rain: "Normal level, rain could raise it", why_trigger: "Rain trigger met",
         why_trigger_tide: "Rain + high tide trigger met", why_gauge_offline: "Creek gauge offline", why_stale: "A rain gauge is silent",
-        tide_rising_line: "Rising tide", why_rain: r.rain ? rainWord(r.rain) + " rain" : "" }[r.code] || "";
+        tide_rising_line: "Rising tide", why_rain: r.rain ? rainWord(r.rain) + " rain" : "", why_level_note: r.name || "" }[r.code] || "";
       if ((r.code === "why_watch" || r.code === "why_monitoring") && r.rising_fast) t += ", rising fast";
       if (t && out.indexOf(t) < 0) out.push(t);
     });
