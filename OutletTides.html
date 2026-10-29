@@ -11,7 +11,7 @@
 <!-- Staff beta (2026-10-29): NOAA's San Francisco Bay model (SFBOFS) at the mesh point nearest each creek outlet, next
      to the tide table and NOAA's projection at the nearest NOAA tide gauges. Linked from staff.html only; not linked
      from the public pages and never sets a status. Data: outlet_tides.json on the data branch, written by
-     scripts/outlet_tides.py in the data job (about 2 hours after each model run: 03, 09, 15, 21 UTC). -->
+     scripts/outlet_tides.py in the data job (about 2 hours after each model run: about 1 AM, 7 AM, 1 PM, 7 PM PST; an hour later in daylight time). -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
   crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -158,7 +158,7 @@
           <code>lookups/proposed/shoreline_hotspots.csv</code> (the Shoreline page’s list). The level where the Bay comes over is BCDC’s
           (MHHW + 12, 24 or 36 in), with MHHW from NOAA’s datums at the three gauges weighted by distance. The Shoreline page uses
           Redwood City’s MHHW everywhere, so its levels differ a little in the north.</li>
-        <li><b>Model:</b> SFBOFS (FVCOM, about 100,000 points), from NOAA’s public archive on Amazon. Four runs a day (03, 09, 15, 21 UTC),
+        <li><b>Model:</b> SFBOFS (FVCOM, about 100,000 points), from NOAA’s public archive on Amazon. Four runs a day, at about 1 AM, 7 AM, 1 PM and 7 PM Pacific Standard Time (2 AM, 8 AM, 2 PM and 8 PM in daylight time),
           usually available about 2 hours later; only the water level at the chosen points is read.</li>
         <li><b>Model point:</b> the nearest point at least <span id="mind">0.5</span> m below the model’s datum, so it stays wet at low tide.
           Of the 6 nearest such points, the nearest whose level moves with the tide (at least 0.5 ft over the run) is used, since some deep
@@ -186,6 +186,8 @@ var fDay = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", w
 var fHour = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric" });
 var fWd = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short" });
 function when(iso) { return fDay.format(new Date(ms(iso))); }
+var fTz = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+function whenTz(iso) { return fTz.format(new Date(ms(iso))); }   // with PDT / PST
 function ft(v) { return v == null ? "–" : v.toFixed(2); }
 function sgn(v) { return v == null ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
 var RED = (window.LK && isFinite(LK.num("TIDE_RED_FT_RWC"))) ? LK.num("TIDE_RED_FT_RWC") : 8.5;
@@ -226,7 +228,7 @@ function nodeCell(n, label) {
 
 function render() {
   var now = Date.now(), end = now + 48 * 3600000, LP = D.lowpoints || [];
-  $("meta").innerHTML = "Model run " + esc(when(D.cycle_utc)) + " (" + esc(D.cycle_utc.slice(11, 16)) + " UTC) · read " + esc(when(D.generated_utc)) +
+  $("meta").innerHTML = "Model run " + esc(whenTz(D.cycle_utc)) + " · read " + esc(whenTz(D.generated_utc)) +
     " · " + D.outlets.length + " outlet points from <code>" + esc(D.outlets_source) + "</code>" +
     (LP.length ? " · " + LP.length + " shoreline low points from <code>" + esc(D.lowpoints_source) + "</code>" : "") +
     " · " + esc(D.format) + ", " + D.mesh_points.toLocaleString() + " model points";
