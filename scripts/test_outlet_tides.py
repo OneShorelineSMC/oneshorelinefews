@@ -105,6 +105,7 @@ check("station files ignored", O.parse_key("sfbofs/netcdf/2026/10/29/sfbofs.t03z
 NOW = dt.datetime(2026, 10, 29, 6, 0, tzinfo=dt.timezone.utc)
 CYC = dt.datetime(2026, 10, 29, 3, 0, tzinfo=dt.timezone.utc)
 mesh = [(37.6481, -122.3990, 2.0),   # Colma outlet, wet
+        (37.64829, -122.40150, 3.0), # right at the outlet, deep, but a closed pond: the level never moves
         (37.6483, -122.4012, 0.1),   # Colma outlet, shallow (marsh)
         (37.8063, -122.4655, 10.0),  # SF gauge
         (37.7722, -122.3005, 6.0),   # Alameda gauge
@@ -116,7 +117,7 @@ for lab in labels:
     z = 0.3 + h / 48.0
     key = "sfbofs/netcdf/2026/10/29/sfbofs.t03z.20261029.fields.%s.nc" % lab
     keys.append(key)
-    files[O.BUCKET + "/" + key] = classic(mesh, [[z, 9e36, z, z, z + 0.1]])
+    files[O.BUCKET + "/" + key] = classic(mesh, [[z, 0.0, 9e36, z, z, z + 0.1]])
 listing = ('<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
            "".join("<Contents><Key>%s</Key></Contents>" % k for k in keys) + "</ListBucketResult>").encode()
 urls = []
@@ -161,7 +162,8 @@ r = {x["id"]: x for x in out["refs"]}
 check("Alameda offset from NOAA's projection = 3.2 ft", r["9414750"]["offset_ft"] == 3.2 and r["9414750"]["check_rms_ft"] < 0.01)
 check("San Francisco falls back to NOAA's datums (MSL 3.15 ft NAVD88)", r["9414290"]["offset_ft"] == 3.15 and "MSL" in r["9414290"]["offset_method"])
 o = out["outlets"][0]
-check("Colma outlet uses the wet node, not the marsh one", o["node"]["i"] == 0 and o["node"]["nearest_any_m"] < o["node"]["dist_m"])
+check("Colma outlet uses the wet node that moves with the tide, not the pond or the marsh", o["node"]["i"] == 0 and o["node"]["skipped_still"] == 1)
+check("...and still reports the nearest point of any depth", o["node"]["nearest_any_m"] < o["node"]["dist_m"])
 check("Colma offset between SF's 3.15 and Alameda's 3.2", 3.15 < o["offset_ft"] < 3.2)
 check("Colma series: 55 hours, last = 1.3 m + offset", len(o["series"]) == 55 and abs(o["series"][-1][1] - (1.3 * O.FT + o["offset_ft"])) < 0.02)
 check("peak is in the future and the highest", o["peak"]["t"] == "2026-10-31T03:00Z")

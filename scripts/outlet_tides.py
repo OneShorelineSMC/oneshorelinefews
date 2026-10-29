@@ -64,6 +64,8 @@ REFS = [("9414290", "San Francisco", 37.8063, -122.4659),
         ("9414523", "Redwood City", 37.5068, -122.2119)]
 MIN_DEPTH_M = 0.5        # mesh point at least this deep below the model datum (stays wet at low tide)
 MAX_NODE_M = 3000        # farther than this from the outlet: flagged
+CANDIDATES = 6           # nearest wet mesh points read for each place; the nearest one that moves with the tide is used
+MIN_RANGE_FT = 0.5       # a mesh point whose water level moves less than this over the run is cut off from the Bay (a pond)
 MIN_MATCH = 12           # hours matched with NOAA's projection to use the model-based offset
 FT = 3.28084
 LOG_DAYS = 60
@@ -393,6 +395,34 @@ def nearest(lat, lon, lats, lons, depth, min_depth=MIN_DEPTH_M, grid=None):
     return best
 
 
+def candidates(lat, lon, lats, lons, depth, grid, k=CANDIDATES, min_depth=MIN_DEPTH_M):
+    """The k nearest mesh points at least min_depth deep: [(distance m, index)], nearest first."""
+    found = []
+    ci, cj = int(math.floor(lat / CELL)), int(math.floor(lon / CELL))
+    cell_m = CELL * 111000 * math.cos(math.radians(lat))
+    for ring in range(0, 400):
+        for a in range(-ring, ring + 1):
+            for b in range(-ring, ring + 1):
+                if max(abs(a), abs(b)) != ring:
+                    continue
+                for i in grid.get((ci + a, cj + b), ()):
+                    if depth[i] >= min_depth:
+                        found.append((dist_m(lat, lon, lats[i], lons[i]), i))
+        found.sort()
+        if len(found) >= k and found[k - 1][0] < ring * cell_m:
+            break
+    return found[:k]
+
+
+def choose(cands, ser):
+    """The nearest candidate whose water level moves with the tide (range at least MIN_RANGE_FT); (dist, index, skipped)."""
+    for n, (d, i) in enumerate(cands):
+        v = list(ser.get(i, {}).values())
+        if len(v) >= 6 and max(v) - min(v) >= MIN_RANGE_FT:
+            return d, i, n
+    return cands[0][0], cands[0][1], 0
+
+
 def idw(lat, lon, refs, key="offset_ft"):
     """A gauge value (the offset, or MHHW) at a point, from the gauges' values weighted by 1 / distance squared."""
     w = s = 0.0
@@ -511,17 +541,14 @@ def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_
     log("  %s, %d mesh points" % (fmt, len(lats)))
     grid = grid_of(lats, lons)
     refs = []
-    for sid, name, la, lo in REFS:
-        i, d, j, dj = nearest(la, lo, lats, lons, depth, grid=grid)
-        refs.append({"id": sid, "name": name, "lat": la, "lon": lo,
-                     "node": {"i": i, "lat": round(lats[i], 5), "lon": round(lons[i], 5), "dist_m": round(d), "depth_m": round(depth[i], 2)}})
-    def with_node(o):
+    def with_cands(o):
         i, d, j, dj = nearest(o["lat"], o["lon"], lats, lons, depth, grid=grid)
-        return dict(o, node={"i": i, "lat": round(lats[i], 5), "lon": round(lons[i], 5), "dist_m": round(d),
-                             "depth_m": round(depth[i], 2), "nearest_any_m": round(dj), "far": d > MAX_NODE_M})
-    outs = [with_node(o) for o in outlets]
-    lows = [with_node(p) for p in lowpoints]
-    idx = sorted({x["node"]["i"] for x in outs + lows + refs})
+        cs = candidates(o["lat"], o["lon"], lats, lons, depth, grid) or [(d, i)]
+        return dict(o, _cands=cs, _any=dj)
+    refs = [with_cands({"id": sid, "name": name, "lat": la, "lon": lo}) for sid, name, la, lo in REFS]
+    outs = [with_cands(o) for o in outlets]
+    lows = [with_cands(p) for p in lowpoints]
+    idx = sorted({i for x in outs + lows + refs for d, i in x["_cands"]})
 
     # the water level at those nodes, hour by hour
     ser = {i: {} for i in idx}
@@ -538,6 +565,11 @@ def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_
     hours = sorted({t for s in ser.values() for t in s})
     if len(hours) < NEED_FORECAST_HOURS // 2:
         raise RuntimeError("only %d hours read from the model run" % len(hours))
+    # the mesh point for each place: the nearest wet one that moves with the tide (some deep points are in closed ponds)
+    for x in refs + outs + lows:
+        d, i, skipped = choose(x.pop("_cands"), ser)
+        x["node"] = {"i": i, "lat": round(lats[i], 5), "lon": round(lons[i], 5), "dist_m": round(d), "depth_m": round(depth[i], 2),
+                     "nearest_any_m": round(x.pop("_any")), "far": d > MAX_NODE_M, "skipped_still": skipped}
 
     # the datum at the gauges; the tide table and NOAA's projection there
     t0, t1 = hours[0], hours[-1]
