@@ -345,6 +345,11 @@ data branch, from `scripts/outlet_tides.py` in the data job (it looks for a new 
   (`ofs_water_level`, ft NAVD88) minus the model at the gauge's nearest mesh point; if NOAA's projection isn't
   available, NOAA's published MSL above NAVD88 at the gauge. Each outlet uses the gauges' offsets weighted by
   1 / distance squared. The spread left after the offset is shown as a check.
+- **Shoreline low points** (added Oct 29): the Shoreline page's list (`lookups/shoreline_hotspots.csv`, or the draft in
+  `lookups/proposed/`) gets the same treatment. The level where the Bay comes over is BCDC ART's (MHHW + 12, 24 or 36 in), with
+  MHHW from NOAA's published datums at the three gauges (ft NAVD88), weighted by 1 / distance squared; the page shows the
+  model's 48-hour peak minus that level, and the first hour it is reached. (The Shoreline page itself uses Redwood City's
+  MHHW for every spot.) Also logged in `outlet_tides_log.csv`.
 - **Limits:** a model projection, not a measurement (no gauges at the outlets); no creek flow, waves or wind setup at
   the shoreline; narrow sloughs and channels may be coarser in the model than on the ground. Never sets a status and is
   not on the public pages.
