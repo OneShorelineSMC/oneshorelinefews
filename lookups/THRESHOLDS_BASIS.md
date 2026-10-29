@@ -328,6 +328,29 @@ Which places on the Bay shoreline the water would reach, not just how high it is
   kiosk view; which habitat types count as normally wet (diked baylands and managed ponds especially); the 25 m street
   rule; which RSAP layers to show.
 
+### 4d. Bay model at the creek outlets (Oct 29, 2026; staff beta, not reviewed)
+
+Staff page `OutletTides.html` (linked from `staff.html` only). Data: `outlet_tides.json` and `outlet_tides_log.csv` on the
+data branch, from `scripts/outlet_tides.py` in the data job (it looks for a new model run every 30 minutes).
+
+- **Outlets:** `lookups/creek_outlets.csv` once staff have reviewed it, otherwise the draft
+  `lookups/proposed/creek_outlets.csv` (`include` = no left out; outlets at the same point read once).
+- **Model:** NOAA's San Francisco Bay Operational Forecast System (SFBOFS, FVCOM), four runs a day (03, 09, 15, 21 UTC),
+  from NOAA's public archive on Amazon (`noaa-nos-ofs-pds`): the 6-hour nowcast and 48-hour forecast, hourly. Only the
+  water level (`zeta`) at the chosen mesh points is read, by byte range.
+- **Model point:** the nearest mesh point at least 0.5 m below the model's datum (so it stays wet at low tide); the
+  nearest point of any depth is reported too. Points more than 3 km away are flagged. To be checked on the page's map.
+- **Datum:** the model's water level is relative to its own datum (about mean sea level). At San Francisco (9414290),
+  Alameda (9414750) and Redwood City (9414523) the offset to NAVD88 is the median of NOAA's projection at the gauge
+  (`ofs_water_level`, ft NAVD88) minus the model at the gauge's nearest mesh point; if NOAA's projection isn't
+  available, NOAA's published MSL above NAVD88 at the gauge. Each outlet uses the gauges' offsets weighted by
+  1 / distance squared. The spread left after the offset is shown as a check.
+- **Limits:** a model projection, not a measurement (no gauges at the outlets); no creek flow, waves or wind setup at
+  the shoreline; narrow sloughs and channels may be coarser in the model than on the ground. Never sets a status and is
+  not on the public pages.
+- **Next:** staff review of the outlet points and model points; compare the log with high tides and storms for a few
+  weeks; then decide whether any creek page uses it (Colma and San Bruno first, which share an outlet).
+
 ## 5. Page logic settings — `settings.csv`
 
 | Setting | Value | Basis | Status | Checked by / on |
