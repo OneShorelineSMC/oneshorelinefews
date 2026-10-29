@@ -67,5 +67,7 @@ jobs:
         run: python scripts/test_shoreline_lowpoints.py
       - name: Creek outlets
         run: python scripts/test_creek_outlets.py
+      - name: Bay model at the creek outlets
+        run: python scripts/test_outlet_tides.py
       - name: Home page severity scale, section order and colors
         run: node scripts/test_home.js

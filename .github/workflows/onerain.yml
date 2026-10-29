@@ -4,6 +4,7 @@
 #   creeks_7day.json - every creek sensor's readings for the last 7 days, built up run by run (for the data archive,
 #                   OneShorelineSMC/fews-data-archive); points are [Pacific time, value, UTC time, (USGS codes)]
 #   status_log.csv - creek status changes (creek status layer, staff review), newest last
+#   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
 #                   only once set up (COMMUNITY_FLOOD_REPORTS_SETUP.md: ARCGIS_API_KEY secret, REPORTS_* variables)
@@ -48,6 +49,8 @@ jobs:
             git show FETCH_HEAD:status_log.csv > out/status_log.csv 2>/dev/null || true
             git show FETCH_HEAD:creeks_7day.json > out/creeks_7day.json 2>/dev/null || true
             git show FETCH_HEAD:tide_offset.json > out/tide_offset.json 2>/dev/null || true
+            git show FETCH_HEAD:outlet_tides.json > out/outlet_tides.json 2>/dev/null || true
+            git show FETCH_HEAD:outlet_tides_log.csv > out/outlet_tides_log.csv 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -71,6 +74,14 @@ jobs:
         continue-on-error: true
         run: python scripts/tide_offset.py out/tide_offset.json
 
+      - name: Bay model at the creek outlets (staff beta; scripts/outlet_tides.py)
+        # NOAA's San Francisco Bay model (SFBOFS) at the mesh point nearest each creek outlet, for the staff page
+        # (OutletTides.html). Looks for a new model run every 30 minutes (NOAA publishes one every 6 hours) and reads only
+        # the water level at those points. A problem here never stops the creek data; the last values are kept.
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/outlet_tides.py out/outlet_tides.json out/outlet_tides_log.csv --min-age 30
+
       - name: Flood reports approved by staff (every 15 minutes)
         # A problem here never stops the creek data from being published; the last published reports are kept.
         continue-on-error: true
@@ -90,6 +101,7 @@ jobs:
           [ -s sites.json ] || rm -f sites.json
           cp creeks.json sanbruno.json   # older name, kept so pages not yet updated keep working
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
+            $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
