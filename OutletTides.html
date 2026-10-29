@@ -163,7 +163,7 @@
           Redwood City’s MHHW everywhere, so its levels differ a little in the north.</li>
         <li><b>Model:</b> SFBOFS (FVCOM, about 100,000 points), from NOAA’s public archive on Amazon. Four runs a day, at about 1 AM, 7 AM, 1 PM and 7 PM Pacific Standard Time (2 AM, 8 AM, 2 PM and 8 PM in daylight time),
           usually available about 2 hours later; only the water level at the chosen points is read.</li>
-        <li><b>Model point:</b> the nearest point at least <span id="mind">0.5</span> m below the model’s datum, so it stays wet at low tide.
+        <li><b>Model point:</b> the nearest point at least <span id="mind">1.6 ft</span> below the model’s datum, so it stays wet at low tide.
           Of the 6 nearest such points, the nearest whose level moves with the tide (at least 0.5 ft over the run) is used, since some deep
           points are in closed ponds. The nearest point of any depth is listed too; a big gap means the place is up a slough or behind marsh.</li>
         <li><b>Comparison lines:</b> at the nearest of San Francisco (9414290), Alameda (9414750) and Redwood City (9414523): the model at the gauge,
@@ -192,6 +192,9 @@ function when(iso) { return fDay.format(new Date(ms(iso))); }
 var fTz = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
 function whenTz(iso) { return fTz.format(new Date(ms(iso))); }   // with PDT / PST
 function ft(v) { return v == null ? "–" : v.toFixed(2); }
+// the data file is in metres (the model's units); the page shows feet, and miles for a mile or more
+function dist(m) { var f = m * 3.28084; return f >= 5280 ? (f / 5280).toFixed(1) + " mi" : (f < 100 ? Math.round(f) : Math.round(f / 10) * 10).toLocaleString() + " ft"; }
+function deep(m) { return (m * 3.28084).toFixed(1) + " ft"; }
 function sgn(v) { return v == null ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
 var RED = (window.LK && isFinite(LK.num("TIDE_RED_FT_RWC"))) ? LK.num("TIDE_RED_FT_RWC") : 8.5;
 var NEAR_FT = 0.5;      // a low point within this of its level is "close"
@@ -225,8 +228,8 @@ function oName(o) { return o.creeks.join(" / "); }
 function lpState(p) { return p.margin_ft == null ? "none" : p.margin_ft >= 0 ? "reach" : p.margin_ft >= -NEAR_FT ? "near" : "below"; }
 var LP_COL = { reach: "#d32f2f", near: "#f57c00", below: "#cfd8dc", none: "#90a4ae" };
 function nodeCell(n, label) {
-  return "<td>" + n.dist_m.toLocaleString() + " m away, " + n.depth_m + " m deep" + (n.far ? " <span class='flag'>far</span>" : "") +
-    (n.nearest_any_m < n.dist_m - 50 ? "<span class='sm'>nearest point of any depth: " + n.nearest_any_m.toLocaleString() + " m</span>" : "") + "</td>";
+  return "<td>" + dist(n.dist_m) + " away, " + deep(n.depth_m) + " deep" + (n.far ? " <span class='flag'>far</span>" : "") +
+    (n.nearest_any_m < n.dist_m - 50 ? "<span class='sm'>nearest point of any depth: " + dist(n.nearest_any_m) + "</span>" : "") + "</td>";
 }
 
 function render() {
@@ -238,7 +241,7 @@ function render() {
   var old = now - ms(D.cycle_utc) > 14 * 3600000;
   $("warn").textContent = (D.problem ? "The last look for a new model run had a problem: " + D.problem + ". " : "") +
     (old ? "This model run is more than 14 hours old; NOAA may be late, or the data job can’t reach it." : "");
-  $("mind").textContent = D.min_depth_m;
+  $("mind").textContent = deep(D.min_depth_m);
 
   // outlets
   // the city picker: every city with an outlet or a low point
@@ -279,7 +282,7 @@ function render() {
     shown.map(function (x) {
       var p = x.p, st = lpState(p);
       return "<tr class='row" + (p.developed ? "" : " open") + "' data-k='" + x.k + "'><td><button type='button' data-k='" + x.k + "'>" + esc(p.name) + "</button>" +
-        "<span class='sm'>" + esc(p.id) + (p.developed ? "" : " · open land (pond or marsh berm)") + (p.length_m ? " · " + (+p.length_m).toLocaleString() + " m of shoreline" : "") + "</span></td>" +
+        "<span class='sm'>" + esc(p.id) + (p.developed ? "" : " · open land (pond or marsh berm)") + (p.length_m ? " · " + dist(+p.length_m) + " of shoreline" : "") + "</span></td>" +
         "<td>" + esc(p.city) + "</td>" +
         "<td class='n'>" + ft(p.overtop_ft) + "<span class='sm'>MHHW " + ft(p.mhhw_ft) + " + " + p.level_in + " in</span></td>" +
         "<td class='n'>" + (p.peak ? ft(p.peak.ft) : "–") + "<span class='sm'>" + (p.peak ? esc(when(p.peak.t)) : "") + "</span></td>" +
@@ -291,7 +294,7 @@ function render() {
 
   $("refs").innerHTML = "<thead><tr><th>Gauge</th><th>Model point</th><th class='n'>Offset (ft)</th><th>How</th><th class='n'>Left over</th><th class='n'>MHHW (ft NAVD88)</th></tr></thead><tbody>" +
     D.refs.map(function (r) {
-      return "<tr><td>" + esc(r.name) + " <span class='sm'>" + esc(r.id) + "</span></td><td>" + r.node.dist_m.toLocaleString() + " m away, " + r.node.depth_m + " m deep</td>" +
+      return "<tr><td>" + esc(r.name) + " <span class='sm'>" + esc(r.id) + "</span></td><td>" + dist(r.node.dist_m) + " away, " + deep(r.node.depth_m) + " deep</td>" +
         "<td class='n'>" + (r.offset_ft == null ? "–" : "+" + r.offset_ft.toFixed(2)) + (r.offset_datum_ft != null ? "<span class='sm'>NOAA MSL: +" + r.offset_datum_ft.toFixed(2) + "</span>" : "") + "</td>" +
         "<td>" + esc(r.offset_method) + "</td><td class='n'>" + (r.check_rms_ft == null ? "–" : r.check_rms_ft.toFixed(2) + " ft") + "<span class='sm'>" + r.matched_hours + " h</span></td>" +
         "<td class='n'>" + ft(r.mhhw_ft) + "</td></tr>";
@@ -347,7 +350,7 @@ function pick(key, quiet) {
     (low && o.overtop_ft != null ? (o.reaches_utc ? " Reaches the level where the Bay comes over (" + ft(o.overtop_ft) + " ft) " + when(o.reaches_utc) + "."
       : " " + Math.abs(o.margin_ft).toFixed(2) + " ft below the level where the Bay comes over (" + ft(o.overtop_ft) + " ft).") : "") +
     (gp ? " At the " + r.name + " gauge’s model point: " + ft(gp[1]) + " ft, " + when(gp[0]) + "." : "") +
-    " Model point " + o.node.dist_m.toLocaleString() + " m away; offset to NAVD88 +" + (o.offset_ft == null ? "?" : o.offset_ft.toFixed(2)) + " ft." : "No values for this point.";
+    " Model point " + dist(o.node.dist_m) + " away; offset to NAVD88 +" + (o.offset_ft == null ? "?" : o.offset_ft.toFixed(2)) + " ft." : "No values for this point.";
   $("ch").setAttribute("aria-label", name + ". " + $("chSum").textContent);
   // the map: highlight, and show the model point used
   Object.keys(marks).forEach(function (k) { var m = marks[k]; m.setStyle({ weight: k === key ? 4 : m.options.baseWeight, radius: k === key ? 9 : m.options.baseRadius }); if (k === key) m.bringToFront(); });
@@ -355,7 +358,7 @@ function pick(key, quiet) {
     selLayer.clearLayers();
     var a = [o.lat, o.lon], n = [o.node.lat, o.node.lon];
     L.polyline([a, n], { color: "#ffffff", weight: 3, dashArray: "4 3" }).addTo(selLayer);
-    L.circleMarker(n, { radius: 6, color: "#fff", weight: 2, fillColor: "#c2185b", fillOpacity: 1 }).bindTooltip("Model point used: " + o.node.depth_m + " m deep").addTo(selLayer);
+    L.circleMarker(n, { radius: 6, color: "#fff", weight: 2, fillColor: "#c2185b", fillOpacity: 1 }).bindTooltip("Model point used: " + deep(o.node.depth_m) + " deep").addTo(selLayer);
     if (!quiet) map.fitBounds([a, n], { padding: [40, 40], maxZoom: 16 });   // zoom to the point and the model point it uses
   }
 }
