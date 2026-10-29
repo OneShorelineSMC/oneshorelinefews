@@ -44,6 +44,8 @@
   h2 { font-size: 16px; color: var(--ink); margin: 0 0 6px; }
   .note { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; }
   .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; background: #fff; }
+  .qc { margin: 0 0 8px; font-size: 14.5px; font-weight: 600; color: var(--warnink); background: var(--warnbg); border-radius: 8px; padding: 7px 10px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: .04em; color: #fff; background: #b45a00; border-radius: 999px; padding: 1px 8px; margin-right: 6px; vertical-align: 1px; }
   .warn { background: var(--warnbg); color: var(--warnink); border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; }
   .warn:empty { display: none; }
   .meta { font-size: 13.5px; color: var(--muted); }
@@ -87,6 +89,7 @@
 </div></header>
 <main>
   <div class="card">
+    <p class="qc"><span class="chip">BETA</span> Low points and creek outlet coordinates are undergoing QC review.</p>
     <p style="margin:0">NOAA’s San Francisco Bay model (SFBOFS) at the model point nearest each creek outlet and each shoreline low point:
       the last 6 hours and the next 48, in ft NAVD88. <b>A model projection, not a measurement</b> (there are no gauges there). It is
       for comparing with the NOAA tide gauges and isn’t reviewed yet. Nothing here sets a status or appears on the public pages.</p>
