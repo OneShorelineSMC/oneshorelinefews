@@ -347,6 +347,8 @@ data branch, from `scripts/outlet_tides.py` in the data job (it looks for a new 
   (`ofs_water_level`, ft NAVD88) minus the model at the gauge's nearest mesh point; if NOAA's projection isn't
   available, NOAA's published MSL above NAVD88 at the gauge. Each outlet uses the gauges' offsets weighted by
   1 / distance squared. The spread left after the offset is shown as a check.
+- **FEMA base flood elevation** (optional, `bfe_navd88_ft` in the outlet list): drawn on that outlet's graph as a reference
+  and compared with the model's peak in the table. San Mateo Creek: 10.39 ft NAVD88 (City of San Mateo, Oct 29, 2026).
 - **Shoreline low points** (added Oct 29): the Shoreline page's list (`lookups/shoreline_hotspots.csv`, or the draft in
   `lookups/proposed/`) gets the same treatment. The level where the Bay comes over is BCDC ART's (MHHW + 12, 24 or 36 in), with
   MHHW from NOAA's published datums at the three gauges (ft NAVD88), weighted by 1 / distance squared; the page shows the
