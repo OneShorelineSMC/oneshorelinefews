@@ -166,7 +166,7 @@ TH = [{"value": 2.0, "name": "Flood Monitoring", "level": 1}, {"value": 3.0, "na
 
 def creek(stage_pts, rains, levels=True, tidal=False, triggers=None, settings=None, tide=None):
     """rains: list of point lists, one per rain gauge (the first shown, the rest supporting)."""
-    g = {"key": "st", "reports": "interval", "tidal": tidal, "thresholds": TH if levels else []}
+    g = {"key": "st", "reports": "interval", "tidal": tidal, "thresholds": (levels if isinstance(levels, list) else TH) if levels else []}
     rg = [{"key": f"r{i}", "label": f"Rain {i}", "number": "41106"} for i in range(len(rains))]
     c = {"id": "x", "stages": [g], "rain": rg[:1], "rain_support": rg[1:], "rain_triggers": triggers or []}
     sens = {"st": {"points": stage_pts, "latest": None}}
@@ -182,6 +182,14 @@ dry = [[at(300), 0.0]]
 codes = lambda st: [r["code"] for r in st["reasons"]]       # noqa: E731
 st = creek(flat(4.2), [dry])
 check(st["key"] == "likely" and codes(st)[0] == "why_warning", f"Flood Warning = Flooding likely: {st}")
+TH4 = TH + [{"value": 6.0, "name": "Roadway Flooded", "level": 4, "public_note": "Water is spilling onto the road."}]
+st = creek(flat(5.0), [dry], levels=TH4)
+check(st["key"] == "likely" and codes(st)[0] == "why_warning", f"between Warning and Roadway Flooded = Flood Warning: {st}")
+st = creek(flat(6.1), [dry], levels=TH4)
+check(st["key"] == "likely" and st["reasons"][0] == {"code": "why_level_note", "text": "Water is spilling onto the road.", "name": "Roadway Flooded"},
+      f"Roadway Flooded reached = its public note as the reason: {st}")
+st = creek(flat(6.1), [dry], levels=TH + [{"value": 6.0, "name": "Major Flood Stage", "level": 4}])
+check(codes(st)[0] == "why_warning", f"a level 4 with no public note keeps the Flood Warning reason: {st}")
 st = creek([[at(m), 2.6] for m in range(120, 60, -15)] + [[at(m), 2.6 + (60 - m) * 0.012] for m in range(60, -1, -15)], [dry])
 check(st["key"] == "ready" and st["reasons"][0] == {"code": "why_watch", "rising_fast": True}, f"Watch, rising fast: {st}")
 st = creek(flat(1.0), [rain(0.1, 180), rain(0.1, 180)])

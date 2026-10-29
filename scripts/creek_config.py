@@ -235,6 +235,8 @@ def load_thresholds(creeks, tides, path=THRESHOLDS_CSV):
         item = {"value": value, "name": name, "level": level, "color": LEVEL_COLORS[level]}
         if r.get("notes"):
             item["note"] = r["notes"]
+        if r.get("public_note"):   # a level with a known effect on the ground (Atherton's spill onto the road): the
+            item["public_note"] = r["public_note"]   # reason the cards give when it's reached; its graph line is always drawn
         if typ == "stage":
             stage.setdefault(key, []).append(item)
             continue

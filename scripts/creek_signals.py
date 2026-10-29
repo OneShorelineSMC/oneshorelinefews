@@ -390,7 +390,7 @@ def creek_status(c, sens, tide, now, S):
     rain and rate of rise never lower a status. Returns a dict for creeks.json; words come from display_text.csv."""
     reasons, staff = [], []
     # Official level: highest threshold passed by any working stage gauge
-    level, level_name, working_stages, stage_rows = 0, None, 0, []
+    level, level_name, working_stages, stage_rows, level_note = 0, None, 0, [], None
     has_levels = any(g.get("thresholds") for g in c["stages"])
     for g in c["stages"]:
         e = sens.get(g["key"], {})
@@ -403,6 +403,7 @@ def creek_status(c, sens, tide, now, S):
         lv = [t for t in g.get("thresholds", []) if v >= t["value"]]
         if lv and lv[-1]["level"] > level:
             level, level_name = lv[-1]["level"], lv[-1]["name"]
+            level_note = lv[-1].get("public_note") if lv[-1]["level"] >= 4 else None
         stage_rows.append((g, sig, v))
     # Rain triggers in thresholds.csv (e.g. Belmont): rain over the window, plus a high tide if the trigger needs one
     trigger = None
@@ -469,7 +470,9 @@ def creek_status(c, sens, tide, now, S):
 
     # Reasons (codes for display_text.csv), most important first
     up = trend.get("trend") if trend else None
-    if level >= 3:
+    if level >= 4 and level_note:   # e.g. Atherton at Alameda de las Pulgas 10.40 ft: water spills onto the road
+        reasons.append({"code": "why_level_note", "text": level_note, "name": level_name})
+    elif level >= 3:
         reasons.append({"code": "why_warning"})
     elif level == 2:
         reasons.append({"code": "why_watch", "rising_fast": fast})
