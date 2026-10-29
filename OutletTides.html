@@ -23,11 +23,11 @@
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
-    --outlet: #0A5587; --gauge: #8a96a3; --noaa: #005A70; --table: #9aa5b1; --red: #c62828; --warnbg: #fff4e5; --warnink: #7a3d00; --sel: #e8f1fa; }
+    --outlet: #7A1F5C; --gauge: #4F641C; --noaa: #00838f; --table: #4a4f55; --red: #c0392b; --warnbg: #fff4e5; --warnink: #7a3d00; --sel: #e8f1fa; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
-    --outlet: #8cc8ff; --gauge: #7d8b9b; --noaa: #5fd0e0; --table: #66727f; --red: #ff8a80; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; } }
+    --outlet: #f08ac8; --gauge: #b5cc6a; --noaa: #4fc3d9; --table: #a7b0ba; --red: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; } }
   :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
-    --outlet: #8cc8ff; --gauge: #7d8b9b; --noaa: #5fd0e0; --table: #66727f; --red: #ff8a80; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; }
+    --outlet: #f08ac8; --gauge: #b5cc6a; --noaa: #4fc3d9; --table: #a7b0ba; --red: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
@@ -135,7 +135,7 @@
       <p class="note" style="margin:0">Blue circles: creek outlets. Small dots: shoreline low points, colored by margin
         (<span class="lgd" style="background:#d32f2f"></span>reaches its level, <span class="lgd" style="background:#f57c00"></span>within 0.5 ft,
         <span class="lgd" style="background:#cfd8dc"></span>below; paler = open land). Triangles: NOAA tide gauges. Select a row or a point:
-        the map zooms to it and a yellow dot shows the model point used. Satellite view helps check that it’s in open water, not marsh.</p>
+        the map zooms to it and a magenta dot (joined by a white dashed line) shows the SFBOFS model point used. Satellite view helps check that it’s in open water, not marsh.</p>
     </div>
   </div>
 
@@ -313,15 +313,17 @@ function pick(key, quiet) {
   var lvl = low ? o.overtop_ft : RED;
   var ys = all.map(function (p) { return p.y; }).concat(lvl != null ? [lvl] : []);
   var y0 = Math.floor(Math.min.apply(null, ys)) - 0.5, y1 = Math.ceil(Math.max.apply(null, ys)) + 0.5;
-  var sets = [
-    { label: "SFBOFS at the model point used for this " + (low ? "low point" : "outlet"), data: P(o.series), borderColor: css("--outlet"), borderWidth: 3, pointRadius: 0, tension: 0.3 },
-    r ? { label: "SFBOFS at the " + r.name + " gauge’s model point", data: P(r.series.model), borderColor: css("--gauge"), borderWidth: 1.5, pointRadius: 0, tension: 0.3 } : null,
-    r ? { label: "NOAA projection at " + r.name, data: P(r.series.noaa), borderColor: css("--noaa"), borderWidth: 2.5, borderDash: [0.1, 5], borderCapStyle: "round", pointRadius: 0 } : null,
-    r ? { label: "Tide table at " + r.name, data: P(r.series.table), borderColor: css("--table"), borderWidth: 1, pointRadius: 0, tension: 0.3 } : null,
-    lvl == null ? null : { label: low ? "Comes over here at " + ft(lvl) + " ft (BCDC ART, MHHW + " + o.level_in + " in)" : "Flood level " + RED.toFixed(1) + " ft (Redwood City, provisional)",
-      data: [{ x: x0, y: lvl }, { x: x1, y: lvl }], borderColor: css("--red"), borderWidth: 2, borderDash: [10, 3, 2, 3], pointRadius: 0 },
-    { label: "Now", data: [{ x: now, y: y0 }, { x: now, y: y1 }], borderColor: css("--muted"), borderWidth: 1, pointRadius: 0 }
-  ].filter(Boolean);
+  // Same lines as the Tides page for the same data (tide table thin gray, NOAA projection teal dotted, flood level red
+  // dash-dot); the SFBOFS model points in colors the tide pages don't use: magenta (this place), olive dashed (the gauge's)
+  var mine = { label: "SFBOFS at the model point used for this " + (low ? "low point" : "outlet"), data: P(o.series), borderColor: css("--outlet"), borderWidth: 3.5, pointRadius: 0, tension: 0.3 };
+  var gauge = r ? { label: "SFBOFS at the " + r.name + " gauge’s model point", data: P(r.series.model), borderColor: css("--gauge"), borderWidth: 2, borderDash: [7, 4], pointRadius: 0, tension: 0.3 } : null;
+  var proj = r ? { label: "NOAA projection at " + r.name, data: P(r.series.noaa), borderColor: css("--noaa"), borderWidth: 3, borderDash: [0.1, 5], borderCapStyle: "round", pointRadius: 0 } : null;
+  var table = r ? { label: "Tide table at " + r.name, data: P(r.series.table), borderColor: css("--table"), borderWidth: 1.5, pointRadius: 0, tension: 0.3 } : null;
+  var level = lvl == null ? null : { label: low ? "Comes over here at " + ft(lvl) + " ft (BCDC ART, MHHW + " + o.level_in + " in)" : "Flood level " + RED.toFixed(1) + " ft (Redwood City, provisional)",
+      data: [{ x: x0, y: lvl }, { x: x1, y: lvl }], borderColor: css("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0 };
+  var nowL = { label: "Now", data: [{ x: now, y: y0 }, { x: now, y: y1 }], borderColor: css("--muted"), borderWidth: 1, pointRadius: 0 };
+  var sets = [table, level, nowL, proj, gauge, mine].filter(Boolean);   // drawn in this order: this place's line on top
+  var keyOrder = [mine, gauge, proj, table, level].filter(Boolean);
   var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: "nearest", axis: "x", intersect: false },
     plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return fDay.format(new Date(it[0].parsed.x)); },
       label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
@@ -330,9 +332,10 @@ function pick(key, quiet) {
       y: { min: y0, max: y1, ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") } } } };
   if (chart) chart.destroy();
   chart = new Chart($("ch"), { type: "line", data: { datasets: sets }, options: opts });
-  $("key").innerHTML = sets.filter(function (s) { return s.label !== "Now"; }).map(function (s) {
-    var st = s.borderDash ? (s.borderDash[0] < 1 ? "dotted" : "dashed") : "solid";
-    return "<span><i style='border-top:" + Math.max(2, s.borderWidth) + "px " + st + " " + s.borderColor + "'></i>" + esc(s.label) + "</span>"; }).join("");
+  $("key").innerHTML = keyOrder.map(function (s) {   // each swatch drawn like its line (dash, dot, dash-dot)
+    var d = s.borderDash ? (s.borderDash[0] < 1 ? "0.1 " + s.borderDash[1] : s.borderDash.join(" ")) : "";
+    return "<span><svg width='26' height='8' aria-hidden='true' style='vertical-align:middle;margin-right:5px'><line x1='2' y1='4' x2='24' y2='4' stroke='" + s.borderColor +
+      "' stroke-width='" + Math.max(1.5, s.borderWidth) + "'" + (d ? " stroke-dasharray='" + d + "'" : "") + (s.borderCapStyle === "round" ? " stroke-linecap='round'" : "") + "/></svg>" + esc(s.label) + "</span>"; }).join("");
   var pk = peakIn(o.series, now, now + 48 * 3600000), gp = r && peakIn(r.series.model, now, now + 48 * 3600000);
   $("chSum").textContent = pk ? "SFBOFS highest at the model point for this " + (low ? "low point" : "outlet") + " in the next 48 hours: " + ft(pk[1]) + " ft NAVD88, " + when(pk[0]) + "." +
     (low && o.overtop_ft != null ? (o.reaches_utc ? " Reaches the level where the Bay comes over (" + ft(o.overtop_ft) + " ft) " + when(o.reaches_utc) + "."
@@ -345,8 +348,8 @@ function pick(key, quiet) {
   if (selLayer) {
     selLayer.clearLayers();
     var a = [o.lat, o.lon], n = [o.node.lat, o.node.lon];
-    L.polyline([a, n], { color: "#ffd54f", weight: 3, dashArray: "4 3" }).addTo(selLayer);
-    L.circleMarker(n, { radius: 5, color: "#000", weight: 1, fillColor: "#ffd54f", fillOpacity: 1 }).bindTooltip("Model point used: " + o.node.depth_m + " m deep").addTo(selLayer);
+    L.polyline([a, n], { color: "#ffffff", weight: 3, dashArray: "4 3" }).addTo(selLayer);
+    L.circleMarker(n, { radius: 6, color: "#fff", weight: 2, fillColor: "#c2185b", fillOpacity: 1 }).bindTooltip("Model point used: " + o.node.depth_m + " m deep").addTo(selLayer);
     if (!quiet) map.fitBounds([a, n], { padding: [40, 40], maxZoom: 16 });   // zoom to the point and the model point it uses
   }
 }
