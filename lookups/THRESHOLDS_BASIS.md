@@ -338,10 +338,10 @@ data branch, from `scripts/outlet_tides.py` in the data job (it looks for a new 
 - **Model:** NOAA's San Francisco Bay Operational Forecast System (SFBOFS, FVCOM), four runs a day (03, 09, 15, 21 UTC),
   from NOAA's public archive on Amazon (`noaa-nos-ofs-pds`): the 6-hour nowcast and 48-hour forecast, hourly. Only the
   water level (`zeta`) at the chosen mesh points is read, by byte range.
-- **Model point:** the nearest mesh point at least 0.5 m below the model's datum (so it stays wet at low tide); the
+- **Model point:** the nearest mesh point at least 1.6 ft (0.5 m) below the model's datum (so it stays wet at low tide); the
   nearest point of any depth is reported too. Of the 6 nearest such points, the nearest whose water level moves at least
   0.5 ft over the run is used (the first real run, Oct 29, found deep points in closed ponds near Seal, Belmont and Redwood
-  Creeks whose level never moved). Points more than 3 km away are flagged. To be checked on the page's map.
+  Creeks whose level never moved). Points more than about 2 miles (3 km) away are flagged. To be checked on the page's map.
 - **Datum:** the model's water level is relative to its own datum (about mean sea level). At San Francisco (9414290),
   Alameda (9414750) and Redwood City (9414523) the offset to NAVD88 is the median of NOAA's projection at the gauge
   (`ofs_water_level`, ft NAVD88) minus the model at the gauge's nearest mesh point; if NOAA's projection isn't
