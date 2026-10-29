@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>Bay model at creek outlets · OneShoreline staff</title>
+<!-- Staff beta (2026-10-29): NOAA's San Francisco Bay model (SFBOFS) at the mesh point nearest each creek outlet, next
+     to the tide table and NOAA's projection at the nearest NOAA tide gauges. Linked from staff.html only; not linked
+     from the public pages and never sets a status. Data: outlet_tides.json on the data branch, written by
+     scripts/outlet_tides.py in the data job (about 2 hours after each model run: 03, 09, 15, 21 UTC). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+  crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
+    --outlet: #0A5587; --gauge: #8a96a3; --noaa: #005A70; --table: #9aa5b1; --red: #c62828; --warnbg: #fff4e5; --warnink: #7a3d00; --sel: #e8f1fa; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --outlet: #8cc8ff; --gauge: #7d8b9b; --noaa: #5fd0e0; --table: #66727f; --red: #ff8a80; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; } }
+  :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --outlet: #8cc8ff; --gauge: #7d8b9b; --noaa: #5fd0e0; --table: #66727f; --red: #ff8a80; --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap, main { max-width: 1100px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header img { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; }
+  header a { color: #fff; }
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  main { padding: 12px 16px 40px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+  h2 { font-size: 16px; color: var(--ink); margin: 0 0 6px; }
+  .note { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; background: #fff; }
+  .warn { background: var(--warnbg); color: var(--warnink); border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; }
+  .warn:empty { display: none; }
+  .meta { font-size: 13.5px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  #map { height: 380px; border-radius: 8px; }
+  .chartbox { position: relative; height: 320px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-top: 0; white-space: nowrap; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.row { cursor: pointer; }
+  tr.row:hover td, tr.row.on td { background: var(--sel); }
+  tr.row button { all: unset; cursor: pointer; color: var(--link); font-weight: 600; }
+  tr.row button:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; border-radius: 3px; }
+  .sm { display: block; font-size: 12.5px; color: var(--muted); }
+  .flag { color: var(--warnink); background: var(--warnbg); border-radius: 4px; padding: 0 4px; font-size: 12px; font-weight: 600; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .key i { display: inline-block; width: 20px; height: 0; vertical-align: middle; margin-right: 5px; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details p, details li { font-size: 14px; }
+  code { font-size: 12.5px; }
+  a { color: var(--link); }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <img src="img/oneshoreline-mark-white.png" alt="">
+  <div><h1>Bay model at creek outlets <span class="tag">BETA</span></h1><div class="org"><a href="staff.html">Staff tools</a> · OneShoreline Flood Early Warning</div></div>
+  <div class="h911">In an emergency, call 911.</div>
+</div></header>
+<main>
+  <div class="card">
+    <p style="margin:0">NOAA’s San Francisco Bay model (SFBOFS) at the model point nearest each creek outlet: the last 6 hours and the
+      next 48, in ft NAVD88. <b>A model projection, not a measurement</b> (there are no gauges at the outlets). It is
+      for comparing with the NOAA tide gauges and isn’t reviewed yet. Nothing here sets a status or appears on the public pages.</p>
+    <p class="meta" id="meta" style="margin:6px 0 0">Loading…</p>
+    <div class="warn" id="warn"></div>
+  </div>
+
+  <div class="card">
+    <h2>Highest water at each outlet, next 48 hours</h2>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Outlets table (scrolls sideways)"><table id="tbl" aria-describedby="tblnote"></table></div>
+    <p class="note" id="tblnote">“vs gauge”: the outlet’s peak minus the model’s peak at the nearest NOAA tide gauge over the same hours
+      (positive = higher at the outlet). Select a row for its graph and map.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2 id="chTitle">Outlet</h2>
+      <div class="chartbox"><canvas id="ch" role="img" aria-label="Water level graph"></canvas></div>
+      <div class="key" id="key"></div>
+      <p class="note" id="chSum" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <h2>Outlets and model points</h2>
+      <div id="map" role="region" aria-label="Map of creek outlets and the model points used"></div>
+      <p class="note">Circles: outlets (from the creek outlet list). Small squares: the model point used for each, joined by a line.
+        Triangles: NOAA tide gauges. Satellite view helps check that a model point is in open water, not marsh.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Datum check at the NOAA gauges</h2>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Datum check table (scrolls sideways)"><table id="refs"></table></div>
+    <p class="note">The model’s water level is relative to its own datum (about mean sea level). At each gauge, the offset to NAVD88 is the
+      median difference between NOAA’s projection at the gauge (ft NAVD88) and the model at the gauge’s nearest model point.
+      “Left over” is the spread that remains after the offset; a few hundredths of a foot means the method reproduces NOAA’s
+      own projection there. Each outlet uses the gauges’ offsets weighted by distance.</p>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>How this works</summary>
+      <ul>
+        <li><b>Outlets:</b> <code>lookups/creek_outlets.csv</code> once reviewed, otherwise the draft
+          <code>lookups/proposed/creek_outlets.csv</code> (rows with include = no left out). Outlets at the same point are read once.</li>
+        <li><b>Model:</b> SFBOFS (FVCOM, about 100,000 points), from NOAA’s public archive on Amazon. Four runs a day (03, 09, 15, 21 UTC),
+          usually available about 2 hours later; only the water level at the chosen points is read.</li>
+        <li><b>Model point:</b> the nearest point at least <span id="mind">0.5</span> m below the model’s datum, so it stays wet at low tide.
+          The nearest point of any depth is listed too; a big gap means the outlet is up a slough or behind marsh.</li>
+        <li><b>Comparison lines:</b> at the nearest of San Francisco (9414290), Alameda (9414750) and Redwood City (9414523): the model at the gauge,
+          NOAA’s projection there (should overlap the model line) and the tide table.</li>
+        <li><b>Log:</b> each run’s peak at each outlet and the datum check go to <code>outlet_tides_log.csv</code> on the data branch (60 days),
+          to compare with what happens.</li>
+        <li><b>Not included:</b> creek flow, waves and wind setup at the shoreline; the model’s resolution in narrow channels.</li>
+      </ul>
+      <p><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/scripts/outlet_tides.py" target="_blank" rel="noopener">scripts/outlet_tides.py</a> ·
+        <a href="https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/outlet_tides_log.csv" target="_blank" rel="noopener">the log (CSV)</a></p>
+    </details>
+  </div>
+</main>
+<script src="lookups.js?v=20261029a"></script>
+<script>
+"use strict";
+var DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/outlet_tides.json";
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function ms(iso) { return Date.parse(iso.replace("Z", ":00Z")); }
+var fDay = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
+var fHour = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric" });
+var fWd = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short" });
+function when(iso) { return fDay.format(new Date(ms(iso))); }
+function ft(v) { return v == null ? "–" : v.toFixed(2); }
+var RED = (window.LK && isFinite(LK.num("TIDE_RED_FT_RWC"))) ? LK.num("TIDE_RED_FT_RWC") : 8.5;
+
+var D = null, sel = null, chart = null, map = null, marks = [], over = null, fitted = false;
+
+function peakIn(series, t0, t1) {
+  var best = null;
+  (series || []).forEach(function (p) { var t = ms(p[0]); if (t >= t0 && t <= t1 && (!best || p[1] > best[1])) best = p; });
+  return best;
+}
+function refOf(o) { return D.refs.filter(function (r) { return r.id === o.nearest_gauge; })[0]; }
+
+function render() {
+  var now = Date.now(), end = now + 48 * 3600000;
+  $("meta").innerHTML = "Model run " + esc(when(D.cycle_utc)) + " (" + esc(D.cycle_utc.slice(11, 16)) + " UTC) · read " + esc(when(D.generated_utc)) +
+    " · " + D.outlets.length + " outlet points from <code>" + esc(D.outlets_source) + "</code> · " + esc(D.format) + ", " + D.mesh_points.toLocaleString() + " model points";
+  var old = now - ms(D.cycle_utc) > 14 * 3600000;
+  $("warn").textContent = (D.problem ? "The last look for a new model run had a problem: " + D.problem + ". " : "") +
+    (old ? "This model run is more than 14 hours old; NOAA may be late, or the data job can’t reach it." : "");
+  $("mind").textContent = D.min_depth_m;
+  var rows = D.outlets.map(function (o, i) {
+    var r = refOf(o), pk = peakIn(o.series, now, end), gp = r && peakIn(r.series.model, now, end);
+    return { o: o, i: i, r: r, pk: pk, diff: pk && gp ? pk[1] - gp[1] : null };
+  }).sort(function (a, b) { return (b.pk ? b.pk[1] : -99) - (a.pk ? a.pk[1] : -99); });
+  if (sel == null || sel >= D.outlets.length) sel = rows.length ? rows[0].i : 0;   // first time: the highest outlet
+  $("tbl").innerHTML = "<thead><tr><th>Outlet</th><th>City</th><th class='n'>Highest (ft NAVD88)</th><th>When</th><th class='n'>vs gauge</th><th>Model point</th></tr></thead><tbody>" +
+    rows.map(function (x) {
+      var o = x.o, n = o.node;
+      return "<tr class='row" + (x.i === sel ? " on" : "") + "' data-i='" + x.i + "'><td><button type='button' data-i='" + x.i + "'>" + esc(o.creeks.join(" / ")) + "</button>" +
+        "<span class='sm'>" + esc(o.ids.join(", ")) + "</span></td><td>" + esc(o.city) + "</td>" +
+        "<td class='n'><b>" + (x.pk ? ft(x.pk[1]) : "–") + "</b>" + (x.pk && x.pk[1] >= RED ? " <span class='flag'>≥ " + RED.toFixed(1) + "</span>" : "") + "</td>" +
+        "<td>" + (x.pk ? esc(when(x.pk[0])) : "") + "</td>" +
+        "<td class='n'>" + (x.diff == null ? "–" : (x.diff >= 0 ? "+" : "−") + Math.abs(x.diff).toFixed(2)) + "<span class='sm'>" + esc(x.r ? x.r.name : "") + "</span></td>" +
+        "<td>" + n.dist_m.toLocaleString() + " m away, " + n.depth_m + " m deep" + (n.far ? " <span class='flag'>far</span>" : "") +
+        (n.nearest_any_m < n.dist_m - 50 ? "<span class='sm'>nearest point of any depth: " + n.nearest_any_m.toLocaleString() + " m</span>" : "") + "</td></tr>";
+    }).join("") + "</tbody>";
+  $("refs").innerHTML = "<thead><tr><th>Gauge</th><th>Model point</th><th class='n'>Offset (ft)</th><th>How</th><th class='n'>Left over</th></tr></thead><tbody>" +
+    D.refs.map(function (r) {
+      return "<tr><td>" + esc(r.name) + " <span class='sm'>" + esc(r.id) + "</span></td><td>" + r.node.dist_m.toLocaleString() + " m away, " + r.node.depth_m + " m deep</td>" +
+        "<td class='n'>" + (r.offset_ft == null ? "–" : "+" + r.offset_ft.toFixed(2)) + (r.offset_datum_ft != null ? "<span class='sm'>NOAA MSL: +" + r.offset_datum_ft.toFixed(2) + "</span>" : "") + "</td>" +
+        "<td>" + esc(r.offset_method) + "</td><td class='n'>" + (r.check_rms_ft == null ? "–" : r.check_rms_ft.toFixed(2) + " ft") + "<span class='sm'>" + r.matched_hours + " h</span></td></tr>";
+    }).join("") + "</tbody>";
+  drawMap();
+  pick(sel);
+}
+
+function pick(i) {
+  sel = i;
+  Array.prototype.forEach.call(document.querySelectorAll("tr.row"), function (tr) { tr.classList.toggle("on", +tr.getAttribute("data-i") === i); });
+  var o = D.outlets[i], r = refOf(o), now = Date.now();
+  $("chTitle").textContent = o.creeks.join(" / ") + " outlet";
+  var L = function (s) { return (s || []).map(function (p) { return { x: ms(p[0]), y: p[1] }; }); };
+  var all = L(o.series).concat(r ? L(r.series.model).concat(L(r.series.table)) : []);
+  var x0 = Math.min.apply(null, all.map(function (p) { return p.x; })), x1 = Math.max.apply(null, all.map(function (p) { return p.x; }));
+  var ys = all.map(function (p) { return p.y; }).concat([RED]);
+  var sets = [
+    { label: "Model at the outlet", data: L(o.series), borderColor: css("--outlet"), borderWidth: 3, pointRadius: 0, tension: 0.3 },
+    r ? { label: "Model at " + r.name + " gauge", data: L(r.series.model), borderColor: css("--gauge"), borderWidth: 1.5, pointRadius: 0, tension: 0.3 } : null,
+    r ? { label: "NOAA projection at " + r.name, data: L(r.series.noaa), borderColor: css("--noaa"), borderWidth: 2.5, borderDash: [0.1, 5], borderCapStyle: "round", pointRadius: 0 } : null,
+    r ? { label: "Tide table at " + r.name, data: L(r.series.table), borderColor: css("--table"), borderWidth: 1, pointRadius: 0, tension: 0.3 } : null,
+    { label: "Flood level " + RED.toFixed(1) + " ft (Redwood City, provisional)", data: [{ x: x0, y: RED }, { x: x1, y: RED }], borderColor: css("--red"), borderWidth: 2, borderDash: [10, 3, 2, 3], pointRadius: 0 },
+    { label: "Now", data: [{ x: now, y: Math.floor(Math.min.apply(null, ys)) - 0.5 }, { x: now, y: Math.ceil(Math.max.apply(null, ys)) + 0.5 }], borderColor: css("--muted"), borderWidth: 1, pointRadius: 0 }
+  ].filter(Boolean);
+  var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false, interaction: { mode: "nearest", axis: "x", intersect: false },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return fDay.format(new Date(it[0].parsed.x)); },
+      label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
+    scales: { x: { type: "linear", min: x0, max: x1, ticks: { stepSize: 6 * 3600000, color: css("--muted"), callback: function (v) {
+        var d = new Date(v), h = fHour.format(d); return h === "12 AM" ? fWd.format(d) : h; } }, grid: { color: css("--line") } },
+      y: { min: Math.floor(Math.min.apply(null, ys)) - 0.5, max: Math.ceil(Math.max.apply(null, ys)) + 0.5,
+        ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") } } } };
+  if (chart) chart.destroy();
+  chart = new Chart($("ch"), { type: "line", data: { datasets: sets }, options: opts });
+  $("key").innerHTML = sets.filter(function (s) { return s.label !== "Now"; }).map(function (s) {
+    var st = s.borderDash ? (s.borderDash[0] < 1 ? "dotted" : "dashed") : "solid";
+    return "<span><i style='border-top:" + Math.max(2, s.borderWidth) + "px " + st + " " + s.borderColor + "'></i>" + esc(s.label) + "</span>"; }).join("");
+  var pk = peakIn(o.series, now, now + 48 * 3600000), gp = r && peakIn(r.series.model, now, now + 48 * 3600000);
+  $("chSum").textContent = pk ? "Highest at the outlet in the next 48 hours: " + ft(pk[1]) + " ft NAVD88, " + when(pk[0]) + "." +
+    (gp ? " At the " + r.name + " gauge (model): " + ft(gp[1]) + " ft, " + when(gp[0]) + "." : "") +
+    " Model point " + o.node.dist_m.toLocaleString() + " m from the outlet; offset to NAVD88 +" + (o.offset_ft == null ? "?" : o.offset_ft.toFixed(2)) + " ft." : "No values for this outlet.";
+  $("ch").setAttribute("aria-label", $("chSum").textContent);
+  marks.forEach(function (m) { m.o.setStyle({ weight: m.i === i ? 4 : 2, radius: m.i === i ? 9 : 6 }); });
+  var m = marks.filter(function (m) { return m.i === i; })[0];
+  if (m && map) map.panTo(m.o.getLatLng());
+}
+
+function drawMap() {
+  if (!window.L) return;
+  if (!map) {
+    map = L.map("map", { scrollWheelZoom: false });
+    var esri = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+    var sat = L.layerGroup([L.tileLayer(esri + "World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" }),
+      L.tileLayer(esri + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 })]);
+    var osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+    sat.addTo(map);
+    L.control.layers({ "Satellite": sat, "Streets": osm }, null, { collapsed: true }).addTo(map);
+    over = L.layerGroup().addTo(map);
+  }
+  over.clearLayers();   // redrawn on each reload
+  marks = [];
+  var b = [];
+  D.outlets.forEach(function (o, i) {
+    var a = [o.lat, o.lon], n = [o.node.lat, o.node.lon];
+    L.polyline([a, n], { color: "#ffd54f", weight: 2, dashArray: "4 3" }).addTo(over);
+    L.rectangle([[n[0] - 0.0004, n[1] - 0.0005], [n[0] + 0.0004, n[1] + 0.0005]], { color: "#ffd54f", weight: 1, fillOpacity: 0.9 })
+      .bindTooltip("Model point for " + esc(o.creeks.join(" / ")) + ": " + o.node.depth_m + " m deep").addTo(over);
+    var c = L.circleMarker(a, { radius: 6, color: "#fff", weight: 2, fillColor: "#0A5587", fillOpacity: 1 })
+      .bindTooltip(esc(o.creeks.join(" / ")) + " outlet").on("click", function () { pick(i); }).addTo(over);
+    marks.push({ i: i, o: c });
+    b.push(a, n);
+  });
+  D.refs.forEach(function (r) {
+    L.marker([r.lat, r.lon], { icon: L.divIcon({ className: "", html: "<div style='width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #e65100'></div>", iconSize: [16, 14], iconAnchor: [8, 7] }), title: "NOAA gauge " + r.name + " (" + r.id + ")", alt: "NOAA gauge " + r.name, keyboard: false })
+      .bindTooltip("NOAA gauge " + esc(r.name) + " (" + esc(r.id) + ")").addTo(over);
+    b.push([r.lat, r.lon]);
+  });
+  if (!fitted) { map.fitBounds(b, { padding: [16, 16] }); fitted = true; }
+}
+
+document.addEventListener("click", function (e) {
+  var t = e.target.closest && e.target.closest("tr.row, tr.row button");
+  if (t) pick(+t.getAttribute("data-i") || +t.closest("tr").getAttribute("data-i"));
+});
+function load() {
+  fetch(DATA_URL + "?t=" + Math.floor(Date.now() / 300000), { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error(r.status === 404 ? "no model data published yet (the data job writes it after the next model run)" : "HTTP " + r.status);
+    return r.json();
+  }).then(function (d) {
+    D = d;
+    if (!D.outlets || !D.outlets.length) throw new Error(D.problem || "no outlets in the data");
+    render();
+  }).catch(function (e) { $("meta").textContent = "Couldn’t load the model data: " + e.message + "."; });
+}
+load();
+setInterval(load, 15 * 60000);
+</script>
+</body>
+</html>
