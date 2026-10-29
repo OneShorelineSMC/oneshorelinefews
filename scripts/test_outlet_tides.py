@@ -210,6 +210,9 @@ check("low point list loads", len(lp) > 50 and lsrc.endswith("shoreline_hotspots
 
 pts2, src = O.load_outlets()
 check("outlet list loads, shared outlets read once", len(pts2) > 10 and len(pts2) < 27 and src.endswith("creek_outlets.csv"))
+check("San Mateo Creek's FEMA BFE comes through", [p.get("bfe_ft") for p in pts2 if "CO-011" in p["ids"]] == [10.39])
+again = O.run(NOW, out, [dict(outlets[0], bfe_ft=9.9)], "test", get_list=get_list, fetch=fetch, log=lambda *a: None, lowpoints=lows, lp_source="lp")
+check("a BFE added: run again, and it is in the output", again is not None and again["outlets"][0]["bfe_ft"] == 9.9)
 
 print("outlet_tides: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)

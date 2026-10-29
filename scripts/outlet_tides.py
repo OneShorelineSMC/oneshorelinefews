@@ -490,6 +490,11 @@ def load_outlets(path=None):
             k = (round(lat, 5), round(lon, 5))
             p = pts.setdefault(k, {"ids": [], "creeks": [], "fews": [], "city": r.get("city", ""), "lat": lat, "lon": lon})
             p["ids"].append(r.get("id", ""))
+            try:   # FEMA base flood elevation at the outlet, if staff have one (ft NAVD88); a reference line on the staff page
+                bfe = float(r.get("bfe_navd88_ft") or "")
+                p["bfe_ft"] = max(bfe, p.get("bfe_ft", bfe))
+            except ValueError:
+                pass
             for key, col in (("creeks", "creek"), ("fews", "fews_creek")):
                 v = (r.get(col) or "").strip()
                 if v and v not in p[key]:
@@ -524,7 +529,7 @@ def run(now, previous, outlets, source, get_list=None, fetch_nc=None, fetch=get_
         raise RuntimeError("no complete SFBOFS run found on the NOAA archive for today or yesterday")
     cyc = found["cycle"]
     lowpoints = lowpoints or []
-    sig = "|".join("%.5f,%.5f" % (o["lat"], o["lon"]) for o in outlets) + "#" + "|".join(
+    sig = "|".join("%.5f,%.5f,%s" % (o["lat"], o["lon"], o.get("bfe_ft", "")) for o in outlets) + "#" + "|".join(
         "%s,%.5f,%.5f,%g" % (p["id"], p["lat"], p["lon"], p["level_in"]) for p in lowpoints)
     if previous.get("cycle_utc") == iso(cyc) and previous.get("outlets_sig") == sig:
         log("  model run %s already done" % iso(cyc))
