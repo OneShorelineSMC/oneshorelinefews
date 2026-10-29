@@ -68,6 +68,8 @@
   .mg.reach { background: #d32f2f; color: #fff; } .mg.near { background: #f57c00; color: #1a1a1a; }
   tr.open td { color: var(--muted); }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 4px 0 8px; font-size: 14px; }
+  select { font: inherit; font-size: 14px; padding: 4px 6px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); min-height: 32px; }
+  .seg label { margin-left: 10px; white-space: nowrap; cursor: pointer; }
   .btn { font: inherit; font-size: 14px; color: var(--link); background: transparent; border: 1.5px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; min-height: 32px; }
   .btn:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
   .lgd { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #263238; vertical-align: -1px; margin-right: 4px; }
@@ -90,11 +92,19 @@
       for comparing with the NOAA tide gauges and isn’t reviewed yet. Nothing here sets a status or appears on the public pages.</p>
     <p class="meta" id="meta" style="margin:6px 0 0">Loading…</p>
     <div class="warn" id="warn"></div>
+    <div class="bar" style="margin:10px 0 0">
+      <label>City <select id="city"><option value="">All cities</option></select></label>
+      <span role="radiogroup" aria-label="Order of the tables" class="seg">Order:
+        <label><input type="radio" name="ord" value="high" checked> Highest first</label>
+        <label><input type="radio" name="ord" value="ns"> North to south</label>
+        <label><input type="radio" name="ord" value="az"> A to Z</label></span>
+    </div>
   </div>
 
   <div class="card">
     <h2>Highest water at each outlet, next 48 hours</h2>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Outlets table (scrolls sideways)"><table id="tbl" aria-describedby="tblnote"></table></div>
+    <p class="note" id="tblnone" hidden>No creek outlets in this city.</p>
     <p class="note" id="tblnote">“vs gauge”: the outlet’s peak minus the model’s peak at the nearest NOAA tide gauge over the same hours
       (positive = higher at the outlet). Select a row for its graph and map.</p>
   </div>
@@ -120,7 +130,7 @@
     <div class="card">
       <h2>Map</h2>
       <div id="map" role="region" aria-label="Map of creek outlets, shoreline low points and the model points used"></div>
-      <div class="bar" style="margin-top:6px"><button type="button" class="btn" id="mapall">Zoom out to everything</button></div>
+      <div class="bar" style="margin-top:6px"><button type="button" class="btn" id="mapall">Zoom out to everything shown</button></div>
       <p class="note" style="margin:0">Blue circles: creek outlets. Small dots: shoreline low points, colored by margin
         (<span class="lgd" style="background:#d32f2f"></span>reaches its level, <span class="lgd" style="background:#f57c00"></span>within 0.5 ft,
         <span class="lgd" style="background:#cfd8dc"></span>below; paler = open land). Triangles: NOAA tide gauges. Select a row or a point:
@@ -150,7 +160,8 @@
         <li><b>Model:</b> SFBOFS (FVCOM, about 100,000 points), from NOAA’s public archive on Amazon. Four runs a day (03, 09, 15, 21 UTC),
           usually available about 2 hours later; only the water level at the chosen points is read.</li>
         <li><b>Model point:</b> the nearest point at least <span id="mind">0.5</span> m below the model’s datum, so it stays wet at low tide.
-          The nearest point of any depth is listed too; a big gap means the outlet is up a slough or behind marsh.</li>
+          Of the 6 nearest such points, the nearest whose level moves with the tide (at least 0.5 ft over the run) is used, since some deep
+          points are in closed ponds. The nearest point of any depth is listed too; a big gap means the place is up a slough or behind marsh.</li>
         <li><b>Comparison lines:</b> at the nearest of San Francisco (9414290), Alameda (9414750) and Redwood City (9414523): the model at the gauge,
           NOAA’s projection there (should overlap the model line) and the tide table.</li>
         <li><b>Log:</b> each run’s peak at each outlet and the datum check go to <code>outlet_tides_log.csv</code> on the data branch (60 days),
@@ -182,6 +193,20 @@ var LOW_SHOWN = 20;     // low points listed before "Show all"
 
 // sel: "o3" = outlet 3, "l12" = low point 12
 var D = null, sel = null, chart = null, map = null, marks = {}, over = null, selLayer = null, fitted = false, allBounds = [], showAll = false, devOnly = false;
+var city = "", ord = "high";   // the city picker and the order of the tables (remembered on this device)
+try { city = new URLSearchParams(location.search).get("city") || localStorage.getItem("ot_city") || ""; ord = localStorage.getItem("ot_ord") || "high"; } catch (e) { /* no storage */ }
+function cityOf(x) { return String(x.city || "").replace(/\s*\(nearest\)$/i, ""); }
+function inCity(x) { return !city || cityOf(x) === city; }
+function nameOf(x) { return x.creeks ? oName(x) : x.name; }
+// "Highest first" (outlets: highest water; low points: closest to coming over), "North to south", "A to Z"
+function orderBy(list, high, get) {
+  return list.sort(function (a, b) {
+    var A = get(a), B = get(b);
+    if (ord === "ns") return B.lat - A.lat;
+    if (ord === "az") return nameOf(A).localeCompare(nameOf(B)) || B.lat - A.lat;
+    return high(b) - high(a);
+  });
+}
 
 function peakIn(series, t0, t1) {
   var best = null;
@@ -210,11 +235,18 @@ function render() {
   $("mind").textContent = D.min_depth_m;
 
   // outlets
+  // the city picker: every city with an outlet or a low point
+  var cities = {}; D.outlets.concat(LP).forEach(function (x) { if (cityOf(x)) cities[cityOf(x)] = 1; });
+  if (city && !cities[city]) city = "";
+  $("city").innerHTML = "<option value=''>All cities</option>" + Object.keys(cities).sort().map(function (c) {
+    return "<option" + (c === city ? " selected" : "") + ">" + esc(c) + "</option>"; }).join("");
+  Array.prototype.forEach.call(document.querySelectorAll("input[name=ord]"), function (r) { r.checked = r.value === ord; });
   var rows = D.outlets.map(function (o, i) {
     var r = refOf(o), pk = peakIn(o.series, now, end), gp = r && peakIn(r.series.model, now, end);
     return { o: o, k: "o" + i, r: r, pk: pk, diff: pk && gp ? pk[1] - gp[1] : null };
-  }).sort(function (a, b) { return (b.pk ? b.pk[1] : -99) - (a.pk ? a.pk[1] : -99); });
-  if (!sel || !item(sel)) sel = rows.length ? rows[0].k : null;   // first time: the highest outlet
+  }).filter(function (x) { return inCity(x.o); });
+  orderBy(rows, function (x) { return x.pk ? x.pk[1] : -99; }, function (x) { return x.o; });
+  $("tbl").parentNode.hidden = !rows.length;
   $("tbl").innerHTML = "<thead><tr><th>Outlet</th><th>City</th><th class='n'>Highest (ft NAVD88)</th><th>When</th><th class='n'>vs gauge</th><th>Model point</th></tr></thead><tbody>" +
     rows.map(function (x) {
       var o = x.o;
@@ -226,11 +258,14 @@ function render() {
     }).join("") + "</tbody>";
 
   // shoreline low points: closest to coming over first
+  $("tblnone").hidden = rows.length > 0;
   $("lpcard").hidden = !LP.length;
-  var lr = LP.map(function (p, i) { return { p: p, k: "l" + i }; }).filter(function (x) { return !devOnly || x.p.developed; })
-    .sort(function (a, b) { return (b.p.margin_ft == null ? -99 : b.p.margin_ft) - (a.p.margin_ft == null ? -99 : a.p.margin_ft); });
+  var lr = LP.map(function (p, i) { return { p: p, k: "l" + i }; }).filter(function (x) { return (!devOnly || x.p.developed) && inCity(x.p); });
+  orderBy(lr, function (x) { return x.p.margin_ft == null ? -99 : x.p.margin_ft; }, function (x) { return x.p; });
+  // what the graph shows: the selection if it is still in view, else the first outlet (or low point) listed
+  if (!sel || !item(sel) || !inCity(item(sel))) sel = rows.length ? rows[0].k : lr.length ? lr[0].k : null;
   var reach = lr.filter(function (x) { return lpState(x.p) === "reach"; }).length, near = lr.filter(function (x) { return lpState(x.p) === "near"; }).length;
-  $("lpsum").textContent = reach ? reach + " low point" + (reach > 1 ? "s" : "") + " reach their level in the next 48 hours" + (near ? "; " + near + " more within " + NEAR_FT + " ft." : ".")
+  $("lpsum").textContent = !lr.length ? "No low points " + (city ? "in " + city : "") + (devOnly ? " on developed shoreline" : "") + "." : reach ? reach + " low point" + (reach > 1 ? "s" : "") + " reach their level in the next 48 hours" + (near ? "; " + near + " more within " + NEAR_FT + " ft." : ".")
     : near ? "None reach their level in the next 48 hours; " + near + " within " + NEAR_FT + " ft." : "None reach their level or come within " + NEAR_FT + " ft in the next 48 hours.";
   var shown = showAll ? lr : lr.slice(0, LOW_SHOWN);
   $("lptbl").innerHTML = "<thead><tr><th>Low point</th><th>City</th><th class='n'>Comes over at</th><th class='n'>Highest, next 48 h</th><th class='n'>Margin</th><th>First reaches</th><th>Model point</th></tr></thead><tbody>" +
@@ -259,7 +294,11 @@ function render() {
 }
 
 function pick(key, quiet) {
-  if (!key || !item(key)) return;
+  if (!key || !item(key)) {
+    if (chart) { chart.destroy(); chart = null; }
+    $("chTitle").textContent = "Nothing to show"; $("key").innerHTML = ""; $("chSum").textContent = ""; if (selLayer) selLayer.clearLayers();
+    return;
+  }
   sel = key;
   Array.prototype.forEach.call(document.querySelectorAll("tr.row"), function (tr) { tr.classList.toggle("on", tr.getAttribute("data-k") === key); });
   var o = item(key), low = key[0] === "l", r = refOf(o), now = Date.now();
@@ -272,8 +311,8 @@ function pick(key, quiet) {
   var ys = all.map(function (p) { return p.y; }).concat(lvl != null ? [lvl] : []);
   var y0 = Math.floor(Math.min.apply(null, ys)) - 0.5, y1 = Math.ceil(Math.max.apply(null, ys)) + 0.5;
   var sets = [
-    { label: "Model " + (low ? "at the low point" : "at the outlet"), data: P(o.series), borderColor: css("--outlet"), borderWidth: 3, pointRadius: 0, tension: 0.3 },
-    r ? { label: "Model at " + r.name + " gauge", data: P(r.series.model), borderColor: css("--gauge"), borderWidth: 1.5, pointRadius: 0, tension: 0.3 } : null,
+    { label: "SFBOFS at the model point used for this " + (low ? "low point" : "outlet"), data: P(o.series), borderColor: css("--outlet"), borderWidth: 3, pointRadius: 0, tension: 0.3 },
+    r ? { label: "SFBOFS at the " + r.name + " gauge’s model point", data: P(r.series.model), borderColor: css("--gauge"), borderWidth: 1.5, pointRadius: 0, tension: 0.3 } : null,
     r ? { label: "NOAA projection at " + r.name, data: P(r.series.noaa), borderColor: css("--noaa"), borderWidth: 2.5, borderDash: [0.1, 5], borderCapStyle: "round", pointRadius: 0 } : null,
     r ? { label: "Tide table at " + r.name, data: P(r.series.table), borderColor: css("--table"), borderWidth: 1, pointRadius: 0, tension: 0.3 } : null,
     lvl == null ? null : { label: low ? "Comes over here at " + ft(lvl) + " ft (BCDC ART, MHHW + " + o.level_in + " in)" : "Flood level " + RED.toFixed(1) + " ft (Redwood City, provisional)",
@@ -292,10 +331,10 @@ function pick(key, quiet) {
     var st = s.borderDash ? (s.borderDash[0] < 1 ? "dotted" : "dashed") : "solid";
     return "<span><i style='border-top:" + Math.max(2, s.borderWidth) + "px " + st + " " + s.borderColor + "'></i>" + esc(s.label) + "</span>"; }).join("");
   var pk = peakIn(o.series, now, now + 48 * 3600000), gp = r && peakIn(r.series.model, now, now + 48 * 3600000);
-  $("chSum").textContent = pk ? "Highest " + (low ? "at the low point" : "at the outlet") + " in the next 48 hours: " + ft(pk[1]) + " ft NAVD88, " + when(pk[0]) + "." +
+  $("chSum").textContent = pk ? "SFBOFS highest at the model point for this " + (low ? "low point" : "outlet") + " in the next 48 hours: " + ft(pk[1]) + " ft NAVD88, " + when(pk[0]) + "." +
     (low && o.overtop_ft != null ? (o.reaches_utc ? " Reaches the level where the Bay comes over (" + ft(o.overtop_ft) + " ft) " + when(o.reaches_utc) + "."
       : " " + Math.abs(o.margin_ft).toFixed(2) + " ft below the level where the Bay comes over (" + ft(o.overtop_ft) + " ft).") : "") +
-    (gp ? " At the " + r.name + " gauge (model): " + ft(gp[1]) + " ft, " + when(gp[0]) + "." : "") +
+    (gp ? " At the " + r.name + " gauge’s model point: " + ft(gp[1]) + " ft, " + when(gp[0]) + "." : "") +
     " Model point " + o.node.dist_m.toLocaleString() + " m away; offset to NAVD88 +" + (o.offset_ft == null ? "?" : o.offset_ft.toFixed(2)) + " ft." : "No values for this point.";
   $("ch").setAttribute("aria-label", name + ". " + $("chSum").textContent);
   // the map: highlight, and show the model point used
@@ -326,6 +365,7 @@ function drawMap() {
   marks = {};
   var b = [];
   (D.lowpoints || []).forEach(function (p, i) {
+    if (!inCity(p) || (devOnly && !p.developed)) return;
     var st = lpState(p), c = L.circleMarker([p.lat, p.lon], { radius: 4, baseRadius: 4, weight: 1, baseWeight: 1, color: "#263238", fillColor: LP_COL[st],
       fillOpacity: p.developed ? 1 : 0.55 }).bindTooltip(esc(p.name) + " (" + esc(p.id) + "): " + (p.margin_ft == null ? "no value" : sgn(p.margin_ft) + " ft from its level"))
       .on("click", function () { pick("l" + i); }).addTo(over);
@@ -333,6 +373,7 @@ function drawMap() {
     b.push([p.lat, p.lon]);
   });
   D.outlets.forEach(function (o, i) {
+    if (!inCity(o)) return;
     var c = L.circleMarker([o.lat, o.lon], { radius: 7, baseRadius: 7, color: "#fff", weight: 2, baseWeight: 2, fillColor: "#0A5587", fillOpacity: 1 })
       .bindTooltip(esc(oName(o)) + " outlet").on("click", function () { pick("o" + i); }).addTo(over);
     marks["o" + i] = c;
@@ -341,19 +382,27 @@ function drawMap() {
   D.refs.forEach(function (r) {
     L.marker([r.lat, r.lon], { icon: L.divIcon({ className: "", html: "<div style='width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #e65100'></div>", iconSize: [16, 14], iconAnchor: [8, 7] }), title: "NOAA gauge " + r.name + " (" + r.id + ")", alt: "NOAA gauge " + r.name, keyboard: false })
       .bindTooltip("NOAA gauge " + esc(r.name) + " (" + esc(r.id) + ")").addTo(over);
-    b.push([r.lat, r.lon]);
+    if (!city) b.push([r.lat, r.lon]);
   });
   allBounds = b;
-  if (!fitted) { map.fitBounds(b, { padding: [16, 16] }); fitted = true; }
+  if (!fitted && b.length) { map.fitBounds(b, { padding: [16, 16], maxZoom: 15 }); fitted = true; }
 }
 
 document.addEventListener("click", function (e) {
   var t = e.target.closest && e.target.closest("tr.row");
   if (t) { pick(t.getAttribute("data-k")); if (window.innerWidth < 860) $("chTitle").scrollIntoView({ behavior: "smooth", block: "start" }); }
 });
-$("mapall").addEventListener("click", function () { if (map && allBounds.length) map.fitBounds(allBounds, { padding: [16, 16] }); });
+$("mapall").addEventListener("click", function () { if (map && allBounds.length) map.fitBounds(allBounds, { padding: [16, 16], maxZoom: 15 }); });
+$("city").addEventListener("change", function () {
+  city = this.value; showAll = false; fitted = false; sel = null;
+  try { localStorage.setItem("ot_city", city); } catch (e) { /* no storage */ }
+  if (D) render();
+});
+Array.prototype.forEach.call(document.querySelectorAll("input[name=ord]"), function (r) {
+  r.addEventListener("change", function () { ord = this.value; try { localStorage.setItem("ot_ord", ord); } catch (e) { /* no storage */ } if (D) render(); });
+});
 $("lpmore").addEventListener("click", function () { showAll = !showAll; render(); });
-$("devonly").addEventListener("change", function () { devOnly = this.checked; showAll = false; render(); });
+$("devonly").addEventListener("change", function () { devOnly = this.checked; showAll = false; if (D) render(); });
 function load() {
   fetch(DATA_URL + "?t=" + Math.floor(Date.now() / 300000), { cache: "no-store" }).then(function (r) {
     if (!r.ok) throw new Error(r.status === 404 ? "no model data published yet (the data job writes it after the next model run)" : "HTTP " + r.status);
