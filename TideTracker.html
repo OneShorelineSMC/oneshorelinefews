@@ -181,7 +181,10 @@ var D = null, S = null, chart = null, gauge = "9414523";
 try { gauge = new URLSearchParams(location.search).get("gauge") || localStorage.getItem("tt_gauge") || gauge; } catch (e) { /* no storage */ }
 
 function lvName(l) { return l.label + " " + l.ft.toFixed(2); }
-function dayKeys() { return Object.keys(S.days).sort(); }
+// today is left out until its highest tide has come and gone (before that it has only had its lower tides);
+// a day whose record has no peak flag (older data) counts as before
+function dayKeys() { return Object.keys(S.days).sort().filter(function (k) { var r = S.days[k]; return !r.partial || r.peak_passed !== false; }); }
+function waitingToday() { var k = Object.keys(S.days).sort().pop(), r = k && S.days[k]; return r && r.partial && r.peak_passed === false ? r : null; }
 function monthKeys() { return Object.keys(S.months).sort(); }
 
 function render() {
@@ -265,7 +268,7 @@ function tiles() {
   });
   $("tiles").innerHTML = h;
   $("tileNote").textContent = "“Usual” is the average for " + MONL[+cur.slice(5) - 1] + " over the last " + (S.history ? S.history.base[1] - S.history.base[0] + 1 : 19) +
-    " water years" + (S.days[ks[ks.length - 1]].partial ? "; today is still going." : ".");
+    " water years" + (S.days[ks[ks.length - 1]].partial ? "; today is still going." : waitingToday() ? "; today is added after its highest tide." : ".");
 }
 
 function graph() {
@@ -303,7 +306,8 @@ function graph() {
         (s.borderDash ? " stroke-dasharray='" + (s.borderDash[0] < 1 ? "0.1 " + s.borderDash[1] : s.borderDash.join(" ")) + "'" : "") + (s.borderCapStyle === "round" ? " stroke-linecap='round'" : "") + "/></svg>";
     return "<span>" + sw + esc(s.label) + "</span>"; }).join("");
   var above = ks.filter(function (k) { var b = band[x(k)]; return b && S.days[k].max > b[2]; }).length;
-  $("chNote").textContent = (S.history ? "Shaded: the usual range of the day’s highest water for each date over water years " + S.history.base[0] + "–" + S.history.base[1] +
+  var wt = waitingToday();
+  $("chNote").textContent = (wt ? "Today is added after its highest tide (tide table " + tLabel(wt.table_t) + ") has passed. " : "") + (S.history ? "Shaded: the usual range of the day’s highest water for each date over water years " + S.history.base[0] + "–" + S.history.base[1] +
     " (10th to 90th percentile). " + above + " of " + ks.length + " days so far were above it. " : "History still loading. ") +
     "Measured from NOAA’s 6-minute data; the shaded range from NOAA’s high and low waters.";
   $("ch").setAttribute("aria-label", S.name + ": each day's highest water this season. " + $("chNote").textContent);
