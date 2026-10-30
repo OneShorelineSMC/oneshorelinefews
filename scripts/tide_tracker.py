@@ -157,6 +157,7 @@ def day_stats(meas, table, levels):
     res = [(t, v - tm[t]) for t, v, _ in meas if t in tm]
     rec = {"max": round(mx[1], 2), "t": mx[0][11:16], "cover": round(min(1.0, len(meas) / 240), 2),
            "table": round(max(tm.values()), 2) if tm else None,
+           "table_t": max(tm.items(), key=lambda p: p[1])[0][11:16] if tm else None,
            "res_mean": round(statistics.mean(r for _, r in res), 2) if res else None,
            "res_max": round(max(r for _, r in res), 2) if res else None,
            "res_t": max(res, key=lambda p: p[1])[0][11:16] if res else None,
@@ -192,7 +193,12 @@ def update_season(prev_days, station, levels, today, fetch=get_json, log=print):
             rec = day_stats(m, t, levels)
             if rec:
                 if d == today:
+                    # today counts on the page only once the day's highest tide-table tide (plus an hour) has been measured,
+                    # so the graph doesn't show a day that has only had its low tides yet
                     rec["partial"] = True
+                    hm = lambda x: int(x[11:13]) * 60 + int(x[14:16])   # noqa: E731
+                    tt = rec.get("table_t")
+                    rec["peak_passed"] = bool(tt) and hm(m[-1][0]) >= int(tt[:2]) * 60 + int(tt[3:]) + 60
                 days[k] = rec
         a = b + dt.timedelta(days=1)
     return days

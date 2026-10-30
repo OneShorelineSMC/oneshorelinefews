@@ -116,6 +116,10 @@ r = s["9414523"]
 check("four gauges", len(out["stations"]) == 4)
 check("Redwood City levels: MHHW, 1-year, flood, NOAA minor, in order", [l["key"] for l in r["levels"]] == ["mhhw", "oneyear", "flood", "minor"])
 check("29 days so far, today partial", len(r["days"]) == 29 and r["days"]["2026-10-29"].get("partial") and not r["days"]["2026-10-28"].get("partial"))
+tdy = r["days"]["2026-10-29"]
+check("today: the tide table's peak time is kept, and whether it has passed (measured to 5 PM)", tdy.get("table_t") is not None and
+      tdy["peak_passed"] == (int(tdy["table_t"][:2]) * 60 + int(tdy["table_t"][3:]) + 60 <= 17 * 60))
+check("complete days carry no peak flag", "peak_passed" not in r["days"]["2026-10-28"])
 d = r["days"]["2026-10-20"]
 check("surge day: about 2.2 ft above the table at most, averaging about 2.2", abs(d["res_max"] - 2.2) < 0.02 and abs(d["res_mean"] - 2.2) < 0.02)
 check("surge day reaches the flood level for some minutes", d["min"]["flood"] > 0 and d["max"] >= 8.5)
