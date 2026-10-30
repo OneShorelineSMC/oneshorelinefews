@@ -89,6 +89,10 @@ show OneRain's Redwood City tide in NAVD88 on the sensor map) · `used_for` · `
 **settings.csv** — `key` · `value` · `unit` · `used_on` · `what_it_does`. Each value has an allowed range (in
 `lookups.js`); a value outside it is ignored and reported.
 
+**tide_tracker_levels.csv** — extra levels the staff tide tracker (TideTracker.html) counts days and hours at, besides
+MHHW and NOAA's derived minor flooding level, which come from NOAA's datums: `station` (NOAA id) · `key` (`oneyear`,
+`flood`, or any short name) · `level_ft` (ft NAVD88) · `label` · `source`. Changes show within the hour.
+
 **display_text.csv** — `key` · `text` · `shown_on` · `notes`.
 
 **rain_frequency.csv** — `onerain_number` (rain gauge) · `gauge` (its code in `creek_gauges.csv`, if it's already live) ·

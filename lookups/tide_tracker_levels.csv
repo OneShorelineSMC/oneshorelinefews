@@ -1,0 +1,4 @@
+station,key,level_ft,label,source,checked_by,checked_on
+9414523,oneyear,8.3,1-year tide,"SF Bay Tidal Datums and Extreme Tides Study (AECOM for BCDC, 2016), Redwood City shoreline points",,
+9414523,flood,8.5,Flood level (provisional),settings.csv TIDE_RED_FT_RWC (Bay shoreline overtopping),,
+9413450,oneyear,6.87,1-year tide (provisional),"OneShoreline staff, Oct 16 2026 (KING_TIDE_FT_MRY)",,

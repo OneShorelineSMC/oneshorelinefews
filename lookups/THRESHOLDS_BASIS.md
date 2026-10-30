@@ -360,6 +360,27 @@ data branch, from `scripts/outlet_tides.py` in the data job (it looks for a new 
 - **Next:** staff review of the outlet points and model points; compare the log with high tides and storms for a few
   weeks; then decide whether any creek page uses it (Colma and San Bruno first, which share an outlet).
 
+### 4e. Tide tracker for the water year (Oct 29, 2026; staff page, beta)
+
+Staff page `TideTracker.html` (from `staff.html`), data `tide_tracker.json` (and the history in `tide_tracker_history.json`)
+on the data branch, from `scripts/tide_tracker.py` in the data job, hourly. Gauges: Redwood City, Alameda, San Francisco
+and Monterey (all ft NAVD88).
+
+- **Season:** the water year (Oct 1 to Sep 30). Each day from NOAA's 6-minute measured water level and tide table: the
+  highest water and time, the tide table's highest, measured minus tide table (day average and largest) and minutes at
+  or above each level.
+- **Levels:** MHHW from NOAA's datums; NOAA's derived minor high tide flooding level, MHHW + 0.5 m + 0.04 x the great
+  diurnal range (Sweet et al. 2018, the national threshold in NOAA's high tide flooding reports; about 9.0 ft at
+  Redwood City, 8.3 ft at Alameda); staff levels in `lookups/tide_tracker_levels.csv` (Redwood City 1-year tide 8.3 and
+  flood level 8.5; Monterey 1-year tide 6.87, provisional).
+- **History:** NOAA's high/low water record (each day's highest high water), as far back as NOAA gives it in NAVD88,
+  fetched a few years per run. Ranks use every year with 80% of the month (or the season so far); "usual" counts and the
+  usual range by date (10th-90th percentile, +/- 3 days) use the last 19 complete water years.
+- **Forward-only logs:** NOAA's projection of each day's highest water as of the last run before the day began, compared
+  with what was measured; National Weather Service coastal flood products for San Mateo County.
+- **Not yet:** the 1% (100-year) still water level from the 2016 SF Bay Tidal Datums and Extreme Tides Study as a
+  reference line (to look up from the study's table).
+
 ## 5. Page logic settings — `settings.csv`
 
 | Setting | Value | Basis | Status | Checked by / on |
