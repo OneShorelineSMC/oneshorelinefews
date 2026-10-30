@@ -140,6 +140,10 @@ check("history: years with data from 1990 (made-up record)", hs["first_year"] ==
 check("usual October days at MHHW are a count per month", 0 <= hs["usual"]["10"]["days"]["mhhw"] <= 31 and hs["usual"]["10"]["years"] == 19)
 check("usual range by date: 366 entries with low <= median <= high", len(hs["band"]) == 366 and all(b is None or b[0] <= b[1] <= b[2] for b in hs["band"]))
 check("base = the last 19 complete water years", hs["base"] == [2008, 2026])
+pc = hs["pace"]
+check("pace: day of the water year and one entry per past year with data", pc["day"] == 28 and len(pc["years"]) == 2026 - 1991 + 1 and pc["years"][-1]["wy"] == 2026)
+yr = pc["years"][-1]
+check("pace: by-this-date counts never exceed the year's", all(yr["by"][k] <= yr["all"][k] for k in yr["by"]) and yr["max_by"] <= yr["max"])
 rk = r["ranks"]["2026-10"]
 check("October 2026 ranks first (the made-up history tops out lower)", rk["rank"] == 1 and rk["of"] == 2026 - 1990 + 1)
 check("season so far ranked against past water years over the same dates", r["ranks"]["season"]["rank"] == 1 and r["ranks"]["season"]["of"] > 20)

@@ -304,8 +304,24 @@ def history_stats(hd, levels, today):
         if (d - s).days <= n_days:
             wy_cover[s.year] = wy_cover.get(s.year, 0) + 1
     wy_same = [[y + 1, round(v, 2)] for y, v in wy_best.items() if wy_cover[y] >= MONTH_COVER * (n_days + 1) and y < wy0.year]
+    # pace: for each past water year with enough data, days at or above each level by this date and in the whole year, and
+    # the year's highest by this date and in all (so the page can say how this year is tracking and what came after)
+    by_wy = {}
+    for d, v in hd.items():
+        by_wy.setdefault(water_year_start(d).year, []).append(((d - water_year_start(d)).days, v))
+    pace = {"day": n_days, "years": []}
+    for y, vals in sorted(by_wy.items()):
+        if y >= wy0.year:
+            continue
+        win = [v for i, v in vals if i <= n_days]
+        full_days = (dt.date(y + 1, 10, 1) - dt.date(y, 10, 1)).days
+        if len(win) < MONTH_COVER * (n_days + 1) or len(vals) < MONTH_COVER * full_days:
+            continue
+        pace["years"].append({"wy": y + 1, "max_by": round(max(win), 2), "max": round(max(v for _, v in vals), 2),
+                              "by": {lv["key"]: sum(1 for v in win if v >= lv["ft"]) for lv in levels},
+                              "all": {lv["key"]: sum(1 for _, v in vals if v >= lv["ft"]) for lv in levels}})
     years = sorted({d.year for d in hd})
-    return {"usual": usual, "month_max": month_max, "band": band, "wy_same_dates": sorted(wy_same),
+    return {"pace": pace, "usual": usual, "month_max": month_max, "band": band, "wy_same_dates": sorted(wy_same),
             "base": [min(base_wys) + 1, max(base_wys) + 1], "first_year": years[0] if years else None, "last_year": years[-1] if years else None,
             "years_with_data": len(years)}
 
