@@ -367,7 +367,8 @@ on the data branch, from `scripts/tide_tracker.py` in the data job, hourly. Gaug
 and Monterey (all ft NAVD88).
 
 - **Season:** the water year (Oct 1 to Sep 30). Each day from NOAA's 6-minute measured water level and tide table: the
-  highest water and time, the tide table's highest, measured minus tide table (day average and largest) and minutes at
+  highest water and time, the tide table's highest, measured minus tide table (the non-tidal residual: day average and largest),
+  the skew surge (each predicted high tide's measured peak within 3 hours, minus the predicted high) and minutes at
   or above each level.
 - **Levels:** MHHW from NOAA's datums; NOAA's derived minor high tide flooding level, MHHW + 0.5 m + 0.04 x the great
   diurnal range (Sweet et al. 2018, the national threshold in NOAA's high tide flooding reports; about 9.0 ft at
