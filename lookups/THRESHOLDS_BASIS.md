@@ -382,6 +382,10 @@ and Monterey (all ft NAVD88).
   its winter (DJF) value: El Nino at +0.5 or more (weak; moderate from 1.0, strong 1.5, very strong 2.0), La Nina at -0.5
   or less. The history page (`TideHistory.html`) shades those years on the yearly graphs, labels the highest days, and
   compares each group of years with the gauge's own straight-line trend.
+- **Tracking against the record** (Oct 30): for each past water year with 80% of the same dates (Oct 1 to today) and of the
+  whole year, days at each level by this date and in the whole year, and the highest by this date and in all. The tracker
+  ranks this year by this date and adds the days that came after this date in past years ("likely by Sep 30": average and
+  10th-90th percentile; also only the moderate or stronger El Nino years, winter index +1.0 or more).
 - **Not yet:** the 1% (100-year) still water level from the 2016 SF Bay Tidal Datums and Extreme Tides Study as a
   reference line (to look up from the study's table).
 
