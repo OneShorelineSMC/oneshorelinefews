@@ -4,6 +4,7 @@
 #   creeks_7day.json - every creek sensor's readings for the last 7 days, built up run by run (for the data archive,
 #                   OneShorelineSMC/fews-data-archive); points are [Pacific time, value, UTC time, (USGS codes)]
 #   status_log.csv - creek status changes (creek status layer, staff review), newest last
+#   tide_tracker.json + tide_tracker_history.json - the water year at four NOAA tide gauges against the tide table and history (TideTracker.html)
 #   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
@@ -51,6 +52,8 @@ jobs:
             git show FETCH_HEAD:tide_offset.json > out/tide_offset.json 2>/dev/null || true
             git show FETCH_HEAD:outlet_tides.json > out/outlet_tides.json 2>/dev/null || true
             git show FETCH_HEAD:outlet_tides_log.csv > out/outlet_tides_log.csv 2>/dev/null || true
+            git show FETCH_HEAD:tide_tracker.json > out/tide_tracker.json 2>/dev/null || true
+            git show FETCH_HEAD:tide_tracker_history.json > out/tide_tracker_history.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -82,6 +85,14 @@ jobs:
         timeout-minutes: 5
         run: python scripts/outlet_tides.py out/outlet_tides.json out/outlet_tides_log.csv --min-age 30
 
+      - name: Tide tracker for the water year (staff page; scripts/tide_tracker.py, hourly)
+        # What the water did this season at Redwood City, Alameda, San Francisco and Monterey against the tide table, the
+        # levels in lookups/tide_tracker_levels.csv and each gauge's history (NOAA's high/low record, filled in a few years
+        # per run). For TideTracker.html. A problem here never stops the creek data; the last values are kept.
+        continue-on-error: true
+        timeout-minutes: 4
+        run: python scripts/tide_tracker.py out/tide_tracker.json out/tide_tracker_history.json --min-age 55
+
       - name: Flood reports approved by staff (every 15 minutes)
         # A problem here never stops the creek data from being published; the last published reports are kept.
         continue-on-error: true
@@ -102,6 +113,7 @@ jobs:
           cp creeks.json sanbruno.json   # older name, kept so pages not yet updated keep working
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
+            $( [ -s tide_tracker.json ] && echo tide_tracker.json ) $( [ -s tide_tracker_history.json ] && echo tide_tracker_history.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
