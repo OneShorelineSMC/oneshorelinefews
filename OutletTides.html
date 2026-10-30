@@ -256,7 +256,7 @@ function render() {
   }).filter(function (x) { return inCity(x.o); });
   orderBy(rows, function (x) { return x.pk ? x.pk[1] : -99; }, function (x) { return x.o; });
   $("tbl").parentNode.hidden = !rows.length;
-  $("tbl").innerHTML = "<thead><tr><th>Outlet</th><th>City</th><th class='n'>Highest (ft NAVD88)</th><th>When</th><th class='n'>vs gauge</th><th>Model point</th></tr></thead><tbody>" +
+  $("tbl").innerHTML = "<thead><tr><th>Outlet</th><th>City</th><th class='n'>Highest (ft NAVD88)</th><th>When</th><th class='n'>vs gauge (ft)</th><th>Model point</th></tr></thead><tbody>" +
     rows.map(function (x) {
       var o = x.o;
       return "<tr class='row' data-k='" + x.k + "'><td><button type='button' data-k='" + x.k + "'>" + esc(oName(o)) + "</button>" +
@@ -278,7 +278,7 @@ function render() {
   $("lpsum").textContent = !lr.length ? "No low points " + (city ? "in " + city : "") + (devOnly ? " on developed shoreline" : "") + "." : reach ? reach + " low point" + (reach > 1 ? "s" : "") + " reach their level in the next 48 hours" + (near ? "; " + near + " more within " + NEAR_FT + " ft." : ".")
     : near ? "None reach their level in the next 48 hours; " + near + " within " + NEAR_FT + " ft." : "None reach their level or come within " + NEAR_FT + " ft in the next 48 hours.";
   var shown = showAll ? lr : lr.slice(0, LOW_SHOWN);
-  $("lptbl").innerHTML = "<thead><tr><th>Low point</th><th>City</th><th class='n'>Comes over at</th><th class='n'>Highest, next 48 h</th><th class='n'>Margin</th><th>First reaches</th><th>Model point</th></tr></thead><tbody>" +
+  $("lptbl").innerHTML = "<thead><tr><th>Low point</th><th>City</th><th class='n'>Comes over at<span class='sm'>ft NAVD88</span></th><th class='n'>Highest, next 48 h<span class='sm'>ft NAVD88</span></th><th class='n'>Margin<span class='sm'>ft</span></th><th>First reaches</th><th>Model point</th></tr></thead><tbody>" +
     shown.map(function (x) {
       var p = x.p, st = lpState(p);
       return "<tr class='row" + (p.developed ? "" : " open") + "' data-k='" + x.k + "'><td><button type='button' data-k='" + x.k + "'>" + esc(p.name) + "</button>" +
@@ -292,7 +292,7 @@ function render() {
   $("lpmore").hidden = lr.length <= LOW_SHOWN;
   $("lpmore").textContent = showAll ? "Show the first " + LOW_SHOWN : "Show all " + lr.length;
 
-  $("refs").innerHTML = "<thead><tr><th>Gauge</th><th>Model point</th><th class='n'>Offset (ft)</th><th>How</th><th class='n'>Left over</th><th class='n'>MHHW (ft NAVD88)</th></tr></thead><tbody>" +
+  $("refs").innerHTML = "<thead><tr><th>Gauge</th><th>Model point</th><th class='n'>Offset, model datum to NAVD88 (ft)</th><th>How</th><th class='n'>Left over (ft)</th><th class='n'>MHHW (ft NAVD88)</th></tr></thead><tbody>" +
     D.refs.map(function (r) {
       return "<tr><td>" + esc(r.name) + " <span class='sm'>" + esc(r.id) + "</span></td><td>" + dist(r.node.dist_m) + " away, " + deep(r.node.depth_m) + " deep</td>" +
         "<td class='n'>" + (r.offset_ft == null ? "–" : "+" + r.offset_ft.toFixed(2)) + (r.offset_datum_ft != null ? "<span class='sm'>NOAA MSL: +" + r.offset_datum_ft.toFixed(2) + "</span>" : "") + "</td>" +
@@ -338,7 +338,7 @@ function pick(key, quiet) {
       label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
     scales: { x: { type: "linear", min: x0, max: x1, ticks: { stepSize: 6 * 3600000, color: css("--muted"), callback: function (v) {
         var d = new Date(v), h = fHour.format(d); return h === "12 AM" ? fWd.format(d) : h; } }, grid: { color: css("--line") } },
-      y: { min: y0, max: y1, ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") } } } };
+      y: { min: y0, max: y1, ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") }, title: { display: true, text: "ft NAVD88", color: css("--muted") } } } };
   if (chart) chart.destroy();
   chart = new Chart($("ch"), { type: "line", data: { datasets: sets }, options: opts });
   $("key").innerHTML = keyOrder.map(function (s) {   // each swatch drawn like its line (dash, dot, dash-dot)

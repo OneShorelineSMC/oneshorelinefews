@@ -80,7 +80,7 @@
 <main>
   <div class="card">
     <p style="margin:0">What the water actually did this water year (from Oct 1) at four NOAA tide gauges, measured against the tide table,
-      the levels we track and each gauge’s own history. All heights ft NAVD88, Pacific time.</p>
+      the levels we track and each gauge’s own history. All heights ft NAVD88 (North American Vertical Datum of 1988), Pacific time.</p>
     <p class="meta" id="meta">Loading…</p>
     <p class="meta"><a href="TideHistory.html">Gauge history: Redwood City, Alameda and San Francisco over the years ›</a></p>
     <div class="warn" id="warn"></div>
@@ -182,7 +182,10 @@ function monthKeys() { return Object.keys(S.months).sort(); }
 function render() {
   S = D.stations.filter(function (s) { return s.id === gauge; })[0] || D.stations[0];
   gauge = S.id;
-  $("meta").textContent = D.water_year.replace("WY", "Water year ") + " (from Oct 1, " + D.wy_start.slice(0, 4) + ") · updated " + dWk(D.generated.slice(0, 10)) + ", " + tLabel(D.generated.slice(11, 16));
+  var L = D.enso && D.enso.latest, en = "";
+  if (L) { var a = Math.abs(L[2]), k = L[2] >= 0.5 ? "El Niño" : L[2] <= -0.5 ? "La Niña" : "neutral";
+    en = " · El Niño index " + (L[2] >= 0 ? "+" : "−") + a.toFixed(1) + " (" + L[0] + " " + L[1] + "): " + (k === "neutral" ? "neutral" : (a >= 2 ? "very strong " : a >= 1.5 ? "strong " : a >= 1 ? "moderate " : "weak ") + k); }
+  $("meta").textContent = D.water_year.replace("WY", "Water year ") + " (from Oct 1, " + D.wy_start.slice(0, 4) + ") · updated " + dWk(D.generated.slice(0, 10)) + ", " + tLabel(D.generated.slice(11, 16)) + en;
   $("warn").textContent = (D.problems || []).length ? "Last update had problems: " + D.problems.join("; ") : "";
   $("gauges").innerHTML = D.stations.map(function (s) {
     return "<button type='button' data-g='" + esc(s.id) + "' aria-pressed='" + (s.id === gauge) + "'>" + esc(s.name) + (s.side === "coast" ? " (Coastside)" : "") + "</button>"; }).join("");
@@ -198,7 +201,7 @@ function tiles() {
   var allRes = ks.map(function (k) { return S.days[k].res_mean; }).filter(function (v) { return v != null; });
   var resAvg = allRes.length ? allRes.reduce(function (a, b) { return a + b; }, 0) / allRes.length : null;
   var sr = S.ranks && S.ranks.season;
-  var h = "<div class='tile'><div class='k'>Highest water so far</div><div class='v'>" + ft(best && best.r.max) + "<small> ft</small></div>" +
+  var h = "<div class='tile'><div class='k'>Highest water so far</div><div class='v'>" + ft(best && best.r.max) + "<small> ft NAVD88</small></div>" +
     "<div class='s'>" + (best ? esc(dWk(best.k)) + ", " + esc(tLabel(best.r.t)) : "") + "</div>" +
     (sr ? "<div class='s'>" + (sr.rank === 1 ? "<b>Highest start to a water year on record</b>" : esc(ord(sr.rank)) + " highest of " + sr.of + " water years over the same dates") + "</div>" : "") + "</div>";
   h += "<div class='tile'><div class='k'>Above the tide table, season average</div><div class='v'>" + sgn(resAvg) + "<small> ft</small></div>" +
@@ -207,7 +210,7 @@ function tiles() {
     var n = ks.filter(function (k) { return S.days[k].max >= l.ft; }).length;
     var hrs = ks.reduce(function (a, k) { return a + (S.days[k].min[l.key] || 0); }, 0) / 60;
     var u = usual && usual.days[l.key];
-    h += "<div class='tile" + (n && l.key !== "mhhw" ? " hit" : "") + "'><div class='k'>Days at or above " + esc(l.label) + " (" + l.ft.toFixed(2) + " ft)</div>" +
+    h += "<div class='tile" + (n && l.key !== "mhhw" ? " hit" : "") + "'><div class='k'>Days at or above " + esc(l.label) + " (" + l.ft.toFixed(2) + " ft NAVD88)</div>" +
       "<div class='v'>" + n + "<small> day" + (n === 1 ? "" : "s") + "</small></div>" +
       "<div class='s'>" + (hrs ? hrs.toFixed(1) + " hours in all · " : "") + MON[+cur.slice(5) - 1] + ": " + cm.count[l.key] + (u != null ? " (usual " + u + ")" : "") + "</div></div>";
   });
@@ -242,7 +245,7 @@ function graph() {
         label: function (it) { return it.dataset.label.replace(" (10th–90th percentile)", " (90th percentile)") + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
     scales: { x: { type: "linear", min: 0, max: xEnd, ticks: { stepSize: 7, color: css("--muted"), callback: function (v) {
         var d = new Date(start + v * DAY); return MON[d.getUTCMonth()] + " " + d.getUTCDate(); } }, grid: { color: css("--line") } },
-      y: { min: y0, max: y1, ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") } } } };
+      y: { min: y0, max: y1, ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") }, title: { display: true, text: "ft NAVD88", color: css("--muted") } } } };
   if (chart) chart.destroy();
   chart = new Chart($("ch"), { type: "line", data: { datasets: sets }, options: opts });
   $("key").innerHTML = sets.filter(function (s) { return s.label !== "lo"; }).reverse().map(function (s) {
@@ -259,8 +262,8 @@ function graph() {
 
 function months() {
   var mk = monthKeys();
-  var head = "<thead><tr><th>Month</th><th class='n'>Highest</th><th class='n'>Tide table highest</th><th class='n'>Above the tide table</th><th class='n'>Biggest surge</th>" +
-    S.levels.map(function (l) { return "<th class='n'>Days ≥ " + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft · hours</span></th>"; }).join("") + "</tr></thead>";
+  var head = "<thead><tr><th>Month</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th class='n'>Tide table highest<span class='sm'>ft NAVD88</span></th><th class='n'>Above the tide table<span class='sm'>ft</span></th><th class='n'>Biggest surge<span class='sm'>ft</span></th>" +
+    S.levels.map(function (l) { return "<th class='n'>Days ≥ " + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft NAVD88 · hours</span></th>"; }).join("") + "</tr></thead>";
   var body = mk.map(function (k) {
     var m = S.months[k], u = S.history && S.history.usual[String(+k.slice(5))], rk = S.ranks && S.ranks[k];
     return "<tr><td><b>" + MONL[+k.slice(5) - 1] + " " + k.slice(0, 4) + "</b><span class='sm'>" + m.days + " days" + (rk ? " · highest: " + ord(rk.rank) + " of " + rk.of : "") + "</span></td>" +
@@ -296,7 +299,7 @@ function events() {
   var levels = S.levels.filter(function (l) { return l.key !== "mhhw"; }), lowest = levels.length ? levels[0] : S.levels[0];
   var ks = dayKeys().filter(function (k) { return S.days[k].max >= lowest.ft; }).reverse();
   var nwsOn = function (k) { return (D.nws || []).filter(function (a) { return (a.onset || "").slice(0, 10) <= k && (a.ends || "9").slice(0, 10) >= k; }).map(function (a) { return a.event; }); };
-  $("events").innerHTML = ks.length ? "<thead><tr><th>Day</th><th class='n'>Highest</th><th class='n'>Tide table</th><th class='n'>Above the tide table</th><th>Reached</th><th>NWS</th></tr></thead><tbody>" +
+  $("events").innerHTML = ks.length ? "<thead><tr><th>Day</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th class='n'>Tide table<span class='sm'>ft NAVD88</span></th><th class='n'>Above the tide table<span class='sm'>ft</span></th><th>Reached</th><th>NWS</th></tr></thead><tbody>" +
     ks.map(function (k) { var r = S.days[k];
       var hit = levels.filter(function (l) { return r.max >= l.ft; }).map(function (l) { return l.label + (r.min[l.key] ? " (" + r.min[l.key] + " min)" : ""); });
       return "<tr><td>" + esc(dWk(k)) + (r.partial ? " <span class='sm'>so far today</span>" : "") + "</td><td class='n'><b>" + ft(r.max) + "</b><span class='sm'>" + esc(tLabel(r.t)) + "</span></td>" +
@@ -311,7 +314,7 @@ function proj() {
   var errs = rows.map(function (k) { return S.days[k].max - S.proj[k].ft; });
   var mean = errs.length ? errs.reduce(function (a, b) { return a + b; }, 0) / errs.length : null;
   var mae = errs.length ? errs.reduce(function (a, b) { return a + Math.abs(b); }, 0) / errs.length : null;
-  $("proj").innerHTML = rows.length ? "<thead><tr><th>Day</th><th class='n'>Projected highest</th><th class='n'>Measured highest</th><th class='n'>Measured minus projected</th><th>Projection made</th></tr></thead><tbody>" +
+  $("proj").innerHTML = rows.length ? "<thead><tr><th>Day</th><th class='n'>Projected highest<span class='sm'>ft NAVD88</span></th><th class='n'>Measured highest<span class='sm'>ft NAVD88</span></th><th class='n'>Measured minus projected<span class='sm'>ft</span></th><th>Projection made</th></tr></thead><tbody>" +
     rows.map(function (k, i) { var p = S.proj[k];
       return "<tr><td>" + esc(dWk(k)) + "</td><td class='n'>" + ft(p.ft) + "</td><td class='n'>" + ft(S.days[k].max) + "</td><td class='n'><b>" + sgn(errs[i]) + "</b></td>" +
         "<td>" + esc(dWk(p.made.slice(0, 10))) + ", " + esc(tLabel(p.made.slice(11))) + "</td></tr>"; }).join("") +
