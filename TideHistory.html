@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>Tide gauge history · OneShoreline staff</title>
+<!-- Staff subpage of TideTracker.html (2026-10-30): what NOAA's high/low record says about Redwood City, Alameda and
+     San Francisco over the years: the highest water each year, how many days reach each level, the trend, the season,
+     how the three gauges compare, and the biggest days. Computed in the browser from tide_tracker_history.json (each day's
+     highest high water, built up by scripts/tide_tracker.py) and the levels in tide_tracker.json, both on the data branch. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
+    --s1: #0A5587; --s2: #b45a00; --s3: #6A3D8F; --trend: #c0392b; --warnbg: #fff4e5; --warnink: #7a3d00; --cov0: #eef1f4; --cov1: #9ec5e8; --cov2: #0A5587; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --s1: #6fb3ff; --s2: #ffa726; --s3: #c49bf0; --trend: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --cov0: #223040; --cov1: #2f5f8f; --cov2: #8cc8ff; } }
+  :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --s1: #6fb3ff; --s2: #ffa726; --s3: #c49bf0; --trend: #f47c79; --warnbg: #3a2a12; --warnink: #ffd59a; --cov0: #223040; --cov1: #2f5f8f; --cov2: #8cc8ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap, main { max-width: 1100px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header img { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; }
+  header a { color: #fff; }
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  main { padding: 12px 16px 40px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+  h2 { font-size: 16px; color: var(--ink); margin: 0 0 6px; }
+  .note { font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
+  .meta { font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
+  .warn { background: var(--warnbg); color: var(--warnink); border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; }
+  .warn:empty { display: none; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; background: #fff; }
+  .find { margin: 4px 0 0; padding-left: 20px; }
+  .find li { margin: 4px 0; }
+  .chartbox { position: relative; height: 320px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 0 8px; font-size: 14px; }
+  select { font: inherit; font-size: 14px; padding: 4px 6px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); min-height: 32px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-top: 0; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sm { display: block; font-size: 12.5px; color: var(--muted); }
+  .cov { display: grid; grid-template-columns: 110px 1fr; gap: 4px 8px; align-items: center; font-size: 13px; }
+  .cells { display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; }
+  .cells i { flex: 1 1 0; min-width: 2px; height: 14px; background: var(--cov0); }
+  .cells i.p { background: var(--cov1); } .cells i.f { background: var(--cov2); }
+  .covax { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details p, details li { font-size: 14px; }
+  a { color: var(--link); }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <img src="img/oneshoreline-mark-white.png" alt="">
+  <div><h1>Tide gauge history <span class="tag">BETA</span></h1><div class="org"><a href="staff.html">Staff tools</a> · <a href="TideTracker.html">Tide tracker</a> · OneShoreline Flood Early Warning</div></div>
+  <div class="h911">In an emergency, call 911.</div>
+</div></header>
+<main>
+  <div class="card">
+    <p style="margin:0">What NOAA’s record says about Redwood City, Alameda and San Francisco: the highest water each year, how often the water
+      reaches the levels we track, the trend, the time of year, how the three gauges compare and the biggest days. Water years (Oct–Sep),
+      ft NAVD88, from each day’s highest high water.</p>
+    <p class="meta" id="meta">Loading…</p>
+    <div class="warn" id="warn"></div>
+  </div>
+
+  <div class="card">
+    <h2>What the record shows</h2>
+    <ul class="find" id="find"></ul>
+  </div>
+
+  <div class="card">
+    <h2>Data check</h2>
+    <div id="qc"></div>
+  </div>
+
+  <div class="card">
+    <h2>Years with data</h2>
+    <div id="cov"></div>
+    <p class="note">Each cell is a water year: dark = at least 80% of days (used for yearly numbers), light = some days, blank = none.</p>
+  </div>
+
+  <div class="card">
+    <h2>Highest water each year</h2>
+    <div class="chartbox"><canvas id="chMax" role="img" aria-label="Highest water each water year at the three gauges"></canvas></div>
+    <div class="key" id="keyMax"></div>
+    <p class="note" id="noteMax"></p>
+  </div>
+
+  <div class="card">
+    <h2>Average daily high, year by year (the Bay rising)</h2>
+    <div class="chartbox"><canvas id="chMean" role="img" aria-label="Average of each day's highest water, each water year"></canvas></div>
+    <div class="key" id="keyMean"></div>
+    <p class="note" id="noteMean"></p>
+  </div>
+
+  <div class="card">
+    <h2>Days at or above a level, each year</h2>
+    <div class="bar"><label>Gauge <select id="dGauge"></select></label><label>Level <select id="dLevel"></select></label></div>
+    <div class="chartbox"><canvas id="chDays" role="img" aria-label="Days per water year at or above the chosen level"></canvas></div>
+    <p class="note" id="noteDays"></p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Time of year</h2>
+      <div class="chartbox" style="height:280px"><canvas id="chSeason" role="img" aria-label="Average days per month at or above MHHW"></canvas></div>
+      <p class="note" id="noteSeason"></p>
+    </div>
+    <div class="card">
+      <h2>How often a year reaches each level</h2>
+      <div class="tablewrap" tabindex="0" role="region" aria-label="How often a year reaches each level (scrolls sideways)"><table id="exc"></table></div>
+      <p class="note">Share of water years whose highest water reached the level: all years with data, and the last 19. A level reached in about
+        every year is close to the 1-year tide; one reached in 1 of 10 years, the 10-year water level (from the record alone, no fitting).</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>How the three gauges compare</h2>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Gauge comparison (scrolls sideways)"><table id="cmp"></table></div>
+    <p class="note">The difference between two gauges’ highest water in the same month. Monthly highs are used rather than daily ones because
+      the same high tide can fall either side of midnight at two gauges. “In the highest months”: the top 10% of months at the second gauge,
+      to see whether the gap holds when the Bay is high (a bigger gap means the difference grows in storms and King Tides). Useful for judging
+      how well Alameda or San Francisco stand in for a place nearer Redwood City.</p>
+  </div>
+
+  <div class="card">
+    <h2>Highest days on record</h2>
+    <div class="bar"><label>Gauge <select id="tGauge"></select></label></div>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Highest days on record (scrolls sideways)"><table id="top"></table></div>
+    <p class="note">The 15 highest days (one per storm or tide event: days within 3 days of a higher one are left out), with the other gauges’ highest over the same day and the days either side.</p>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>How this works</summary>
+      <ul>
+        <li><b>Data:</b> NOAA’s high and low water record at each gauge, in ft NAVD88, downloaded a few years each hour by the tide tracker’s data job
+          (<code>scripts/tide_tracker.py</code>, kept in <code>tide_tracker_history.json</code> on the data branch). Each day’s value is the highest
+          high water. The current water year is on the <a href="TideTracker.html">Tide tracker</a> page, not here.</li>
+        <li><b>Years:</b> water years (Oct 1–Sep 30), named by the year they end. Yearly numbers use only years with at least 80% of their days.</li>
+        <li><b>Trend:</b> a straight line fitted to each year’s value (least squares), in ft per decade. The average daily high moves with sea level;
+          the highest water each year also moves with storms and El Niño, so its trend is noisier.</li>
+        <li><b>NAVD88 over the decades:</b> NOAA gives old data in NAVD88 using today’s datum relation, so a real rise in sea level shows up as a rise;
+          a gauge that was moved or re-leveled can show a step.</li>
+      </ul>
+    </details>
+  </div>
+</main>
+<script>
+"use strict";
+var BASE = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
+var GAUGES = [{ id: "9414523", name: "Redwood City", c: "--s1" }, { id: "9414750", name: "Alameda", c: "--s2" }, { id: "9414290", name: "San Francisco", c: "--s3" }];
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function ft(v) { return v == null || !isFinite(v) ? "–" : v.toFixed(2); }
+function sgn(v) { return v == null || !isFinite(v) ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
+var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function dLabel(k) { var p = k.split("-"); return MON[+p[1] - 1] + " " + (+p[2]) + ", " + p[0]; }
+function quant(a, q) { if (!a.length) return null; var s = a.slice().sort(function (x, y) { return x - y; }), i = (s.length - 1) * q, lo = Math.floor(i); return s[lo] + (s[Math.min(lo + 1, s.length - 1)] - s[lo]) * (i - lo); }
+function mean(a) { return a.length ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : null; }
+function fit(pts) {   // least squares: { slope per year, intercept }
+  if (pts.length < 5) return null;
+  var mx = mean(pts.map(function (p) { return p[0]; })), my = mean(pts.map(function (p) { return p[1]; })), sxy = 0, sxx = 0;
+  pts.forEach(function (p) { sxy += (p[0] - mx) * (p[1] - my); sxx += (p[0] - mx) * (p[0] - mx); });
+  var b = sxy / sxx; return { b: b, a: my - b * mx };
+}
+var COVER = 0.8, BASE_N = 19, charts = {};
+function shift(k, n) { var t = new Date(Date.parse(k + "T12:00:00Z") + n * 86400000); return t.toISOString().slice(0, 10); }
+// a gauge's highest over the day before, the day and the day after: in some seasons the day's higher high tide falls just before
+// midnight at one gauge and just after at another, so the same tide can land on different days
+function near(days, k) { var v = [days[shift(k, -1)], days[k], days[shift(k, 1)]].filter(function (x) { return x != null; }); return v.length ? Math.max.apply(null, v) : null; }
+
+// ---- the data, by gauge: days {"YYYY-MM-DD": ft}; water years {wy: {n, max, maxDay, mean, vals}}
+var H = {}, LV = {};
+function wyOf(k) { var y = +k.slice(0, 4), m = +k.slice(5, 7); return m >= 10 ? y + 1 : y; }
+function wyDays(wy) { var a = Date.UTC(wy - 1, 9, 1), b = Date.UTC(wy, 9, 1); return Math.round((b - a) / 86400000); }
+function prep(hist, tracker) {
+  GAUGES.forEach(function (g) {
+    var days = {}, h = hist[g.id] || {};
+    Object.keys(h).forEach(function (y) { var d = h[y].d || {}; Object.keys(d).forEach(function (md) { days[y + "-" + md.slice(0, 2) + "-" + md.slice(2)] = d[md]; }); });
+    H[g.id] = { days: days, suspect: [] };
+    var st = (tracker.stations || []).filter(function (s) { return s.id === g.id; })[0];
+    LV[g.id] = st ? st.levels : [];
+  });
+  qc();
+  GAUGES.forEach(function (g) {
+    var days = H[g.id].days, wys = {};
+    Object.keys(days).forEach(function (k) { var w = wyOf(k), r = wys[w] || (wys[w] = { n: 0, max: -99, maxDay: null, vals: [] }); r.n++; r.vals.push(days[k]); if (days[k] > r.max) { r.max = days[k]; r.maxDay = k; } });
+    Object.keys(wys).forEach(function (w) { var r = wys[w]; r.full = r.n >= COVER * wyDays(+w); r.mean = mean(r.vals); });
+    H[g.id].wys = wys;
+  });
+}
+/* Data check: a day's highest water at one gauge is set aside when it is more than QC_FT above what every other gauge with data
+   says it should be (the other gauge's highest over that day and the days either side, plus the usual difference between the two
+   gauges' monthly highs). A real storm or tide raises all three gauges together; a spike at one gauge alone is a recording
+   problem. Only spikes upward are checked: a day can look low at one gauge simply because its higher high tide fell just past midnight. */
+var QC_FT = 1.0;
+function qc() {
+  var med = {};
+  GAUGES.forEach(function (a) { GAUGES.forEach(function (b) { if (a.id !== b.id) med[a.id + b.id] = monthDiff(a.id, b.id).med; }); });
+  GAUGES.forEach(function (a) {
+    var A = H[a.id].days, out = [];
+    Object.keys(A).forEach(function (k) {
+      var res = GAUGES.filter(function (b) { return b.id !== a.id && med[a.id + b.id] != null && near(H[b.id].days, k) != null; })
+        .map(function (b) { return { b: b, r: A[k] - near(H[b.id].days, k) - med[a.id + b.id] }; });
+      if (res.length && res.every(function (x) { return x.r > QC_FT; })) out.push({ k: k, v: A[k], res: res });
+    });
+    out.forEach(function (x) { delete A[x.k]; });
+    H[a.id].suspect = out;
+  });
+}
+// each month's highest at a gauge (months with at least 24 days), and the differences between two gauges
+function monthMax(id) {
+  var m = {}, n = {}, days = H[id].days;
+  Object.keys(days).forEach(function (k) { var mk = k.slice(0, 7); n[mk] = (n[mk] || 0) + 1; if (!(mk in m) || days[k] > m[mk]) m[mk] = days[k]; });
+  Object.keys(m).forEach(function (mk) { if (n[mk] < 24) delete m[mk]; });
+  return m;
+}
+function monthDiff(a, b) {
+  var A = monthMax(a), B = monthMax(b), d = [], bv = [];
+  Object.keys(A).forEach(function (mk) { if (mk in B) { d.push(A[mk] - B[mk]); bv.push(B[mk]); } });
+  if (d.length < 24) return { n: d.length, med: null };
+  var cut = quant(bv, 0.9), hi = [];
+  Object.keys(A).forEach(function (mk) { if (mk in B && B[mk] >= cut) hi.push(A[mk] - B[mk]); });
+  return { n: d.length, med: quant(d, 0.5), lo: quant(d, 0.1), up: quant(d, 0.9), hiMed: quant(hi, 0.5), hiN: hi.length, cut: cut };
+}
+function fullYears(id) { var w = H[id].wys; return Object.keys(w).map(Number).filter(function (y) { return w[y].full; }).sort(function (a, b) { return a - b; }); }
+function lastYears(id, n) { var ys = fullYears(id); return ys.slice(Math.max(0, ys.length - n)); }
+
+function lineKey(el, sets) {
+  $(el).innerHTML = sets.map(function (s) {
+    var d = s.borderDash ? " stroke-dasharray='" + s.borderDash.join(" ") + "'" : "";
+    return "<span><svg width='26' height='8' aria-hidden='true' style='vertical-align:middle;margin-right:5px'><line x1='2' y1='4' x2='24' y2='4' stroke='" + s.borderColor + "' stroke-width='" + Math.max(2, s.borderWidth) + "'" + d + "/></svg>" + esc(s.label) + "</span>"; }).join("");
+}
+function chart(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart($(id), cfg); }
+function axes(yfmt, xmin, xmax) {
+  return { x: { type: "linear", min: xmin, max: xmax, ticks: { color: css("--muted"), callback: function (v) { return String(v); } }, grid: { color: css("--line") } },
+    y: { ticks: { color: css("--muted"), callback: yfmt }, grid: { color: css("--line") } } };
+}
+
+function coverage() {
+  var y0 = 9999, y1 = 0;
+  GAUGES.forEach(function (g) { var ys = Object.keys(H[g.id].wys).map(Number); if (ys.length) { y0 = Math.min(y0, Math.min.apply(null, ys)); y1 = Math.max(y1, Math.max.apply(null, ys)); } });
+  if (!y1) { $("cov").innerHTML = "<p class='note'>No history yet.</p>"; return [0, 0]; }
+  var h = "<div class='cov'>";
+  GAUGES.forEach(function (g) {
+    var w = H[g.id].wys, cells = "";
+    for (var y = y0; y <= y1; y++) cells += "<i class='" + (w[y] ? (w[y].full ? "f" : "p") : "") + "' title='" + y + (w[y] ? ": " + w[y].n + " days" : ": no data") + "'></i>";
+    var f = fullYears(g.id);
+    h += "<div><b>" + esc(g.name) + "</b><span class='sm'>" + f.length + " full years</span></div><div><div class='cells' aria-hidden='true'>" + cells + "</div></div>";
+  });
+  h += "<div></div><div class='covax'><span>WY" + y0 + "</span><span>WY" + y1 + "</span></div></div>";
+  $("cov").innerHTML = h;
+  return [y0, y1];
+}
+
+function yearly(span) {
+  var setsMax = [], setsMean = [], notesMax = [], notesMean = [], finds = [];
+  GAUGES.forEach(function (g) {
+    var ys = fullYears(g.id), w = H[g.id].wys; if (!ys.length) return;
+    var col = css(g.c);
+    var pm = ys.map(function (y) { return [y, w[y].max]; }), pa = ys.map(function (y) { return [y, w[y].mean]; });
+    setsMax.push({ label: g.name, data: pm.map(function (p) { return { x: p[0], y: p[1] }; }), borderColor: col, backgroundColor: col, borderWidth: 2, pointRadius: 2.5, spanGaps: false });
+    setsMean.push({ label: g.name, data: pa.map(function (p) { return { x: p[0], y: p[1] }; }), borderColor: col, backgroundColor: col, borderWidth: 2, pointRadius: 2 });
+    var fm = fit(pm), fa = fit(pa);
+    if (fa) { setsMean.push({ label: g.name + " trend", data: [{ x: ys[0], y: fa.a + fa.b * ys[0] }, { x: ys[ys.length - 1], y: fa.a + fa.b * ys[ys.length - 1] }], borderColor: col, borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0 });
+      notesMean.push(g.name + " " + sgn(fa.b * 10) + " ft per decade (" + ys[0] + "–" + ys[ys.length - 1] + ")"); }
+    if (fm) notesMax.push(g.name + " " + sgn(fm.b * 10) + " ft per decade");
+    var best = ys.reduce(function (a, y) { return w[y].max > w[a].max ? y : a; }, ys[0]);
+    finds.push({ g: g, best: best, w: w, fa: fa, ys: ys });
+  });
+  chart("chMax", { type: "line", data: { datasets: setsMax }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return "Water year " + it[0].parsed.x; }, label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
+    scales: axes(function (v) { return v + " ft"; }, span[0], span[1]) } });
+  lineKey("keyMax", setsMax);
+  $("noteMax").textContent = "Each dot is a water year’s highest water (years with at least 80% of their days). Straight-line trend: " + (notesMax.join("; ") || "–") + ".";
+  chart("chMean", { type: "line", data: { datasets: setsMean }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return "Water year " + it[0].parsed.x; }, label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
+    scales: axes(function (v) { return v.toFixed(1) + " ft"; }, span[0], span[1]) } });
+  lineKey("keyMean", setsMean);
+  $("noteMean").textContent = "The average of each day’s highest water over the year, which moves with sea level. Trend: " + (notesMean.join("; ") || "–") + ".";
+  return finds;
+}
+
+function daysChart() {
+  var id = $("dGauge").value, lv = (LV[id] || []).filter(function (l) { return l.key === $("dLevel").value; })[0] || (LV[id] || [])[0];
+  if (!lv) return;
+  var ys = fullYears(id), days = H[id].days;
+  var counts = {}; ys.forEach(function (y) { counts[y] = 0; });
+  Object.keys(days).forEach(function (k) { var w = wyOf(k); if (w in counts && days[k] >= lv.ft) counts[w]++; });
+  var pts = ys.map(function (y) { return [y, counts[y]]; }), f = fit(pts);
+  var sets = [{ type: "bar", label: "Days", data: pts.map(function (p) { return { x: p[0], y: p[1] }; }), backgroundColor: css("--s1") }];
+  if (f) sets.push({ type: "line", label: "Trend", data: [{ x: ys[0], y: f.a + f.b * ys[0] }, { x: ys[ys.length - 1], y: f.a + f.b * ys[ys.length - 1] }], borderColor: css("--trend"), borderWidth: 2, borderDash: [6, 4], pointRadius: 0 });
+  chart("chDays", { type: "bar", data: { datasets: sets }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return "Water year " + it[0].parsed.x; }, label: function (it) { return it.dataset.label === "Days" ? it.parsed.y + " days" : "Trend: " + it.parsed.y.toFixed(1) + " days"; } } } },
+    scales: { x: { type: "linear", offset: true, ticks: { color: css("--muted"), callback: function (v) { return String(v); } }, grid: { display: false } },
+      y: { beginAtZero: true, ticks: { color: css("--muted"), precision: 0 }, grid: { color: css("--line") } } } } });
+  var recent = lastYears(id, BASE_N).map(function (y) { return counts[y]; }), early = ys.slice(0, Math.min(10, ys.length)).map(function (y) { return counts[y]; });
+  var most = ys.reduce(function (a, y) { return counts[y] > counts[a] ? y : a; }, ys[0]);
+  $("noteDays").textContent = "Days each water year the highest water reached " + lv.label + " (" + lv.ft.toFixed(2) + " ft) at " + gName(id) + ". Average " +
+    mean(recent).toFixed(1) + " a year over the last " + recent.length + " years" + (ys.length > 20 ? ", " + mean(early).toFixed(1) + " in the first 10 years of the record (" + ys[0] + "–" + ys[Math.min(9, ys.length - 1)] + ")" : "") +
+    "; most: " + counts[most] + " in " + most + (f ? "; trend " + sgn(f.b * 10).replace(".00", ".0") + " days per decade" : "") + ".";
+}
+function gName(id) { return GAUGES.filter(function (g) { return g.id === id; })[0].name; }
+
+function season() {
+  var sets = [];
+  GAUGES.forEach(function (g) {
+    var ys = lastYears(g.id, BASE_N), mh = (LV[g.id] || []).filter(function (l) { return l.key === "mhhw"; })[0]; if (!ys.length || !mh) return;
+    var c = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], days = H[g.id].days, ok = {}; ys.forEach(function (y) { ok[y] = 1; });
+    Object.keys(days).forEach(function (k) { if (ok[wyOf(k)] && days[k] >= mh.ft) c[+k.slice(5, 7) - 1]++; });
+    var order = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+    sets.push({ label: g.name, data: order.map(function (m) { return +(c[m] / ys.length).toFixed(1); }), backgroundColor: css(g.c) });
+  });
+  chart("chSeason", { type: "bar", data: { labels: ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"], datasets: sets },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: "bottom", labels: { color: css("--muted"), boxWidth: 12 } },
+      tooltip: { callbacks: { label: function (it) { return it.dataset.label + ": " + it.parsed.y + " days"; } } } },
+      scales: { x: { ticks: { color: css("--muted") }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: css("--muted") }, grid: { color: css("--line") } } } } });
+  $("noteSeason").textContent = "Average days per month the highest water reached MHHW at each gauge, last " + BASE_N + " water years. High tides peak around the winter and summer solstices; winter storms add to December and January.";
+}
+
+function exceed() {
+  var rows = "";
+  GAUGES.forEach(function (g) {
+    var ys = fullYears(g.id), rec = lastYears(g.id, BASE_N), w = H[g.id].wys; if (!ys.length) return;
+    (LV[g.id] || []).forEach(function (l) {
+      var a = ys.filter(function (y) { return w[y].max >= l.ft; }).length, b = rec.filter(function (y) { return w[y].max >= l.ft; }).length;
+      rows += "<tr><td>" + esc(g.name) + "</td><td>" + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft</span></td><td class='n'>" + a + " of " + ys.length + "<span class='sm'>" + Math.round(100 * a / ys.length) + "%</span></td>" +
+        "<td class='n'>" + b + " of " + rec.length + "<span class='sm'>" + Math.round(100 * b / rec.length) + "%</span></td></tr>";
+    });
+    var top10 = quant(rec.map(function (y) { return w[y].max; }), 0.9);
+    rows += "<tr><td>" + esc(g.name) + "</td><td><i>Reached in about 1 year in 10 (last " + rec.length + ")</i></td><td class='n'></td><td class='n'><b>" + ft(top10) + " ft</b></td></tr>";
+  });
+  $("exc").innerHTML = "<thead><tr><th>Gauge</th><th>Level</th><th class='n'>All years</th><th class='n'>Last 19</th></tr></thead><tbody>" + rows + "</tbody>";
+}
+
+function compare() {
+  var pairs = [["9414523", "9414750"], ["9414523", "9414290"], ["9414750", "9414290"]], rows = "";
+  pairs.forEach(function (p) {
+    var r = monthDiff(p[0], p[1]); if (r.med == null) return;
+    rows += "<tr><td><b>" + gName(p[0]) + "</b> minus " + gName(p[1]) + "<span class='sm'>" + r.n + " months</span></td>" +
+      "<td class='n'><b>" + sgn(r.med) + "</b></td><td class='n'>" + sgn(r.lo) + " to " + sgn(r.up) + "</td>" +
+      "<td class='n'><b>" + sgn(r.hiMed) + "</b><span class='sm'>" + r.hiN + " months, " + gName(p[1]) + " ≥ " + ft(r.cut) + "</span></td></tr>";
+  });
+  $("cmp").innerHTML = rows ? "<thead><tr><th>Gauges</th><th class='n'>Typical difference</th><th class='n'>Most months (10th–90th)</th><th class='n'>In the highest months</th></tr></thead><tbody>" + rows + "</tbody>"
+    : "<tbody><tr><td>Not enough months in common yet.</td></tr></tbody>";
+}
+
+function topDays() {
+  var id = $("tGauge").value, days = H[id].days, ks = Object.keys(days).sort(function (x, y) { return days[y] - days[x]; }), picked = [];
+  for (var i = 0; i < ks.length && picked.length < 15; i++) {
+    var t = Date.parse(ks[i]); if (picked.some(function (k) { return Math.abs(Date.parse(k) - t) <= 3 * 86400000; })) continue; picked.push(ks[i]);
+  }
+  var others = GAUGES.filter(function (g) { return g.id !== id; });
+  $("top").innerHTML = "<thead><tr><th>#</th><th>Day</th><th class='n'>" + esc(gName(id)) + "</th>" + others.map(function (g) { return "<th class='n'>" + esc(g.name) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+    picked.map(function (k, n) { return "<tr><td>" + (n + 1) + "</td><td>" + esc(dLabel(k)) + "</td><td class='n'><b>" + ft(days[k]) + "</b></td>" +
+      others.map(function (g) { return "<td class='n'>" + ft(near(H[g.id].days, k)) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody>";
+}
+
+function findings(fs) {
+  var li = [];
+  fs.forEach(function (f) {
+    var b = f.w[f.best];
+    li.push("<b>" + esc(f.g.name) + ":</b> highest water on record " + ft(b.max) + " ft on " + esc(dLabel(b.maxDay)) + " (" + f.ys.length + " full years, " + f.ys[0] + "–" + f.ys[f.ys.length - 1] + ")" +
+      (f.fa ? "; the average daily high has risen " + sgn(f.fa.b * 10) + " ft per decade" : "") + ".");
+  });
+  var rw = H["9414523"], mh = (LV["9414523"] || []).filter(function (l) { return l.key === "flood"; })[0];
+  if (mh && fullYears("9414523").length) {
+    var ys = fullYears("9414523"), n = ys.filter(function (y) { return rw.wys[y].max >= mh.ft; }).length;
+    li.push("<b>Redwood City’s 8.5 ft flood level</b> was reached in " + n + " of " + ys.length + " full water years.");
+  }
+  $("find").innerHTML = li.map(function (x) { return "<li>" + x + "</li>"; }).join("") || "<li>No history yet.</li>";
+}
+
+function qcCard() {
+  var all = [];
+  GAUGES.forEach(function (g) { H[g.id].suspect.forEach(function (x) { all.push({ g: g, x: x }); }); });
+  var counts = GAUGES.map(function (g) { return g.name + ": " + H[g.id].suspect.length; }).join(" · ");
+  all.sort(function (p, q) { return Math.max.apply(null, q.x.res.map(function (r) { return Math.abs(r.r); })) - Math.max.apply(null, p.x.res.map(function (r) { return Math.abs(r.r); })); });
+  $("qc").innerHTML = "<p style='margin:0 0 6px'>Days set aside as likely recording problems (" + counts + "). They are left out of everything below. A day is set aside when " +
+    "its highest water is more than " + QC_FT.toFixed(1) + " ft <i>above</i> what every other gauge says it should be (their highest that day or the days either side, plus the usual difference); real storms raise all three gauges together.</p>" +
+    (all.length ? "<div class='tablewrap' tabindex='0' role='region' aria-label='Days set aside (scrolls sideways)'><table><thead><tr><th>Gauge</th><th>Day</th><th class='n'>Recorded</th><th>Other gauges that day (expected from them)</th></tr></thead><tbody>" +
+      all.slice(0, 20).map(function (p) { return "<tr><td>" + esc(p.g.name) + "</td><td>" + esc(dLabel(p.x.k)) + "</td><td class='n'><b>" + ft(p.x.v) + "</b></td><td>" +
+        p.x.res.map(function (r) { return esc(r.b.name) + " " + ft(near(H[r.b.id].days, p.x.k)) + " (expected " + ft(p.x.v - r.r) + ")"; }).join("; ") + "</td></tr>"; }).join("") +
+      "</tbody></table></div>" + (all.length > 20 ? "<p class='note'>The 20 furthest off of " + all.length + ".</p>" : "") : "<p class='note'>None.</p>");
+}
+
+function render(hist, tracker) {
+  prep(hist, tracker);
+  var cnt = GAUGES.map(function (g) { return g.name + " " + fullYears(g.id).length + " full years"; }).join(" · ");
+  $("meta").textContent = "Through water year " + (Math.max.apply(null, GAUGES.map(function (g) { var y = fullYears(g.id); return y.length ? y[y.length - 1] : 0; }))) + " · " + cnt;
+  var missing = GAUGES.filter(function (g) { var h = hist[g.id] || {}; return !Object.keys(h).length; });
+  $("warn").textContent = missing.length ? "Still downloading: " + missing.map(function (g) { return g.name; }).join(", ") + " (a few years each hour)." : "";
+  var span = coverage();
+  var fs = yearly(span);
+  ["dGauge", "tGauge"].forEach(function (s) { if (!$(s).options.length) $(s).innerHTML = GAUGES.map(function (g) { return "<option value='" + g.id + "'>" + esc(g.name) + "</option>"; }).join(""); });
+  levelOptions();
+  qcCard(); daysChart(); season(); exceed(); compare(); topDays(); findings(fs);
+}
+function levelOptions() {
+  var id = $("dGauge").value, cur = $("dLevel").value;
+  $("dLevel").innerHTML = (LV[id] || []).map(function (l) { return "<option value='" + esc(l.key) + "'" + (l.key === cur ? " selected" : "") + ">" + esc(l.label) + " (" + l.ft.toFixed(2) + " ft)</option>"; }).join("");
+  if (!cur && LV[id] && LV[id].length > 1) $("dLevel").value = LV[id][1].key;   // start on the first level above MHHW
+}
+$("dGauge").addEventListener("change", function () { levelOptions(); daysChart(); });
+$("dLevel").addEventListener("change", daysChart);
+$("tGauge").addEventListener("change", topDays);
+var t = "?t=" + Math.floor(Date.now() / 600000);
+Promise.all([fetch(BASE + "tide_tracker_history.json" + t, { cache: "no-store" }), fetch(BASE + "tide_tracker.json" + t, { cache: "no-store" })]).then(function (rs) {
+  if (!rs[0].ok) throw new Error(rs[0].status === 404 ? "no history published yet" : "HTTP " + rs[0].status);
+  return Promise.all([rs[0].json(), rs[1].ok ? rs[1].json() : {}]);
+}).then(function (d) { render(d[0], d[1]); })
+  .catch(function (e) { $("meta").textContent = "Couldn’t load the history: " + e.message + "."; });
+</script>
+</body>
+</html>
