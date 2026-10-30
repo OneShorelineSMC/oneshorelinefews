@@ -226,17 +226,17 @@ function pace() {
     var restN = nino.map(function (y) { return y.all[l.key] - y.by[l.key]; });
     var lo = cur + q(rest, 0.1), mid = cur + avg(rest), hi = cur + q(rest, 0.9);
     rows += "<tr><td>" + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft NAVD88</span></td><td class='n'><b>" + cur + "</b></td>" +
-      "<td class='n'>" + avg(past).toFixed(1) + "</td><td class='n'>" + (cur === 0 ? "–" : (rk === 1 ? "<b class='up'>most</b>" : ord(rk)) + (ties > 0 && cur > 0 ? " (tied)" : "") + "<span class='sm'>of " + (P.years.length + 1) + " years</span>") + "</td>" +
+      "<td class='n'>" + avg(past).toFixed(1) + "</td><td class='n'>" + (cur === 0 ? "–" : (rk === 1 ? "<b class='up'>most</b>" : ord(rk)) + (ties > 0 && cur > 0 ? " (tied)" : "") + "<span class='sm'>in " + (P.years.length + 1) + " years</span>") + "</td>" +
       "<td class='n'>" + most.by[l.key] + "<span class='sm'>" + most.wy + "</span></td>" +
       "<td class='n'><b>" + Math.round(mid) + "</b><span class='sm'>" + Math.round(lo) + "–" + Math.round(hi) + "</span></td>" +
       "<td class='n'>" + (restN.length ? Math.round(cur + avg(restN)) : "–") + "<span class='sm'>" + restN.length + " El Niño years</span></td></tr>";
     if (l.key !== "mhhw" && cur > 0 && rk <= 3) lines.push("<b>" + cur + " day" + (cur === 1 ? "" : "s") + "</b> at " + esc(l.label) + " (" + l.ft.toFixed(2) + " ft) by " + dateTxt + ": " +
-      (rk === 1 ? "the most by this date" : "the " + ord(rk) + " most by this date") + " in " + (P.years.length + 1) + " years (usual " + avg(past).toFixed(1) + ").");
+      (rk === 1 ? "the most by this date" : "the " + ord(rk) + " most by this date") + " in " + (P.years.length + 1) + " years of record (usual " + avg(past).toFixed(1) + ").");
   });
   var maxNow = Math.max.apply(null, ks.map(function (k) { return S.days[k].max; }));
   var mb = P.years.map(function (y) { return y.max_by; }), mrk = 1 + mb.filter(function (v) { return v > maxNow; }).length;
   var after = P.years.map(function (y) { return y.max - y.max_by; }).filter(function (v) { return v > 0; });
-  lines.unshift("Highest water so far <b>" + maxNow.toFixed(2) + " ft NAVD88</b>: " + (mrk === 1 ? "the highest by " + dateTxt : "the " + ord(mrk) + " highest by " + dateTxt) + " of " + (P.years.length + 1) + " years. " +
+  lines.unshift("Highest water so far <b>" + maxNow.toFixed(2) + " ft NAVD88</b>: " + (mrk === 1 ? "the highest by " + dateTxt : "the " + ord(mrk) + " highest by " + dateTxt) + " in " + (P.years.length + 1) + " years of record. " +
     "In past years the year’s highest came later " + Math.round(100 * after.length / P.years.length) + "% of the time.");
   if (ninoNow && nino.length) lines.push("This winter is shaping up as El Niño (index " + (L[2] >= 0 ? "+" : "") + L[2].toFixed(1) + "). In the " + nino.length + " past moderate or stronger El Niño years at this gauge (" +
     nino.map(function (y) { return y.wy; }).join(", ") + "), the year’s highest averaged " + avg(nino.map(function (y) { return y.max; })).toFixed(2) + " ft NAVD88, against " +
@@ -314,7 +314,7 @@ function tiles() {
   var h = "<div class='tile'><div class='k'>Highest water so far</div><div class='v'>" + ft(best && best.r.max) + "<small> ft NAVD88</small></div>" +
     "<div class='s'>" + (best ? esc(dWk(best.k)) + ", " + esc(tLabel(best.r.t)) : "") + "</div>" +
     (best && studyFor(S.id) ? "<div class='s'>" + esc(rpText(rpOf(best.r.max, studyFor(S.id).values), studyFor(S.id).values)) + "</div>" : "") +
-    (sr ? "<div class='s'>" + (sr.rank === 1 ? "<b>Highest start to a water year on record</b>" : esc(ord(sr.rank)) + " highest of " + sr.of + " water years over the same dates") + "</div>" : "") + "</div>";
+    (sr ? "<div class='s'>" + (sr.rank === 1 ? "<b>Highest start to a water year on record</b>" : esc(ord(sr.rank)) + " highest for these dates in " + sr.of + " years of record") + "</div>" : "") + "</div>";
   h += "<div class='tile'><div class='k'>Above the tide table, season average</div><div class='v'>" + sgn(resAvg) + "<small> ft</small></div>" +
     "<div class='s'>" + (cm.res_mean != null ? MONL[+cur.slice(5) - 1] + ": " + sgn(cm.res_mean) + " ft" : "") + "</div></div>";
   S.levels.forEach(function (l) {
@@ -391,16 +391,22 @@ function months() {
 function record() {
   var h = S.history;
   if (!h) { $("record").innerHTML = "<p class='note'>The history is still being downloaded from NOAA (a few years each hour).</p>"; return; }
-  var mk = monthKeys(), items = [];
+  var mk = monthKeys(), items = [], ks = dayKeys(), last = ks[ks.length - 1];
+  var span = "Oct 1–" + dLabel(last);   // "Oct 1–Oct 30" style, so a count of years can't read as a date
+  span = span.replace(/–Oct /, "–");
   var sr = S.ranks.season;
-  if (sr) items.push("<li><b>Season so far:</b> the highest water this season (" + ft(Math.max.apply(null, dayKeys().map(function (k) { return S.days[k].max; }))) + " ft) is the " +
-    (sr.rank === 1 ? "<b>highest</b>" : esc(ord(sr.rank)) + " highest") + " of " + sr.of + " water years over the same dates (Oct 1 to today)." +
+  if (sr) items.push("<li><b>Season so far (" + esc(span) + "):</b> highest water " + ft(Math.max.apply(null, ks.map(function (k) { return S.days[k].max; }))) + " ft NAVD88, " +
+    (sr.rank === 1 ? "<b>the highest</b>" : "the " + esc(ord(sr.rank)) + " highest") + " for those dates in " + sr.of + " years of record." +
     (sr.rank > 1 ? " Highest: " + ft(sr.highest[1]) + " ft in water year " + sr.highest[0] + "." : "") + "</li>");
   mk.forEach(function (k) {
     var rk = S.ranks[k]; if (!rk) return;
-    items.push("<li><b>" + MONL[+k.slice(5) - 1] + " " + k.slice(0, 4) + ":</b> highest water " + ft(S.months[k].max) + " ft, the " + (rk.rank === 1 ? "<b>highest</b>" : esc(ord(rk.rank)) + " highest") +
-      " " + MONL[+k.slice(5) - 1] + " of " + rk.of + " on record" + (rk.record && rk.rank > 1 ? " (record " + ft(rk.record[1]) + " ft in " + rk.record[0] + ")" : "") +
-      ". Usual " + MONL[+k.slice(5) - 1] + " highest: " + ft(h.usual[String(+k.slice(5))].max_median) + " ft.</li>");
+    var mo = MONL[+k.slice(5) - 1], open = k === mk[mk.length - 1] && S.days[last] && last.slice(0, 7) === k &&
+      +last.slice(8) < new Date(Date.UTC(+k.slice(0, 4), +k.slice(5), 0)).getUTCDate();   // the month isn't over yet
+    items.push("<li><b>" + mo + " " + k.slice(0, 4) + (open ? " so far" : "") + ":</b> highest water " + ft(S.months[k].max) + " ft NAVD88, " +
+      (open ? (rk.rank === 1 ? "<b>already higher than any whole " + mo + "</b>" : "so far the " + esc(ord(rk.rank)) + " highest " + mo) :
+        (rk.rank === 1 ? "<b>the highest " + mo + "</b>" : "the " + esc(ord(rk.rank)) + " highest " + mo)) +
+      " in " + rk.of + " years of record" + (rk.record && rk.rank > 1 ? " (record " + ft(rk.record[1]) + " ft in " + rk.record[0] + ")" : "") +
+      ". Usual " + mo + " highest: " + ft(h.usual[String(+k.slice(5))].max_median) + " ft.</li>");
   });
   $("record").innerHTML = "<ul class='plain'>" + items.join("") + "</ul><p class='note'>NOAA’s record at " + esc(S.name) + " (" + esc(S.id) + "): " + h.years_with_data +
     " years with data, " + h.first_year + "–" + h.last_year + ". Months with less than 80% of their days aren’t ranked." +
