@@ -35,6 +35,7 @@ import os
 import statistics
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -55,6 +56,8 @@ COUNTY_SAME = "006081"          # San Mateo County
 BASE_YEARS = 19                 # usual counts and ranges: the last 19 complete water years
 MONTH_COVER = 0.8               # a month counts in the history if at least 80% of its days have data
 HIST_BUDGET_S = 75              # time for history downloads in one run
+HIST_MAX_REQUESTS = 20          # history years asked for in one run (NOAA refused with 403 after about 150 quick requests)
+HIST_PAUSE_S = 1.0              # pause before each history request
 RECOMPUTE_DAYS = 2              # the last 2 complete days are recomputed each run (NOAA fills gaps late)
 FT_PER_M = 3.28084
 
@@ -378,10 +381,24 @@ def rank(value, others):
     return 1 + sum(1 for v in others if v > value)
 
 
-def build_station(sid, name, side, prev_st, hist, extra, today, now_local, fetch, log):
-    mhhw, mllw = datums(sid, fetch)
+def fetch_station(sid, prev_st, extra, today, now_local, fetch, log):
+    """The parts NOAA must answer this run (datums, this season, the projection), before any history download, so a
+    busy NOAA (it refuses with 403 after many requests) never costs the season numbers."""
+    try:
+        mhhw, mllw = datums(sid, fetch)
+    except Exception:   # noqa: BLE001  keep last run's datums if NOAA won't answer
+        if not prev_st or prev_st.get("mhhw") is None:
+            raise
+        mhhw, mllw = prev_st["mhhw"], prev_st["mllw"]
     levels = levels_for(sid, mhhw, mllw, extra)
     days = update_season((prev_st or {}).get("days"), sid, levels, today, fetch, log)
+    proj = update_projection((prev_st or {}).get("proj"), sid, today, now_local, fetch, log)
+    proj = {d: p for d, p in proj.items() if d >= water_year_start(today).isoformat()}
+    return {"mhhw": mhhw, "mllw": mllw, "levels": levels, "days": days, "proj": proj}
+
+
+def build_station(sid, name, side, part, hist, today):
+    levels, days = part["levels"], part["days"]
     months = month_summary(days, levels)
     hd = history_days(hist.get(sid, {}))
     hs = history_stats(hd, levels, today) if hd else None
@@ -397,30 +414,55 @@ def build_station(sid, name, side, prev_st, hist, extra, today, now_local, fetch
         past = [v for y, v in hs["wy_same_dates"]]
         if season_max is not None and past:
             ranks["season"] = {"rank": rank(season_max, past), "of": len(past) + 1, "highest": max(hs["wy_same_dates"], key=lambda p: p[1])}
-    proj = update_projection((prev_st or {}).get("proj"), sid, today, now_local, fetch, log)
-    proj = {d: p for d, p in proj.items() if d >= water_year_start(today).isoformat()}
-    return {"id": sid, "name": name, "side": side, "mhhw": mhhw, "mllw": mllw, "levels": levels, "days": days, "months": months,
-            "history": hs, "ranks": ranks, "proj": proj}
+    return {"id": sid, "name": name, "side": side, "mhhw": part["mhhw"], "mllw": part["mllw"], "levels": levels, "days": days,
+            "months": months, "history": hs, "ranks": ranks, "proj": part["proj"]}
 
 
-def run(previous, history, now_utc, fetch=get_json, log=print, budget_s=HIST_BUDGET_S, clock=time.time, extra=None):
+def run(previous, history, now_utc, fetch=get_json, log=print, budget_s=HIST_BUDGET_S, clock=time.time, extra=None,
+        max_requests=None, pause=None, sleep=None):
     from zoneinfo import ZoneInfo
     now_local = now_utc.astimezone(ZoneInfo("America/Los_Angeles")).replace(tzinfo=None)
     today = now_local.date()
     wy0 = water_year_start(today)
     extra = load_extra_levels() if extra is None else extra
-    per = budget_s / len(STATIONS)
     stations, problems = [], []
     prev_st = {s["id"]: s for s in (previous or {}).get("stations", [])} if (previous or {}).get("water_year") == wy_label(wy0) else {}
+    # 1. this season at every gauge
+    parts = {}
     for sid, name, side, first in STATIONS:
         try:
-            update_history(history, sid, first, wy0, fetch, per, log, clock)
-            stations.append(build_station(sid, name, side, prev_st.get(sid), history, extra, today, now_local, fetch, log))
+            parts[sid] = fetch_station(sid, prev_st.get(sid), extra, today, now_local, fetch, log)
         except Exception as e:   # noqa: BLE001
             problems.append("%s: %s" % (name, str(e)[:160]))
             log("  %s: %s" % (name, e))
-            if sid in prev_st:
-                stations.append(prev_st[sid])
+    # 2. the history, a few years at a time, gently (NOAA refuses after too many quick requests); any refusal ends it for this run
+    left = [HIST_MAX_REQUESTS if max_requests is None else max_requests]
+    pause = HIST_PAUSE_S if pause is None else pause
+    sleep = sleep or time.sleep
+
+    def slow_fetch(url):
+        if left[0] <= 0:
+            raise RuntimeError("history request limit for this run")
+        left[0] -= 1
+        if pause:
+            sleep(pause)
+        try:
+            return fetch(url)
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 429):   # NOAA is refusing: no more history this run
+                left[0] = 0
+            raise
+    t_end = clock() + budget_s
+    for sid, name, side, first in STATIONS:
+        if left[0] <= 0 or clock() > t_end:
+            break
+        update_history(history, sid, first, wy0, slow_fetch, max(0.0, t_end - clock()), log, clock)
+    # 3. the numbers
+    for sid, name, side, first in STATIONS:
+        if sid in parts:
+            stations.append(build_station(sid, name, side, parts[sid], history, today))
+        elif sid in prev_st:
+            stations.append(prev_st[sid])
     nws = nws_coastal([a for a in (previous or {}).get("nws", []) if (a.get("onset") or "") >= wy0.isoformat()], fetch, log)
     return {"generated": now_local.strftime("%Y-%m-%d %H:%M"), "generated_utc": now_utc.strftime("%Y-%m-%dT%H:%MZ"),
             "water_year": wy_label(wy0), "wy_start": wy0.isoformat(), "stations": stations, "nws": nws, "problems": problems}

@@ -8,6 +8,7 @@ import urllib.parse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tide_tracker as T
+T.HIST_PAUSE_S = 0
 
 fails = checks = 0
 
@@ -158,6 +159,26 @@ check("next day: all days still there", len({x["id"]: x for x in out2["stations"
 NOW3 = dt.datetime(2027, 10, 1, 19, 0, tzinfo=dt.timezone.utc)
 out3 = T.run(out2, hist, NOW3, fetch=fetch, log=lambda *a: None, budget_s=8, clock=clock, extra=extra)
 check("new water year: WY2028, last year's days dropped", out3["water_year"] == "WY2028" and all(k >= "2027-10-01" for k in out3["stations"][0]["days"]))
+
+# NOAA refusing (403) after a while: the season numbers come first and survive; the history stops for the run
+import urllib.error
+n_ok = [0]
+
+
+def busy(url):
+    if "high_low" in url:
+        n_ok[0] += 1
+        if n_ok[0] > 3:
+            raise urllib.error.HTTPError(url, 403, "Forbidden", {}, None)
+    return fetch(url)
+
+
+h4 = {}
+calls.clear()
+out4 = T.run({}, h4, NOW, fetch=busy, log=lambda *a: None, budget_s=100, clock=clock, extra=extra)
+check("403 on history: all four gauges still have this season", len(out4["stations"]) == 4 and all(len(x["days"]) == 29 for x in out4["stations"]) and out4["problems"] == [])
+check("403 on history: no more history asked for this run", n_ok[0] == 4 and sum(len(v) for v in h4.values()) == 3)
+check("history: no more than the per-run limit", len([u for u in calls if "high_low" in u]) <= T.HIST_MAX_REQUESTS)
 
 # the real levels file
 lv = T.load_extra_levels()
