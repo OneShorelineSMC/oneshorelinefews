@@ -155,6 +155,22 @@ def daterange(a, b):
 
 
 # ---------------------------------------------------------------------------------------------------- this season
+def skew_surges(meas, table):
+    """Skew surge at each of the day's high tides: the highest measured water within 3 hours of the tide table's high
+    tide, minus that predicted high, whenever the measured peak came. Unlike measured minus tide table at the same minute
+    (the non-tidal residual), it isn't thrown off by a tide that arrives a little early or late. [(predicted high time, ft)]"""
+    tv = [(t, v) for t, v, _ in table]
+    mt = [(t, v) for t, v, _ in meas]
+    out = []
+    for i in range(1, len(tv) - 1):
+        if tv[i][1] >= tv[i - 1][1] and tv[i][1] > tv[i + 1][1]:   # a predicted high tide
+            c = int(tv[i][0][11:13]) * 60 + int(tv[i][0][14:16])
+            near = [v for t, v in mt if abs(int(t[11:13]) * 60 + int(t[14:16]) - c) <= 180]
+            if len(near) >= 40:   # most of the 6 hours around it measured
+                out.append((tv[i][0][11:16], round(max(near) - tv[i][1], 2)))
+    return out
+
+
 def day_stats(meas, table, levels):
     """One day's record from its 6-minute measured and tide table values [(time, v)]."""
     if not meas:
@@ -168,7 +184,11 @@ def day_stats(meas, table, levels):
            "res_mean": round(statistics.mean(r for _, r in res), 2) if res else None,
            "res_max": round(max(r for _, r in res), 2) if res else None,
            "res_t": max(res, key=lambda p: p[1])[0][11:16] if res else None,
+           "skew": None, "skew_t": None,
            "min": {}}
+    sk = skew_surges(meas, table)
+    if sk:
+        rec["skew_t"], rec["skew"] = max(sk, key=lambda p: p[1])
     for lv in levels:
         rec["min"][lv["key"]] = 6 * sum(1 for _, v, _ in meas if v >= lv["ft"])
     return rec
@@ -179,7 +199,7 @@ def update_season(prev_days, station, levels, today, fetch=get_json, log=print):
     start = water_year_start(today)
     days = {d: r for d, r in (prev_days or {}).items() if d >= start.isoformat()}
     keep_to = today - dt.timedelta(days=RECOMPUTE_DAYS)
-    need = [d for d in daterange(start, today) if d >= keep_to or d.isoformat() not in days]
+    need = [d for d in daterange(start, today) if d >= keep_to or d.isoformat() not in days or "skew" not in days[d.isoformat()]]
     if not need:
         return days
     a = need[0]
@@ -513,7 +533,7 @@ def closeouts(previous, stations, studies, enso, today):
 def month_summary(days, levels):
     out = {}
     for d, r in sorted(days.items()):
-        m = out.setdefault(d[:7], {"days": 0, "max": None, "max_date": None, "table": None, "res": [], "surge": None, "surge_date": None,
+        m = out.setdefault(d[:7], {"days": 0, "max": None, "max_date": None, "table": None, "res": [], "surge": None, "surge_date": None, "skew": None, "skew_date": None,
                                     "count": {lv["key"]: 0 for lv in levels}, "hours": {lv["key"]: 0 for lv in levels}})
         m["days"] += 1
         if m["max"] is None or r["max"] > m["max"]:
@@ -523,7 +543,9 @@ def month_summary(days, levels):
         if r.get("res_mean") is not None:
             m["res"].append(r["res_mean"])
         if r.get("res_max") is not None and (m["surge"] is None or r["res_max"] > m["surge"]):
-            m["surge"], m["surge_date"] = r["res_max"], d + " " + (r.get("res_t") or "")
+            m["surge"], m["surge_date"] = r["res_max"], d + " " + (r.get("res_t") or "")   # largest non-tidal residual (6-minute)
+        if r.get("skew") is not None and (m["skew"] is None or r["skew"] > m["skew"]):
+            m["skew"], m["skew_date"] = r["skew"], d + " " + (r.get("skew_t") or "")       # largest skew surge
         for lv in levels:
             k = lv["key"]
             m["count"][k] += 1 if r["max"] >= lv["ft"] else 0

@@ -132,6 +132,14 @@ check("today: the tide table's peak time is kept, and whether it has passed (mea
       tdy["peak_passed"] == (int(tdy["table_t"][:2]) * 60 + int(tdy["table_t"][3:]) + 60 <= 17 * 60))
 check("complete days carry no peak flag", "peak_passed" not in r["days"]["2026-10-28"])
 d = r["days"]["2026-10-20"]
+check("skew surge on the surge day: 1 + 1.2 ft above each predicted high", abs(d["skew"] - 2.2) < 0.03 and d["skew_t"])
+check("skew surge on an ordinary day: about 1 ft", abs(r["days"]["2026-10-10"]["skew"] - 1.0) < 0.03)
+# a tide that comes 30 minutes late: the 6-minute residual jumps, the skew surge doesn't
+base = dt.datetime(2026, 1, 1)
+tbl = [((base + dt.timedelta(minutes=6 * i)).strftime("%Y-%m-%d %H:%M"), 3.5 + 3 * math.cos(2 * math.pi * (i * 6 / 60) / 12.42), "") for i in range(240)]
+late = [((base + dt.timedelta(minutes=6 * i)).strftime("%Y-%m-%d %H:%M"), 3.5 + 3 * math.cos(2 * math.pi * ((i * 6 - 30) / 60) / 12.42), "") for i in range(240)]
+rr = T.day_stats(late, tbl, [])
+check("late tide: skew surge about 0, residual about 0.4 ft", abs(rr["skew"]) < 0.02 and rr["res_max"] > 0.3)
 check("surge day: about 2.2 ft above the table at most, averaging about 2.2", abs(d["res_max"] - 2.2) < 0.02 and abs(d["res_mean"] - 2.2) < 0.02)
 check("surge day reaches the flood level for some minutes", d["min"]["flood"] > 0 and d["max"] >= 8.5)
 check("ordinary day: 1 ft above the table", abs(r["days"]["2026-10-10"]["res_mean"] - 1.0) < 0.02)
