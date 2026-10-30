@@ -351,6 +351,28 @@ def update_projection(prev, station, today, now_local, fetch=get_json, log=print
     return out
 
 
+# ---------------------------------------------------------------------------------------------------- El Nino
+def enso_update(previous, today, get_text=None, log=print):
+    """NOAA CPC's Oceanic Nino Index, once a day: the latest 3-month value and each winter's (Dec-Feb) value by water year
+    (the winter of water year 2016 is Dec 2015-Feb 2016). El Nino at +0.5 or more, La Nina at -0.5 or less."""
+    prev = previous or {}
+    if prev.get("fetched") == today.isoformat():
+        return prev
+    try:
+        import tide_offset
+        text = (get_text or tide_offset.get_text)(tide_offset.ONI_URL)
+        oni, last = tide_offset.parse_oni(text)
+    except Exception as e:   # noqa: BLE001
+        log("  ONI: %s" % e)
+        return prev
+    if not oni:
+        return prev
+    winters = {str(y): round(v, 2) for (y, m), v in sorted(oni.items()) if m == 1}   # DJF, centred on January
+    recent = [[y, m, round(v, 2)] for (y, m), v in sorted(oni.items())][-15:]
+    return {"fetched": today.isoformat(), "latest": [last[0], last[1], round(last[2], 2)] if last else None, "winters": winters, "recent": recent,
+            "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), oni.ascii.txt"}
+
+
 # ---------------------------------------------------------------------------------------------------- summaries
 def month_summary(days, levels):
     out = {}
@@ -419,7 +441,7 @@ def build_station(sid, name, side, part, hist, today):
 
 
 def run(previous, history, now_utc, fetch=get_json, log=print, budget_s=HIST_BUDGET_S, clock=time.time, extra=None,
-        max_requests=None, pause=None, sleep=None):
+        max_requests=None, pause=None, sleep=None, get_text=None):
     from zoneinfo import ZoneInfo
     now_local = now_utc.astimezone(ZoneInfo("America/Los_Angeles")).replace(tzinfo=None)
     today = now_local.date()
@@ -464,8 +486,9 @@ def run(previous, history, now_utc, fetch=get_json, log=print, budget_s=HIST_BUD
         elif sid in prev_st:
             stations.append(prev_st[sid])
     nws = nws_coastal([a for a in (previous or {}).get("nws", []) if (a.get("onset") or "") >= wy0.isoformat()], fetch, log)
+    enso = enso_update((previous or {}).get("enso"), today, get_text, log)
     return {"generated": now_local.strftime("%Y-%m-%d %H:%M"), "generated_utc": now_utc.strftime("%Y-%m-%dT%H:%MZ"),
-            "water_year": wy_label(wy0), "wy_start": wy0.isoformat(), "stations": stations, "nws": nws, "problems": problems}
+            "water_year": wy_label(wy0), "wy_start": wy0.isoformat(), "stations": stations, "nws": nws, "enso": enso, "problems": problems}
 
 
 def main():

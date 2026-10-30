@@ -9,6 +9,8 @@ import urllib.parse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tide_tracker as T
 T.HIST_PAUSE_S = 0
+import tide_offset
+tide_offset.get_text = lambda url, timeout=30: ""   # no network in tests: CPC's ONI table comes back empty
 
 fails = checks = 0
 
@@ -179,6 +181,25 @@ out4 = T.run({}, h4, NOW, fetch=busy, log=lambda *a: None, budget_s=100, clock=c
 check("403 on history: all four gauges still have this season", len(out4["stations"]) == 4 and all(len(x["days"]) == 29 for x in out4["stations"]) and out4["problems"] == [])
 check("403 on history: no more history asked for this run", n_ok[0] == 4 and sum(len(v) for v in h4.values()) == 3)
 check("history: no more than the per-run limit", len([u for u in calls if "high_low" in u]) <= T.HIST_MAX_REQUESTS)
+
+# El Nino: CPC's ONI table, once a day; each water year's winter (DJF) value
+ONI_TEXT = """ SEAS  YR   TOTAL   ANOM
+  DJF 2015  27.66   0.55
+  NDJ 2015  29.0    2.64
+  DJF 2016  29.05   2.48
+  JFM 2016  28.0    2.14
+  DJF 2026  26.0   -0.61
+  SON 2026  27.5    1.21
+"""
+got = []
+e = T.enso_update(None, dt.date(2026, 10, 30), get_text=lambda u: got.append(u) or ONI_TEXT, log=lambda *a: None)
+check("ONI: winters by water year (DJF)", e["winters"] == {"2015": 0.55, "2016": 2.48, "2026": -0.61} and e["latest"] == ["SON", 2026, 1.21])
+e2 = T.enso_update(e, dt.date(2026, 10, 30), get_text=lambda u: got.append(u) or ONI_TEXT, log=lambda *a: None)
+check("ONI: fetched once a day", len(got) == 1 and e2 is e)
+def boom(u):
+    raise OSError("down")
+e3 = T.enso_update(e, dt.date(2026, 10, 31), get_text=boom, log=lambda *a: None)
+check("ONI: CPC down keeps the last values", e3 is e)
 
 # the real levels file
 lv = T.load_extra_levels()
