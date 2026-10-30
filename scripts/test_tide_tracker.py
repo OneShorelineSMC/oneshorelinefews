@@ -60,6 +60,17 @@ def fetch(url):
         st = url.split("/stations/")[1].split("/")[0]
         mh = {"9414523": 7.02, "9414750": 6.37, "9414290": 5.86, "9413450": 5.48}[st]
         return {"datums": [{"name": "MHHW", "value": mh + 10}, {"name": "MLLW", "value": 10 - 0.1}, {"name": "NAVD88", "value": 10.0}]}
+    if "arcgis.com" in url:   # the study's points: one near Redwood City, one far away
+        if url.endswith("FeatureServer?f=json"):
+            return {"layers": [{"id": 3, "name": "points"}]}
+        if url.endswith("/3?f=json"):
+            return {"fields": [{"name": "OBJECTID", "type": "esriFieldTypeOID"}, {"name": "PointID", "type": "esriFieldTypeInteger"},
+                               {"name": "MHHW", "type": "esriFieldTypeDouble"}] +
+                              [{"name": "ET_%dYR" % t, "alias": "%d-yr extreme tide" % t, "type": "esriFieldTypeDouble"} for t in (1, 2, 5, 10, 25, 50, 100, 500)]}
+        vals = {1: 8.3, 2: 8.6, 5: 9.0, 10: 9.3, 25: 9.7, 50: 10.0, 100: 10.3, 500: 11.0}
+        mk = lambda pid, x, y, add: {"geometry": {"x": x, "y": y}, "attributes": dict({"OBJECTID": pid, "PointID": 760 + pid, "MHHW": 7.1},   # noqa: E731
+                                                                                         **{"ET_%dYR" % t: v + add for t, v in vals.items()})}
+        return {"features": [mk(1, -122.2120, 37.5080, 0.0), mk(2, -122.2500, 37.5300, 0.5)]}
     if "weather.gov" in url:
         return {"features": [
             {"properties": {"event": "Coastal Flood Advisory", "status": "Actual", "geocode": {"SAME": ["006081"]}, "onset": "2026-10-20T08:00:00-07:00",
@@ -208,6 +219,28 @@ def boom(u):
     raise OSError("down")
 e3 = T.enso_update(e, dt.date(2026, 10, 31), get_text=boom, log=lambda *a: None)
 check("ONI: CPC down keeps the last values", e3 is e)
+
+# return periods from the study's levels
+st = out["study"]
+check("study: nearest point to Redwood City, values by return period", st["9414523"]["point"] == 761 and st["9414523"]["values"]["100"] == 10.3 and st["9414523"]["dist_m"] < 200)
+check("study: fetched once, then kept for a month", st.get("_fetched") == "2026-10-29")
+V = st["9414523"]["values"]
+check("return period: below the 1-year level", T.return_period(8.0, V) == 0.0)
+check("return period: on a level", T.return_period(9.0, V) == 5.0)
+check("return period: between levels, on log scale", 2.0 < T.return_period(8.8, V) < 5.0)
+check("return period: beyond the 500-year", T.return_period(11.5, V) > 500)
+check("study fields found by alias", T.study_fields([{"name": "a", "alias": "100-yr", "type": "esriFieldTypeDouble"}, {"name": "Yr_5", "type": "esriFieldTypeDouble"}]) == {100: "a", 5: "Yr_5"})
+check("staff file wins", T.study_update({}, dt.date(2026, 10, 29), fetch=lambda u: (_ for _ in ()).throw(OSError("x")), log=lambda *a: None,
+                                        csv_levels={"9414523": {"values": {"1": 8.2}}})["9414523"]["values"] == {"1": 8.2})
+# October closes out once November begins, and stays as recorded
+NOW5 = dt.datetime(2026, 11, 2, 19, 0, tzinfo=dt.timezone.utc)
+MEAS_TO[0] = dt.datetime(2026, 11, 2, 11, 0)
+out5 = T.run(out2, hist, NOW5, fetch=fetch, log=lambda *a: None, budget_s=8, clock=clock, extra=extra)
+co = out5["closeout"]["9414523"]
+check("October closed out with its peak and return period", list(co) == ["2026-10"] and co["2026-10"]["max"] == out5["stations"][0]["months"]["2026-10"]["max"] and co["2026-10"]["study"])
+co["2026-10"]["max"] = 99
+out6 = T.run(out5, hist, NOW5 + dt.timedelta(hours=2), fetch=fetch, log=lambda *a: None, budget_s=8, clock=clock, extra=extra)
+check("a closed month is kept as recorded", out6["closeout"]["9414523"]["2026-10"]["max"] == 99)
 
 # the real levels file
 lv = T.load_extra_levels()

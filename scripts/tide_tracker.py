@@ -32,6 +32,7 @@ import datetime as dt
 import json
 import math
 import os
+import re
 import statistics
 import sys
 import time
@@ -42,6 +43,12 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 LEVELS_CSV = os.path.join(ROOT, "lookups", "tide_tracker_levels.csv")
+EXTREMES_CSV = os.path.join(ROOT, "lookups", "extreme_tides.csv")   # staff override: station, return_years, level_ft, source
+# The SF Bay Tidal Datums and Extreme Tides Study (AECOM for BCDC, 2016) as BCDC publishes it: points around the Bay with the
+# 1- to 500-year still water levels. The nearest point to each gauge is read once a month.
+STUDY_URL = "https://services2.arcgis.com/4Z9x989NrBVrvFwm/arcgis/rest/services/FEMA_AECOM_tidaldatums2016/FeatureServer"
+STUDY_STATIONS = {"9414523": (37.5068, -122.2119), "9414750": (37.7720, -122.3003), "9414290": (37.8063, -122.4659)}
+STUDY_EVERY_DAYS = 30
 NOAA = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 MDAPI = "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/{}/datums.json?units=english"
 NWS = "https://api.weather.gov/alerts/active?area=CA"
@@ -395,6 +402,113 @@ def enso_update(previous, today, get_text=None, log=print):
             "source": "NOAA CPC Oceanic Nino Index (ERSSTv5), oni.ascii.txt"}
 
 
+# ---------------------------------------------------------------------------------------------------- return periods (AEP)
+def study_fields(fields):
+    """{return period in years: field name} from the layer's fields, by name or alias ("ET_100YR", "100-yr", "Year100"...)."""
+    out = {}
+    for f in fields or []:
+        text = ("%s %s" % (f.get("name", ""), f.get("alias", ""))).lower()
+        if f.get("type") not in (None, "esriFieldTypeDouble", "esriFieldTypeSingle", "esriFieldTypeInteger"):
+            continue
+        m = re.search(r"(\d+)\s*[-_ ]?\s*(?:yr|year)", text) or re.search(r"(?:yr|year)\s*[-_ ]?\s*(\d+)", text)
+        if m and int(m.group(1)) in (1, 2, 5, 10, 25, 50, 100, 200, 500) and int(m.group(1)) not in out:
+            out[int(m.group(1))] = f["name"]
+    return out
+
+
+def load_extreme_csv(path=EXTREMES_CSV):
+    out = {}
+    if not os.path.exists(path):
+        return out
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            try:
+                out.setdefault(r["station"].strip(), {"values": {}, "source": (r.get("source") or "").strip(), "from": "lookups/extreme_tides.csv"})["values"][str(int(r["return_years"]))] = float(r["level_ft"])
+            except (KeyError, TypeError, ValueError):
+                continue
+    return out
+
+
+def study_update(previous, today, fetch=get_json, log=print, csv_levels=None):
+    """{station: {"values": {"1": ft, "2": ft, ...}, "point": ..., "dist_m": ..., "source": ...}}: the study's still water levels at
+    the point nearest each gauge, refreshed once a month; lookups/extreme_tides.csv, if staff fill it in, wins."""
+    prev = previous or {}
+    out = {k: v for k, v in prev.items() if not k.startswith("_")}
+    stale = not prev.get("_fetched") or (today - dt.date.fromisoformat(prev["_fetched"])).days >= STUDY_EVERY_DAYS
+    if stale:
+        try:
+            svc = fetch(STUDY_URL + "?f=json")
+            layer = (svc.get("layers") or [{"id": 0}])[0]["id"]
+            info = fetch("%s/%s?f=json" % (STUDY_URL, layer))
+            fm = study_fields(info.get("fields"))
+            if len(fm) < 3:
+                raise ValueError("return period fields not found (fields: %s)" % ", ".join(f.get("name", "") for f in info.get("fields") or [])[:300])
+            for sid, (la, lo) in STUDY_STATIONS.items():
+                q = {"f": "json", "geometry": "%f,%f" % (lo, la), "geometryType": "esriGeometryPoint", "inSR": 4326, "spatialRel": "esriSpatialRelIntersects",
+                     "distance": 6000, "units": "esriSRUnit_Meter", "outFields": "*", "returnGeometry": "true", "outSR": 4326}
+                feats = fetch("%s/%s/query?%s" % (STUDY_URL, layer, urllib.parse.urlencode(q))).get("features") or []
+                best = None
+                for ft_ in feats:
+                    g = ft_.get("geometry") or {}
+                    if "x" not in g:
+                        continue
+                    dx = math.radians(g["x"] - lo) * math.cos(math.radians(la)) * 6371000
+                    dy = math.radians(g["y"] - la) * 6371000
+                    d = math.hypot(dx, dy)
+                    vals = {str(T): ft_["attributes"].get(name) for T, name in fm.items()}
+                    if all(isinstance(v, (int, float)) for v in vals.values()) and (best is None or d < best[0]):
+                        best = (d, ft_, vals)
+                if best:
+                    a = best[1]["attributes"]
+                    pid = next((a[k] for k in a if k.lower() in ("point", "pointid", "point_id", "id", "site", "station", "name")), a.get("OBJECTID"))
+                    out[sid] = {"values": {k: round(float(v), 2) for k, v in best[2].items()}, "point": pid, "dist_m": round(best[0]),
+                                "lat": round(best[1]["geometry"]["y"], 5), "lon": round(best[1]["geometry"]["x"], 5),
+                                "source": "SF Bay Tidal Datums and Extreme Tides Study (AECOM for BCDC, 2016), BCDC FEMA_AECOM_tidaldatums2016", "fields": {str(k): v for k, v in fm.items()}}
+            out["_fetched"] = today.isoformat()
+        except Exception as e:   # noqa: BLE001
+            log("  extreme tides study: %s" % e)
+            out["_error"] = str(e)[:300]
+    else:
+        out["_fetched"] = prev["_fetched"]
+    for sid, v in (load_extreme_csv() if csv_levels is None else csv_levels).items():
+        out[sid] = v
+    return out
+
+
+def return_period(v, values):
+    """Return period (years) of water level v from the study's levels {"1": ft, ...}, interpolated on log(return period);
+    (< 1 below the 1-year level, > the largest above it)."""
+    pts = sorted((int(T), ft_) for T, ft_ in values.items())
+    if not pts or v is None:
+        return None
+    if v < pts[0][1]:
+        return 0.0
+    for (t0, f0), (t1, f1) in zip(pts, pts[1:]):
+        if f0 <= v <= f1 and f1 > f0:
+            return round(math.exp(math.log(t0) + (math.log(t1) - math.log(t0)) * (v - f0) / (f1 - f0)), 1)
+    return float(pts[-1][0]) + 0.5   # beyond the largest
+
+
+def closeouts(previous, stations, studies, enso, today):
+    """Each finished month's peak at each gauge and its return period from the study, recorded once and then kept as is."""
+    out = {k: v for k, v in (previous or {}).items()}
+    cur = "%04d-%02d" % (today.year, today.month)
+    winters = (enso or {}).get("winters") or {}
+    latest = (enso or {}).get("latest")
+    for st in stations:
+        rec = out.setdefault(st["id"], {})
+        for mk, m in (st.get("months") or {}).items():
+            if mk >= cur or mk in rec or m.get("max") is None:
+                continue
+            vals = (studies.get(st["id"]) or {}).get("values")
+            wy = int(mk[:4]) + (1 if int(mk[5:]) >= 10 else 0)
+            oni = winters.get(str(wy))
+            rec[mk] = {"max": m["max"], "date": m["max_date"], "rp": return_period(m["max"], vals) if vals else None,
+                       "study": bool(vals), "oni": oni if oni is not None else (latest[2] if latest else None), "oni_prov": oni is None,
+                       "closed": today.isoformat()}
+    return out
+
+
 # ---------------------------------------------------------------------------------------------------- summaries
 def month_summary(days, levels):
     out = {}
@@ -463,7 +577,7 @@ def build_station(sid, name, side, part, hist, today):
 
 
 def run(previous, history, now_utc, fetch=get_json, log=print, budget_s=HIST_BUDGET_S, clock=time.time, extra=None,
-        max_requests=None, pause=None, sleep=None, get_text=None):
+        max_requests=None, pause=None, sleep=None, get_text=None, csv_levels=None):
     from zoneinfo import ZoneInfo
     now_local = now_utc.astimezone(ZoneInfo("America/Los_Angeles")).replace(tzinfo=None)
     today = now_local.date()
@@ -509,8 +623,11 @@ def run(previous, history, now_utc, fetch=get_json, log=print, budget_s=HIST_BUD
             stations.append(prev_st[sid])
     nws = nws_coastal([a for a in (previous or {}).get("nws", []) if (a.get("onset") or "") >= wy0.isoformat()], fetch, log)
     enso = enso_update((previous or {}).get("enso"), today, get_text, log)
+    study = study_update((previous or {}).get("study"), today, fetch, log, csv_levels)
+    close = closeouts((previous or {}).get("closeout") if (previous or {}).get("water_year") == wy_label(wy0) else {}, stations, study, enso, today)
     return {"generated": now_local.strftime("%Y-%m-%d %H:%M"), "generated_utc": now_utc.strftime("%Y-%m-%dT%H:%MZ"),
-            "water_year": wy_label(wy0), "wy_start": wy0.isoformat(), "stations": stations, "nws": nws, "enso": enso, "problems": problems}
+            "water_year": wy_label(wy0), "wy_start": wy0.isoformat(), "stations": stations, "nws": nws, "enso": enso,
+            "study": study, "closeout": close, "problems": problems}
 
 
 def main():
