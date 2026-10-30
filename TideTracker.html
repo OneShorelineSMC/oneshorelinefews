@@ -115,7 +115,9 @@
     <div class="tablewrap" tabindex="0" role="region" aria-label="Monthly summary (scrolls sideways)"><table id="months"></table></div>
     <p class="note">Days at or above a level count a day once however long the water stayed there; the hours show how long. In small type:
       the usual number of days for that month (average of the last <span class="baseN">19</span> water years). “Above the tide table”: the month’s
-      average of measured minus tide table (the Bay running high or low). “Biggest surge”: the largest measured minus tide table.</p>
+      average of measured minus tide table, the non-tidal residual: the Bay running high or low for weeks (El Niño, warm water, coastal ocean waves) plus any storms and runoff.
+      “Skew surge”: at each high tide, the highest measured water minus the tide table’s high for that tide, whenever the peak came; the month’s largest is shown.
+      It measures how much higher a high tide came in than predicted, and unlike a minute-by-minute difference it isn’t thrown off by a tide that arrives a little early or late.</p>
   </div>
 
   <div class="card">
@@ -147,7 +149,7 @@
       <summary>How this works</summary>
       <ul>
         <li><b>This season:</b> NOAA’s 6-minute measured water level and tide table at each gauge, from Oct 1. For each day: the highest water and
-          when, the tide table’s highest, measured minus tide table (the day’s average and largest), and the minutes at or above each level.
+          when, the tide table’s highest, measured minus tide table (the non-tidal residual: the day’s average and largest), the skew surge at each high tide, and the minutes at or above each level.
           Updated hourly; the last two days are recomputed as NOAA fills gaps. Today is partial.</li>
         <li><b>Levels:</b> MHHW (NOAA’s average higher high water at the gauge); NOAA’s minor high tide flooding level, derived the way NOAA does
           nationally (MHHW + 0.5 m + 4% of the tide range; about 9.0 ft at Redwood City); and staff levels from
@@ -315,7 +317,7 @@ function tiles() {
     "<div class='s'>" + (best ? esc(dWk(best.k)) + ", " + esc(tLabel(best.r.t)) : "") + "</div>" +
     (best && studyFor(S.id) ? "<div class='s'>" + esc(rpText(rpOf(best.r.max, studyFor(S.id).values), studyFor(S.id).values)) + "</div>" : "") +
     (sr ? "<div class='s'>" + (sr.rank === 1 ? "<b>Highest start to a water year on record</b>" : esc(ord(sr.rank)) + " highest for these dates in " + sr.of + " years of record") + "</div>" : "") + "</div>";
-  h += "<div class='tile'><div class='k'>Above the tide table, season average</div><div class='v'>" + sgn(resAvg) + "<small> ft</small></div>" +
+  h += "<div class='tile'><div class='k'>Bay above the tide table, season average (non-tidal residual)</div><div class='v'>" + sgn(resAvg) + "<small> ft</small></div>" +
     "<div class='s'>" + (cm.res_mean != null ? MONL[+cur.slice(5) - 1] + ": " + sgn(cm.res_mean) + " ft" : "") + "</div></div>";
   S.levels.forEach(function (l) {
     var n = ks.filter(function (k) { return S.days[k].max >= l.ft; }).length;
@@ -374,14 +376,15 @@ function graph() {
 
 function months() {
   var mk = monthKeys();
-  var head = "<thead><tr><th>Month</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th class='n'>Tide table highest<span class='sm'>ft NAVD88</span></th><th class='n'>Above the tide table<span class='sm'>ft</span></th><th class='n'>Biggest surge<span class='sm'>ft</span></th>" +
+  var head = "<thead><tr><th>Month</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th class='n'>Tide table highest<span class='sm'>ft NAVD88</span></th><th class='n'>Bay above the tide table<span class='sm'>average non-tidal residual, ft</span></th><th class='n'>Highest high tide above the tide table<span class='sm'>skew surge, ft</span></th>" +
     S.levels.map(function (l) { return "<th class='n'>Days ≥ " + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft NAVD88 · hours</span></th>"; }).join("") + "</tr></thead>";
   var body = mk.map(function (k) {
     var m = S.months[k], u = S.history && S.history.usual[String(+k.slice(5))], rk = S.ranks && S.ranks[k];
     return "<tr><td><b>" + MONL[+k.slice(5) - 1] + " " + k.slice(0, 4) + "</b><span class='sm'>" + m.days + " days" + (rk ? " · highest: " + ord(rk.rank) + " of " + rk.of : "") + "</span></td>" +
       "<td class='n'><b>" + ft(m.max) + "</b><span class='sm'>" + esc(dLabel(m.max_date.slice(0, 10))) + ", " + esc(tLabel(m.max_date.slice(11))) + "</span></td>" +
       "<td class='n'>" + ft(m.table) + "</td><td class='n'>" + sgn(m.res_mean) + "</td>" +
-      "<td class='n'>" + sgn(m.surge) + "<span class='sm'>" + (m.surge_date ? esc(dLabel(m.surge_date.slice(0, 10))) : "") + "</span></td>" +
+      (m.skew != null ? "<td class='n'>" + sgn(m.skew) + "<span class='sm'>" + esc(dLabel(m.skew_date.slice(0, 10))) + ", " + esc(tLabel(m.skew_date.slice(11))) + " high tide</span></td>"
+        : "<td class='n'>–<span class='sm'>after the next update</span></td>") +
       S.levels.map(function (l) { var c = m.count[l.key], ud = u && u.days[l.key];
         return "<td class='n'><b" + (ud != null && c > ud ? " class='up'" : "") + ">" + c + "</b> · " + m.hours[l.key] + " h<span class='sm'>usual " + (ud == null ? "–" : ud) + "</span></td>"; }).join("") + "</tr>";
   }).join("");
@@ -417,11 +420,11 @@ function events() {
   var levels = S.levels.filter(function (l) { return l.key !== "mhhw"; }), lowest = levels.length ? levels[0] : S.levels[0];
   var ks = dayKeys().filter(function (k) { return S.days[k].max >= lowest.ft; }).reverse();
   var nwsOn = function (k) { return (D.nws || []).filter(function (a) { return (a.onset || "").slice(0, 10) <= k && (a.ends || "9").slice(0, 10) >= k; }).map(function (a) { return a.event; }); };
-  $("events").innerHTML = ks.length ? "<thead><tr><th>Day</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th class='n'>Tide table<span class='sm'>ft NAVD88</span></th><th class='n'>Above the tide table<span class='sm'>ft</span></th><th>Reached</th><th>NWS</th></tr></thead><tbody>" +
+  $("events").innerHTML = ks.length ? "<thead><tr><th>Day</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th class='n'>Tide table<span class='sm'>ft NAVD88</span></th><th class='n'>High tide above the tide table<span class='sm'>skew surge, ft</span></th><th>Reached</th><th>NWS</th></tr></thead><tbody>" +
     ks.map(function (k) { var r = S.days[k];
       var hit = levels.filter(function (l) { return r.max >= l.ft; }).map(function (l) { return l.label + (r.min[l.key] ? " (" + r.min[l.key] + " min)" : ""); });
       return "<tr><td>" + esc(dWk(k)) + (r.partial ? " <span class='sm'>so far today</span>" : "") + "</td><td class='n'><b>" + ft(r.max) + "</b><span class='sm'>" + esc(tLabel(r.t)) + "</span></td>" +
-        "<td class='n'>" + ft(r.table) + "</td><td class='n'>" + sgn(r.res_max) + "<span class='sm'>day average " + sgn(r.res_mean) + "</span></td>" +
+        "<td class='n'>" + ft(r.table) + "</td><td class='n'>" + sgn(r.skew != null ? r.skew : r.res_max) + "<span class='sm'>Bay average " + sgn(r.res_mean) + "</span></td>" +
         "<td>" + esc(hit.join(", ")) + "</td><td>" + esc(nwsOn(k).join(", ")) + "</td></tr>"; }).join("") + "</tbody>"
     : "<tbody><tr><td>No days at or above " + esc(lvName(lowest)) + " ft yet this season.</td></tr></tbody>";
   $("evNote").textContent = "Days the water reached " + lvName(lowest) + " ft or more at " + S.name + ", newest first.";
