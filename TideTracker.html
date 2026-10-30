@@ -94,6 +94,11 @@
   </div>
 
   <div class="card">
+    <h2>How this year is tracking against the record</h2>
+    <div id="pace"></div>
+  </div>
+
+  <div class="card">
     <h2>Each day’s highest water</h2>
     <div class="chartbox"><canvas id="ch" role="img" aria-label="Graph of each day's highest water"></canvas></div>
     <div class="key" id="key"></div>
@@ -190,7 +195,51 @@ function render() {
   $("gauges").innerHTML = D.stations.map(function (s) {
     return "<button type='button' data-g='" + esc(s.id) + "' aria-pressed='" + (s.id === gauge) + "'>" + esc(s.name) + (s.side === "coast" ? " (Coastside)" : "") + "</button>"; }).join("");
   Array.prototype.forEach.call(document.querySelectorAll(".baseN"), function (e) { e.textContent = S.history ? S.history.base[1] - S.history.base[0] + 1 : 19; });
-  tiles(); graph(); months(); record(); events(); proj(); nws();
+  tiles(); pace(); graph(); months(); record(); events(); proj(); nws();
+}
+
+/* This year against past water years over the same dates (Oct 1 to today), and what came after this date in those years:
+   all years, and the years with a moderate or stronger El Nino winter (NOAA's Oceanic Nino Index, Dec-Feb, +1.0 or more). */
+function pace() {
+  var P = S.history && S.history.pace, W = (D.enso && D.enso.winters) || {};
+  if (!P || !P.years.length) { $("pace").innerHTML = "<p class='note' style='margin:0'>Waiting for this gauge’s history (it downloads a few years each hour).</p>"; return; }
+  var ks = dayKeys(), n = ks.length, by = new Date(Date.UTC(+D.wy_start.slice(0, 4), 9, 1) + P.day * 86400000);
+  var dateTxt = MON[by.getUTCMonth()] + " " + by.getUTCDate();
+  var nino = P.years.filter(function (y) { return W[String(y.wy)] != null && W[String(y.wy)] >= 1.0; });
+  var L = D.enso && D.enso.latest, ninoNow = L && L[2] >= 1.0;
+  var q = function (a, p) { var x = a.slice().sort(function (u, v) { return u - v; }), i = (x.length - 1) * p, lo = Math.floor(i); return x.length ? x[lo] + (x[Math.min(lo + 1, x.length - 1)] - x[lo]) * (i - lo) : null; };
+  var avg = function (a) { return a.length ? a.reduce(function (u, v) { return u + v; }, 0) / a.length : null; };
+  var lines = [], rows = "";
+  S.levels.forEach(function (l) {
+    var cur = ks.filter(function (k) { return S.days[k].max >= l.ft; }).length;
+    var past = P.years.map(function (y) { return y.by[l.key]; }), rest = P.years.map(function (y) { return y.all[l.key] - y.by[l.key]; });
+    var rk = 1 + past.filter(function (v) { return v > cur; }).length, ties = past.filter(function (v) { return v === cur; }).length;
+    var most = P.years.reduce(function (a, y) { return y.by[l.key] > a.by[l.key] ? y : a; }, P.years[0]);
+    var restN = nino.map(function (y) { return y.all[l.key] - y.by[l.key]; });
+    var lo = cur + q(rest, 0.1), mid = cur + avg(rest), hi = cur + q(rest, 0.9);
+    rows += "<tr><td>" + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft NAVD88</span></td><td class='n'><b>" + cur + "</b></td>" +
+      "<td class='n'>" + avg(past).toFixed(1) + "</td><td class='n'>" + (cur === 0 ? "–" : (rk === 1 ? "<b class='up'>most</b>" : ord(rk)) + (ties > 0 && cur > 0 ? " (tied)" : "") + "<span class='sm'>of " + (P.years.length + 1) + " years</span>") + "</td>" +
+      "<td class='n'>" + most.by[l.key] + "<span class='sm'>" + most.wy + "</span></td>" +
+      "<td class='n'><b>" + Math.round(mid) + "</b><span class='sm'>" + Math.round(lo) + "–" + Math.round(hi) + "</span></td>" +
+      "<td class='n'>" + (restN.length ? Math.round(cur + avg(restN)) : "–") + "<span class='sm'>" + restN.length + " El Niño years</span></td></tr>";
+    if (l.key !== "mhhw" && cur > 0 && rk <= 3) lines.push("<b>" + cur + " day" + (cur === 1 ? "" : "s") + "</b> at " + esc(l.label) + " (" + l.ft.toFixed(2) + " ft) by " + dateTxt + ": " +
+      (rk === 1 ? "the most by this date" : "the " + ord(rk) + " most by this date") + " in " + (P.years.length + 1) + " years (usual " + avg(past).toFixed(1) + ").");
+  });
+  var maxNow = Math.max.apply(null, ks.map(function (k) { return S.days[k].max; }));
+  var mb = P.years.map(function (y) { return y.max_by; }), mrk = 1 + mb.filter(function (v) { return v > maxNow; }).length;
+  var after = P.years.map(function (y) { return y.max - y.max_by; }).filter(function (v) { return v > 0; });
+  lines.unshift("Highest water so far <b>" + maxNow.toFixed(2) + " ft NAVD88</b>: " + (mrk === 1 ? "the highest by " + dateTxt : "the " + ord(mrk) + " highest by " + dateTxt) + " of " + (P.years.length + 1) + " years. " +
+    "In past years the year’s highest came later " + Math.round(100 * after.length / P.years.length) + "% of the time.");
+  if (ninoNow && nino.length) lines.push("This winter is shaping up as El Niño (index " + (L[2] >= 0 ? "+" : "") + L[2].toFixed(1) + "). In the " + nino.length + " past moderate or stronger El Niño years at this gauge (" +
+    nino.map(function (y) { return y.wy; }).join(", ") + "), the year’s highest averaged " + avg(nino.map(function (y) { return y.max; })).toFixed(2) + " ft NAVD88, against " +
+    avg(P.years.map(function (y) { return y.max; })).toFixed(2) + " ft in all years.");
+  $("pace").innerHTML = "<ul class='plain' style='margin-top:0'>" + lines.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>" +
+    "<div class='tablewrap' tabindex='0' role='region' aria-label='Tracking against the record (scrolls sideways)'><table><thead><tr><th>Days at or above</th><th class='n'>This year by " + dateTxt + "</th>" +
+    "<th class='n'>Usual by " + dateTxt + "</th><th class='n'>Rank by " + dateTxt + "</th><th class='n'>Most by " + dateTxt + "</th><th class='n'>Likely by Sep 30<span class='sm'>typical (10th–90th)</span></th>" +
+    "<th class='n'>Likely by Sep 30 if like past El Niño years</th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
+    "<p class='note'>Compared with every past water year at " + esc(S.name) + " with data for the same dates (Oct 1 to " + dateTxt + ") and the whole year. “Likely by Sep 30” adds to this year’s count the days that came after " +
+    dateTxt + " in past years (their average, and 10th–90th percentile); the El Niño column uses only years whose winter index was +1.0 or more. Past years are from NOAA’s high and low waters, this year from 6-minute data, so this year can count a few more days. " +
+    "The Bay is higher now than in the early years of the record, so the early years pull the “usual” down.</p>";
 }
 
 function tiles() {
