@@ -386,8 +386,12 @@ and Monterey (all ft NAVD88).
   whole year, days at each level by this date and in the whole year, and the highest by this date and in all. The tracker
   ranks this year by this date and adds the days that came after this date in past years ("likely by Sep 30": average and
   10th-90th percentile; also only the moderate or stronger El Nino years, winter index +1.0 or more).
-- **Not yet:** the 1% (100-year) still water level from the 2016 SF Bay Tidal Datums and Extreme Tides Study as a
-  reference line (to look up from the study's table).
+- **Return periods (Oct 30):** the SF Bay Tidal Datums and Extreme Tides Study (AECOM for BCDC, 2016) 1- to 500-year still
+  water levels at the study point nearest each Bay gauge, read monthly by the data job from BCDC's FEMA_AECOM_tidaldatums2016
+  service (staff can set them instead in `lookups/extreme_tides.csv`: station, return_years, level_ft, source). A water level's
+  return period is interpolated on the log of the return period. Each month's peak is recorded with its return period when
+  the month ends and then kept (the tracker's "Month closeout"). The study levels are for the Bay around 2015; the history
+  page's return-level graph shows each gauge's annual highs (raised to today's sea level) against them.
 
 ## 5. Page logic settings — `settings.csv`
 

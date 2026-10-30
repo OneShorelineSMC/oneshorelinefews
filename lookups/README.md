@@ -93,6 +93,10 @@ show OneRain's Redwood City tide in NAVD88 on the sensor map) · `used_for` · `
 MHHW and NOAA's derived minor flooding level, which come from NOAA's datums: `station` (NOAA id) · `key` (`oneyear`,
 `flood`, or any short name) · `level_ft` (ft NAVD88) · `label` · `source`. Changes show within the hour.
 
+**extreme_tides.csv** (optional) — staff values for the tide tracker's return periods, used instead of the 2016 study's
+levels the data job reads from BCDC: `station` (NOAA id) · `return_years` (1, 2, 5, 10, 25, 50, 100, 500) · `level_ft` (ft NAVD88) ·
+`source`.
+
 **display_text.csv** — `key` · `text` · `shown_on` · `notes`.
 
 **rain_frequency.csv** — `onerain_number` (rain gauge) · `gauge` (its code in `creek_gauges.csv`, if it's already live) ·
