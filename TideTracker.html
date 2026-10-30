@@ -106,6 +106,11 @@
   </div>
 
   <div class="card">
+    <h2>Month closeout: how rare was each month’s high water?</h2>
+    <div id="close"></div>
+  </div>
+
+  <div class="card">
     <h2>Month by month</h2>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Monthly summary (scrolls sideways)"><table id="months"></table></div>
     <p class="note">Days at or above a level count a day once however long the water stayed there; the hours show how long. In small type:
@@ -198,7 +203,7 @@ function render() {
   $("gauges").innerHTML = D.stations.map(function (s) {
     return "<button type='button' data-g='" + esc(s.id) + "' aria-pressed='" + (s.id === gauge) + "'>" + esc(s.name) + (s.side === "coast" ? " (Coastside)" : "") + "</button>"; }).join("");
   Array.prototype.forEach.call(document.querySelectorAll(".baseN"), function (e) { e.textContent = S.history ? S.history.base[1] - S.history.base[0] + 1 : 19; });
-  tiles(); pace(); graph(); months(); record(); events(); proj(); nws();
+  tiles(); pace(); closeout(); graph(); months(); record(); events(); proj(); nws();
 }
 
 /* This year against past water years over the same dates (Oct 1 to today), and what came after this date in those years:
@@ -245,6 +250,59 @@ function pace() {
     "The Bay is higher now than in the early years of the record, so the early years pull the “usual” down.</p>";
 }
 
+/* Return periods from the SF Bay Tidal Datums and Extreme Tides Study (2016): its 1- to 500-year still water levels at the
+   study point nearest the gauge, interpolated on the log of the return period (the data job does the same for the closeout). */
+function studyFor(id) { var st = D.study && D.study[id]; return st && st.values ? st : null; }
+function rpOf(v, vals) {
+  var pts = Object.keys(vals).map(function (T) { return [+T, vals[T]]; }).sort(function (a, b) { return a[0] - b[0]; });
+  if (!pts.length || v == null) return null;
+  if (v < pts[0][1]) return 0;
+  for (var i = 0; i + 1 < pts.length; i++) { var a = pts[i], b = pts[i + 1];
+    if (v >= a[1] && v <= b[1] && b[1] > a[1]) return Math.exp(Math.log(a[0]) + (Math.log(b[0]) - Math.log(a[0])) * (v - a[1]) / (b[1] - a[1])); }
+  return pts[pts.length - 1][0] + 0.5;
+}
+function rpText(rp, vals) {
+  if (rp == null) return "–";
+  if (rp === 0) return "below the 1-year tide";
+  var top = Math.max.apply(null, Object.keys(vals).map(Number));
+  if (rp > top) return "beyond the " + top + "-year level";
+  if (rp < 1.5) return "about the 1-year tide";
+  var n = rp < 10 ? Math.round(rp * 2) / 2 : Math.round(rp);
+  return "about a 1-in-" + n + "-year water level (" + (100 / rp < 10 ? (100 / rp).toFixed(1) : Math.round(100 / rp)) + "% AEP)";
+}
+function oniText(v, prov) { if (v == null) return "–"; var a = Math.abs(v), k = v >= 0.5 ? "El Niño" : v <= -0.5 ? "La Niña" : "neutral";
+  return (k === "neutral" ? "Neutral" : (a >= 2 ? "Very strong " : a >= 1.5 ? "Strong " : a >= 1 ? "Moderate " : "Weak ") + k) + " (" + (v >= 0 ? "+" : "−") + a.toFixed(1) + (prov ? ", latest" : "") + ")"; }
+
+function closeout() {
+  var st = studyFor(S.id), co = (D.closeout || {})[S.id] || {};
+  if (!st) {
+    var err = D.study && D.study._error;
+    $("close").innerHTML = "<p class='note' style='margin:0'>" + (S.id === "9413450" ? "The 2016 study covers San Francisco Bay only, not the coast at Monterey." :
+      "Waiting for the 2016 study’s levels at this gauge" + (err ? " (the last try: " + esc(err) + ")" : "") + ".") + "</p>"; return;
+  }
+  var vals = st.values, mk = monthKeys(), cur = mk[mk.length - 1], rows = "";
+  mk.slice().reverse().forEach(function (k) {
+    var c = co[k], m = S.months[k], live = !c;
+    var v = live ? m.max : c.max, when = live ? m.max_date : c.date, rp = live ? rpOf(v, vals) : c.rp;
+    var W = (D.enso && D.enso.winters) || {}, wy = +k.slice(0, 4) + (+k.slice(5) >= 10 ? 1 : 0), L = D.enso && D.enso.latest;
+    var oni = live ? (W[String(wy)] != null ? W[String(wy)] : L && L[2]) : c.oni, prov = live ? W[String(wy)] == null : c.oni_prov;
+    rows += "<tr><td><b>" + MONL[+k.slice(5) - 1] + " " + k.slice(0, 4) + "</b><span class='sm'>" + (live ? "so far (closes " + MONL[+k.slice(5) % 12] + " 1)" : "closed " + esc(dWk(c.closed))) + "</span></td>" +
+      "<td class='n'><b>" + ft(v) + "</b><span class='sm'>" + esc(dLabel(when.slice(0, 10))) + ", " + esc(tLabel(when.slice(11))) + "</span></td>" +
+      "<td>" + (rp != null && rp >= 1.5 ? "<b>" : "") + esc(rpText(rp, vals)) + (rp != null && rp >= 1.5 ? "</b>" : "") + "</td><td>" + esc(oniText(oni, prov)) + "</td></tr>";
+  });
+  var ks = dayKeys(), mx = Math.max.apply(null, ks.map(function (k) { return S.days[k].max; }));
+  var levels = Object.keys(vals).map(Number).sort(function (a, b) { return a - b; });
+  $("close").innerHTML = "<p style='margin:0 0 8px'>Season’s highest so far, " + ft(mx) + " ft NAVD88: <b>" + esc(rpText(rpOf(mx, vals), vals)) + "</b>.</p>" +
+    "<div class='tablewrap' tabindex='0' role='region' aria-label='Month closeout (scrolls sideways)'><table><thead><tr><th>Month</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th>" +
+    "<th>How rare (2016 study)</th><th>El Niño index (winter)</th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
+    "<p class='note'>Return periods from the SF Bay Tidal Datums and Extreme Tides Study (AECOM for BCDC, 2016): " +
+    levels.map(function (T) { return T + "-year " + vals[String(T)].toFixed(2); }).join(" · ") + " ft NAVD88 at study point " + esc(String(st.point || "")) +
+    (st.dist_m != null ? ", " + (st.dist_m * 3.28084 >= 5280 ? (st.dist_m * 3.28084 / 5280).toFixed(1) + " mi" : Math.round(st.dist_m * 3.28084 / 10) * 10 + " ft") + " from the gauge" : "") +
+    (st.from ? " (staff values in " + esc(st.from) + ")" : "") + ". A water level’s return period is interpolated between those levels. AEP = annual exceedance probability, the chance the " +
+    "water reaches that level in any one year. The study’s levels are still water (no waves) for the Bay as it was around 2015; with the Bay higher now, a given height is somewhat more common than its label. " +
+    "Each month is recorded once it ends and then kept as it was.</p>";
+}
+
 function tiles() {
   var ks = dayKeys(), mk = monthKeys(), cur = mk[mk.length - 1], cm = S.months[cur], mo = String(+cur.slice(5));
   var usual = S.history && S.history.usual[mo];
@@ -255,6 +313,7 @@ function tiles() {
   var sr = S.ranks && S.ranks.season;
   var h = "<div class='tile'><div class='k'>Highest water so far</div><div class='v'>" + ft(best && best.r.max) + "<small> ft NAVD88</small></div>" +
     "<div class='s'>" + (best ? esc(dWk(best.k)) + ", " + esc(tLabel(best.r.t)) : "") + "</div>" +
+    (best && studyFor(S.id) ? "<div class='s'>" + esc(rpText(rpOf(best.r.max, studyFor(S.id).values), studyFor(S.id).values)) + "</div>" : "") +
     (sr ? "<div class='s'>" + (sr.rank === 1 ? "<b>Highest start to a water year on record</b>" : esc(ord(sr.rank)) + " highest of " + sr.of + " water years over the same dates") + "</div>" : "") + "</div>";
   h += "<div class='tile'><div class='k'>Above the tide table, season average</div><div class='v'>" + sgn(resAvg) + "<small> ft</small></div>" +
     "<div class='s'>" + (cm.res_mean != null ? MONL[+cur.slice(5) - 1] + ": " + sgn(cm.res_mean) + " ft" : "") + "</div></div>";

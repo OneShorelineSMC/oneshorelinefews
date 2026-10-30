@@ -145,6 +145,14 @@
   </div>
 
   <div class="card">
+    <h2>How rare is a water level? (return periods)</h2>
+    <div class="bar"><label>Gauge <select id="rGauge"></select></label></div>
+    <div class="chartbox"><canvas id="chRP" role="img" aria-label="Water level against return period"></canvas></div>
+    <div class="key" id="keyRP"></div>
+    <p class="note" id="noteRP"></p>
+  </div>
+
+  <div class="card">
     <h2>El Niño and La Niña years</h2>
     <div class="tablewrap" tabindex="0" role="region" aria-label="El Niño and La Niña years (scrolls sideways)"><table id="ensoT"></table></div>
     <p class="note" id="ensoNote"></p>
@@ -517,7 +525,37 @@ function ensoTable() {
 }
 var ENSO_LATEST = null;
 
+/* Return levels: the 2016 study's 1- to 500-year still water levels at the study point nearest the gauge, and each past
+   water year's highest water at its plotting position (rank / (years + 1)), moved up to today's sea level by the gauge's own
+   trend in the average daily high, so old years are compared fairly. This year's highest so far is a line across. */
+var STUDY = {};
+function rpChart() {
+  var id = $("rGauge").value, st = STUDY[id], ys = fullYears(id), w = H[id].wys;
+  var fa = fit(ys.map(function (y) { return [y, w[y].mean]; })), now = CUR ? CUR.wy : ys[ys.length - 1];
+  var adj = ys.map(function (y) { return w[y].max + (fa ? fa.b * (now - y) : 0); }).sort(function (a, b) { return b - a; });
+  var n = adj.length, emp = adj.map(function (v, i) { return { x: (n + 1) / (i + 1), y: v }; });
+  var sets = [{ label: "Past years’ highest, at today’s sea level (" + n + " years)", data: emp, borderColor: css(GAUGES.filter(function (g) { return g.id === id; })[0].c),
+    backgroundColor: css(GAUGES.filter(function (g) { return g.id === id; })[0].c), showLine: false, pointRadius: 4, pointStyle: GAUGES.filter(function (g) { return g.id === id; })[0].pt }];
+  if (st && st.values) sets.push({ label: "2016 study (" + Object.keys(st.values).join(", ") + "-year)", data: Object.keys(st.values).map(function (T) { return { x: +T, y: st.values[T] }; }).sort(function (a, b) { return a.x - b.x; }),
+    borderColor: css("--trend"), backgroundColor: css("--trend"), borderWidth: 2.5, pointRadius: 3.5, pointStyle: "rect" });
+  var cd = CUR && CUR.days[id], cmx = cd && Object.keys(cd).length ? Math.max.apply(null, Object.keys(cd).map(function (k) { return cd[k]; })) : null;
+  if (cmx != null) sets.push({ label: "Water year " + CUR.wy + " highest so far " + cmx.toFixed(2) + " ft", data: [{ x: 1, y: cmx }, { x: 500, y: cmx }], borderColor: css("--s3"), borderWidth: 2, borderDash: [8, 4], pointRadius: 0 });
+  chart("chRP", { type: "line", data: { datasets: sets }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { var x = it[0].parsed.x; return (x < 10 ? x.toFixed(1) : Math.round(x)) + "-year (" + (100 / x < 10 ? (100 / x).toFixed(1) : Math.round(100 / x)) + "% AEP)"; },
+      label: function (it) { return it.dataset.label.split(" (")[0] + ": " + it.parsed.y.toFixed(2) + " ft NAVD88"; } } } },
+    scales: { x: { type: "logarithmic", min: 1, max: 500, ticks: { color: css("--muted"), callback: function (v) { return [1, 2, 5, 10, 25, 50, 100, 500].indexOf(v) >= 0 ? v + "-yr" : ""; } }, grid: { color: css("--line") },
+        title: { display: true, text: "Return period (years); 1-year = 100% AEP, 100-year = 1% AEP", color: css("--muted") } },
+      y: { grace: "4%", ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") }, title: { display: true, text: "ft NAVD88", color: css("--muted") } } } } });
+  lineKey("keyRP", sets.map(function (x) { return x.showLine === false ? { label: x.label, borderColor: x.borderColor, borderWidth: 0, pointRadius: 4, pointStyle: x.pointStyle } : x; }));
+  var gn = gName(id);
+  $("noteRP").textContent = (st && st.values ? "Red: the SF Bay Tidal Datums and Extreme Tides Study (AECOM for BCDC, 2016) at its point nearest " + gn + " (still water, around 2015 sea level). " :
+    (id === "9414290" || id === "9414750" || id === "9414523" ? "The 2016 study’s levels for this gauge haven’t been read yet. " : "")) +
+    "Dots: each past water year’s highest water at " + gn + ", ranked (highest at the right), raised to today’s sea level by the gauge’s trend (" + (fa ? sgn(fa.b * 10) + " ft per decade" : "–") + "). " +
+    "Where the dots sit above the red line, the gauge reaches those levels more often than the study says, which is what a higher Bay does to a fixed set of levels.";
+}
+
 function render(hist, tracker) {
+  STUDY = tracker.study || {};
   ENSO = (tracker.enso && tracker.enso.winters) || {}; ENSO_LATEST = tracker.enso && tracker.enso.latest;
   CUR = null;
   if (tracker.water_year && tracker.stations) {
@@ -533,7 +571,8 @@ function render(hist, tracker) {
   var fs = yearly(span);
   ["dGauge", "tGauge"].forEach(function (s) { if (!$(s).options.length) $(s).innerHTML = GAUGES.map(function (g) { return "<option value='" + g.id + "'>" + esc(g.name) + "</option>"; }).join(""); });
   levelOptions();
-  qcCard(); daysChart(); season(); exceed(); ensoTable(); compare(); topDays(); findings(fs);
+  if (!$("rGauge").options.length) $("rGauge").innerHTML = GAUGES.map(function (g) { return "<option value='" + g.id + "'>" + esc(g.name) + "</option>"; }).join("");
+  qcCard(); daysChart(); season(); exceed(); rpChart(); ensoTable(); compare(); topDays(); findings(fs);
 }
 function levelOptions() {
   var id = $("dGauge").value, cur = $("dLevel").value;
@@ -554,6 +593,7 @@ syncEnso();
 $("dGauge").addEventListener("change", function () { levelOptions(); daysChart(); });
 $("dLevel").addEventListener("change", daysChart);
 $("tGauge").addEventListener("change", topDays);
+$("rGauge").addEventListener("change", rpChart);
 var t = "?t=" + Math.floor(Date.now() / 600000);
 Promise.all([fetch(BASE + "tide_tracker_history.json" + t, { cache: "no-store" }), fetch(BASE + "tide_tracker.json" + t, { cache: "no-store" })]).then(function (rs) {
   if (!rs[0].ok) throw new Error(rs[0].status === 404 ? "no history published yet" : "HTTP " + rs[0].status);
