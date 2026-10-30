@@ -378,6 +378,10 @@ and Monterey (all ft NAVD88).
   usual range by date (10th-90th percentile, +/- 3 days) use the last 19 complete water years.
 - **Forward-only logs:** NOAA's projection of each day's highest water as of the last run before the day began, compared
   with what was measured; National Weather Service coastal flood products for San Mateo County.
+- **El Nino** (Oct 30): NOAA CPC's Oceanic Nino Index (`oni.ascii.txt`), read once a day. Each water year is labeled by
+  its winter (DJF) value: El Nino at +0.5 or more (weak; moderate from 1.0, strong 1.5, very strong 2.0), La Nina at -0.5
+  or less. The history page (`TideHistory.html`) shades those years on the yearly graphs, labels the highest days, and
+  compares each group of years with the gauge's own straight-line trend.
 - **Not yet:** the 1% (100-year) still water level from the 2016 SF Bay Tidal Datums and Extreme Tides Study as a
   reference line (to look up from the study's table).
 
