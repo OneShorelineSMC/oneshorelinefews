@@ -51,3 +51,7 @@ FORECAST_PUBLIC,1,0 or 1,"Creeks page, home page creek cards",1 = everyone sees 
 FORECAST_SHOW_IN,0.25,in,creek cards,Show the forecast row only when at least this much rain is expected in the next 3 days,,
 FORECAST_EVERY_MIN,60,minutes,data job,Read the NWS forecast (api.weather.gov) at most this often; the 15-minute runs in between reuse it,,
 FORECAST_KEEP_HOURS,12,hours,"data job, creek cards","If NWS can't be reached, keep showing the last forecast (marked 'Not updated since') for this long, then hide it",,
+STORM_MODE,0,"0, 1 or 2",gauge pages,"0 = each gauge page picks storm or normal view by itself (National Weather Service flood or rain products, creek alerts, or rain at the gauges); 1 = storm view everywhere; 2 = normal view everywhere. Viewers can still switch on the page.",,
+STORM_RAIN_3H_IN,0.1,in,gauge pages,Automatic storm view: a rain gauge with at least this much rain in the last 3 hours counts as a storm.,,
+STORM_RAIN_24H_IN,0.5,in,gauge pages,Automatic storm view: or at least this much in the last 24 hours.,,
+STORM_DRY_HOURS,6,hours,gauge pages,Storm total: the storm starts after the last stretch of at least this many hours with no rain.,,
