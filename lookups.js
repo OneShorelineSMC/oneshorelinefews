@@ -40,7 +40,9 @@
     RAIN_NOW_MIN: [60, 15, 180], RAIN_NOW_IN: [0.01, 0.01, 0.5],
     REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200],
     // gauge pages (Gauge.html): storm or normal view
-    STORM_MODE: [0, 0, 2], STORM_RAIN_3H_IN: [0.1, 0.01, 2], STORM_RAIN_24H_IN: [0.5, 0.01, 10], STORM_DRY_HOURS: [6, 1, 48]
+    STORM_MODE: [0, 0, 2], STORM_RAIN_3H_IN: [0.1, 0.01, 2], STORM_RAIN_24H_IN: [0.5, 0.01, 10], STORM_DRY_HOURS: [6, 1, 48],
+    // storm tracker (scripts/storm_tracker.py, same ranges): what counts as a storm at a creek
+    STORM_MIN_IN: [0.1, 0.01, 2], STORM_WET_IN: [0.01, 0.01, 0.2], STORM_RESPONSE_HOURS: [12, 0, 48]
   };
   var TIDES = {
     "9414523": { id: "9414523", name: "Redwood City", mhhw: 7.02 },
