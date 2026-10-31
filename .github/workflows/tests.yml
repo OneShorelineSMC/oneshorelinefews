@@ -71,5 +71,7 @@ jobs:
         run: python scripts/test_outlet_tides.py
       - name: Tide tracker
         run: python scripts/test_tide_tracker.py
+      - name: Storm tracker
+        run: python scripts/test_storm_tracker.py
       - name: Home page severity scale, section order and colors
         run: node scripts/test_home.js

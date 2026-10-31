@@ -5,6 +5,7 @@
 #                   OneShorelineSMC/fews-data-archive); points are [Pacific time, value, UTC time, (USGS codes)]
 #   status_log.csv - creek status changes (creek status layer, staff review), newest last
 #   tide_tracker.json + tide_tracker_history.json - the water year at four NOAA tide gauges against the tide table and history (TideTracker.html)
+#   storm_tracker.json - each rain event at each creek and a season summary per creek (StormTracker.html)
 #   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
@@ -54,6 +55,7 @@ jobs:
             git show FETCH_HEAD:outlet_tides_log.csv > out/outlet_tides_log.csv 2>/dev/null || true
             git show FETCH_HEAD:tide_tracker.json > out/tide_tracker.json 2>/dev/null || true
             git show FETCH_HEAD:tide_tracker_history.json > out/tide_tracker_history.json 2>/dev/null || true
+            git show FETCH_HEAD:storm_tracker.json > out/storm_tracker.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -65,6 +67,13 @@ jobs:
 
       - name: Download from OneRain
         run: python scripts/fetch_onerain.py out/creeks.json
+
+      - name: Storm tracker (staff page; scripts/storm_tracker.py)
+        # Each rain event at each creek (rain, how rare, the creek's response) and a season summary per creek, kept in
+        # storm_tracker.json from the fresh creeks.json. No downloads. A problem here never stops the creek data.
+        continue-on-error: true
+        timeout-minutes: 2
+        run: python scripts/storm_tracker.py out/creeks.json out/storm_tracker.json
 
       - name: Download all sites for the map (every 15 minutes)
         # A problem here never stops the creek data from being published.
@@ -114,6 +123,7 @@ jobs:
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
             $( [ -s tide_tracker.json ] && echo tide_tracker.json ) $( [ -s tide_tracker_history.json ] && echo tide_tracker_history.json ) \
+            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
