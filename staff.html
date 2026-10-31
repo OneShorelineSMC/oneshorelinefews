@@ -12,7 +12,7 @@
      public pages. Not secret: anyone with the address can open it. Each link adds ?preview=1, which turns on the staff
      view of that page. -->
 <style>
-  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #66768a; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587; }
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff; } }
   :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff; }
   * { box-sizing: border-box; }
@@ -34,9 +34,20 @@
   li a:hover b { text-decoration: underline; }
   li a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: -3px; }
   .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tag { color: #ffc27a; border-color: #ffc27a; } }
+  :root[data-theme="dark"] .tag { color: #ffc27a; border-color: #ffc27a; }
   /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
   .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
   @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  /* the public pages' bottom bar (staff, 2026-10-31), with Staff tools on */
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
+    border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }   /* above the map's zoom buttons */
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } }
+  nav a.on { color: var(--ink); font-weight: bold; }
+  @media print { nav { display: none; } body { padding-bottom: 0; } }
 </style>
 </head>
 <body>
@@ -81,5 +92,15 @@
       <span>Creek maps, shoreline hotspots, creek outlets; their logs.</span></a></li>
   </ul>
 </main>
+
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="staff.html" aria-current="page"><span class="i" aria-hidden="true">🧰</span>Staff tools</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+
 </body>
 </html>

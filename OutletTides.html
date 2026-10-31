@@ -79,6 +79,15 @@
   details p, details li { font-size: 14px; }
   code { font-size: 12.5px; }
   a { color: var(--link); }
+  /* the public pages' bottom bar (staff, 2026-10-31), with Staff tools on */
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
+    border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }   /* above the map's zoom buttons */
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } }
+  nav a.on { color: var(--ink); font-weight: bold; }
+  @media print { nav { display: none; } body { padding-bottom: 0; } }
 </style>
 </head>
 <body>
@@ -177,6 +186,16 @@
     </details>
   </div>
 </main>
+
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="staff.html"><span class="i" aria-hidden="true">🧰</span>Staff tools</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+
 <script src="lookups.js?v=20261031a"></script>
 <script>
 "use strict";
