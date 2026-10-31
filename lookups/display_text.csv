@@ -308,3 +308,4 @@ tide_upcoming_note,"Based on the tide table plus current conditions: NOAA’s pr
 tide_day_astro,Astronomical high tide: the tide table reaches the 1-year tide ({ft} ft),Tides page and kiosk calendar key,"{ft} = KING_TIDE_FT_RWC (Bayside) or KING_TIDE_FT_MRY (Coastside); a label, never an alert",,
 tide_day_astro_short,Astronomical high tide (the tide table reaches the 1-year tide),"Tides page and kiosk calendar: a tapped day, screen readers",,,
 tide_flood_where,near the Bay shoreline and in low-lying areas along tidally connected creeks,Bay tide cards and the headline (hero.js): where a tide at the flood level floods,,,
+tide_flood_where_short,near the Bay shoreline and tidal creeks,"shoreline kiosk Bayside Tides headline (one line, time first)",Short version of tide_flood_where so the kiosk line keeps the time,,
