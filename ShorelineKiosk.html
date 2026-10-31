@@ -541,11 +541,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261029a"></script>
-<script src="tide_season.js?v=20261029a"></script>
-<script src="creek_status.js?v=20261029a"></script>
-<script src="severity.js?v=20261029a"></script>
-<script src="hero.js?v=20261029a"></script>
+<script src="lookups.js?v=20261031a"></script>
+<script src="tide_season.js?v=20261031a"></script>
+<script src="creek_status.js?v=20261031a"></script>
+<script src="severity.js?v=20261031a"></script>
+<script src="hero.js?v=20261031a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1190,6 +1190,8 @@ function renderAlerts() {
   bar.className = "sv-hero sv-" + x.level;
   icon.innerHTML = SEVERITY.icon(x.level);
   main.textContent = x.text;
+  // shrink a long headline (down to 16px) before the ellipsis cuts it off
+  main.style.fontSize = ""; for (var fs = 20; fs > 16 && main.scrollWidth > main.clientWidth; fs--) main.style.fontSize = (fs - 1) + "px";
   sub.textContent = [x.sub].concat(x.others.length ? ["Also in effect: " + x.others.join(" · ")] : []).filter(Boolean).join(" · ");
   if (A.list && A.list.length) { more.style.display = ""; more.textContent = "NWS text (" + A.list.length + ") ›"; }
   else more.style.display = "none";

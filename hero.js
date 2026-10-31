@@ -133,7 +133,7 @@
   /* A tide gauge's state, the same everywhere (home cards, the card at the top, the Tides page, the kiosk).
      o = { D: {pred, obs, ofs}, mhhw, red (ft, or Infinity: no flood level), water ("Bay"), nws (alerts), days (7) }.
      Heights from one series: measured, then the NOAA projection (when it reaches MODEL_MIN_AHEAD_HOURS ahead), then the
-     tide table. Flood window = the time at or above the flood level; flooding likely in low areas = advisory, never
+     tide table. Flood window = the time at or above the flood level; flooding likely near the shoreline and tidal creeks = advisory, never
      above the NWS coastal flood product unless the gauge measures the flood level now (severity.js cap). */
   function tideState(o) {
     var D = o.D || {}, now = o.now || nowLocal(), m = o.mhhw, red = o.red == null ? Infinity : o.red, days = o.days || 7;
@@ -152,7 +152,7 @@
       var last = D.obs && D.obs.length ? D.obs[D.obs.length - 1] : null, observed = !!(last && now - last.t < 36e5 && last.v >= red), f = flood[0];
       st.level = SV.cap("advisory", SV.nwsFor(o.nws || [], "tide"), observed);
       st.flood = f; st.when = when(f); st.peakT = f.peakT; st.peakClock = clock(f.peakT); st.started = f.start <= now;
-      st.head = (st.level === "advisory" ? "Flooding likely" : "Flooding possible") + " in low areas near the " + water + " " + st.when;
+      st.head = (st.level === "advisory" ? "Flooding likely" : "Flooding possible") + " " + LK.text("tide_flood_where") + " " + st.when;   // staff wording, display_text.csv
       st.word = st.level === "advisory" ? "Flooding likely" : "Flooding possible"; st.more = flood.length - 1;
     } else if (ups.length) {
       st.level = "watch"; st.when = when(ups[0]); st.head = "Higher than usual tide " + st.when + (isFinite(red) ? ". No flooding expected" : "");
@@ -270,7 +270,7 @@
     if (!lead) return { level: "normal", text: s.nws == null ? (s.nwsFailed ? "National Weather Service alerts unavailable" : "Checking National Weather Service alerts…") : LK.text("hero_none"),
       sub: "San Mateo County", others: [] };
     var text, sub;
-    if (lead.kind === "tide") { text = LK.text("hero_tide_head", { when: s.bay.when }) + "."; sub = P.tideP.length ? "NWS " + P.tideP[0].event + " " + nwsUntil(P.tideP[0]) : "NOAA projection, Redwood City"; }
+    if (lead.kind === "tide") { var w = String(s.bay.when || ""); text = LK.text("hero_tide_strip", { when: w.charAt(0).toUpperCase() + w.slice(1) }) + "."; sub = P.tideP.length ? "NWS " + P.tideP[0].event + " " + nwsUntil(P.tideP[0]) : "NOAA projection, Redwood City"; }
     else if (lead.kind === "creek") { text = s.creeks.likely.length ? LK.text("verdict_likely") + ": " + s.creeks.likely.join(", ") : s.creeks.headline; sub = s.creeks.todo; }
     else { text = lead.p.event + " " + nwsUntil(lead.p); sub = nwsWhat(lead.p) || "National Weather Service"; }
     return { level: P.level, text: text, sub: sub, others: P.cands.slice(1).map(function (c) { return otherText(c, s); }) };
