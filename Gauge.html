@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>OneShoreline Gauge</title>
+<!-- One gauge (a OneRain site, or a USGS stream gauge on a creek page): its readings, rain totals and how rare they are.
+     Two views (staff, 2026-10-31): storm (rain totals and how rare first) and normal (is it working; what it feeds),
+     chosen automatically (STORM_MODE in settings.csv: 0 automatic, 1 always storm, 2 always normal), and switchable on the
+     page. Reads sites.json and creeks.json (data branch) and lookups/rain_frequency.csv. Long history, raw readings,
+     downloads and alarms stay on OneRain (or USGS). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root {
+    --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5b6877; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
+    --rain: #1e6fd9; --cum: #003B5C; --lv1: #b38f00; --lv2: #c25e00; --lv3: #c62828; --ok: #2e7d32;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542; --link: #8cc8ff;
+      --rain: #6ea8fe; --cum: #e6edf5; --lv1: #f2d544; --lv2: #ffa94d; --lv3: #f47c79; --ok: #6cc070; }
+  }
+  :root[data-theme="dark"] { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542; --link: #8cc8ff;
+    --rain: #6ea8fe; --cum: #e6edf5; --lv1: #f2d544; --lv2: #ffa94d; --lv3: #f47c79; --ok: #6cc070; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  a { color: var(--link); }
+  header { background: var(--brand); color: #fff; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.2; }
+  header .hsubt { font-size: 13px; opacity: .92; line-height: 1.3; }
+  .hmark { width: 38px; height: 38px; flex: none; }
+  .h911 { margin-left: auto; flex: none; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; } }
+  main { max-width: 860px; margin: 0 auto; padding: 0 12px 16px; }
+  .heroWrap { max-width: 860px; margin: 0 auto; padding: 12px 12px 0; }
+  .heroWrap .hero { margin: 0; padding: 8px 14px; border-radius: 10px; }
+  .heroWrap .hero .hmore { display: none; }
+  .heroWrap .hero .hhd { font-size: 16px; }
+  .heroWrap .hero .hsub a { font-weight: 600; white-space: nowrap; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 12px 0 0; }
+  h2 { font-size: 17px; margin: 0 0 6px; color: var(--ink); }
+  .gname { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; margin: 0; }
+  .gmeta { font-size: 14px; color: var(--muted); margin: 2px 0 0; }
+  .mode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0 0; }
+  .seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 10px; padding: 2px; background: var(--card); }
+  .seg button { border: 0; background: none; font: inherit; font-size: 14.5px; padding: 6px 14px; border-radius: 8px; cursor: pointer; color: var(--text); min-height: 36px; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); font-weight: 600; }
+  .why { font-size: 14px; color: var(--muted); }
+  .why b { color: var(--text); }
+  .feeds { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+  .feed { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 8px; text-decoration: none; color: var(--text); font-size: 14.5px; min-height: 36px; }
+  .feed b { color: var(--ink); }
+  .feed .cs-ic, .feed svg { width: 16px; height: 16px; }
+  .health { display: flex; align-items: center; gap: 8px; font-size: 15px; margin: 10px 0 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--ok); }
+  .dot.q { background: #8a96a3; }
+  .big { font-size: 34px; font-weight: 700; color: var(--ink); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .big small { font-size: 16px; font-weight: 600; }
+  .sub { font-size: 14px; color: var(--muted); margin: 2px 0 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 10px 0 0; }
+  th, td { text-align: left; padding: 7px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; border-top: 0; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.drv td { font-weight: 700; }
+  .gbox { position: relative; height: 200px; margin: 8px 0 0; }
+  .gbox.tall { height: 230px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .key i { display: inline-block; width: 16px; vertical-align: middle; margin-right: 5px; }
+  .lvls { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; margin: 8px 0 0; color: var(--muted); }
+  .lvls b { color: var(--text); }
+  .note { font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
+  .olink { display: inline-block; font-weight: 600; margin: 4px 0 0; min-height: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .empty { color: var(--muted); }
+  .fine { font-size: 13px; color: var(--muted); margin: 14px 4px 0; }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } }
+  nav a.on { color: var(--ink); font-weight: bold; }
+  @media print { nav, .seg { display: none; } body { padding-bottom: 0; } }
+</style>
+</head>
+<body>
+<header>
+  <img class="hmark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="38" height="38">
+  <div><h1 id="htitle">Gauge</h1><div class="hsubt">OneShoreline Early Warning · San Mateo County</div></div>
+  <div class="h911" data-text="e911">In an emergency, call 911.</div>
+</header>
+<div class="heroWrap"><section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section></div>
+
+<main>
+  <div class="card" id="top">
+    <p class="gname" id="gname">Loading…</p>
+    <p class="gmeta" id="gmeta"></p>
+    <div class="health" id="health"></div>
+    <div class="feeds" id="feeds"></div>
+    <div class="mode">
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-m="normal" aria-pressed="false">Normal view</button>
+        <button type="button" data-m="storm" aria-pressed="false">Storm view</button>
+      </div>
+      <span class="why" id="why" aria-live="polite"></span>
+    </div>
+  </div>
+  <div id="body"></div>
+  <p class="fine"><span data-text="disclaimer_short"></span> <a href="Creeks.html#about">Disclaimer</a> · <span data-text="e911"></span></p>
+  <p class="fine" id="updated"></p>
+</main>
+
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+
+<script src="lookups.js?v=20261031d"></script>
+<script src="severity.js?v=20261031d"></script>
+<script src="creek_status.js?v=20261031d"></script>
+<script src="hero.js?v=20261031d"></script>
+<script>
+"use strict";
+var LK = window.LOOKUPS, $ = function (id) { return document.getElementById(id); };
+var DATA = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
+var PREVIEW = /[?&]preview=1\b/.test(location.search), PQ = PREVIEW ? "?preview=1" : "";
+var SITE = (new URLSearchParams(location.search).get("site") || "").trim().slice(0, 40);
+// the rolling totals shown, in minutes, and their labels
+var WINS = [[15, "15 min"], [30, "30 min"], [60, "1 hr"], [180, "3 hr"], [360, "6 hr"], [1440, "24 hr"], [2880, "48 hr"]];
+var D = { sites: null, creeks: null, freq: null, nws: null, nwsFailed: false, bay: null, mode: null, charts: {} };
+
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function parseLocal(s) { var m = String(s).match(/(\d+)-(\d+)-(\d+)[ T](\d+):(\d+)/); return m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) : null; }
+function nowLocal() {
+  var p = {};
+  new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+}
+function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
+function fTime(ms) { return fmt(ms, { hour: "numeric", minute: "2-digit" }); }
+function fWhen(ms, now) { var d = Math.round((Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) - Date.UTC(new Date(ms).getUTCFullYear(), new Date(ms).getUTCMonth(), new Date(ms).getUTCDate())) / 864e5);
+  return (d === 0 ? "today" : d === 1 ? "yesterday" : fmt(ms, { weekday: "short", month: "short", day: "numeric" })) + " " + fTime(ms); }
+function ago(ms) { var m = Math.round(ms / 60000); return m < 2 ? "just now" : m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " hr ago" : Math.round(m / 1440) + " days ago"; }
+function inch(v) { return v == null ? "–" : v.toFixed(2); }
+function getJSON(u) { return fetch(u + (u.indexOf("?") < 0 ? "?" : "&") + "t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+
+/* ---------- Atlas 14 rain levels by gauge (lookups/rain_frequency.csv): {number: {minutes: [heavy, very heavy, intense]}} ---------- */
+function parseCSV(t) {
+  var rows = [], row = [], f = "", q = false;
+  for (var i = 0; i < t.length; i++) {
+    var c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && t[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+function loadFreq() {
+  return fetch("lookups/rain_frequency.csv?t=" + Math.floor(Date.now() / 36e5)).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (t) {
+    var rows = parseCSV(t), h = rows.shift().map(function (x) { return x.trim().toLowerCase(); }), out = {};
+    var ix = function (k) { return h.indexOf(k); }, iN = ix("onerain_number"), iM = ix("minutes"), iL = ix("level"), iV = ix("value_in");
+    rows.forEach(function (r) {
+      var n = (r[iN] || "").trim(), m = +r[iM], l = +r[iL], v = +r[iV];
+      if (!n || !m || !(l >= 1 && l <= 3) || !(v > 0)) return;
+      ((out[n] = out[n] || {})[m] = out[n][m] || [])[l - 1] = v;
+    });
+    return out;
+  });
+}
+function levelOf(freq, m, depth) {
+  var c = freq && freq[m]; if (!c || depth == null || c.length < 3) return null;
+  return depth >= c[2] ? 3 : depth >= c[1] ? 2 : depth >= c[0] ? 1 : 0;
+}
+
+/* ---------- this gauge, put together from sites.json (OneRain's public site) and creeks.json (creek gauges, 48 h) ---------- */
+function gauge(now) {
+  var site = (D.sites && D.sites.sites || []).filter(function (s) { return String(s.number) === SITE; })[0] || null;
+  var C = D.creeks || {}, all = (C.creeks || []).concat(C.creeks_preview || []), S = C.sensors || {};
+  var G = { number: SITE, name: site ? site.name : "", url: site ? site.url : "", creeks: [], rain: null, levels: [], usgs: /^USGS /.test(SITE) };
+  var seen = {};
+  all.forEach(function (c) {
+    [["stage", c.stages || []], ["rain", c.rain || []], ["support", c.rain_support || []]].forEach(function (pair) {
+      pair[1].forEach(function (g) {
+        if (String(g.number) !== SITE) return;
+        if (!G.creeks.some(function (x) { return x.c.id === c.id; })) G.creeks.push({ c: c, role: pair[0] });
+        if (!G.name) G.name = g.site_name || g.label;
+        if (!G.url && /^https:\/\//.test(g.url || "")) G.url = g.url;
+        var e = S[g.key]; if (!e || seen[g.key]) return; seen[g.key] = true;
+        if (pair[0] === "stage") G.levels.push({ name: "Creek level" + (g.label ? " · " + g.label : ""), unit: "ft", g: g, e: e,
+          pts: (e.points || []).map(function (p) { return [parseLocal(p[0]), p[1]]; }), thresholds: g.thresholds || [], sig: e.signals || {} });
+        else if (!G.rain) G.rain = { e: e, sig: e.signals || {}, pts: (e.points || []).map(function (p) { return [parseLocal(p[0]), p[1]]; }), hours: 48 };
+      });
+    });
+  });
+  if (site) {   // sensors not on a creek page (or a site's other sensors): sites.json, the last 24 hours
+    site.sensors.forEach(function (s) {
+      var rainish = s.kind === "increment" || s.kind === "accumulation";
+      if (rainish && !G.rain) {
+        G.rain = { s: s, pts: (s.hourly || []).map(function (p) { return [parseLocal(p[0]), p[1]]; }), hours: D.sites.hours || 24,
+          totals: { 15: s.rain15m, 30: s.rain30m, 60: s.rain1, 180: s.rain3, 360: s.rain6, 1440: s.rain24 } };
+        G.rain.last = s.time ? parseLocal(s.time) : null;
+      } else if (!rainish && !G.levels.some(function (l) { return l.g && l.g.number === site.number && /stage/i.test(s.name); })) {
+        G.levels.push({ name: s.name, unit: s.unit || "", s: s, pts: (s.points || []).map(function (p) { return [parseLocal(p[0]), p[1]]; }), thresholds: s.thresholds || [], sig: {} });
+      }
+    });
+  }
+  if (G.rain) {   // totals: from the data job's signals (creek gauges) or the series
+    var R = G.rain, sig = R.sig || {};
+    if (sig.totals) { R.totals = {}; Object.keys(sig.totals).forEach(function (m) { R.totals[m] = sig.totals[m]; }); }
+    if (!R.last) { var lr = sig.last_report || (R.e && R.e.latest && R.e.latest[0]); R.last = lr ? parseLocal(lr) : R.pts.length ? R.pts[R.pts.length - 1][0] : null; }
+    R.freq = (D.freq || {})[SITE] || null;
+    R.storm = stormTotal(R.pts, now);
+  }
+  G.levels.forEach(function (l) { var p = l.pts.length ? l.pts[l.pts.length - 1] : null, lt = l.e && l.e.latest;
+    if (lt && lt[0] && lt[1] != null && (!p || parseLocal(lt[0]) > p[0])) p = [parseLocal(lt[0]), lt[1]];
+    if (l.s && l.s.time && l.s.value != null && (!p || parseLocal(l.s.time) > p[0])) p = [parseLocal(l.s.time), l.s.value];
+    l.last = p; });
+  return G;
+}
+// rain since it started: back from now to the last dry stretch of STORM_DRY_HOURS with no rain (or the start of the data)
+function stormTotal(pts, now) {
+  var dry = LK.num("STORM_DRY_HOURS") * 36e5, tot = 0, start = null, lastWet = null;
+  var p = pts.filter(function (x) { return x[0] <= now + 6e5; }).sort(function (a, b) { return a[0] - b[0]; });
+  for (var i = p.length - 1; i >= 0; i--) {
+    if (p[i][1] > 0) {
+      if (lastWet != null && lastWet - p[i][0] > dry) break;
+      tot += p[i][1]; start = p[i][0]; lastWet = p[i][0];
+    } else if (lastWet == null && now - p[i][0] > dry) break;
+  }
+  if (!tot) return null;
+  return { inches: Math.round(tot * 100) / 100, start: start, cut: p.length && start === p[0][0] };
+}
+
+/* ---------- storm or normal view: automatic unless staff set STORM_MODE, or the viewer picked one ---------- */
+function autoMode(now) {
+  var set = LK.num("STORM_MODE");
+  if (set === 1) return { storm: true, why: "Storm view is on for every gauge (set by OneShoreline staff)." };
+  if (set === 2) return { storm: false, why: "" };
+  var why = [];
+  var flood = (D.nws || []).filter(function (p) { return /flood|rain|storm|hydrologic/i.test(p.event || ""); });
+  if (flood.length) why.push("National Weather Service " + flood[0].event);
+  var C = D.creeks || {}, alert = (C.creeks || []).filter(function (c) { return /^(likely|ready|alert)$/.test((c.status || {}).key || ""); });
+  if (alert.length) why.push("creek alerts (" + alert.map(function (c) { return c.short || c.name; }).join(", ") + ")");
+  var r3 = LK.num("STORM_RAIN_3H_IN"), r24 = LK.num("STORM_RAIN_24H_IN"), wet = 0;
+  (D.sites && D.sites.sites || []).forEach(function (s) { (s.sensors || []).forEach(function (x) {
+    if ((x.kind === "increment" || x.kind === "accumulation") && ((x.rain3 || 0) >= r3 || (x.rain24 || 0) >= r24)) wet++; }); });
+  if (wet) why.push("rain at " + wet + (wet === 1 ? " gauge" : " gauges") + " (" + r3.toFixed(2) + " in in 3 hr or " + r24.toFixed(2) + " in in 24 hr)");
+  return { storm: why.length > 0, why: why.length ? "Storm view, because of " + why.join("; ") + "." : "No storm now: no flood alerts, creek alerts or more than light rain at the gauges." };
+}
+var PICK = null;
+try { PICK = sessionStorage.getItem("gauge_view"); } catch (e) { /* no storage */ }
+Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+  b.addEventListener("click", function () { PICK = b.dataset.m; try { sessionStorage.setItem("gauge_view", PICK); } catch (e) { /* no storage */ } render(); });
+});
+
+/* ---------- graphs ---------- */
+function chart(id, cfg) { if (D.charts[id]) D.charts[id].destroy(); var el = $(id); if (el && window.Chart) D.charts[id] = new Chart(el, cfg); }
+function xAxis(x0, x1, now) {
+  var muted = css("--muted"), step = window.innerWidth < 520 ? 12 : 6;
+  return { type: "linear", min: (x0 - now) / 36e5, max: 0, ticks: { color: muted, autoSkip: false, maxRotation: 0,
+      callback: function (v) { var t = now + v * 36e5; return new Date(t).getUTCHours() === 0 ? fmt(t, { weekday: "short" }) : fmt(t, { hour: "numeric" }); } },
+    afterBuildTicks: function (ax) { var o = []; var f = Math.ceil(x0 / (step * 36e5)) * step * 36e5; for (var t = f; t <= now; t += step * 36e5) o.push({ value: (t - now) / 36e5 }); ax.ticks = o; },
+    grid: { color: css("--line") } };
+}
+function tipTitle(now) { return function (it) { return fWhen(now + it[0].parsed.x * 36e5, now); }; }
+function rainChart(id, R, now) {
+  var hrs = {}, x0 = now - R.hours * 36e5;
+  R.pts.forEach(function (p) { if (p[0] > x0 && p[0] <= now) { var h = Math.floor(p[0] / 36e5) * 36e5; hrs[h] = (hrs[h] || 0) + Math.max(p[1], 0); } });
+  var ks = Object.keys(hrs).map(Number).sort(function (a, b) { return a - b; }), cum = 0, cpts = [{ x: (x0 - now) / 36e5, y: 0 }];
+  ks.forEach(function (h) { cum += hrs[h]; cpts.push({ x: (h + 36e5 - now) / 36e5, y: Math.round(cum * 100) / 100 }); });
+  cpts.push({ x: 0, y: Math.round(cum * 100) / 100 });
+  var maxB = Math.max.apply(null, ks.map(function (h) { return hrs[h]; }).concat([0.1]));
+  chart(id, { data: { datasets: [
+      { type: "bar", label: "Rain each hour", data: ks.map(function (h) { return { x: (h + 18e5 - now) / 36e5, y: Math.round(hrs[h] * 100) / 100 }; }), backgroundColor: css("--rain"), barPercentage: 1, categoryPercentage: 1, yAxisID: "y" },
+      { type: "line", label: "Running total", data: cpts, borderColor: css("--cum"), borderWidth: 2, pointRadius: 0, stepped: false, yAxisID: "y2" }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: tipTitle(now), label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " in"; } } } },
+      scales: { x: xAxis(x0, now, now), y: { beginAtZero: true, suggestedMax: maxB, position: "left", ticks: { color: css("--muted") }, grid: { color: css("--line") }, title: { display: true, text: "in per hour", color: css("--muted") } },
+        y2: { beginAtZero: true, suggestedMax: Math.max(cum, 0.2), position: "right", ticks: { color: css("--muted") }, grid: { display: false }, title: { display: true, text: "running total (in)", color: css("--muted") } } } } });
+}
+function levelChart(id, L, now, hours) {
+  var x0 = now - hours * 36e5, pts = L.pts.filter(function (p) { return p[0] >= x0 && p[0] <= now + 6e5; }).map(function (p) { return { x: (p[0] - now) / 36e5, y: p[1] }; });
+  var cols = [css("--lv1"), css("--lv2"), css("--lv3")], dash = [[3, 3], [7, 4], [12, 4]];
+  var sets = [{ label: L.name, data: pts, borderColor: css("--ink"), borderWidth: 2.2, pointRadius: 0 }];
+  var vals = pts.map(function (p) { return p.y; }), lo = Math.min.apply(null, vals.concat([Infinity])), hi = Math.max.apply(null, vals.concat([-Infinity]));
+  (L.thresholds || []).forEach(function (t) {   // flood levels drawn when they are near the readings
+    var i = Math.max(0, Math.min(2, (t.level || 1) - 1));
+    if (isFinite(hi) && t.value > hi + Math.max(2, (hi - lo) * 1.5)) return;
+    sets.push({ label: t.name + " " + t.value + " " + L.unit, data: [{ x: (x0 - now) / 36e5, y: t.value }, { x: 0, y: t.value }], borderColor: cols[i], borderWidth: 1.8, borderDash: dash[i], pointRadius: 0 });
+  });
+  chart(id, { type: "line", data: { datasets: sets }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: tipTitle(now), label: function (it) { return it.dataset.label.split(" ·")[0] + ": " + it.parsed.y.toFixed(2) + " " + L.unit; } } } },
+    scales: { x: xAxis(x0, now, now), y: { grace: "8%", ticks: { color: css("--muted") }, grid: { color: css("--line") }, title: { display: true, text: L.unit || "", color: css("--muted") } } } } });
+  return sets.slice(1);
+}
+
+/* ---------- the page ---------- */
+function chip(l) { return window.CREEK_STATUS && CREEK_STATUS.chip ? CREEK_STATUS.chip(l, false) : esc(["", "Heavy", "Very heavy", "Intense"][l] || ""); }
+function rainCard(G, storm, now) {
+  var R = G.rain, f = R.freq, rows = "", drv = null;
+  WINS.forEach(function (w) {
+    var v = R.totals ? R.totals[w[0]] : null; if (v == null) return;
+    if (w[0] * 60000 > R.hours * 36e5 + 1) return;
+    var l = levelOf(f, w[0], v); if (l && (!drv || l > drv.l)) drv = { l: l, w: w[1] };
+    rows += "<tr" + (l ? ' class="drv"' : "") + "><td>" + w[1] + '</td><td class="n">' + inch(v) + " in</td><td>" + (l ? chip(l) : f ? '<span class="empty">below Heavy</span>' : '<span class="empty">–</span>') + "</td></tr>";
+  });
+  var st = R.storm, h = '<div class="card"><h2>Rain</h2>';
+  h += '<div class="grid2"><div><div class="big">' + (st ? inch(st.inches) : "0.00") + " <small>in</small></div>" +
+    '<p class="sub">' + (st ? (st.cut ? "at least, in the last " + R.hours + " hours (the rain began earlier)" : "this storm, since " + fWhen(st.start, now)) : "no rain in the last " + R.hours + " hours") + "</p></div>" +
+    "<div>" + (drv ? '<div class="big" style="font-size:22px">' + chip(drv.l) + '</div><p class="sub">rarest window: ' + drv.w + "</p>" : !st ? "" : f ? '<p class="sub">Below the Heavy level in every window.</p>' : '<p class="sub">No rain levels set for this gauge.</p>') + "</div></div>";
+  if (storm) h += "<table><thead><tr><th>Rain in the last</th><th class='n'>Amount</th><th>How rare</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+    '<p class="note">How rare: NOAA Atlas 14 at this gauge. Heavy = the 1-year storm for that window (reached in most years), Very heavy = 2-year, Intense = 5-year. ' +
+    "It says how unusual the rain is, not whether a creek floods.</p>";
+  if (st || storm) h += '<div class="gbox tall"><canvas id="chRain" role="img" aria-label="Rain each hour and the running total, last ' + R.hours + ' hours"></canvas></div>' +
+    '<div class="key"><span><i style="height:10px;background:' + css("--rain") + '"></i>Rain each hour</span><span><i style="border-top:2px solid ' + css("--cum") + '"></i>Running total</span></div>';
+  h += '<p class="sub">Last report ' + (R.last ? fWhen(R.last, now) + " (" + ago(now - R.last) + ")" : "–") + ". Rain gauges report every few hours in dry weather and with each bit of rain in a storm.</p></div>";
+  return h;
+}
+function levelCard(L, i, now, hours) {
+  var sig = L.sig || {}, tr = sig.trend, words = { fast: "rising fast", rising: "rising", steady: "steady", falling: "falling" };
+  var at = null; (L.thresholds || []).forEach(function (t) { if (L.last && L.last[1] >= t.value) at = t; });
+  var h = '<div class="card"><h2>' + esc(L.name) + "</h2>";
+  h += '<div class="big">' + (L.last ? L.last[1].toFixed(2) : "–") + " <small>" + esc(L.unit) + "</small></div>" +
+    '<p class="sub">' + (L.last ? fWhen(L.last[0], now) + " (" + ago(now - L.last[0]) + ")" : "no recent reading") +
+    (tr ? " · " + (words[tr] || tr) + (sig.ft_per_hr != null && tr !== "steady" ? " " + (sig.ft_per_hr > 0 ? "+" : "") + sig.ft_per_hr.toFixed(2) + " ft/hr" : "") : "") +
+    (at ? " · <b>at " + esc(at.name) + "</b>" : "") + "</p>";
+  if ((L.thresholds || []).length) h += '<div class="lvls">' + L.thresholds.map(function (t) { return "<span>" + esc(t.name) + " <b>" + t.value + " " + esc(L.unit) + "</b></span>"; }).join("") + "</div>";
+  h += '<div class="gbox"><canvas id="chLv' + i + '" role="img" aria-label="' + esc(L.name) + ', last ' + hours + ' hours"></canvas></div><div class="key" id="kLv' + i + '"></div>';
+  if (L.g && L.g.tidal) h += '<p class="note">This gauge is affected by the tide, so its level goes up and down with the Bay as well as with rain. See the creek page for the tide.</p>';
+  return h + "</div>";
+}
+function render() {
+  var now = nowLocal(), G = gauge(now);
+  if (!SITE || (!G.rain && !G.levels.length)) {
+    $("gname").textContent = SITE ? "Gauge " + SITE + " not found" : "No gauge chosen";
+    $("gmeta").innerHTML = 'Pick a gauge on the <a href="SiteMap.html' + PQ + '">sensor map</a>.';
+    if (!D.sites && !D.creeks) $("gmeta").textContent = "Loading…";
+    return;
+  }
+  document.title = G.name + " · OneShoreline";
+  $("htitle").textContent = "Gauge";
+  $("gname").textContent = G.name;
+  $("gmeta").textContent = (G.usgs ? "USGS stream gauge " + SITE.replace(/^USGS /, "") : "OneRain site " + SITE) + " · measures " +
+    [G.levels.length ? "water level" : "", G.rain ? "rain" : ""].filter(Boolean).join(" and ");
+  // working or quiet
+  var last = Math.max.apply(null, [G.rain && G.rain.last || 0].concat(G.levels.map(function (l) { return l.last ? l.last[0] : 0; })));
+  var quietH = LK.num("SITE_QUIET_HOURS"), quiet = !last || now - last > quietH * 36e5;
+  $("health").innerHTML = '<span class="dot' + (quiet ? " q" : "") + '" aria-hidden="true"></span><span>' + (quiet ? "<b>No report in more than " + quietH + " hours</b>: the gauge may be offline." : "Reporting · last report " + ago(now - last)) + "</span>";
+  $("feeds").innerHTML = G.creeks.map(function (x) {
+    var k = (x.c.status || {}).key, ic = window.CREEK_STATUS && k ? CREEK_STATUS.icon(k) : "";
+    var word = k && LK.text("verdict_" + k) ? LK.text("verdict_" + k) : "";
+    return '<a class="feed" href="Creeks.html' + PQ + "#" + encodeURIComponent(x.c.id) + '">' + ic + "<span>" + (x.role === "support" ? "Counts toward " : "") + "<b>" + esc(x.c.name) + "</b>" +
+      (word && !x.c.preview_only ? " · " + esc(word) : "") + " ›</span></a>";
+  }).join("");
+  // which view
+  var A = autoMode(now), storm = PICK === "storm" ? true : PICK === "normal" ? false : A.storm;
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) { b.setAttribute("aria-pressed", String((b.dataset.m === "storm") === storm)); });
+  $("why").innerHTML = PICK && (PICK === "storm") !== A.storm ? "You picked this view. <b>Automatic:</b> " + esc(A.why || "normal view.") : esc(A.why);
+  // sections: storm = rain and creek level first; normal = creek level, then rain, quieter
+  var hours = G.rain ? G.rain.hours : (D.sites && D.sites.hours) || 24;
+  hours = Math.max(hours, G.levels.some(function (l) { return l.e; }) ? 48 : 24);
+  var parts = [];
+  if (storm && G.rain) parts.push(rainCard(G, true, now));
+  G.levels.forEach(function (l, i) { parts.push(levelCard(l, i, now, l.e ? 48 : (D.sites && D.sites.hours) || 24)); });
+  if (!storm && G.rain) parts.push(rainCard(G, false, now));
+  var fc = G.creeks.map(function (x) { return window.CREEK_STATUS && CREEK_STATUS.forecast ? CREEK_STATUS.forecast(x.c) : ""; }).filter(Boolean)[0];
+  if (fc) parts.push('<div class="card"><h2>Rain expected (National Weather Service)</h2><div class="cs-details cs-fcbox">' + fc + "</div></div>");
+  var src = G.usgs ? "USGS" : "OneRain";
+  parts.push('<div class="card"><h2>More data</h2><p style="margin:0">' + (G.url && /^https:\/\//.test(G.url) ? '<a class="olink" href="' + esc(G.url) + '" target="_blank" rel="noopener">Full data on ' + src + " ↗</a>" : "") + "</p>" +
+    '<p class="note">' + esc(LK.text(G.usgs ? "gauge_more_usgs" : "gauge_more_onerain")) + "</p></div>");
+  $("body").innerHTML = parts.join("");
+  if (G.rain) rainChart("chRain", G.rain, now);
+  G.levels.forEach(function (l, i) {
+    var th = levelChart("chLv" + i, l, now, l.e ? 48 : (D.sites && D.sites.hours) || 24);
+    $("kLv" + i).innerHTML = '<span><i style="border-top:2px solid ' + css("--ink") + '"></i>' + esc(l.unit === "ft" ? "Level" : l.name) + "</span>" +
+      th.map(function (s) { return '<span><i style="border-top:2px dashed ' + s.borderColor + '"></i>' + esc(s.label) + "</span>"; }).join("");
+  });
+  var gen = D.creeks && D.creeks.generated || D.sites && D.sites.generated;
+  $("updated").textContent = "Data updated " + (gen ? fTime(parseLocal(gen)) : "–") + " · all times Pacific · refreshes automatically";
+}
+
+/* ---------- the alert at the top, as on the other pages ---------- */
+function renderHero() {
+  if (!window.HERO) return;
+  var bay = D.bay ? HERO.tideState({ D: D.bay, mhhw: LK.mhhw("9414523"), red: LK.num("TIDE_RED_FT_RWC"), water: "Bay", nws: D.nws || [] }) : null;
+  var el = $("hero");
+  HERO.render(el, { nws: D.nws, nwsFailed: D.nwsFailed, bay: bay, creeks: D.creeks ? HERO.creeks(D.creeks, D.nws || []) : null, creekLink: false });
+  var more = el.querySelector(".hmore"), sub = el.querySelector(".hsub");
+  if (more && more.textContent.trim() && sub) { sub.hidden = false; sub.insertAdjacentHTML("beforeend", (sub.textContent ? " · " : "") + '<a href="index.html' + PQ + '">Details ›</a>'); }
+}
+
+function load() {
+  Promise.all([
+    getJSON(DATA + "sites.json").then(function (j) { D.sites = j; }).catch(function () {}),
+    getJSON(DATA + "creeks.json").then(function (j) { D.creeks = j; }).catch(function () {}),
+    D.freq ? null : loadFreq().then(function (f) { D.freq = f; }).catch(function () { D.freq = {}; })
+  ]).then(function () { render(); renderHero(); });
+}
+if (window.HERO) {
+  HERO.loadNWS(function (list, failed) { if (list) { D.nws = list; D.nwsFailed = false; } else if (!D.nws) D.nwsFailed = true; renderHero(); if (D.sites || D.creeks) render(); });
+  HERO.loadBay(function (bd) { D.bay = bd; renderHero(); });
+}
+load();
+setInterval(load, 5 * 60000);
+LK.onChange(function () { render(); renderHero(); });
+var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(render, 250); });
+</script>
+</body>
+</html>

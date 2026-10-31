@@ -38,7 +38,9 @@
     // NWS rain forecast on creek cards (scripts/nws_forecast.py); the data job uses FORECAST_EVERY_MIN and FORECAST_KEEP_HOURS too
     FORECAST_PUBLIC: [1, 0, 1], FORECAST_SHOW_IN: [0.25, 0, 5], FORECAST_KEEP_HOURS: [12, 1, 48], FORECAST_EVERY_MIN: [60, 15, 360],
     RAIN_NOW_MIN: [60, 15, 180], RAIN_NOW_IN: [0.01, 0.01, 0.5],
-    REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200]
+    REPORTS_PUBLIC: [0, 0, 1], REPORTS_MAX_AGE_DAYS: [180, 1, 730], REPORTS_MAX_PHOTOS: [40, 0, 200],
+    // gauge pages (Gauge.html): storm or normal view
+    STORM_MODE: [0, 0, 2], STORM_RAIN_3H_IN: [0.1, 0.01, 2], STORM_RAIN_24H_IN: [0.5, 0.01, 10], STORM_DRY_HOURS: [6, 1, 48]
   };
   var TIDES = {
     "9414523": { id: "9414523", name: "Redwood City", mhhw: 7.02 },
@@ -147,6 +149,8 @@
     home_none_note: "Conditions can change quickly in a storm; watch for National Weather Service alerts and flooding where you are.",
     home_creek_scope: "Creek alerts come from creek gauges and rain: they warn when a creek rises enough to flood downstream. They don’t show high-tide flooding in low-lying areas along tidally connected creeks.",
     home_creek_scope_link: "See Bay tides ›",
+    gauge_more_onerain: "OneRain has this gauge’s full record, every raw reading, data downloads and the alarm settings. This page shows the last two days, for decisions during a storm.",
+    gauge_more_usgs: "USGS has this gauge’s full record, flow as well as level, and data downloads. This page shows the last two days.",
     tide_day_astro: "Astronomical high tide: the tide table reaches the 1-year tide ({ft} ft)",
     tide_day_astro_short: "Astronomical high tide (the tide table reaches the 1-year tide)",
     tide_upcoming_note: "Based on the tide table plus current conditions: NOAA’s projection for the next 2 days, then how high the {water} has been running. Coastal storms after that aren’t included and can push water higher.",

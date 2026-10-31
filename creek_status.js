@@ -739,6 +739,6 @@
         quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.name; })) : ""].filter(Boolean).join(" · ") };
   }
 
-  window.CREEK_STATUS = { staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
+  window.CREEK_STATUS = { chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
   Object.defineProperty(window.CREEK_STATUS, "preview", { get: shown });   // true when the status layer shows on this page
 })();

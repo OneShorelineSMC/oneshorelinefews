@@ -339,10 +339,10 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261031c"></script>
-<script src="severity.js?v=20261031c"></script>
-<script src="creek_status.js?v=20261031c"></script>
-<script src="hero.js?v=20261031c"></script>
+<script src="lookups.js?v=20261031d"></script>
+<script src="severity.js?v=20261031d"></script>
+<script src="creek_status.js?v=20261031d"></script>
+<script src="hero.js?v=20261031d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -939,6 +939,10 @@ var refMarks = {
   }
 };
 var RAIN_COLORS = ["#7e57c2", "#1e88e5", "#00897b"];
+// a gauge's name, linked to its gauge page (rain totals, how rare, the last 48 hours)
+function gaugeLink(g, html) {
+  return g && g.number ? '<a href="Gauge.html?site=' + encodeURIComponent(g.number) + (/[?&]preview=1\b/.test(location.search) ? "&preview=1" : "") + '" title="Gauge page: rain totals and graphs">' + html + "</a>" : html;
+}
 function drawCharts(st, now) {
   if (typeof Chart === "undefined" || document.body.classList.contains("about")) return;
   var c = st.c, T = D.tides[c.tide];
@@ -948,9 +952,9 @@ function drawCharts(st, now) {
     var g = "";
     function row(canvas, hgt, tile, title) { return '<div class="srow"><div><div class="gtitle"><span>' + title + '</span></div><div class="gbox" style="height:' + hgt + 'px"><canvas id="' + canvas + '"></canvas></div></div><div class="tile" id="' + tile + '"></div></div>'; }
     g += '<div class="sgh">Creek level</div>';
-    st.stages.forEach(function (s, i) { g += row("chStage" + i, 170, "tlStage" + i, esc(s.g.label) + " · ft (gauge height)"); });
+    st.stages.forEach(function (s, i) { g += row("chStage" + i, 170, "tlStage" + i, gaugeLink(s.g, esc(s.g.label)) + " · ft (gauge height)"); });
     g += '<div class="sgh">Rain</div>';
-    st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + esc(r.g.label) + "</b> · rain per hour (in)"); });
+    st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · rain per hour (in)"); });
     if (c.rain_running && c.rain_running.line) g += row("chRun", 90, "tlRun", esc(c.rain_running.label));
     g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul><div id="fcBox"></div>';
     if (c.tide) g += '<div class="sgh" id="tideTitle">Bay tide</div>' + row("chTide", 150, "tlTide", (T ? esc(T.st.name) : "Bay") + " · ft NAVD88");

@@ -122,6 +122,7 @@
   .clink { display: block; margin: 10px 0 0; padding: 11px 14px; border-radius: 10px; background: var(--brand); color: #fff;
     text-decoration: none; font-weight: 700; font-size: 15.5px; }
   .clink + .clink { margin-top: 6px; }
+  .clink.glink { background: transparent; color: var(--slink); border: 1.5px solid var(--slink); padding: 9.5px 14px; }   /* the gauge page: second to the creek page */
   .clink:focus-visible, .olink:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
   .fine { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
   .fine a { color: inherit; }
@@ -203,11 +204,11 @@
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261031c"></script>
-<script src="tide_season.js?v=20261031c"></script>
-<script src="severity.js?v=20261031c"></script>
-<script src="creek_status.js?v=20261031c"></script>
-<script src="hero.js?v=20261031c"></script>
+<script src="lookups.js?v=20261031d"></script>
+<script src="tide_season.js?v=20261031d"></script>
+<script src="severity.js?v=20261031d"></script>
+<script src="creek_status.js?v=20261031d"></script>
+<script src="hero.js?v=20261031d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)
@@ -416,7 +417,8 @@ function renderSheet(id) {
     }
     h += '</div>';
   });
-  h += '<a class="olink' + ((site.creeks || []).length ? " sec" : "") + '" href="' + esc(site.url) + '" target="_blank" rel="noopener">Full data on OneRain ↗</a>' +
+  h += '<a class="clink glink" href="Gauge.html?site=' + encodeURIComponent(site.number) + (PREVIEW ? "&preview=1" : "") + '">Rain totals and graphs for this gauge ›</a>';
+  h += '<a class="olink sec" href="' + esc(site.url) + '" target="_blank" rel="noopener">Full data on OneRain ↗</a>' +
     '<div class="fine">' + esc(LK.text("disclaimer_short_map")) + ' ' +
     '<a href="' + DISCLAIMER_URL + '">Disclaimer</a> · ' + esc(LK.text("e911")) + '</div>';
   var sh = document.getElementById("sheet");
