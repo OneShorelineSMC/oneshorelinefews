@@ -52,6 +52,8 @@
   .seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 10px; padding: 2px; background: var(--card); }
   .seg button { border: 0; background: none; font: inherit; font-size: 14.5px; padding: 6px 14px; border-radius: 8px; cursor: pointer; color: var(--text); min-height: 36px; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); font-weight: 600; }
+  .seg button:disabled { opacity: .45; cursor: not-allowed; }
+  #longer { color: var(--link); font-weight: 600; }
   .why { font-size: 14px; color: var(--muted); }
   .why b { color: var(--text); }
   .feeds { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
@@ -118,6 +120,13 @@
         <button type="button" data-m="storm" aria-pressed="false">Storm view</button>
       </div>
       <span class="why" id="why" aria-live="polite"></span>
+    </div>
+    <div class="mode">
+      <div class="seg" id="hseg" role="group" aria-label="Graph period">
+        <button type="button" data-h="6" aria-pressed="false">6 h</button><button type="button" data-h="12" aria-pressed="false">12 h</button><button type="button" data-h="24" aria-pressed="false">24 h</button><button type="button" data-h="48" aria-pressed="false">48 h</button>
+      </div>
+      <a id="longer" class="why" href="#" target="_blank" rel="noopener" hidden>Longer periods on OneRain ↗</a>
+      <span class="why" id="hnote"></span>
     </div>
   </div>
   <div id="body"></div>
@@ -271,22 +280,29 @@ function autoMode(now) {
 }
 var PICK = null;
 try { PICK = sessionStorage.getItem("gauge_view"); } catch (e) { /* no storage */ }
-Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+// graph period: 6, 12, 24 or 48 hours, the same for every graph on the page; storm view opens on 12, normal on 48
+var HRS = null;
+try { HRS = +sessionStorage.getItem("gauge_hours") || null; } catch (e) { /* no storage */ }
+Array.prototype.forEach.call(document.querySelectorAll("#hseg button"), function (b) {
+  b.addEventListener("click", function () { HRS = +b.dataset.h; try { sessionStorage.setItem("gauge_hours", String(HRS)); } catch (e) { /* no storage */ } render(); });
+});
+Array.prototype.forEach.call(document.querySelectorAll(".seg button[data-m]"), function (b) {
   b.addEventListener("click", function () { PICK = b.dataset.m; try { sessionStorage.setItem("gauge_view", PICK); } catch (e) { /* no storage */ } render(); });
 });
 
 /* ---------- graphs ---------- */
 function chart(id, cfg) { if (D.charts[id]) D.charts[id].destroy(); var el = $(id); if (el && window.Chart) D.charts[id] = new Chart(el, cfg); }
 function xAxis(x0, x1, now) {
-  var muted = css("--muted"), step = window.innerWidth < 520 ? 12 : 6;
+  var muted = css("--muted"), span = (now - x0) / 36e5, narrow = window.innerWidth < 520;
+  var step = span <= 6 ? (narrow ? 2 : 1) : span <= 12 ? (narrow ? 3 : 2) : span <= 24 ? (narrow ? 6 : 3) : narrow ? 12 : 6;
   return { type: "linear", min: (x0 - now) / 36e5, max: 0, ticks: { color: muted, autoSkip: false, maxRotation: 0,
       callback: function (v) { var t = now + v * 36e5; return new Date(t).getUTCHours() === 0 ? fmt(t, { weekday: "short" }) : fmt(t, { hour: "numeric" }); } },
     afterBuildTicks: function (ax) { var o = []; var f = Math.ceil(x0 / (step * 36e5)) * step * 36e5; for (var t = f; t <= now; t += step * 36e5) o.push({ value: (t - now) / 36e5 }); ax.ticks = o; },
     grid: { color: css("--line") } };
 }
 function tipTitle(now) { return function (it) { return fWhen(now + it[0].parsed.x * 36e5, now); }; }
-function rainChart(id, R, now) {
-  var hrs = {}, x0 = now - R.hours * 36e5;
+function rainChart(id, R, now, span) {
+  var hrs = {}, x0 = now - span * 36e5;
   R.pts.forEach(function (p) { if (p[0] > x0 && p[0] <= now) { var h = Math.floor(p[0] / 36e5) * 36e5; hrs[h] = (hrs[h] || 0) + Math.max(p[1], 0); } });
   var ks = Object.keys(hrs).map(Number).sort(function (a, b) { return a - b; }), cum = 0, cpts = [{ x: (x0 - now) / 36e5, y: 0 }];
   ks.forEach(function (h) { cum += hrs[h]; cpts.push({ x: (h + 36e5 - now) / 36e5, y: Math.round(cum * 100) / 100 }); });
@@ -334,8 +350,8 @@ function rainCard(G, storm, now) {
     (drv ? '<p class="rare">' + chip(drv.l) + ' <span class="sub">rarest window: ' + drv.w + "</span></p>" : !st ? "" : f ? '<p class="sub">Below the Heavy level in every window.</p>' : '<p class="sub">No rain levels set for this gauge.</p>');
   if (storm) data += "<table><thead><tr><th>Rain in the last</th><th class='n'>Amount</th><th>How rare</th></tr></thead><tbody>" + rows + "</tbody></table>";
   data += '<p class="sub">Last report ' + (R.last ? fWhen(R.last, now) + " (" + ago(now - R.last) + ")" : "–") + ".</p>";
-  var graph = st || storm ? '<div class="gbox tall"><canvas id="chRain" role="img" aria-label="Rain each hour and the running total, last ' + R.hours + ' hours"></canvas></div>' +
-    '<div class="key"><span><i style="height:10px;background:' + css("--rain") + '"></i>Rain each hour</span><span><i style="border-top:2px solid ' + css("--cum") + '"></i>Running total</span></div>' : "";
+  var graph = st || storm ? '<div class="gbox tall"><canvas id="chRain" role="img" aria-label="Rain each hour and the running total, last ' + G.hrs + ' hours"></canvas></div>' +
+    '<div class="key"><span><i style="height:10px;background:' + css("--rain") + '"></i>Rain each hour</span><span><i style="border-top:2px solid ' + css("--cum") + '"></i>Running total from the start of the graph</span></div>' : "";
   return '<div class="card"><h2>Rain</h2>' + gd(graph, data) +
     (storm ? '<p class="note">How rare: NOAA Atlas 14 at this gauge. Heavy = the 1-year storm for that window (reached in most years), Very heavy = 2-year, Intense = 5-year. ' +
       "It says how unusual the rain is, not whether a creek floods. Rain gauges report every few hours in dry weather and with each bit of rain in a storm.</p>" : "") + "</div>";
@@ -378,14 +394,20 @@ function render() {
   }).join("");
   // which view
   var A = autoMode(now), storm = PICK === "storm" ? true : PICK === "normal" ? false : A.storm;
-  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) { b.setAttribute("aria-pressed", String((b.dataset.m === "storm") === storm)); });
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button[data-m]"), function (b) { b.setAttribute("aria-pressed", String((b.dataset.m === "storm") === storm)); });
   $("why").innerHTML = PICK && (PICK === "storm") !== A.storm ? "You picked this view. <b>Automatic:</b> " + esc(A.why || "normal view.") : esc(A.why);
   // sections: storm = rain and creek level first; normal = creek level, then rain, quieter
-  var hours = G.rain ? G.rain.hours : (D.sites && D.sites.hours) || 24;
-  hours = Math.max(hours, G.levels.some(function (l) { return l.e; }) ? 48 : 24);
+  // the graph period: what the viewer picked (or the view's default), no longer than the data this gauge has
+  var siteH = (D.sites && D.sites.hours) || 24, avail = Math.max(G.rain ? G.rain.hours : 0, G.levels.length ? Math.max.apply(null, G.levels.map(function (l) { return l.e ? 48 : siteH; })) : 0, 6);
+  var hours = Math.min(HRS || (storm ? 12 : 48), avail);
+  Array.prototype.forEach.call(document.querySelectorAll("#hseg button"), function (b) {
+    var h = +b.dataset.h; b.disabled = h > avail; b.setAttribute("aria-pressed", String(h === hours)); b.title = h > avail ? "This gauge has the last " + avail + " hours here" : ""; });
+  $("hnote").textContent = HRS && HRS > avail ? "This gauge has the last " + avail + " hours here." : "";
+  var lg = $("longer"); lg.hidden = !(G.url && /^https:\/\//.test(G.url)); if (!lg.hidden) { lg.href = G.url; lg.textContent = "Longer periods on " + (G.usgs ? "USGS" : "OneRain") + " ↗"; }
+  G.hrs = hours;
   var parts = [];
   if (storm && G.rain) parts.push(rainCard(G, true, now));
-  G.levels.forEach(function (l, i) { parts.push(levelCard(l, i, now, l.e ? 48 : (D.sites && D.sites.hours) || 24)); });
+  G.levels.forEach(function (l, i) { parts.push(levelCard(l, i, now, Math.min(hours, l.e ? 48 : siteH))); });
   if (!storm && G.rain) parts.push(rainCard(G, false, now));
   var fc = G.creeks.map(function (x) { return window.CREEK_STATUS && CREEK_STATUS.forecast ? CREEK_STATUS.forecast(x.c) : ""; }).filter(Boolean)[0];
   if (fc) parts.push('<div class="card"><h2>Rain expected (National Weather Service)</h2><div class="cs-details cs-fcbox">' + fc + "</div></div>");
@@ -393,9 +415,9 @@ function render() {
   parts.push('<div class="card"><h2>More data</h2><p style="margin:0">' + (G.url && /^https:\/\//.test(G.url) ? '<a class="olink" href="' + esc(G.url) + '" target="_blank" rel="noopener">Full data on ' + src + " ↗</a>" : "") + "</p>" +
     '<p class="note">' + esc(LK.text(G.usgs ? "gauge_more_usgs" : "gauge_more_onerain")) + "</p></div>");
   $("body").innerHTML = parts.join("");
-  if (G.rain) rainChart("chRain", G.rain, now);
+  if (G.rain) rainChart("chRain", G.rain, now, Math.min(hours, G.rain.hours));
   G.levels.forEach(function (l, i) {
-    var th = levelChart("chLv" + i, l, now, l.e ? 48 : (D.sites && D.sites.hours) || 24);
+    var th = levelChart("chLv" + i, l, now, Math.min(hours, l.e ? 48 : siteH));
     $("kLv" + i).innerHTML = '<span><i style="border-top:2px solid ' + css("--ink") + '"></i>' + esc(l.unit === "ft" ? "Level" : l.name) + "</span>" +
       th.map(function (s) { return '<span><i style="border-top:2px dashed ' + s.borderColor + '"></i>' + esc(s.label) + "</span>"; }).join("");
   });
