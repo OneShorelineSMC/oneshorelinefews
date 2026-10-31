@@ -76,10 +76,10 @@ def get_json(url, timeout=40):
         return json.load(r)
 
 
-def noaa(product, station, begin, end, fetch=get_json, **extra):
-    """[(local 'YYYY-MM-DD HH:MM', value, extra type)] from NOAA, ft NAVD88; [] when NOAA has no data for the dates."""
+def noaa(product, station, begin, end, fetch=get_json, datum="NAVD", **extra):
+    """[(local 'YYYY-MM-DD HH:MM', value, extra type)] from NOAA, ft NAVD88 (or the datum asked for); [] when NOAA has no data for the dates."""
     q = dict(product=product, station=station, begin_date=begin.strftime("%Y%m%d %H:%M"), end_date=end.strftime("%Y%m%d %H:%M"),
-             datum="NAVD", time_zone="lst_ldt", units="english", format="json", application="OneShorelineFEWS", **extra)
+             datum=datum, time_zone="lst_ldt", units="english", format="json", application="OneShorelineFEWS", **extra)
     j = fetch(NOAA + "?" + urllib.parse.urlencode(q))
     if j.get("error"):
         msg = str(j["error"].get("message", j["error"]))
@@ -244,30 +244,64 @@ def year_daily_max(rows):
     return out
 
 
+# How a year's daily highs are asked for, best first. NOAA's high/low record in NAVD88 starts around 1979 at San Francisco
+# and Alameda; older years can still be had as high/lows on the station datum (MLLW) or as hourly heights, shifted to
+# NAVD88 with NOAA's published MLLW-NAVD88 difference (the same fixed relation NOAA uses for NAVD88 itself).
+HIST_SOURCES = [("high_low", "NAVD", "hl"), ("high_low", "MLLW", "hl_mllw"), ("hourly_height", "NAVD", "hourly"), ("hourly_height", "MLLW", "hourly_mllw")]
+HIST_TRIED = "v2"   # years marked with this have been through every source above
+
+
 def update_history(hist, station, first_year, wy_start, fetch=get_json, budget_s=HIST_BUDGET_S, log=print, clock=time.time):
-    """Fills hist (station -> {year: {"d": {mmdd: ft}, "to": last date asked}}) newest years first, within the time budget.
-    Calendar years up to the day before this water year began; the last one is completed once it has ended."""
+    """Fills hist (station -> {year: {"d": {mmdd: ft}, "to": last date asked, "src": how}}) newest years first, within the
+    time budget. Calendar years up to the day before this water year began; the last one is completed once it has ended.
+    A year with no high/lows in NAVD88 is tried on the station datum and then as hourly heights (HIST_SOURCES)."""
     h = hist.setdefault(station, {})
     last_day = wy_start - dt.timedelta(days=1)
     t_end = clock() + budget_s
+    mllw = [None]   # MLLW in ft NAVD88, asked for once, only when needed
+
+    def shift():
+        if mllw[0] is None:
+            mllw[0] = datums(station, fetch)[1]
+        return mllw[0]
     for y in range(last_day.year, first_year - 1, -1):
         to = min(dt.date(y, 12, 31), last_day).isoformat()
         cur = h.get(str(y))
-        if cur and cur.get("to") == to:
+        if cur and cur.get("to") == to and (cur.get("d") or cur.get("tried") == HIST_TRIED):
             continue
         if clock() > t_end:
             break
-        try:
-            rows = noaa("high_low", station, dt.datetime(y, 1, 1), dt.datetime.combine(dt.date.fromisoformat(to), dt.time(23, 59)), fetch)
-        except ValueError as e:   # NOAA answered with an error for this year (e.g. no NAVD88 for old data): keep going
-            log("  %s %d high/low: %s" % (station, y, e))
-            h[str(y)] = {"to": to, "d": {}, "err": str(e)[:120]}
-            continue
-        except Exception as e:   # noqa: BLE001  (network): try again next run
-            log("  %s %d high/low: %s" % (station, y, e))
+        b, e = dt.datetime(y, 1, 1), dt.datetime.combine(dt.date.fromisoformat(to), dt.time(23, 59))
+        rec, errs, stop = None, [], False
+        for product, datum, src in HIST_SOURCES:
+            try:
+                rows = noaa(product, station, b, e, fetch, datum=datum)
+                if rows and datum != "NAVD":
+                    off = shift()
+                    rows = [(t, v + off, ty) for t, v, ty in rows]
+            except ValueError as ex:   # NOAA answered with an error for this source (e.g. no NAVD88 for old data): try the next
+                errs.append("%s/%s: %s" % (product, datum, str(ex)[:80]))
+                continue
+            except Exception as ex:   # noqa: BLE001  (network, request limit): try again next run
+                log("  %s %d %s: %s" % (station, y, product, ex))
+                stop = True
+                break
+            dm = year_daily_max(rows)
+            if dm:
+                rec = {"to": to, "d": {k[5:].replace("-", ""): round(v, 2) for k, v in sorted(dm.items())}}
+                if src != "hl":
+                    rec["src"] = src
+                break
+        if stop:
             break
-        dm = year_daily_max(rows)
-        h[str(y)] = {"to": to, "d": {k[5:].replace("-", ""): round(v, 2) for k, v in sorted(dm.items())}}
+        if rec is None:   # nothing from any source: remembered, not asked again
+            rec = {"to": to, "d": {}, "tried": HIST_TRIED}
+            if errs:
+                rec["err"] = "; ".join(errs)[:240]
+                log("  %s %d: %s" % (station, y, rec["err"]))
+        elif rec.get("src"):
+            log("  %s %d: from %s" % (station, y, rec["src"]))
+        h[str(y)] = rec
     return h
 
 

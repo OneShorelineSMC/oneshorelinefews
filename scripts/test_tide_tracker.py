@@ -81,15 +81,26 @@ def fetch(url):
     st, prod = q["station"], q["product"]
     a = dt.datetime.strptime(q["begin_date"], "%Y%m%d %H:%M")
     b = dt.datetime.strptime(q["end_date"], "%Y%m%d %H:%M")
+    nodata = {"error": {"message": "No data was found. This product may not be offered at this station at the requested time."}}
+    if prod == "hourly_height":   # old years: hourly heights on the station datum only (MLLW 0.1 ft below NAVD88 here)
+        if a.year >= 1950 or q["datum"] != "MLLW":
+            return nodata
+        out, t = [], a
+        while t <= b:
+            v = 6.0 + 1.5 * math.cos(2 * math.pi * (t.timetuple().tm_yday - 15) / 365) + 0.01 * (t.year - 1990)
+            out.append({"t": t.strftime("%Y-%m-%d %H:00"), "v": "%.3f" % ((v if t.hour == 12 else v - 2) + 0.1)})
+            t += dt.timedelta(hours=1)
+        return {"data": out}
     if prod == "high_low":
-        if a.year < 1990:
-            return {"error": {"message": "No data was found. This product may not be offered at this station at the requested time."}}
+        if a.year < 1950 or (a.year < 1990 and q["datum"] == "NAVD"):
+            return nodata
+        mllw = 0.1 if q["datum"] == "MLLW" else 0.0   # on MLLW the same water reads 0.1 ft higher
         if st == "9414290" and a.year == 1995:
             return {"error": {"message": "The requested datum NAVD is not available for this period"}}
         out, t = [], a
         while t <= b:   # one high a day at noon: higher in winter, a bit higher each year
             v = 6.0 + 1.5 * math.cos(2 * math.pi * (t.timetuple().tm_yday - 15) / 365) + 0.01 * (t.year - 1990)
-            out.append({"t": t.strftime("%Y-%m-%d 12:00"), "v": "%.3f" % v, "ty": "HH"})
+            out.append({"t": t.strftime("%Y-%m-%d 12:00"), "v": "%.3f" % (v + mllw), "ty": "HH"})
             out.append({"t": t.strftime("%Y-%m-%d 05:00"), "v": "%.3f" % (v - 1), "ty": " H"})
             out.append({"t": t.strftime("%Y-%m-%d 18:00"), "v": "0.5", "ty": "LL"})
             t += dt.timedelta(days=1)
@@ -153,22 +164,31 @@ check("Monterey runs lower", mo["max"] < m["max"])
 h1 = {st: len(v) for st, v in hist.items()}
 check("history: some years fetched within the time budget, not all", 0 < h1["9414523"] < 2026 - 1974 + 1)
 check("newest years first", "2026" in hist["9414523"] and hist["9414523"]["2026"]["to"] == "2026-09-30")
-for _ in range(40):
+for _ in range(80):
     out = T.run(out, hist, NOW, fetch=fetch, log=lambda *a: None, budget_s=8, clock=clock, extra=extra)
 check("history complete after enough runs", len(hist["9414290"]) == 2026 - 1898 + 1)
+hs = hist["9414290"]
+exp = lambda y, md: round(6.0 + 1.5 * math.cos(2 * math.pi * (dt.date(y, int(md[:2]), int(md[2:])).timetuple().tm_yday - 15) / 365) + 0.01 * (y - 1990), 2)   # noqa: E731
+check("before NAVD88 high/lows: high/lows on MLLW, shifted to NAVD88", hs["1960"].get("src") == "hl_mllw" and abs(hs["1960"]["d"]["0115"] - exp(1960, "0115")) < 0.011)
+check("older still: hourly heights on MLLW, shifted, daily highest", hs["1920"].get("src") == "hourly_mllw" and abs(hs["1920"]["d"]["0115"] - exp(1920, "0115")) < 0.011
+      and len(hs["1920"]["d"]) == 366)
+check("NAVD88 high/lows carry no source mark", "src" not in hs["2000"] and hs["2000"]["d"])
+hist["9414290"]["1930"] = {"to": "1930-12-31", "d": {}}   # an empty year from before the other sources were tried: asked again
+T.update_history(hist, "9414290", 1898, dt.date(2026, 10, 1), fetch, 30, lambda *a: None, clock)
+check("old empty years are asked again with the other sources", hist["9414290"]["1930"].get("src") == "hourly_mllw")
 check("a year NOAA can't give in NAVD88 is noted and skipped", hist["9414290"]["1995"]["d"] == {} and "datum" in hist["9414290"]["1995"]["err"])
 r = {x["id"]: x for x in out["stations"]}["9414523"]
 hs = r["history"]
-check("history: years with data from 1990 (made-up record)", hs["first_year"] == 1990 and hs["last_year"] == 2026)
+check("history: years with data from 1974 (made-up record; before 1990 from MLLW high/lows)", hs["first_year"] == 1974 and hs["last_year"] == 2026)
 check("usual October days at MHHW are a count per month", 0 <= hs["usual"]["10"]["days"]["mhhw"] <= 31 and hs["usual"]["10"]["years"] == 19)
 check("usual range by date: 366 entries with low <= median <= high", len(hs["band"]) == 366 and all(b is None or b[0] <= b[1] <= b[2] for b in hs["band"]))
 check("base = the last 19 complete water years", hs["base"] == [2008, 2026])
 pc = hs["pace"]
-check("pace: day of the water year and one entry per past year with data", pc["day"] == 28 and len(pc["years"]) == 2026 - 1991 + 1 and pc["years"][-1]["wy"] == 2026)
+check("pace: day of the water year and one entry per past year with data", pc["day"] == 28 and len(pc["years"]) == 2026 - 1975 + 1 and pc["years"][-1]["wy"] == 2026)
 yr = pc["years"][-1]
 check("pace: by-this-date counts never exceed the year's", all(yr["by"][k] <= yr["all"][k] for k in yr["by"]) and yr["max_by"] <= yr["max"])
 rk = r["ranks"]["2026-10"]
-check("October 2026 ranks first (the made-up history tops out lower)", rk["rank"] == 1 and rk["of"] == 2026 - 1990 + 1)
+check("October 2026 ranks first (the made-up history tops out lower)", rk["rank"] == 1 and rk["of"] == 2026 - 1974 + 1)
 check("season so far ranked against past water years over the same dates", r["ranks"]["season"]["rank"] == 1 and r["ranks"]["season"]["of"] > 20)
 
 # projections and NWS
