@@ -66,11 +66,15 @@
   .ensokey { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
   .ensotog { font-weight: 600; color: var(--text); cursor: pointer; margin-right: 6px; }
   .ensotog input { vertical-align: -2px; margin: 0 4px 0 0; width: 16px; height: 16px; }
-  .ensokey.off span { opacity: .4; }
+  .ensokey.off span { display: none; }   /* the key shows only while the shading is on */
   .ensokey i { display: inline-block; width: 14px; height: 12px; vertical-align: -1px; margin-right: 4px; border-radius: 2px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
   details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details.fold > summary h2 { display: inline; margin: 0; }
+  details.fold[open] > summary { margin-bottom: 8px; }
+  tr.grp td { border-top: 2px solid var(--line); padding-top: 10px; font-weight: 700; color: var(--ink); }
+  .lead { margin: 0 0 8px; font-size: 14px; }
   details p, details li { font-size: 14px; }
   a { color: var(--link); }
   /* the public pages' bottom bar (staff, 2026-10-31), with Staff tools on */
@@ -92,9 +96,12 @@
 </div></header>
 <main>
   <div class="card">
-    <p style="margin:0">What NOAA’s record says about Redwood City, Alameda and San Francisco: the highest water each year, how often the water
+    <p style="margin:0">What NOAA’s record says about
+      <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9414523" target="_blank" rel="noopener">Redwood City</a>,
+      <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9414750" target="_blank" rel="noopener">Alameda</a> and
+      <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9414290" target="_blank" rel="noopener">San Francisco</a>: the highest water each year, how often the water
       reaches the levels we track, the trend, the time of year, how the three gauges compare and the biggest days. Water years (Oct–Sep),
-      ft NAVD88 (North American Vertical Datum of 1988) throughout, from each day’s highest high water. Shading marks El Niño and La Niña winters.</p>
+      ft NAVD88 (North American Vertical Datum of 1988) throughout, from each day’s highest high water. El Niño and La Niña shading can be turned on under each graph.</p>
     <p class="meta" id="meta">Loading…</p>
     <div class="warn" id="warn"></div>
   </div>
@@ -105,21 +112,10 @@
   </div>
 
   <div class="card">
-    <h2>Data check</h2>
-    <div id="qc"></div>
-  </div>
-
-  <div class="card">
-    <h2>Years with data</h2>
-    <div id="cov"></div>
-    <p class="note">Each cell is a water year: dark = at least 80% of days (used for yearly numbers), light = some days, blank = none.</p>
-  </div>
-
-  <div class="card">
     <h2>Highest water each year</h2>
     <div class="chartbox"><canvas id="chMax" role="img" aria-label="Highest water each water year at the three gauges"></canvas></div>
     <div class="key" id="keyMax"></div>
-    <div class="ensokey"><label class="ensotog"><input type="checkbox" class="ensoOn" checked> Show El Niño / La Niña</label><span aria-hidden="true"><i style="background:rgba(230,120,20,.25)"></i>El Niño winter</span><span aria-hidden="true"><i style="background:rgba(40,120,220,.25)"></i>La Niña winter</span><span>darker = stronger (NOAA Oceanic Niño Index, Dec–Feb; this year: the latest index until the winter’s is in)</span></div>
+    <div class="ensokey"><label class="ensotog"><input type="checkbox" class="ensoOn"> Show El Niño / La Niña</label><span aria-hidden="true"><i style="background:rgba(230,120,20,.25)"></i>El Niño winter</span><span aria-hidden="true"><i style="background:rgba(40,120,220,.25)"></i>La Niña winter</span><span>darker = stronger (NOAA Oceanic Niño Index, Dec–Feb; this year: the latest index until the winter’s is in)</span></div>
     <p class="note" id="noteMax"></p>
   </div>
 
@@ -127,15 +123,22 @@
     <h2>Average daily high, year by year (the Bay rising)</h2>
     <div class="chartbox"><canvas id="chMean" role="img" aria-label="Average of each day's highest water, each water year"></canvas></div>
     <div class="key" id="keyMean"></div>
-    <div class="ensokey"><label class="ensotog"><input type="checkbox" class="ensoOn" checked> Show El Niño / La Niña</label><span aria-hidden="true"><i style="background:rgba(230,120,20,.25)"></i>El Niño winter</span><span aria-hidden="true"><i style="background:rgba(40,120,220,.25)"></i>La Niña winter</span><span>darker = stronger (NOAA Oceanic Niño Index, Dec–Feb; this year: the latest index until the winter’s is in)</span></div>
+    <div class="ensokey"><label class="ensotog"><input type="checkbox" class="ensoOn"> Show El Niño / La Niña</label><span aria-hidden="true"><i style="background:rgba(230,120,20,.25)"></i>El Niño winter</span><span aria-hidden="true"><i style="background:rgba(40,120,220,.25)"></i>La Niña winter</span><span>darker = stronger (NOAA Oceanic Niño Index, Dec–Feb; this year: the latest index until the winter’s is in)</span></div>
     <p class="note" id="noteMean"></p>
+  </div>
+
+  <div class="card">
+    <h2>Highest days on record</h2>
+    <div class="bar"><label>Gauge <select id="tGauge"></select></label></div>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Highest days on record (scrolls sideways)"><table id="top"></table></div>
+    <p class="note">The 15 highest days (one per storm or tide event: days within 3 days of a higher one are left out), with the other gauges’ highest over the same day and the days either side.</p>
   </div>
 
   <div class="card">
     <h2>Days at or above a level, each year</h2>
     <div class="bar"><label>Gauge <select id="dGauge"></select></label><label>Level <select id="dLevel"></select></label></div>
     <div class="chartbox"><canvas id="chDays" role="img" aria-label="Days per water year at or above the chosen level"></canvas></div>
-    <div class="ensokey"><label class="ensotog"><input type="checkbox" class="ensoOn" checked> Show El Niño / La Niña</label><span aria-hidden="true"><i style="background:rgba(230,120,20,.25)"></i>El Niño winter</span><span aria-hidden="true"><i style="background:rgba(40,120,220,.25)"></i>La Niña winter</span><span>darker = stronger (NOAA Oceanic Niño Index, Dec–Feb; this year: the latest index until the winter’s is in)</span></div>
+    <div class="ensokey"><label class="ensotog"><input type="checkbox" class="ensoOn"> Show El Niño / La Niña</label><span aria-hidden="true"><i style="background:rgba(230,120,20,.25)"></i>El Niño winter</span><span aria-hidden="true"><i style="background:rgba(40,120,220,.25)"></i>La Niña winter</span><span>darker = stronger (NOAA Oceanic Niño Index, Dec–Feb; this year: the latest index until the winter’s is in)</span></div>
     <p class="note" id="noteDays"></p>
   </div>
 
@@ -147,6 +150,7 @@
     </div>
     <div class="card">
       <h2>How often a year reaches each level</h2>
+      <p class="lead">For each gauge and each level we track: in how many water years the year’s highest water reached it, over the whole record and over the last 19 years. It shows how often a level is a once-a-year event and how that has changed.</p>
       <div class="tablewrap" tabindex="0" role="region" aria-label="How often a year reaches each level (scrolls sideways)"><table id="exc"></table></div>
       <p class="note">Share of water years whose highest water reached the level: all years with data, and the last 19. A level reached in about
         every year is close to the 1-year tide; one reached in 1 of 10 years, the 10-year water level (from the record alone, no fitting).</p>
@@ -161,27 +165,31 @@
     <p class="note" id="noteRP"></p>
   </div>
 
-  <div class="card">
-    <h2>El Niño and La Niña years</h2>
+  <div class="card"><details class="fold">
+    <summary><h2>El Niño and La Niña years</h2></summary>
     <div class="tablewrap" tabindex="0" role="region" aria-label="El Niño and La Niña years (scrolls sideways)"><table id="ensoT"></table></div>
     <p class="note" id="ensoNote"></p>
-  </div>
+  </details></div>
 
-  <div class="card">
-    <h2>How the three gauges compare</h2>
+  <div class="card"><details class="fold">
+    <summary><h2>How the three gauges compare</h2></summary>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Gauge comparison (scrolls sideways)"><table id="cmp"></table></div>
     <p class="note">The difference between two gauges’ highest water in the same month. Monthly highs are used rather than daily ones because
       the same high tide can fall either side of midnight at two gauges. “In the highest months”: the top 10% of months at the second gauge,
       to see whether the gap holds when the Bay is high (a bigger gap means the difference grows in storms and King Tides). Useful for judging
       how well Alameda or San Francisco stand in for a place nearer Redwood City.</p>
-  </div>
+  </details></div>
 
-  <div class="card">
-    <h2>Highest days on record</h2>
-    <div class="bar"><label>Gauge <select id="tGauge"></select></label></div>
-    <div class="tablewrap" tabindex="0" role="region" aria-label="Highest days on record (scrolls sideways)"><table id="top"></table></div>
-    <p class="note">The 15 highest days (one per storm or tide event: days within 3 days of a higher one are left out), with the other gauges’ highest over the same day and the days either side.</p>
-  </div>
+  <div class="card"><details class="fold">
+    <summary><h2>Years with data</h2></summary>
+    <div id="cov"></div>
+    <p class="note">Each cell is a water year: dark = at least 80% of days (used for yearly numbers), light = some days, blank = none.</p>
+  </details></div>
+
+  <div class="card"><details class="fold">
+    <summary><h2>Data check</h2></summary>
+    <div id="qc"></div>
+  </details></div>
 
   <div class="card">
     <details>
@@ -189,7 +197,9 @@
       <ul>
         <li><b>Data:</b> NOAA’s high and low water record at each gauge, in ft NAVD88, downloaded a few years each hour by the tide tracker’s data job
           (<code>scripts/tide_tracker.py</code>, kept in <code>tide_tracker_history.json</code> on the data branch). Each day’s value is the highest
-          high water. The current water year is on the <a href="TideTracker.html">Tide tracker</a> page, not here.</li>
+          high water. Where NOAA has no NAVD88 high/lows for an older year, the job asks for them on the gauge’s own datum (MLLW) and then for hourly
+          heights, and shifts them to NAVD88 by NOAA’s published MLLW–NAVD88 difference (“Years with data” lists which years). The record goes back to
+          1898 at San Francisco, 1939 at Alameda and 1974 at Redwood City where NOAA has it. The current water year is on the <a href="TideTracker.html">Tide tracker</a> page, not here.</li>
         <li><b>Years:</b> water years (Oct 1–Sep 30), named by the year they end. Yearly numbers use only years with at least 80% of their days.</li>
         <li><b>Trend:</b> a straight line fitted to each year’s value (least squares), in ft per decade. The average daily high moves with sea level;
           the highest water each year also moves with storms and El Niño, so its trend is noisier.</li>
@@ -212,8 +222,11 @@
 <script>
 "use strict";
 var BASE = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
-var GAUGES = [{ id: "9414523", name: "Redwood City", c: "--s1", pt: "circle" }, { id: "9414750", name: "Alameda", c: "--s2", pt: "triangle" },
-  { id: "9414290", name: "San Francisco", c: "--s3", pt: "rectRot" }];   // each gauge its own marker shape as well as color
+var GAUGES = [{ id: "9414523", name: "Redwood City", c: "--s1", pt: "circle", first: 1974 }, { id: "9414750", name: "Alameda", c: "--s2", pt: "triangle", first: 1939 },
+  { id: "9414290", name: "San Francisco", c: "--s3", pt: "rectRot", first: 1898 }];   // each gauge its own marker shape as well as color; first: earliest year the data job asks NOAA for
+// a gauge's name, linked to its NOAA station page
+function gLink(g) { return "<a href='https://tidesandcurrents.noaa.gov/stationhome.html?id=" + g.id + "' target='_blank' rel='noopener'>" + esc(g.name) + "</a>"; }
+function gById(id) { return GAUGES.filter(function (g) { return g.id === id; })[0]; }
 var $ = function (id) { return document.getElementById(id); };
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
@@ -236,9 +249,9 @@ function shift(k, n) { var t = new Date(Date.parse(k + "T12:00:00Z") + n * 86400
 function near(days, k) { var v = [days[shift(k, -1)], days[k], days[shift(k, 1)]].filter(function (x) { return x != null; }); return v.length ? Math.max.apply(null, v) : null; }
 
 // ---- the data, by gauge: days {"YYYY-MM-DD": ft}; water years {wy: {n, max, maxDay, mean, vals}}
-var SHOW_ENSO = true;
-try { SHOW_ENSO = localStorage.getItem("th_enso") !== "0"; } catch (e) { /* no storage */ }
-var H = {}, LV = {}, ENSO = {}, CUR = null;   // CUR: this water year so far {wy, days: {id: {date: ft}}, n}
+var SHOW_ENSO = false;
+try { SHOW_ENSO = localStorage.getItem("th_enso") === "1"; } catch (e) { /* no storage */ }   // off unless turned on
+var H = {}, LV = {}, ENSO = {}, CUR = null, HIST = {};   // CUR: this water year so far {wy, days: {id: {date: ft}}, n}
 function ensoVal(wy) { if (ENSO[String(wy)] != null) return { v: ENSO[String(wy)], prov: false };
   return CUR && wy === CUR.wy && ENSO_LATEST ? { v: ENSO_LATEST[2], prov: true } : null; }
 // NOAA's Oceanic Nino Index for each winter (Dec-Feb), by water year: El Nino at +0.5 or more, La Nina at -0.5 or less
@@ -353,9 +366,17 @@ function coverage() {
     var w = H[g.id].wys, cells = "";
     for (var y = y0; y <= y1; y++) cells += "<i class='" + (w[y] ? (w[y].full ? "f" : "p") : "") + "' title='" + y + (w[y] ? ": " + w[y].n + " days" : ": no data") + "'></i>";
     var f = fullYears(g.id);
-    h += "<div><b>" + esc(g.name) + "</b><span class='sm'>" + f.length + " full years</span></div><div><div class='cells' aria-hidden='true'>" + cells + "</div></div>";
+    h += "<div><b>" + gLink(g) + "</b><span class='sm'>" + f.length + " full years</span></div><div><div class='cells' aria-hidden='true'>" + cells + "</div></div>";
   });
   h += "<div></div><div class='covax'><span>WY" + y0 + "</span><span>WY" + y1 + "</span></div></div>";
+  // years NOAA only has as hourly heights or on the station datum (the data job's fallbacks)
+  var how = GAUGES.map(function (g) {
+    var hy = HIST[g.id] || {}, hr = [], ml = [];
+    Object.keys(hy).forEach(function (y) { var s = hy[y].src || ""; if (/^hourly/.test(s)) hr.push(+y); else if (s === "hl_mllw") ml.push(+y); });
+    var rng = function (a) { return a.length ? Math.min.apply(null, a) + "–" + Math.max.apply(null, a) : ""; };
+    return (hr.length ? g.name + " " + rng(hr) + " from hourly heights" : "") + (hr.length && ml.length ? "; " : "") + (ml.length ? (hr.length ? "" : g.name + " ") + rng(ml) + " from high/lows on the gauge’s own datum (MLLW), shifted to NAVD88" : "");
+  }).filter(Boolean);
+  if (how.length) h += "<p class='note'>NOAA has no NAVD88 high/lows for the older years, so: " + how.join(". ") + ". Hourly heights can miss the top of a high tide by a few hundredths of a foot.</p>";
   $("cov").innerHTML = h;
   return [y0, y1];
 }
@@ -444,22 +465,23 @@ function exceed() {
   var rows = "";
   GAUGES.forEach(function (g) {
     var ys = fullYears(g.id), rec = lastYears(g.id, BASE_N), w = H[g.id].wys; if (!ys.length) return;
+    rows += "<tr class='grp'><td colspan='3'>" + gLink(g) + " <span style='font-weight:400;color:var(--muted);font-size:12.5px'>" + ys.length + " full years, " + ys[0] + "–" + ys[ys.length - 1] + "</span></td></tr>";
     (LV[g.id] || []).forEach(function (l) {
       var a = ys.filter(function (y) { return w[y].max >= l.ft; }).length, b = rec.filter(function (y) { return w[y].max >= l.ft; }).length;
-      rows += "<tr><td>" + esc(g.name) + "</td><td>" + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft NAVD88</span></td><td class='n'>" + a + " of " + ys.length + "<span class='sm'>" + Math.round(100 * a / ys.length) + "%</span></td>" +
+      rows += "<tr><td>" + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft NAVD88</span></td><td class='n'>" + a + " of " + ys.length + "<span class='sm'>" + Math.round(100 * a / ys.length) + "%</span></td>" +
         "<td class='n'>" + b + " of " + rec.length + "<span class='sm'>" + Math.round(100 * b / rec.length) + "%</span></td></tr>";
     });
     var top10 = quant(rec.map(function (y) { return w[y].max; }), 0.9);
-    rows += "<tr><td>" + esc(g.name) + "</td><td><i>Reached in about 1 year in 10 (last " + rec.length + ")</i></td><td class='n'></td><td class='n'><b>" + ft(top10) + " ft NAVD88</b></td></tr>";
+    rows += "<tr><td><i>Reached in about 1 year in 10 (last " + rec.length + ")</i></td><td class='n'></td><td class='n'><b>" + ft(top10) + " ft NAVD88</b></td></tr>";
   });
-  $("exc").innerHTML = "<thead><tr><th>Gauge</th><th>Level</th><th class='n'>All years</th><th class='n'>Last 19</th></tr></thead><tbody>" + rows + "</tbody>";
+  $("exc").innerHTML = "<thead><tr><th>Level</th><th class='n'>All years</th><th class='n'>Last 19</th></tr></thead><tbody>" + rows + "</tbody>";
 }
 
 function compare() {
   var pairs = [["9414523", "9414750"], ["9414523", "9414290"], ["9414750", "9414290"]], rows = "";
   pairs.forEach(function (p) {
     var r = monthDiff(p[0], p[1]); if (r.med == null) return;
-    rows += "<tr><td><b>" + gName(p[0]) + "</b> minus " + gName(p[1]) + "<span class='sm'>" + r.n + " months</span></td>" +
+    rows += "<tr><td><b>" + gLink(gById(p[0])) + "</b> minus " + gLink(gById(p[1])) + "<span class='sm'>" + r.n + " months</span></td>" +
       "<td class='n'><b>" + sgn(r.med) + "</b></td><td class='n'>" + sgn(r.lo) + " to " + sgn(r.up) + "</td>" +
       "<td class='n'><b>" + sgn(r.hiMed) + "</b><span class='sm'>" + r.hiN + " months, " + gName(p[1]) + " ≥ " + ft(r.cut) + " ft NAVD88</span></td></tr>";
   });
@@ -482,7 +504,7 @@ function findings(fs) {
   var li = [];
   fs.forEach(function (f) {
     var b = f.w[f.best];
-    li.push("<b>" + esc(f.g.name) + ":</b> highest water on record " + ft(b.max) + " ft on " + esc(dLabel(b.maxDay)) + " (" + f.ys.length + " full years, " + f.ys[0] + "–" + f.ys[f.ys.length - 1] + ")" +
+    li.push("<b>" + gLink(f.g) + ":</b> highest water on record " + ft(b.max) + " ft on " + esc(dLabel(b.maxDay)) + " (" + f.ys.length + " full years, " + f.ys[0] + "–" + f.ys[f.ys.length - 1] + ")" +
       (f.fa ? "; the average daily high has risen " + sgn(f.fa.b * 10) + " ft per decade" : "") + ".");
   });
   var rw = H["9414523"], mh = (LV["9414523"] || []).filter(function (l) { return l.key === "flood"; })[0];
@@ -529,7 +551,7 @@ function ensoTable() {
       var cy = ys.filter(function (y) { return c.f(enso(y)); }); if (!cy.length) return;
       var rm = mean(cy.map(function (y) { return w[y].max - (fm.a + fm.b * y); })), ra = mean(cy.map(function (y) { return w[y].mean - (fa.a + fa.b * y); }));
       var rd = fd ? mean(cy.map(function (y) { return cnt[y] - (fd.a + fd.b * y); })) : null;
-      rows += "<tr" + (i === 0 ? " style='border-top:2px solid var(--line)'" : "") + "><td>" + (i === 0 ? "<b>" + esc(g.name) + "</b>" : "") + "</td><td>" + esc(c.label) +
+      rows += "<tr" + (i === 0 ? " style='border-top:2px solid var(--line)'" : "") + "><td>" + (i === 0 ? "<b>" + gLink(g) + "</b>" : "") + "</td><td>" + esc(c.label) +
         "<span class='sm'>" + cy.length + " years" + (c.k === "big" ? ": " + cy.slice(-6).join(", ") : "") + "</span></td>" +
         "<td class='n'><b>" + sgn(rm) + "</b></td><td class='n'>" + sgn(ra) + "</td>" +
         "<td class='n'>" + (rd == null ? "–" : (rd >= 0 ? "+" : "−") + Math.abs(rd).toFixed(1)) + (lv && i === 0 ? "<span class='sm'>" + esc(lv.label) + " " + lv.ft.toFixed(2) + " ft NAVD88</span>" : "") + "</td></tr>";
@@ -581,11 +603,14 @@ function render(hist, tracker) {
     CUR = { wy: +tracker.water_year.replace("WY", ""), days: {}, n: 0 };
     tracker.stations.forEach(function (st) { var d = {}; Object.keys(st.days || {}).forEach(function (k) { d[k] = st.days[k].max; }); CUR.days[st.id] = d; CUR.n = Math.max(CUR.n, Object.keys(d).length); });
   }
-  prep(hist, tracker);
+  HIST = hist; prep(hist, tracker);
   var cnt = GAUGES.map(function (g) { return g.name + " " + fullYears(g.id).length + " full years"; }).join(" · ");
   $("meta").textContent = "Through water year " + (Math.max.apply(null, GAUGES.map(function (g) { var y = fullYears(g.id); return y.length ? y[y.length - 1] : 0; }))) + " · " + cnt;
   var missing = GAUGES.filter(function (g) { var h = hist[g.id] || {}; return !Object.keys(h).length; });
-  $("warn").textContent = missing.length ? "Still downloading: " + missing.map(function (g) { return g.name; }).join(", ") + " (a few years each hour)." : "";
+  var older = GAUGES.filter(function (g) { var ks = Object.keys(hist[g.id] || {}).map(Number); return ks.length && Math.min.apply(null, ks) > g.first; })
+    .map(function (g) { return g.name + " (back to " + Math.min.apply(null, Object.keys(hist[g.id]).map(Number)) + " so far, of " + g.first + ")"; });
+  $("warn").textContent = (missing.length ? "Still downloading: " + missing.map(function (g) { return g.name; }).join(", ") + " (a few years each hour). " : "") +
+    (older.length ? "Older years still downloading, a few each hour: " + older.join("; ") + "." : "");
   var span = coverage();
   var fs = yearly(span);
   ["dGauge", "tGauge"].forEach(function (s) { if (!$(s).options.length) $(s).innerHTML = GAUGES.map(function (g) { return "<option value='" + g.id + "'>" + esc(g.name) + "</option>"; }).join(""); });
