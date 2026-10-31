@@ -458,13 +458,15 @@ def enso_update(previous, today, get_text=None, log=print):
 
 # ---------------------------------------------------------------------------------------------------- return periods (AEP)
 def study_fields(fields):
-    """{return period in years: field name} from the layer's fields, by name or alias ("ET_100YR", "100-yr", "Year100"...)."""
+    """{return period in years: field name} from the layer's fields, by name or alias ("ET_100YR", "100-yr", "Year100", or the
+    BCDC layer's "SWEL_100": still water elevation, 100-year)."""
     out = {}
     for f in fields or []:
         text = ("%s %s" % (f.get("name", ""), f.get("alias", ""))).lower()
-        if f.get("type") not in (None, "esriFieldTypeDouble", "esriFieldTypeSingle", "esriFieldTypeInteger"):
+        if f.get("type") not in (None, "esriFieldTypeDouble", "esriFieldTypeSingle", "esriFieldTypeInteger", "esriFieldTypeString"):
             continue
-        m = re.search(r"(\d+)\s*[-_ ]?\s*(?:yr|year)", text) or re.search(r"(?:yr|year)\s*[-_ ]?\s*(\d+)", text)
+        m = (re.search(r"(\d+)\s*[-_ ]?\s*(?:yr|year)", text) or re.search(r"(?:yr|year)\s*[-_ ]?\s*(\d+)", text) or
+             re.match(r"swel\s*[-_ ]?\s*(\d+)\b", text))
         if m and int(m.group(1)) in (1, 2, 5, 10, 25, 50, 100, 200, 500) and int(m.group(1)) not in out:
             out[int(m.group(1))] = f["name"]
     return out
@@ -481,6 +483,15 @@ def load_extreme_csv(path=EXTREMES_CSV):
             except (KeyError, TypeError, ValueError):
                 continue
     return out
+
+
+def num(v):
+    """A number from a layer attribute (some layers keep numbers as text); None if it isn't one."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
 
 
 def study_update(previous, today, fetch=get_json, log=print, csv_levels=None):
@@ -509,11 +520,14 @@ def study_update(previous, today, fetch=get_json, log=print, csv_levels=None):
                     dx = math.radians(g["x"] - lo) * math.cos(math.radians(la)) * 6371000
                     dy = math.radians(g["y"] - la) * 6371000
                     d = math.hypot(dx, dy)
-                    vals = {str(T): ft_["attributes"].get(name) for T, name in fm.items()}
+                    vals = {str(T): num(ft_["attributes"].get(name)) for T, name in fm.items()}
                     if all(isinstance(v, (int, float)) for v in vals.values()) and (best is None or d < best[0]):
                         best = (d, ft_, vals)
                 if best:
                     a = best[1]["attributes"]
+                    mh = a.get("MHHW")   # the layer carries MHHW too: about 6-7 in feet NAVD88 around the Bay, about 2 in metres
+                    if isinstance(mh, (int, float)) and 0 < mh < 4.5:
+                        best = (best[0], best[1], {k: v * FT_PER_M for k, v in best[2].items()})
                     pid = next((a[k] for k in a if k.lower() in ("point", "pointid", "point_id", "id", "site", "station", "name")), a.get("OBJECTID"))
                     out[sid] = {"values": {k: round(float(v), 2) for k, v in best[2].items()}, "point": pid, "dist_m": round(best[0]),
                                 "lat": round(best[1]["geometry"]["y"], 5), "lon": round(best[1]["geometry"]["x"], 5),

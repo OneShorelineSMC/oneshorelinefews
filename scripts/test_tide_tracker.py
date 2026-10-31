@@ -274,5 +274,25 @@ check("a closed month is kept as recorded", out6["closeout"]["9414523"]["2026-10
 lv = T.load_extra_levels()
 check("levels file loads", [x["ft"] for x in lv.get("9414523", [])] == [8.3, 8.5] and lv.get("9413450"))
 
+# the BCDC layer as it really is: SWEL_N fields (still water elevation), in any order, MHHW alongside
+swel = [{"name": n, "type": "esriFieldTypeDouble"} for n in "FID OBJECTID_1 Easting Northing MLLW MHHW SWEL_2 SWEL_5 SWEL_1 SWEL_10 SWEL_25 SWEL_100 SWEL_500 SWEL_50 ID".split()]
+check("study fields: SWEL_N read as return periods", T.study_fields(swel) == {1: "SWEL_1", 2: "SWEL_2", 5: "SWEL_5", 10: "SWEL_10", 25: "SWEL_25", 50: "SWEL_50", 100: "SWEL_100", 500: "SWEL_500"})
+def swel_fetch(metres):
+    k = 1 / 3.28084 if metres else 1.0
+    def f(url):
+        if url.endswith("FeatureServer?f=json"):
+            return {"layers": [{"id": 0}]}
+        if url.endswith("/0?f=json"):
+            return {"fields": swel}
+        vals = {1: 8.3, 2: 8.6, 5: 9.0, 10: 9.3, 25: 9.7, 50: 10.0, 100: 10.3, 500: 11.0}
+        a = dict({"ID": 761, "MHHW": 7.1 * k, "MLLW": -1.2 * k}, **{"SWEL_%d" % t: str(round(v * k, 3)) if t == 5 else v * k for t, v in vals.items()})
+        return {"features": [{"geometry": {"x": -122.2120, "y": 37.5080}, "attributes": a}]}
+    return f
+for metres in (False, True):
+    su = T.study_update(None, dt.date(2026, 10, 31), swel_fetch(metres), lambda *a: None, {})
+    v = su.get("9414523", {}).get("values", {})
+    check("study read from SWEL fields" + (" in metres, turned into feet" if metres else " in feet") + " (a number kept as text too)",
+          "_error" not in su and abs(v.get("1", 0) - 8.3) < 0.02 and abs(v.get("5", 0) - 9.0) < 0.02 and abs(v.get("100", 0) - 10.3) < 0.02)
+
 print("tide_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
