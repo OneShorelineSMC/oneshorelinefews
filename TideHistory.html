@@ -267,6 +267,15 @@ function ensoChip(wy) {
   return "<span class='chip " + e.kind + " l" + e.level + "'>" + esc(e.label.charAt(0).toUpperCase() + e.label.slice(1)) + "</span><span class='sm'>ONI " + (e.v >= 0 ? "+" : "−") + Math.abs(e.v).toFixed(1) + "</span>";
 }
 // shading behind the yearly charts: orange for El Nino winters, blue for La Nina, darker for stronger
+// a dotted vertical line at the sea level rise baseline year, on the average daily high chart
+var SLR_BASE = 2000;
+Chart.register({ id: "baseYear", afterDatasetsDraw: function (ch, args, opt) {
+  if (!opt || opt.x == null || !ch.scales.x) return;
+  var x = ch.scales.x.getPixelForValue(opt.x), a = ch.chartArea; if (x < a.left || x > a.right) return;
+  var c = ch.ctx; c.save(); c.strokeStyle = css("--muted"); c.lineWidth = 1.2; c.setLineDash([2, 3]);
+  c.beginPath(); c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.setLineDash([]);
+  c.fillStyle = css("--muted"); c.font = "12px -apple-system, Segoe UI, Roboto, sans-serif"; c.textAlign = "left"; c.fillText("2000 baseline", x + 4, a.top + 12); c.restore();
+} });
 Chart.register({ id: "ensoBands", beforeDatasetsDraw: function (ch, args, opt) {
   if (!opt || !opt.on || !SHOW_ENSO) return;
   var x = ch.scales.x, a = ch.chartArea, c = ch.ctx;
@@ -383,7 +392,7 @@ function coverage() {
 }
 
 function yearly(span) {
-  var setsMax = [], setsMean = [], notesMax = [], notesMean = [], finds = [];
+  var setsMax = [], setsMean = [], notesMax = [], notesMean = [], notes2000 = [], finds = [];
   GAUGES.forEach(function (g) {
     var ys = fullYears(g.id), w = H[g.id].wys; if (!ys.length) return;
     var col = css(g.c);
@@ -395,7 +404,13 @@ function yearly(span) {
       pointStyle: g.pt, pointRadius: 6, pointHoverRadius: 7, showLine: false, cur: true });
     var fm = fit(pm), fa = fit(pa);
     if (fa) { setsMean.push({ label: g.name + " trend", data: [{ x: ys[0], y: fa.a + fa.b * ys[0] }, { x: ys[ys.length - 1], y: fa.a + fa.b * ys[ys.length - 1] }], borderColor: col, borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0 });
-      notesMean.push(g.name + " " + sgn(fa.b * 10) + " ft per decade (" + ys[0] + "–" + ys[ys.length - 1] + ")"); }
+      notesMean.push(g.name + " " + sgn(fa.b * 10) + " ft per decade (" + ys[0] + "–" + ys[ys.length - 1] + ")");
+      // the rise since 2000, the baseline year of California's sea level rise guidance (OPC 2024), along the trend line
+      // fitted to the years since 1991 only (the 19-year tidal epoch centered on 2000 that the guidance's baseline stands for), so an older,
+      // slower stretch of the record doesn't set the number
+      var p91 = pa.filter(function (p) { return p[0] >= SLR_BASE - 9; }), f91 = p91.length >= 15 ? fit(p91) : null;
+      if (f91 && ys[0] <= SLR_BASE && ys[ys.length - 1] > SLR_BASE) { fa.since = f91.b * (ys[ys.length - 1] - SLR_BASE); fa.sinceTo = ys[ys.length - 1]; fa.b91 = f91.b; fa.from91 = p91[0][0];
+        notes2000.push(g.name + " " + sgn(fa.since) + " ft by " + fa.sinceTo + " (" + sgn(f91.b * 10) + " ft per decade since " + fa.from91 + ")"); } }
     if (fm) notesMax.push(g.name + " " + sgn(fm.b * 10) + " ft per decade");
     var best = ys.reduce(function (a, y) { return w[y].max > w[a].max ? y : a; }, ys[0]);
     finds.push({ g: g, best: best, w: w, fa: fa, ys: ys });
@@ -407,10 +422,14 @@ function yearly(span) {
   $("noteMax").textContent = "Each dot is a water year’s highest water (years with at least 80% of their days)" + (CUR ? "; open symbols: this water year so far (" + CUR.n + " days), still going" : "") +
     ". Straight-line trend: " + (notesMax.join("; ") || "–") + ".";
   chart("chMean", { type: "line", data: { datasets: setsMean }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
-    plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return wyTitle(it[0].parsed.x); }, label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft NAVD88"; } } }, ensoBands: { on: true } },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return wyTitle(it[0].parsed.x); }, label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft NAVD88"; } } }, ensoBands: { on: true }, baseYear: { x: SLR_BASE } },
     scales: axes(function (v) { return v.toFixed(1) + " ft"; }, span[0], span[1]) } });
   lineKey("keyMean", setsMean);
-  $("noteMean").textContent = "The average of each day’s highest water over the year, which moves with sea level. Trend: " + (notesMean.join("; ") || "–") + ".";
+  $("noteMean").textContent = "The average of each day’s highest water over the year, which moves with sea level. Trend: " + (notesMean.join("; ") || "–") + "." +
+    (notes2000.length ? " Rise since 2000 (the baseline year for California’s sea level rise guidance, Ocean Protection Council 2024), read off a straight line fitted to the years since 1991: " +
+      notes2000.join("; ") + ". The dotted line marks 2000." +
+      (setsMean.length && GAUGES.some(function (g) { var y = fullYears(g.id); return y.length && y[0] > SLR_BASE - 9; }) ?
+        " A gauge whose record starts after 1991 has a shorter line, and its rate leans more on recent years (Redwood City, from 1998); San Francisco’s and Alameda’s are steadier." : "") : "");
   return finds;
 }
 
@@ -506,7 +525,7 @@ function findings(fs) {
   fs.forEach(function (f) {
     var b = f.w[f.best];
     li.push("<b>" + gLink(f.g) + ":</b> highest water on record " + ft(b.max) + " ft on " + esc(dLabel(b.maxDay)) + " (" + f.ys.length + " full years, " + f.ys[0] + "–" + f.ys[f.ys.length - 1] + ")" +
-      (f.fa ? "; the average daily high has risen " + sgn(f.fa.b * 10) + " ft per decade" : "") + ".");
+      (f.fa ? "; the average daily high has risen " + sgn(f.fa.b * 10) + " ft per decade" + (f.fa.since != null ? "; about " + sgn(f.fa.since) + " ft since 2000 (at " + sgn(f.fa.b91 * 10) + " ft per decade since " + f.fa.from91 + ")" : "") : "") + ".");
   });
   var rw = H["9414523"], mh = (LV["9414523"] || []).filter(function (l) { return l.key === "flood"; })[0];
   if (mh && fullYears("9414523").length) {
