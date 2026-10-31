@@ -163,6 +163,7 @@
     <div class="chartbox"><canvas id="chRP" role="img" aria-label="Water level against return period"></canvas></div>
     <div class="key" id="keyRP"></div>
     <p class="note" id="noteRP"></p>
+    <p class="note">How rare was each month this season? See the <a href="TideTracker.html#closeout">month closeouts on the Tide tracker</a>. Return periods here are for a year’s single highest water, so monthly highs aren’t plotted.</p>
   </div>
 
   <div class="card"><details class="fold">
@@ -346,7 +347,7 @@ function marker(pt, c, open) {
 function lineKey(el, sets) {
   $(el).innerHTML = sets.map(function (s) {
     var d = s.borderDash ? " stroke-dasharray='" + s.borderDash.join(" ") + "'" : "";
-    if (s.open) return "<span><svg width='26' height='11' aria-hidden='true' style='vertical-align:middle;margin-right:5px'>" + marker("circle", s.borderColor, true) + "</svg>" + esc(s.label) + "</span>";
+    if (s.open) return "<span><svg width='26' height='11' aria-hidden='true' style='vertical-align:middle;margin-right:5px'>" + marker(s.pointStyle || "circle", s.borderColor, true) + "</svg>" + esc(s.label) + "</span>";
     return "<span><svg width='26' height='11' aria-hidden='true' style='vertical-align:middle;margin-right:5px'><line x1='2' y1='5.5' x2='24' y2='5.5' stroke='" + s.borderColor + "' stroke-width='" + Math.max(2, s.borderWidth) + "'" + d + "/>" +
       (s.pointRadius ? marker(s.pointStyle, s.borderColor, s.open) : "") + "</svg>" + esc(s.label) + "</span>"; }).join("");
 }
@@ -580,19 +581,40 @@ function rpChart() {
   if (st && st.values) sets.push({ label: "2016 study (" + Object.keys(st.values).join(", ") + "-year)", data: Object.keys(st.values).map(function (T) { return { x: +T, y: st.values[T] }; }).sort(function (a, b) { return a.x - b.x; }),
     borderColor: css("--trend"), backgroundColor: css("--trend"), borderWidth: 2.5, pointRadius: 3.5, pointStyle: "rect" });
   var cd = CUR && CUR.days[id], cmx = cd && Object.keys(cd).length ? Math.max.apply(null, Object.keys(cd).map(function (k) { return cd[k]; })) : null;
-  if (cmx != null) sets.push({ label: "Water year " + CUR.wy + " highest so far " + cmx.toFixed(2) + " ft", data: [{ x: 1, y: cmx }, { x: 500, y: cmx }], borderColor: css("--s3"), borderWidth: 2, borderDash: [8, 4], pointRadius: 0 });
+  // this water year's highest so far: one open symbol at its return period by the gauge's own record (the dots), as the
+  // other charts mark the year in progress; the study's return period goes in the tooltip and the note
+  var g0 = gById(id), rpGauge = null, rpStudy = null, beyond = false;
+  function rpOn(pts, v) {   // pts [{x: return period, y: ft}], interpolated on log(return period)
+    pts = pts.slice().sort(function (a, b) { return a.y - b.y; });
+    if (!pts.length || v < pts[0].y) return null;
+    for (var i = 1; i < pts.length; i++) if (v <= pts[i].y) { var a = pts[i - 1], b = pts[i]; return b.y > a.y ? Math.exp(Math.log(a.x) + (Math.log(b.x) - Math.log(a.x)) * (v - a.y) / (b.y - a.y)) : a.x; }
+    return Infinity;
+  }
+  if (cmx != null) {
+    rpGauge = rpOn(emp, cmx); rpStudy = st && st.values ? rpOn(Object.keys(st.values).map(function (T) { return { x: +T, y: st.values[T] }; }), cmx) : null;
+    beyond = rpGauge === Infinity;
+    var xg = rpGauge == null ? 1 : beyond ? n + 1 : rpGauge;
+    sets.push({ label: "Water year " + CUR.wy + " so far (" + cmx.toFixed(2) + " ft)", data: [{ x: xg, y: cmx }], borderColor: css(g0.c), backgroundColor: css("--card"),
+      borderWidth: 2.5, pointRadius: 7, pointHoverRadius: 8, pointStyle: g0.pt, showLine: false, cur: true, open: true });
+  }
+  function rpWords(x) { return x == null ? "less than a 1-year level" : x === Infinity ? "above every year on record" : "about 1-in-" + (x < 10 ? x.toFixed(1).replace(/\.0$/, "") : Math.round(x)) + " years"; }
   chart("chRP", { type: "line", data: { datasets: sets }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
     plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { var x = it[0].parsed.x; return (x < 10 ? x.toFixed(1) : Math.round(x)) + "-year (" + (100 / x < 10 ? (100 / x).toFixed(1) : Math.round(100 / x)) + "% AEP)"; },
-      label: function (it) { return it.dataset.label.split(" (")[0] + ": " + it.parsed.y.toFixed(2) + " ft NAVD88"; } } } },
+      label: function (it) {
+        if (it.dataset.cur) return ["Water year " + CUR.wy + " highest so far: " + it.parsed.y.toFixed(2) + " ft NAVD88", "By " + gName(id) + "’s record: " + rpWords(rpGauge),
+          rpStudy !== null || (st && st.values) ? "By the 2016 study: " + rpWords(rpStudy) : "2016 study not read yet"];
+        return it.dataset.label.split(" (")[0] + ": " + it.parsed.y.toFixed(2) + " ft NAVD88"; } } } },
     scales: { x: { type: "logarithmic", min: 1, max: 500, ticks: { color: css("--muted"), callback: function (v) { return [1, 2, 5, 10, 25, 50, 100, 500].indexOf(v) >= 0 ? v + "-yr" : ""; } }, grid: { color: css("--line") },
         title: { display: true, text: "Return period (years); 1-year = 100% AEP, 100-year = 1% AEP", color: css("--muted") } },
       y: { grace: "4%", ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") }, title: { display: true, text: "ft NAVD88", color: css("--muted") } } } } });
-  lineKey("keyRP", sets.map(function (x) { return x.showLine === false ? { label: x.label, borderColor: x.borderColor, borderWidth: 0, pointRadius: 4, pointStyle: x.pointStyle } : x; }));
+  lineKey("keyRP", sets.map(function (x) { return x.showLine === false ? { label: x.label, borderColor: x.borderColor, borderWidth: 0, pointRadius: 4, pointStyle: x.pointStyle, open: x.open } : x; }));
   var gn = gName(id);
   $("noteRP").textContent = (st && st.values ? "Red: the SF Bay Tidal Datums and Extreme Tides Study (AECOM for BCDC, 2016) at its point nearest " + gn + " (still water, around 2015 sea level). " :
     (id === "9414290" || id === "9414750" || id === "9414523" ? "The 2016 study’s levels for this gauge haven’t been read yet. " : "")) +
     "Dots: each past water year’s highest water at " + gn + ", ranked (highest at the right), raised to today’s sea level by the gauge’s trend (" + (fa ? sgn(fa.b * 10) + " ft per decade" : "–") + "). " +
-    "Where the dots sit above the red line, the gauge reaches those levels more often than the study says, which is what a higher Bay does to a fixed set of levels.";
+    "Where the dots sit above the red line, the gauge reaches those levels more often than the study says, which is what a higher Bay does to a fixed set of levels." +
+    (cmx != null ? " Open symbol: water year " + CUR.wy + " so far, its highest " + cmx.toFixed(2) + " ft placed by the gauge’s own record (" + rpWords(rpGauge) + ")" +
+      (st && st.values ? "; by the 2016 study, " + rpWords(rpStudy) : "") + ". The year isn’t over, so it can still move right." : "");
 }
 
 function render(hist, tracker) {
