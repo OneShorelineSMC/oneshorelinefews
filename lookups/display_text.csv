@@ -119,6 +119,8 @@ home_reason_offline,"creek gauge not working, so this is based on rain",home pag
 home_none,No alerts at OneShoreline’s creek gauges right now,home page (no creek at a status),"Says what was measured, not an all-clear (Oct 16; scope moved into the headline Oct 17)",,
 home_none_offline,{creeks} gauge not reporting,"home page, after 'No creek alerts right now' when a creek's gauge is down",,,
 home_none_note,"Conditions can change quickly in a storm; watch for National Weather Service alerts and flooding where you are.","home page, under the no-alerts headline",,,
+home_creek_scope,Creek alerts come from creek gauges and rain: they warn when a creek rises enough to flood downstream. They don’t show high-tide flooding in low-lying areas along tidally connected creeks.,"home page and Creeks page, bottom of the creek alerts card",Always shown; followed by home_creek_scope_link,,
+home_creek_scope_link,See Bay tides ›,"home page and Creeks page, link after home_creek_scope",Links to the Tides page,,
 home_quiet,No alerts,"home page, before the list of quiet creeks",,,
 home_gauge_down,creek gauge not working,home page (staff preview),,,
 home_map_link,Not sure which creek is near you? See the map,home page (staff preview),,,
