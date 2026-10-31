@@ -1,0 +1,1337 @@
+cycle_utc,kind,id,name,peak_ft_navd88,peak_utc,offset_ft,node_dist_m,check_rms_ft,overtop_ft_navd88,peak_minus_overtop_ft
+2026-10-29T21:00Z,outlet,CO-001,Guadalupe Valley,8.67,2026-10-30T22:00Z,3.199,153,
+2026-10-29T21:00Z,outlet,CO-002,Colma Creek,8.72,2026-10-30T22:00Z,3.2,804,
+2026-10-29T21:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.72,2026-10-30T22:00Z,3.201,105,
+2026-10-29T21:00Z,outlet,CO-005,Highline Creek,8.78,2026-10-30T22:00Z,3.203,585,
+2026-10-29T21:00Z,outlet,CO-006,El Portal Creek,8.79,2026-10-30T22:00Z,3.204,1011,
+2026-10-29T21:00Z,outlet,CO-007,Mills Creek,8.79,2026-10-30T22:00Z,3.205,137,
+2026-10-29T21:00Z,outlet,CO-008,Easton Creek,8.8,2026-10-30T22:00Z,3.205,158,
+2026-10-29T21:00Z,outlet,CO-009,Sanchez Creek,8.8,2026-10-30T22:00Z,3.206,413,
+2026-10-29T21:00Z,outlet,CO-010,Guanold,8.87,2026-10-30T22:00Z,3.21,121,
+2026-10-29T21:00Z,outlet,CO-011,San Mateo Creek,8.86,2026-10-30T22:00Z,3.209,74,
+2026-10-29T21:00Z,outlet,CO-012,Borel Creek,8.85,2026-10-30T22:00Z,3.209,847,
+2026-10-29T21:00Z,outlet,CO-013,Seal Creek,8.87,2026-10-30T22:00Z,3.21,723,
+2026-10-29T21:00Z,outlet,CO-014,Bay Slough,8.97,2026-10-30T22:00Z,3.212,54,
+2026-10-29T21:00Z,outlet,CO-015,Laurel Creek,8.95,2026-10-30T22:00Z,3.212,1536,
+2026-10-29T21:00Z,outlet,CO-016,Seal Slough,8.95,2026-10-30T22:00Z,3.212,1574,
+2026-10-29T21:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,8.95,2026-10-30T22:00Z,3.212,174,
+2026-10-29T21:00Z,outlet,CO-019,Belmont Creek,9.11,2026-10-30T23:00Z,3.212,1448,
+2026-10-29T21:00Z,outlet,CO-020,Steinberger Slough,9.15,2026-10-30T23:00Z,3.213,83,
+2026-10-29T21:00Z,outlet,CO-021 CO-022,Cordilleras Creek,9.14,2026-10-30T23:00Z,3.213,272,
+2026-10-29T21:00Z,outlet,CO-023,Pulgas Creek,9.14,2026-10-30T23:00Z,3.213,284,
+2026-10-29T21:00Z,outlet,CO-024,Redwood Creek,9.2,2026-10-30T23:00Z,3.213,1247,
+2026-10-29T21:00Z,outlet,CO-025,Ravenswood Slough,9.25,2026-10-30T23:00Z,3.212,862,
+2026-10-29T21:00Z,outlet,CO-026,San Francisquito Creek,9.42,2026-10-30T23:00Z,3.212,59,
+2026-10-29T21:00Z,outlet,CO-027,Atherton Creek,9.25,2026-10-30T23:00Z,3.212,4465,
+2026-10-29T21:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",9.08,2026-10-30T23:00Z,3.213,1370,,8.01,1.07
+2026-10-29T21:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.212,442,,7.96,1.44
+2026-10-29T21:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.212,320,,7.96,1.42
+2026-10-29T21:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.212,374,,7.97,1.38
+2026-10-29T21:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",8.97,2026-10-30T22:00Z,3.212,7,,7.96,1.01
+2026-10-29T21:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",8.96,2026-10-30T22:00Z,3.212,53,,7.96,1.0
+2026-10-29T21:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,31,,8.02,1.18
+2026-10-29T21:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.79,2026-10-30T22:00Z,3.204,91,,7.51,1.28
+2026-10-29T21:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",9.2,2026-10-30T23:00Z,3.213,83,,8.02,1.18
+2026-10-29T21:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",9.12,2026-10-30T23:00Z,3.213,38,,8.0,1.12
+2026-10-29T21:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",8.97,2026-10-30T22:00Z,3.212,46,,7.95,1.02
+2026-10-29T21:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.74,2026-10-30T22:00Z,3.202,53,,7.42,1.32
+2026-10-29T21:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.33,2026-10-30T23:00Z,3.212,91,,7.96,1.37
+2026-10-29T21:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.212,1036,,7.97,1.4
+2026-10-29T21:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",9.05,2026-10-30T23:00Z,3.213,83,,8.0,1.05
+2026-10-29T21:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.74,2026-10-30T22:00Z,3.202,17,,7.42,1.32
+2026-10-29T21:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",9.19,2026-10-30T23:00Z,3.213,379,,8.02,1.17
+2026-10-29T21:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,96,,8.02,1.18
+2026-10-29T21:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,276,,7.98,1.27
+2026-10-29T21:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.73,2026-10-30T22:00Z,3.201,53,,7.38,1.35
+2026-10-29T21:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.68,2026-10-30T22:00Z,3.2,81,,7.3,1.38
+2026-10-29T21:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,64,,8.02,1.18
+2026-10-29T21:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",9.31,2026-10-30T23:00Z,3.212,98,,7.97,1.34
+2026-10-29T21:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",8.97,2026-10-30T22:00Z,3.212,21,,7.94,1.03
+2026-10-29T21:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",8.97,2026-10-30T22:00Z,3.212,89,,7.96,1.01
+2026-10-29T21:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,277,,9.02,0.18
+2026-10-29T21:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.212,1139,,8.97,0.43
+2026-10-29T21:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.213,1326,,9.0,0.25
+2026-10-29T21:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.213,804,,8.99,0.26
+2026-10-29T21:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,441,,9.02,0.22
+2026-10-29T21:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.212,488,,8.97,0.38
+2026-10-29T21:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.32,2026-10-30T23:00Z,3.212,322,,8.97,0.35
+2026-10-29T21:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.212,269,,8.96,0.41
+2026-10-29T21:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,846,,9.02,0.22
+2026-10-29T21:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.213,913,,9.01,0.24
+2026-10-29T21:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",9.17,2026-10-30T23:00Z,3.213,54,,9.02,0.15
+2026-10-29T21:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,1529,,9.01,0.23
+2026-10-29T21:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",9.26,2026-10-30T23:00Z,3.212,1075,,8.98,0.28
+2026-10-29T21:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,630,,9.02,0.18
+2026-10-29T21:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.213,933,,9.0,0.25
+2026-10-29T21:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.72,2026-10-30T22:00Z,3.2,964,,8.35,0.37
+2026-10-29T21:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,1308,,8.98,0.27
+2026-10-29T21:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.213,284,,9.01,0.25
+2026-10-29T21:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",9.19,2026-10-30T23:00Z,3.213,407,,9.02,0.17
+2026-10-29T21:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.74,2026-10-30T22:00Z,3.202,109,,8.41,0.33
+2026-10-29T21:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,159,,9.02,0.22
+2026-10-29T21:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",8.96,2026-10-30T22:00Z,3.212,42,,8.94,0.02
+2026-10-29T21:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",8.96,2026-10-30T22:00Z,3.212,35,,8.97,-0.01
+2026-10-29T21:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,306,,8.98,0.27
+2026-10-29T21:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.79,2026-10-30T22:00Z,3.203,52,,8.5,0.29
+2026-10-29T21:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.212,1015,,8.97,0.4
+2026-10-29T21:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.212,464,,8.96,0.42
+2026-10-29T21:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",8.96,2026-10-30T22:00Z,3.212,60,,8.96,0.0
+2026-10-29T21:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.213,704,,9.01,0.25
+2026-10-29T21:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.213,366,,9.01,0.25
+2026-10-29T21:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",9.16,2026-10-30T23:00Z,3.213,50,,9.01,0.15
+2026-10-29T21:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",8.97,2026-10-30T22:00Z,3.212,61,,8.96,0.01
+2026-10-29T21:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,467,,9.02,0.18
+2026-10-29T21:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,1010,,8.98,0.27
+2026-10-29T21:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.212,702,,8.97,0.38
+2026-10-29T21:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.74,2026-10-30T22:00Z,3.202,51,,8.42,0.32
+2026-10-29T21:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",8.87,2026-10-30T22:00Z,3.21,236,,8.82,0.05
+2026-10-29T21:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.73,2026-10-30T22:00Z,3.202,48,,8.42,0.31
+2026-10-29T21:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,400,,8.98,0.27
+2026-10-29T21:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.213,606,,9.01,0.25
+2026-10-29T21:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",9.18,2026-10-30T23:00Z,3.213,431,,9.01,0.17
+2026-10-29T21:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.79,2026-10-30T22:00Z,3.204,33,,8.52,0.27
+2026-10-29T21:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",9.06,2026-10-30T23:00Z,3.213,423,,9.0,0.06
+2026-10-29T21:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",9.04,2026-10-30T23:00Z,3.213,48,,8.99,0.05
+2026-10-29T21:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.212,753,,8.97,0.41
+2026-10-29T21:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,77,,9.02,0.18
+2026-10-29T21:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,970,,9.98,-0.73
+2026-10-29T21:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,48,,9.99,-0.74
+2026-10-29T21:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",9.17,2026-10-30T23:00Z,3.213,175,,10.01,-0.84
+2026-10-29T21:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",9.16,2026-10-30T23:00Z,3.213,697,,10.01,-0.85
+2026-10-29T21:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",9.1,2026-10-30T23:00Z,3.213,518,,10.0,-0.9
+2026-10-29T21:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.42,2026-10-30T23:00Z,3.212,964,,9.95,-0.53
+2026-10-29T21:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.213,1223,,10.0,-0.75
+2026-10-29T21:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,1506,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",9.04,2026-10-30T23:00Z,3.213,63,,9.99,-0.95
+2026-10-29T21:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.212,620,,9.97,-0.59
+2026-10-29T21:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.213,1593,,10.01,-0.76
+2026-10-29T21:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",9.16,2026-10-30T23:00Z,3.213,46,,10.01,-0.85
+2026-10-29T21:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.213,323,,10.01,-0.75
+2026-10-29T21:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",8.79,2026-10-30T22:00Z,3.205,501,,9.58,-0.79
+2026-10-29T21:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.213,1084,,10.0,-0.75
+2026-10-29T21:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.79,2026-10-30T22:00Z,3.204,129,,9.52,-0.73
+2026-10-29T21:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",8.79,2026-10-30T22:00Z,3.204,407,,9.53,-0.74
+2026-10-29T21:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.212,841,,9.97,-0.6
+2026-10-29T21:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,380,,10.02,-0.82
+2026-10-29T21:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,630,,10.02,-0.82
+2026-10-29T21:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,38,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.41,2026-10-30T23:00Z,3.212,328,,9.96,-0.55
+2026-10-29T21:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.213,871,,10.01,-0.75
+2026-10-29T21:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.73,2026-10-30T22:00Z,3.202,42,,9.4,-0.67
+2026-10-29T21:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",8.95,2026-10-30T22:00Z,3.212,722,,9.96,-1.01
+2026-10-29T21:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",9.32,2026-10-30T23:00Z,3.212,64,,9.97,-0.65
+2026-10-29T21:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,42,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",9.18,2026-10-30T23:00Z,3.213,932,,10.01,-0.83
+2026-10-29T21:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.42,2026-10-30T23:00Z,3.212,91,,9.95,-0.53
+2026-10-29T21:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.213,338,,10.01,-0.75
+2026-10-29T21:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.73,2026-10-30T22:00Z,3.201,141,,9.39,-0.66
+2026-10-29T21:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.78,2026-10-30T22:00Z,3.203,506,,9.52,-0.74
+2026-10-29T21:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.212,1006,,9.97,-0.59
+2026-10-29T21:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.212,418,,9.97,-0.6
+2026-10-29T21:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,1228,,10.01,-0.77
+2026-10-29T21:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.213,497,,10.01,-0.76
+2026-10-29T21:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,780,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",8.85,2026-10-30T22:00Z,3.209,632,,9.78,-0.93
+2026-10-29T21:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.72,2026-10-30T22:00Z,3.201,60,,9.36,-0.64
+2026-10-29T21:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",8.96,2026-10-30T22:00Z,3.212,80,,9.94,-0.98
+2026-10-29T21:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",8.8,2026-10-30T22:00Z,3.205,663,,9.59,-0.79
+2026-10-29T21:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.213,38,,10.0,-0.75
+2026-10-29T21:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,659,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.212,498,,9.97,-0.62
+2026-10-29T21:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.79,2026-10-30T22:00Z,3.203,34,,9.5,-0.71
+2026-10-29T21:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.213,74,,10.02,-0.82
+2026-10-29T21:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,65,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,281,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,933,,9.97,-0.72
+2026-10-29T21:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.212,711,,9.96,-0.56
+2026-10-29T21:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",8.79,2026-10-30T22:00Z,3.204,82,,9.54,-0.75
+2026-10-29T21:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.213,1239,,10.01,-0.76
+2026-10-29T21:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,1181,,9.99,-0.74
+2026-10-29T21:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.78,2026-10-30T22:00Z,3.203,848,,9.52,-0.74
+2026-10-29T21:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.212,179,,9.96,-0.59
+2026-10-29T21:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",8.81,2026-10-30T22:00Z,3.207,184,,9.65,-0.84
+2026-10-29T21:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,683,,10.02,-0.78
+2026-10-29T21:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.72,2026-10-30T22:00Z,3.2,423,,9.37,-0.65
+2026-10-29T21:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.73,2026-10-30T22:00Z,3.201,94,,9.41,-0.68
+2026-10-29T21:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",9.05,2026-10-30T23:00Z,3.213,134,,10.0,-0.95
+2026-10-29T21:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.73,2026-10-30T22:00Z,3.202,23,,9.42,-0.69
+2026-10-29T21:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.73,2026-10-30T22:00Z,3.201,1356,,9.42,-0.69
+2026-10-29T21:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",9.2,2026-10-30T23:00Z,3.213,260,,10.02,-0.82
+2026-10-29T21:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.212,982,,9.99,-0.74
+2026-10-29T21:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.213,1411,,10.0,-0.75
+2026-10-29T21:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",8.95,2026-10-30T22:00Z,3.212,97,,9.97,-1.02
+2026-10-29T21:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",9.2,2026-10-30T23:00Z,3.213,21,,10.02,-0.82
+2026-10-29T21:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.72,2026-10-30T22:00Z,3.199,1066,,9.35,-0.63
+2026-10-29T21:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.213,1289,,10.01,-0.77
+2026-10-29T21:00Z,gauge,9414290,San Francisco,,,3.173,92,0.013
+2026-10-29T21:00Z,gauge,9414750,Alameda,,,3.214,68,0.011
+2026-10-29T21:00Z,gauge,9414523,Redwood City,,,3.213,68,0.015
+2026-10-30T03:00Z,outlet,CO-001,Guadalupe Valley,8.69,2026-10-30T22:00Z,3.178,153,
+2026-10-30T03:00Z,outlet,CO-002,Colma Creek,8.75,2026-10-30T22:00Z,3.179,804,
+2026-10-30T03:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.75,2026-10-30T22:00Z,3.181,105,
+2026-10-30T03:00Z,outlet,CO-005,Highline Creek,8.82,2026-10-30T22:00Z,3.185,585,
+2026-10-30T03:00Z,outlet,CO-006,El Portal Creek,8.82,2026-10-30T22:00Z,3.185,1011,
+2026-10-30T03:00Z,outlet,CO-007,Mills Creek,8.83,2026-10-30T22:00Z,3.187,137,
+2026-10-30T03:00Z,outlet,CO-008,Easton Creek,8.83,2026-10-30T22:00Z,3.187,158,
+2026-10-30T03:00Z,outlet,CO-009,Sanchez Creek,8.83,2026-10-30T22:00Z,3.188,413,
+2026-10-30T03:00Z,outlet,CO-010,Guanold,8.9,2026-10-30T22:00Z,3.194,121,
+2026-10-30T03:00Z,outlet,CO-011,San Mateo Creek,8.89,2026-10-30T22:00Z,3.193,74,
+2026-10-30T03:00Z,outlet,CO-012,Borel Creek,8.89,2026-10-30T22:00Z,3.193,847,
+2026-10-30T03:00Z,outlet,CO-013,Seal Creek,8.9,2026-10-30T22:00Z,3.194,723,
+2026-10-30T03:00Z,outlet,CO-014,Bay Slough,9.01,2026-10-30T22:00Z,3.198,54,
+2026-10-30T03:00Z,outlet,CO-015,Laurel Creek,8.99,2026-10-30T22:00Z,3.197,1536,
+2026-10-30T03:00Z,outlet,CO-016,Seal Slough,8.99,2026-10-30T22:00Z,3.197,1574,
+2026-10-30T03:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,8.99,2026-10-30T22:00Z,3.198,174,
+2026-10-30T03:00Z,outlet,CO-019,Belmont Creek,9.14,2026-10-30T23:00Z,3.198,1448,
+2026-10-30T03:00Z,outlet,CO-020,Steinberger Slough,9.18,2026-10-30T23:00Z,3.199,83,
+2026-10-30T03:00Z,outlet,CO-021 CO-022,Cordilleras Creek,9.17,2026-10-30T23:00Z,3.199,272,
+2026-10-30T03:00Z,outlet,CO-023,Pulgas Creek,9.17,2026-10-30T23:00Z,3.199,284,
+2026-10-30T03:00Z,outlet,CO-024,Redwood Creek,9.22,2026-10-30T23:00Z,3.199,1247,
+2026-10-30T03:00Z,outlet,CO-025,Ravenswood Slough,9.25,2026-10-30T23:00Z,3.198,862,
+2026-10-30T03:00Z,outlet,CO-026,San Francisquito Creek,9.41,2026-10-30T23:00Z,3.197,59,
+2026-10-30T03:00Z,outlet,CO-027,Atherton Creek,9.26,2026-10-30T23:00Z,3.198,4465,
+2026-10-30T03:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",9.11,2026-10-30T23:00Z,3.199,1370,,8.01,1.1
+2026-10-30T03:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.197,442,,7.96,1.44
+2026-10-30T03:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.197,320,,7.96,1.42
+2026-10-30T03:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.34,2026-10-30T23:00Z,3.198,374,,7.97,1.37
+2026-10-30T03:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",9.0,2026-10-30T22:00Z,3.197,7,,7.96,1.04
+2026-10-30T03:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",9.0,2026-10-30T22:00Z,3.197,53,,7.96,1.04
+2026-10-30T03:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,31,,8.02,1.2
+2026-10-30T03:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.185,91,,7.51,1.31
+2026-10-30T03:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",9.22,2026-10-30T23:00Z,3.199,83,,8.02,1.2
+2026-10-30T03:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",9.15,2026-10-30T23:00Z,3.199,38,,8.0,1.15
+2026-10-30T03:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",9.0,2026-10-30T22:00Z,3.197,46,,7.95,1.05
+2026-10-30T03:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.76,2026-10-30T22:00Z,3.182,53,,7.42,1.34
+2026-10-30T03:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.33,2026-10-30T23:00Z,3.198,91,,7.96,1.37
+2026-10-30T03:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.36,2026-10-30T23:00Z,3.198,1036,,7.97,1.39
+2026-10-30T03:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.198,83,,8.0,1.07
+2026-10-30T03:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.76,2026-10-30T22:00Z,3.182,17,,7.42,1.34
+2026-10-30T03:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",9.21,2026-10-30T23:00Z,3.199,379,,8.02,1.19
+2026-10-30T03:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.199,96,,8.02,1.19
+2026-10-30T03:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,276,,7.98,1.27
+2026-10-30T03:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.75,2026-10-30T22:00Z,3.181,53,,7.38,1.37
+2026-10-30T03:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.7,2026-10-30T22:00Z,3.179,81,,7.3,1.4
+2026-10-30T03:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,64,,8.02,1.2
+2026-10-30T03:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",9.31,2026-10-30T23:00Z,3.198,98,,7.97,1.34
+2026-10-30T03:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",9.0,2026-10-30T22:00Z,3.197,21,,7.94,1.06
+2026-10-30T03:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",9.01,2026-10-30T22:00Z,3.198,89,,7.96,1.05
+2026-10-30T03:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,277,,9.02,0.2
+2026-10-30T03:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.39,2026-10-30T23:00Z,3.198,1139,,8.97,0.42
+2026-10-30T03:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.198,1326,,9.0,0.25
+2026-10-30T03:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,804,,8.99,0.26
+2026-10-30T03:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,441,,9.02,0.24
+2026-10-30T03:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.34,2026-10-30T23:00Z,3.198,488,,8.97,0.37
+2026-10-30T03:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.32,2026-10-30T23:00Z,3.198,322,,8.97,0.35
+2026-10-30T03:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.198,269,,8.96,0.41
+2026-10-30T03:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,846,,9.02,0.24
+2026-10-30T03:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,913,,9.01,0.25
+2026-10-30T03:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",9.2,2026-10-30T23:00Z,3.199,54,,9.02,0.18
+2026-10-30T03:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,1529,,9.01,0.25
+2026-10-30T03:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",9.26,2026-10-30T23:00Z,3.198,1075,,8.98,0.28
+2026-10-30T03:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,630,,9.02,0.2
+2026-10-30T03:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,933,,9.0,0.26
+2026-10-30T03:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.75,2026-10-30T22:00Z,3.179,964,,8.35,0.4
+2026-10-30T03:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,1308,,8.98,0.27
+2026-10-30T03:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,284,,9.01,0.25
+2026-10-30T03:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",9.21,2026-10-30T23:00Z,3.199,407,,9.02,0.19
+2026-10-30T03:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.76,2026-10-30T22:00Z,3.182,109,,8.41,0.35
+2026-10-30T03:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.199,159,,9.02,0.23
+2026-10-30T03:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",9.0,2026-10-30T22:00Z,3.197,42,,8.94,0.06
+2026-10-30T03:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",9.0,2026-10-30T22:00Z,3.198,35,,8.97,0.03
+2026-10-30T03:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,306,,8.98,0.27
+2026-10-30T03:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.185,52,,8.5,0.32
+2026-10-30T03:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.36,2026-10-30T23:00Z,3.198,1015,,8.97,0.39
+2026-10-30T03:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.198,464,,8.96,0.42
+2026-10-30T03:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",9.0,2026-10-30T22:00Z,3.197,60,,8.96,0.04
+2026-10-30T03:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,704,,9.01,0.25
+2026-10-30T03:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,366,,9.01,0.25
+2026-10-30T03:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",9.18,2026-10-30T23:00Z,3.199,50,,9.01,0.17
+2026-10-30T03:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",9.0,2026-10-30T22:00Z,3.197,61,,8.96,0.04
+2026-10-30T03:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,467,,9.02,0.2
+2026-10-30T03:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,1010,,8.98,0.27
+2026-10-30T03:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.34,2026-10-30T23:00Z,3.198,702,,8.97,0.37
+2026-10-30T03:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.76,2026-10-30T22:00Z,3.182,51,,8.42,0.34
+2026-10-30T03:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",8.9,2026-10-30T22:00Z,3.194,236,,8.82,0.08
+2026-10-30T03:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.76,2026-10-30T22:00Z,3.182,48,,8.42,0.34
+2026-10-30T03:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,400,,8.98,0.27
+2026-10-30T03:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,606,,9.01,0.25
+2026-10-30T03:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",9.2,2026-10-30T23:00Z,3.199,431,,9.01,0.19
+2026-10-30T03:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.185,33,,8.52,0.3
+2026-10-30T03:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",9.08,2026-10-30T23:00Z,3.199,423,,9.0,0.08
+2026-10-30T03:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.198,48,,8.99,0.08
+2026-10-30T03:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.198,753,,8.97,0.4
+2026-10-30T03:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.199,77,,9.02,0.19
+2026-10-30T03:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,970,,9.98,-0.73
+2026-10-30T03:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,48,,9.99,-0.74
+2026-10-30T03:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",9.19,2026-10-30T23:00Z,3.199,175,,10.01,-0.82
+2026-10-30T03:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",9.18,2026-10-30T23:00Z,3.199,697,,10.01,-0.83
+2026-10-30T03:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",9.12,2026-10-30T23:00Z,3.199,518,,10.0,-0.88
+2026-10-30T03:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.41,2026-10-30T23:00Z,3.197,964,,9.95,-0.54
+2026-10-30T03:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.198,1223,,10.0,-0.74
+2026-10-30T03:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,1506,,10.02,-0.76
+2026-10-30T03:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.198,63,,9.99,-0.92
+2026-10-30T03:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.198,620,,9.97,-0.6
+2026-10-30T03:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,1593,,10.01,-0.75
+2026-10-30T03:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",9.19,2026-10-30T23:00Z,3.199,46,,10.01,-0.82
+2026-10-30T03:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,323,,10.01,-0.75
+2026-10-30T03:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",8.83,2026-10-30T22:00Z,3.187,501,,9.58,-0.75
+2026-10-30T03:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,1084,,10.0,-0.75
+2026-10-30T03:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.185,129,,9.52,-0.7
+2026-10-30T03:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",8.82,2026-10-30T22:00Z,3.185,407,,9.53,-0.71
+2026-10-30T03:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.36,2026-10-30T23:00Z,3.198,841,,9.97,-0.61
+2026-10-30T03:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,380,,10.02,-0.8
+2026-10-30T03:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,630,,10.02,-0.8
+2026-10-30T03:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,38,,10.02,-0.76
+2026-10-30T03:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.41,2026-10-30T23:00Z,3.197,328,,9.96,-0.55
+2026-10-30T03:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,871,,10.01,-0.75
+2026-10-30T03:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.76,2026-10-30T22:00Z,3.182,42,,9.4,-0.64
+2026-10-30T03:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",8.99,2026-10-30T22:00Z,3.197,722,,9.96,-0.97
+2026-10-30T03:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",9.31,2026-10-30T23:00Z,3.198,64,,9.97,-0.66
+2026-10-30T03:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.199,42,,10.02,-0.77
+2026-10-30T03:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",9.2,2026-10-30T23:00Z,3.199,932,,10.01,-0.81
+2026-10-30T03:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.41,2026-10-30T23:00Z,3.197,91,,9.95,-0.54
+2026-10-30T03:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,338,,10.01,-0.75
+2026-10-30T03:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.75,2026-10-30T22:00Z,3.181,141,,9.39,-0.64
+2026-10-30T03:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.185,506,,9.52,-0.7
+2026-10-30T03:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.198,1006,,9.97,-0.59
+2026-10-30T03:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.36,2026-10-30T23:00Z,3.198,418,,9.97,-0.61
+2026-10-30T03:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,1228,,10.01,-0.75
+2026-10-30T03:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,497,,10.01,-0.75
+2026-10-30T03:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,780,,10.02,-0.76
+2026-10-30T03:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",8.89,2026-10-30T22:00Z,3.193,632,,9.78,-0.89
+2026-10-30T03:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.74,2026-10-30T22:00Z,3.181,60,,9.36,-0.62
+2026-10-30T03:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",9.0,2026-10-30T22:00Z,3.197,80,,9.94,-0.94
+2026-10-30T03:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",8.83,2026-10-30T22:00Z,3.187,663,,9.59,-0.76
+2026-10-30T03:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.198,38,,10.0,-0.74
+2026-10-30T03:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,659,,10.02,-0.76
+2026-10-30T03:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.198,498,,9.97,-0.62
+2026-10-30T03:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.185,34,,9.5,-0.68
+2026-10-30T03:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.199,74,,10.02,-0.8
+2026-10-30T03:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.199,65,,10.02,-0.77
+2026-10-30T03:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.199,281,,10.02,-0.77
+2026-10-30T03:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,933,,9.97,-0.72
+2026-10-30T03:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.198,711,,9.96,-0.56
+2026-10-30T03:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",8.83,2026-10-30T22:00Z,3.186,82,,9.54,-0.71
+2026-10-30T03:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,1239,,10.01,-0.75
+2026-10-30T03:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,1181,,9.99,-0.74
+2026-10-30T03:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.185,848,,9.52,-0.7
+2026-10-30T03:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.198,179,,9.96,-0.59
+2026-10-30T03:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",8.84,2026-10-30T22:00Z,3.189,184,,9.65,-0.81
+2026-10-30T03:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,683,,10.02,-0.76
+2026-10-30T03:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.75,2026-10-30T22:00Z,3.18,423,,9.37,-0.62
+2026-10-30T03:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.76,2026-10-30T22:00Z,3.182,94,,9.41,-0.65
+2026-10-30T03:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.198,134,,10.0,-0.93
+2026-10-30T03:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.76,2026-10-30T22:00Z,3.182,23,,9.42,-0.66
+2026-10-30T03:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.76,2026-10-30T22:00Z,3.181,1356,,9.42,-0.66
+2026-10-30T03:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",9.22,2026-10-30T23:00Z,3.199,260,,10.02,-0.8
+2026-10-30T03:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.198,982,,9.99,-0.74
+2026-10-30T03:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.199,1411,,10.0,-0.74
+2026-10-30T03:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",8.99,2026-10-30T22:00Z,3.198,97,,9.97,-0.98
+2026-10-30T03:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",9.22,2026-10-30T23:00Z,3.199,21,,10.02,-0.8
+2026-10-30T03:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.75,2026-10-30T22:00Z,3.179,1066,,9.35,-0.6
+2026-10-30T03:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",9.26,2026-10-30T23:00Z,3.199,1289,,10.01,-0.75
+2026-10-30T03:00Z,gauge,9414290,San Francisco,,,3.147,92,0.027
+2026-10-30T03:00Z,gauge,9414750,Alameda,,,3.195,68,0.026
+2026-10-30T03:00Z,gauge,9414523,Redwood City,,,3.199,68,0.033
+2026-10-30T09:00Z,outlet,CO-001,Guadalupe Valley,8.75,2026-10-30T22:00Z,3.084,153,
+2026-10-30T09:00Z,outlet,CO-002,Colma Creek,8.81,2026-10-30T22:00Z,3.087,804,
+2026-10-30T09:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.81,2026-10-30T22:00Z,3.089,105,
+2026-10-30T09:00Z,outlet,CO-005,Highline Creek,8.88,2026-10-30T22:00Z,3.095,585,
+2026-10-30T09:00Z,outlet,CO-006,El Portal Creek,8.88,2026-10-30T22:00Z,3.095,1011,
+2026-10-30T09:00Z,outlet,CO-007,Mills Creek,8.89,2026-10-30T22:00Z,3.097,137,
+2026-10-30T09:00Z,outlet,CO-008,Easton Creek,8.89,2026-10-30T22:00Z,3.098,158,
+2026-10-30T09:00Z,outlet,CO-009,Sanchez Creek,8.89,2026-10-30T22:00Z,3.1,413,
+2026-10-30T09:00Z,outlet,CO-010,Guanold,8.96,2026-10-30T22:00Z,3.109,121,
+2026-10-30T09:00Z,outlet,CO-011,San Mateo Creek,8.95,2026-10-30T22:00Z,3.107,74,
+2026-10-30T09:00Z,outlet,CO-012,Borel Creek,8.94,2026-10-30T22:00Z,3.107,847,
+2026-10-30T09:00Z,outlet,CO-013,Seal Creek,8.96,2026-10-30T22:00Z,3.109,723,
+2026-10-30T09:00Z,outlet,CO-014,Bay Slough,9.06,2026-10-30T22:00Z,3.115,54,
+2026-10-30T09:00Z,outlet,CO-015,Laurel Creek,9.03,2026-10-30T22:00Z,3.114,1536,
+2026-10-30T09:00Z,outlet,CO-016,Seal Slough,9.03,2026-10-30T22:00Z,3.114,1574,
+2026-10-30T09:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,9.03,2026-10-30T22:00Z,3.115,174,
+2026-10-30T09:00Z,outlet,CO-019,Belmont Creek,9.17,2026-10-30T23:00Z,3.115,1448,
+2026-10-30T09:00Z,outlet,CO-020,Steinberger Slough,9.2,2026-10-30T23:00Z,3.116,83,
+2026-10-30T09:00Z,outlet,CO-021 CO-022,Cordilleras Creek,9.2,2026-10-30T23:00Z,3.116,272,
+2026-10-30T09:00Z,outlet,CO-023,Pulgas Creek,9.2,2026-10-30T23:00Z,3.116,284,
+2026-10-30T09:00Z,outlet,CO-024,Redwood Creek,9.24,2026-10-30T23:00Z,3.117,1247,
+2026-10-30T09:00Z,outlet,CO-025,Ravenswood Slough,9.28,2026-10-30T23:00Z,3.115,862,
+2026-10-30T09:00Z,outlet,CO-026,San Francisquito Creek,9.43,2026-10-30T23:00Z,3.114,59,
+2026-10-30T09:00Z,outlet,CO-027,Atherton Creek,9.28,2026-10-30T23:00Z,3.116,4465,
+2026-10-30T09:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",9.14,2026-10-30T23:00Z,3.117,1370,,8.01,1.13
+2026-10-30T09:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.42,2026-10-30T23:00Z,3.114,442,,7.96,1.46
+2026-10-30T09:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.115,320,,7.96,1.44
+2026-10-30T09:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.115,374,,7.97,1.4
+2026-10-30T09:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",9.05,2026-10-30T22:00Z,3.114,7,,7.96,1.09
+2026-10-30T09:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",9.05,2026-10-30T22:00Z,3.115,53,,7.96,1.09
+2026-10-30T09:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.117,31,,8.02,1.23
+2026-10-30T09:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.88,2026-10-30T22:00Z,3.095,91,,7.51,1.37
+2026-10-30T09:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",9.24,2026-10-30T23:00Z,3.117,83,,8.02,1.22
+2026-10-30T09:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",9.18,2026-10-30T23:00Z,3.116,38,,8.0,1.18
+2026-10-30T09:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",9.05,2026-10-30T22:00Z,3.114,46,,7.95,1.1
+2026-10-30T09:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.82,2026-10-30T22:00Z,3.09,53,,7.42,1.4
+2026-10-30T09:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.115,91,,7.96,1.39
+2026-10-30T09:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.115,1036,,7.97,1.41
+2026-10-30T09:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",9.12,2026-10-30T22:00Z,3.116,83,,8.0,1.12
+2026-10-30T09:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.83,2026-10-30T22:00Z,3.091,17,,7.42,1.41
+2026-10-30T09:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",9.24,2026-10-30T23:00Z,3.117,379,,8.02,1.22
+2026-10-30T09:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.117,96,,8.02,1.22
+2026-10-30T09:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.115,276,,7.98,1.3
+2026-10-30T09:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.82,2026-10-30T22:00Z,3.089,53,,7.38,1.44
+2026-10-30T09:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.76,2026-10-30T22:00Z,3.086,81,,7.3,1.46
+2026-10-30T09:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.117,64,,8.02,1.23
+2026-10-30T09:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",9.33,2026-10-30T23:00Z,3.115,98,,7.97,1.36
+2026-10-30T09:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",9.05,2026-10-30T22:00Z,3.114,21,,7.94,1.11
+2026-10-30T09:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",9.06,2026-10-30T22:00Z,3.115,89,,7.96,1.1
+2026-10-30T09:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.117,277,,9.02,0.22
+2026-10-30T09:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.41,2026-10-30T23:00Z,3.115,1139,,8.97,0.44
+2026-10-30T09:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",9.28,2026-10-30T23:00Z,3.116,1326,,9.0,0.28
+2026-10-30T09:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.116,804,,8.99,0.29
+2026-10-30T09:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,441,,9.02,0.26
+2026-10-30T09:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.115,488,,8.97,0.4
+2026-10-30T09:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.115,322,,8.97,0.38
+2026-10-30T09:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.39,2026-10-30T23:00Z,3.115,269,,8.96,0.43
+2026-10-30T09:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,846,,9.02,0.26
+2026-10-30T09:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,913,,9.01,0.27
+2026-10-30T09:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",9.22,2026-10-30T23:00Z,3.117,54,,9.02,0.2
+2026-10-30T09:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,1529,,9.01,0.27
+2026-10-30T09:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.115,1075,,8.98,0.3
+2026-10-30T09:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.117,630,,9.02,0.23
+2026-10-30T09:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",9.28,2026-10-30T23:00Z,3.116,933,,9.0,0.28
+2026-10-30T09:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.81,2026-10-30T22:00Z,3.087,964,,8.35,0.46
+2026-10-30T09:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.115,1308,,8.98,0.3
+2026-10-30T09:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",9.29,2026-10-30T23:00Z,3.117,284,,9.01,0.28
+2026-10-30T09:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",9.24,2026-10-30T23:00Z,3.117,407,,9.02,0.22
+2026-10-30T09:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.83,2026-10-30T22:00Z,3.09,109,,8.41,0.42
+2026-10-30T09:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,159,,9.02,0.26
+2026-10-30T09:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",9.05,2026-10-30T22:00Z,3.114,42,,8.94,0.11
+2026-10-30T09:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",9.04,2026-10-30T22:00Z,3.115,35,,8.97,0.07
+2026-10-30T09:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.115,306,,8.98,0.3
+2026-10-30T09:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.88,2026-10-30T22:00Z,3.094,52,,8.5,0.38
+2026-10-30T09:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.115,1015,,8.97,0.41
+2026-10-30T09:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.115,464,,8.96,0.44
+2026-10-30T09:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",9.05,2026-10-30T22:00Z,3.114,60,,8.96,0.09
+2026-10-30T09:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",9.29,2026-10-30T23:00Z,3.116,704,,9.01,0.28
+2026-10-30T09:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",9.29,2026-10-30T23:00Z,3.116,366,,9.01,0.28
+2026-10-30T09:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",9.21,2026-10-30T23:00Z,3.117,50,,9.01,0.2
+2026-10-30T09:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",9.06,2026-10-30T22:00Z,3.115,61,,8.96,0.1
+2026-10-30T09:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.117,467,,9.02,0.23
+2026-10-30T09:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.115,1010,,8.98,0.3
+2026-10-30T09:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.115,702,,8.97,0.4
+2026-10-30T09:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.83,2026-10-30T22:00Z,3.091,51,,8.42,0.41
+2026-10-30T09:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",8.96,2026-10-30T22:00Z,3.109,236,,8.82,0.14
+2026-10-30T09:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.82,2026-10-30T22:00Z,3.09,48,,8.42,0.4
+2026-10-30T09:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.116,400,,8.98,0.3
+2026-10-30T09:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",9.29,2026-10-30T23:00Z,3.117,606,,9.01,0.28
+2026-10-30T09:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.117,431,,9.01,0.21
+2026-10-30T09:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.88,2026-10-30T22:00Z,3.095,33,,8.52,0.36
+2026-10-30T09:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",9.12,2026-10-30T22:00Z,3.116,423,,9.0,0.12
+2026-10-30T09:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",9.11,2026-10-30T22:00Z,3.116,48,,8.99,0.12
+2026-10-30T09:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.115,753,,8.97,0.43
+2026-10-30T09:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",9.24,2026-10-30T23:00Z,3.117,77,,9.02,0.22
+2026-10-30T09:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.115,970,,9.98,-0.7
+2026-10-30T09:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.116,48,,9.99,-0.71
+2026-10-30T09:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.117,175,,10.01,-0.8
+2026-10-30T09:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",9.21,2026-10-30T23:00Z,3.117,697,,10.01,-0.8
+2026-10-30T09:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",9.14,2026-10-30T22:00Z,3.116,518,,10.0,-0.86
+2026-10-30T09:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.43,2026-10-30T23:00Z,3.114,964,,9.95,-0.52
+2026-10-30T09:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",9.28,2026-10-30T23:00Z,3.116,1223,,10.0,-0.72
+2026-10-30T09:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,1506,,10.02,-0.74
+2026-10-30T09:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",9.11,2026-10-30T22:00Z,3.116,63,,9.99,-0.88
+2026-10-30T09:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.115,620,,9.97,-0.57
+2026-10-30T09:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,1593,,10.01,-0.73
+2026-10-30T09:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",9.22,2026-10-30T23:00Z,3.117,46,,10.01,-0.79
+2026-10-30T09:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",9.29,2026-10-30T23:00Z,3.116,323,,10.01,-0.72
+2026-10-30T09:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",8.89,2026-10-30T22:00Z,3.098,501,,9.58,-0.69
+2026-10-30T09:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.116,1084,,10.0,-0.72
+2026-10-30T09:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.88,2026-10-30T22:00Z,3.095,129,,9.52,-0.64
+2026-10-30T09:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",8.88,2026-10-30T22:00Z,3.096,407,,9.53,-0.65
+2026-10-30T09:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.115,841,,9.97,-0.59
+2026-10-30T09:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.117,380,,10.02,-0.77
+2026-10-30T09:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.117,630,,10.02,-0.77
+2026-10-30T09:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,38,,10.02,-0.74
+2026-10-30T09:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.43,2026-10-30T23:00Z,3.114,328,,9.96,-0.53
+2026-10-30T09:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",9.29,2026-10-30T23:00Z,3.117,871,,10.01,-0.72
+2026-10-30T09:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.82,2026-10-30T22:00Z,3.09,42,,9.4,-0.58
+2026-10-30T09:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",9.03,2026-10-30T22:00Z,3.115,722,,9.96,-0.93
+2026-10-30T09:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",9.34,2026-10-30T23:00Z,3.115,64,,9.97,-0.63
+2026-10-30T09:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,42,,10.02,-0.74
+2026-10-30T09:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",9.22,2026-10-30T23:00Z,3.117,932,,10.01,-0.79
+2026-10-30T09:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.43,2026-10-30T23:00Z,3.114,91,,9.95,-0.52
+2026-10-30T09:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",9.29,2026-10-30T23:00Z,3.117,338,,10.01,-0.72
+2026-10-30T09:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.82,2026-10-30T22:00Z,3.089,141,,9.39,-0.57
+2026-10-30T09:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.88,2026-10-30T22:00Z,3.095,506,,9.52,-0.64
+2026-10-30T09:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.115,1006,,9.97,-0.57
+2026-10-30T09:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.115,418,,9.97,-0.59
+2026-10-30T09:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,1228,,10.01,-0.73
+2026-10-30T09:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",9.28,2026-10-30T23:00Z,3.117,497,,10.01,-0.73
+2026-10-30T09:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,780,,10.02,-0.74
+2026-10-30T09:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",8.94,2026-10-30T22:00Z,3.107,632,,9.78,-0.84
+2026-10-30T09:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.8,2026-10-30T22:00Z,3.088,60,,9.36,-0.56
+2026-10-30T09:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",9.05,2026-10-30T22:00Z,3.114,80,,9.94,-0.89
+2026-10-30T09:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",8.89,2026-10-30T22:00Z,3.098,663,,9.59,-0.7
+2026-10-30T09:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",9.28,2026-10-30T23:00Z,3.116,38,,10.0,-0.72
+2026-10-30T09:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,659,,10.02,-0.74
+2026-10-30T09:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.115,498,,9.97,-0.6
+2026-10-30T09:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.88,2026-10-30T22:00Z,3.094,34,,9.5,-0.62
+2026-10-30T09:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.117,74,,10.02,-0.77
+2026-10-30T09:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",9.27,2026-10-30T23:00Z,3.117,65,,10.02,-0.75
+2026-10-30T09:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,281,,10.02,-0.74
+2026-10-30T09:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.115,933,,9.97,-0.69
+2026-10-30T09:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.42,2026-10-30T23:00Z,3.115,711,,9.96,-0.54
+2026-10-30T09:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",8.88,2026-10-30T22:00Z,3.096,82,,9.54,-0.66
+2026-10-30T09:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,1239,,10.01,-0.73
+2026-10-30T09:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.116,1181,,9.99,-0.71
+2026-10-30T09:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.88,2026-10-30T22:00Z,3.095,848,,9.52,-0.64
+2026-10-30T09:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.39,2026-10-30T23:00Z,3.115,179,,9.96,-0.57
+2026-10-30T09:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",8.9,2026-10-30T22:00Z,3.101,184,,9.65,-0.75
+2026-10-30T09:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,683,,10.02,-0.74
+2026-10-30T09:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.81,2026-10-30T22:00Z,3.088,423,,9.37,-0.56
+2026-10-30T09:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.82,2026-10-30T22:00Z,3.09,94,,9.41,-0.59
+2026-10-30T09:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",9.11,2026-10-30T22:00Z,3.116,134,,10.0,-0.89
+2026-10-30T09:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.82,2026-10-30T22:00Z,3.091,23,,9.42,-0.6
+2026-10-30T09:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.82,2026-10-30T22:00Z,3.09,1356,,9.42,-0.6
+2026-10-30T09:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",9.24,2026-10-30T23:00Z,3.117,260,,10.02,-0.78
+2026-10-30T09:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",9.28,2026-10-30T23:00Z,3.116,982,,9.99,-0.71
+2026-10-30T09:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",9.28,2026-10-30T23:00Z,3.116,1411,,10.0,-0.72
+2026-10-30T09:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",9.03,2026-10-30T22:00Z,3.115,97,,9.97,-0.94
+2026-10-30T09:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",9.24,2026-10-30T23:00Z,3.117,21,,10.02,-0.78
+2026-10-30T09:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.81,2026-10-30T22:00Z,3.087,1066,,9.35,-0.54
+2026-10-30T09:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",9.28,2026-10-30T23:00Z,3.117,1289,,10.01,-0.73
+2026-10-30T09:00Z,gauge,9414290,San Francisco,,,3.051,92,0.028
+2026-10-30T09:00Z,gauge,9414750,Alameda,,,3.1,68,0.032
+2026-10-30T09:00Z,gauge,9414523,Redwood City,,,3.117,68,0.043
+2026-10-30T15:00Z,outlet,CO-001,Guadalupe Valley,8.88,2026-10-30T22:00Z,3.321,153,
+2026-10-30T15:00Z,outlet,CO-002,Colma Creek,8.93,2026-10-30T22:00Z,3.322,804,
+2026-10-30T15:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.93,2026-10-30T22:00Z,3.323,105,
+2026-10-30T15:00Z,outlet,CO-005,Highline Creek,8.99,2026-10-30T22:00Z,3.326,585,
+2026-10-30T15:00Z,outlet,CO-006,El Portal Creek,8.99,2026-10-30T22:00Z,3.326,1011,
+2026-10-30T15:00Z,outlet,CO-007,Mills Creek,9.0,2026-10-30T22:00Z,3.328,137,
+2026-10-30T15:00Z,outlet,CO-008,Easton Creek,9.01,2026-10-30T22:00Z,3.328,158,
+2026-10-30T15:00Z,outlet,CO-009,Sanchez Creek,9.01,2026-10-30T22:00Z,3.329,413,
+2026-10-30T15:00Z,outlet,CO-010,Guanold,9.08,2026-10-30T22:00Z,3.334,121,
+2026-10-30T15:00Z,outlet,CO-011,San Mateo Creek,9.07,2026-10-30T22:00Z,3.333,74,
+2026-10-30T15:00Z,outlet,CO-012,Borel Creek,9.07,2026-10-30T22:00Z,3.333,847,
+2026-10-30T15:00Z,outlet,CO-013,Seal Creek,9.08,2026-10-30T22:00Z,3.334,723,
+2026-10-30T15:00Z,outlet,CO-014,Bay Slough,9.19,2026-10-30T22:00Z,3.337,54,
+2026-10-30T15:00Z,outlet,CO-015,Laurel Creek,9.17,2026-10-30T22:00Z,3.336,1536,
+2026-10-30T15:00Z,outlet,CO-016,Seal Slough,9.17,2026-10-30T22:00Z,3.336,1574,
+2026-10-30T15:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,9.17,2026-10-30T22:00Z,3.337,174,
+2026-10-30T15:00Z,outlet,CO-019,Belmont Creek,9.32,2026-10-30T23:00Z,3.337,1448,
+2026-10-30T15:00Z,outlet,CO-020,Steinberger Slough,9.35,2026-10-30T23:00Z,3.338,83,
+2026-10-30T15:00Z,outlet,CO-021 CO-022,Cordilleras Creek,9.35,2026-10-30T23:00Z,3.338,272,
+2026-10-30T15:00Z,outlet,CO-023,Pulgas Creek,9.35,2026-10-30T23:00Z,3.338,284,
+2026-10-30T15:00Z,outlet,CO-024,Redwood Creek,9.39,2026-10-30T23:00Z,3.338,1247,
+2026-10-30T15:00Z,outlet,CO-025,Ravenswood Slough,9.43,2026-10-30T23:00Z,3.337,862,
+2026-10-30T15:00Z,outlet,CO-026,San Francisquito Creek,9.59,2026-10-30T23:00Z,3.336,59,
+2026-10-30T15:00Z,outlet,CO-027,Atherton Creek,9.44,2026-10-30T23:00Z,3.337,4465,
+2026-10-30T15:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",9.29,2026-10-30T23:00Z,3.338,1370,,8.01,1.28
+2026-10-30T15:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.57,2026-10-30T23:00Z,3.337,442,,7.96,1.61
+2026-10-30T15:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.56,2026-10-30T23:00Z,3.337,320,,7.96,1.6
+2026-10-30T15:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.52,2026-10-30T23:00Z,3.337,374,,7.97,1.55
+2026-10-30T15:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",9.18,2026-10-30T22:00Z,3.337,7,,7.96,1.22
+2026-10-30T15:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",9.18,2026-10-30T22:00Z,3.337,53,,7.96,1.22
+2026-10-30T15:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",9.4,2026-10-30T23:00Z,3.338,31,,8.02,1.38
+2026-10-30T15:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.99,2026-10-30T22:00Z,3.326,91,,7.51,1.48
+2026-10-30T15:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",9.39,2026-10-30T23:00Z,3.338,83,,8.02,1.37
+2026-10-30T15:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",9.33,2026-10-30T23:00Z,3.338,38,,8.0,1.33
+2026-10-30T15:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",9.18,2026-10-30T22:00Z,3.336,46,,7.95,1.23
+2026-10-30T15:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.94,2026-10-30T22:00Z,3.324,53,,7.42,1.52
+2026-10-30T15:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.51,2026-10-30T23:00Z,3.337,91,,7.96,1.55
+2026-10-30T15:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.54,2026-10-30T23:00Z,3.337,1036,,7.97,1.57
+2026-10-30T15:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",9.25,2026-10-30T23:00Z,3.338,83,,8.0,1.25
+2026-10-30T15:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.94,2026-10-30T22:00Z,3.324,17,,7.42,1.52
+2026-10-30T15:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",9.39,2026-10-30T23:00Z,3.338,379,,8.02,1.37
+2026-10-30T15:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",9.39,2026-10-30T23:00Z,3.338,96,,8.02,1.37
+2026-10-30T15:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,276,,7.98,1.45
+2026-10-30T15:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.94,2026-10-30T22:00Z,3.323,53,,7.38,1.56
+2026-10-30T15:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.88,2026-10-30T22:00Z,3.321,81,,7.3,1.58
+2026-10-30T15:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",9.4,2026-10-30T23:00Z,3.338,64,,8.02,1.38
+2026-10-30T15:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",9.49,2026-10-30T23:00Z,3.337,98,,7.97,1.52
+2026-10-30T15:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",9.18,2026-10-30T22:00Z,3.336,21,,7.94,1.24
+2026-10-30T15:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",9.19,2026-10-30T22:00Z,3.337,89,,7.96,1.23
+2026-10-30T15:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",9.39,2026-10-30T23:00Z,3.338,277,,9.02,0.37
+2026-10-30T15:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.57,2026-10-30T23:00Z,3.337,1139,,8.97,0.6
+2026-10-30T15:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",9.43,2026-10-30T23:00Z,3.337,1326,,9.0,0.43
+2026-10-30T15:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,804,,8.99,0.44
+2026-10-30T15:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,441,,9.02,0.41
+2026-10-30T15:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.52,2026-10-30T23:00Z,3.337,488,,8.97,0.55
+2026-10-30T15:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.5,2026-10-30T23:00Z,3.337,322,,8.97,0.53
+2026-10-30T15:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.54,2026-10-30T23:00Z,3.337,269,,8.96,0.58
+2026-10-30T15:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,846,,9.02,0.41
+2026-10-30T15:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,913,,9.01,0.42
+2026-10-30T15:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",9.37,2026-10-30T23:00Z,3.338,54,,9.02,0.35
+2026-10-30T15:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,1529,,9.01,0.42
+2026-10-30T15:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",9.44,2026-10-30T23:00Z,3.337,1075,,8.98,0.46
+2026-10-30T15:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",9.4,2026-10-30T23:00Z,3.338,630,,9.02,0.38
+2026-10-30T15:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,933,,9.0,0.44
+2026-10-30T15:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.93,2026-10-30T22:00Z,3.321,964,,8.35,0.58
+2026-10-30T15:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,1308,,8.98,0.45
+2026-10-30T15:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,284,,9.01,0.43
+2026-10-30T15:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",9.39,2026-10-30T23:00Z,3.338,407,,9.02,0.37
+2026-10-30T15:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.94,2026-10-30T22:00Z,3.324,109,,8.41,0.53
+2026-10-30T15:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,159,,9.02,0.41
+2026-10-30T15:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",9.18,2026-10-30T22:00Z,3.336,42,,8.94,0.24
+2026-10-30T15:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",9.18,2026-10-30T22:00Z,3.337,35,,8.97,0.21
+2026-10-30T15:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,306,,8.98,0.45
+2026-10-30T15:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.99,2026-10-30T22:00Z,3.326,52,,8.5,0.49
+2026-10-30T15:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.54,2026-10-30T23:00Z,3.337,1015,,8.97,0.57
+2026-10-30T15:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.55,2026-10-30T23:00Z,3.337,464,,8.96,0.59
+2026-10-30T15:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",9.18,2026-10-30T22:00Z,3.337,60,,8.96,0.22
+2026-10-30T15:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,704,,9.01,0.43
+2026-10-30T15:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,366,,9.01,0.43
+2026-10-30T15:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",9.36,2026-10-30T23:00Z,3.338,50,,9.01,0.35
+2026-10-30T15:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",9.19,2026-10-30T22:00Z,3.337,61,,8.96,0.23
+2026-10-30T15:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",9.4,2026-10-30T23:00Z,3.338,467,,9.02,0.38
+2026-10-30T15:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,1010,,8.98,0.45
+2026-10-30T15:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.52,2026-10-30T23:00Z,3.337,702,,8.97,0.55
+2026-10-30T15:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.94,2026-10-30T22:00Z,3.324,51,,8.42,0.52
+2026-10-30T15:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",9.08,2026-10-30T22:00Z,3.334,236,,8.82,0.26
+2026-10-30T15:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.94,2026-10-30T22:00Z,3.324,48,,8.42,0.52
+2026-10-30T15:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,400,,8.98,0.45
+2026-10-30T15:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,606,,9.01,0.43
+2026-10-30T15:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",9.37,2026-10-30T23:00Z,3.338,431,,9.01,0.36
+2026-10-30T15:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.99,2026-10-30T22:00Z,3.326,33,,8.52,0.47
+2026-10-30T15:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",9.25,2026-10-30T23:00Z,3.338,423,,9.0,0.25
+2026-10-30T15:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",9.24,2026-10-30T23:00Z,3.337,48,,8.99,0.25
+2026-10-30T15:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.55,2026-10-30T23:00Z,3.337,753,,8.97,0.58
+2026-10-30T15:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",9.39,2026-10-30T23:00Z,3.338,77,,9.02,0.37
+2026-10-30T15:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,970,,9.98,-0.55
+2026-10-30T15:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,48,,9.99,-0.56
+2026-10-30T15:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",9.36,2026-10-30T23:00Z,3.338,175,,10.01,-0.65
+2026-10-30T15:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",9.36,2026-10-30T23:00Z,3.338,697,,10.01,-0.65
+2026-10-30T15:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",9.29,2026-10-30T23:00Z,3.338,518,,10.0,-0.71
+2026-10-30T15:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.59,2026-10-30T23:00Z,3.336,964,,9.95,-0.36
+2026-10-30T15:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,1223,,10.0,-0.56
+2026-10-30T15:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,1506,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",9.24,2026-10-30T23:00Z,3.337,63,,9.99,-0.75
+2026-10-30T15:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.55,2026-10-30T23:00Z,3.337,620,,9.97,-0.42
+2026-10-30T15:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,1593,,10.01,-0.58
+2026-10-30T15:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",9.36,2026-10-30T23:00Z,3.338,46,,10.01,-0.65
+2026-10-30T15:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,323,,10.01,-0.57
+2026-10-30T15:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",9.01,2026-10-30T22:00Z,3.328,501,,9.58,-0.57
+2026-10-30T15:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,1084,,10.0,-0.57
+2026-10-30T15:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.99,2026-10-30T22:00Z,3.326,129,,9.52,-0.53
+2026-10-30T15:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",9.0,2026-10-30T22:00Z,3.327,407,,9.53,-0.53
+2026-10-30T15:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.54,2026-10-30T23:00Z,3.337,841,,9.97,-0.43
+2026-10-30T15:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",9.4,2026-10-30T23:00Z,3.338,380,,10.02,-0.62
+2026-10-30T15:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",9.4,2026-10-30T23:00Z,3.338,630,,10.02,-0.62
+2026-10-30T15:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,38,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.58,2026-10-30T23:00Z,3.337,328,,9.96,-0.38
+2026-10-30T15:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,871,,10.01,-0.57
+2026-10-30T15:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.94,2026-10-30T22:00Z,3.324,42,,9.4,-0.46
+2026-10-30T15:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",9.17,2026-10-30T22:00Z,3.337,722,,9.96,-0.79
+2026-10-30T15:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",9.49,2026-10-30T23:00Z,3.337,64,,9.97,-0.48
+2026-10-30T15:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,42,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",9.37,2026-10-30T23:00Z,3.338,932,,10.01,-0.64
+2026-10-30T15:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.59,2026-10-30T23:00Z,3.336,91,,9.95,-0.36
+2026-10-30T15:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,338,,10.01,-0.57
+2026-10-30T15:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.93,2026-10-30T22:00Z,3.323,141,,9.39,-0.46
+2026-10-30T15:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.99,2026-10-30T22:00Z,3.326,506,,9.52,-0.53
+2026-10-30T15:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.55,2026-10-30T23:00Z,3.337,1006,,9.97,-0.42
+2026-10-30T15:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.54,2026-10-30T23:00Z,3.337,418,,9.97,-0.43
+2026-10-30T15:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,1228,,10.01,-0.58
+2026-10-30T15:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",9.43,2026-10-30T23:00Z,3.338,497,,10.01,-0.58
+2026-10-30T15:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,780,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",9.07,2026-10-30T22:00Z,3.333,632,,9.78,-0.71
+2026-10-30T15:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.92,2026-10-30T22:00Z,3.323,60,,9.36,-0.44
+2026-10-30T15:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",9.18,2026-10-30T22:00Z,3.336,80,,9.94,-0.76
+2026-10-30T15:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",9.01,2026-10-30T22:00Z,3.328,663,,9.59,-0.58
+2026-10-30T15:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",9.43,2026-10-30T23:00Z,3.338,38,,10.0,-0.57
+2026-10-30T15:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,659,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.53,2026-10-30T23:00Z,3.337,498,,9.97,-0.44
+2026-10-30T15:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.99,2026-10-30T22:00Z,3.326,34,,9.5,-0.51
+2026-10-30T15:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",9.4,2026-10-30T23:00Z,3.338,74,,10.02,-0.62
+2026-10-30T15:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,65,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,281,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,933,,9.97,-0.54
+2026-10-30T15:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.57,2026-10-30T23:00Z,3.337,711,,9.96,-0.39
+2026-10-30T15:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",9.0,2026-10-30T22:00Z,3.327,82,,9.54,-0.54
+2026-10-30T15:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,1239,,10.01,-0.58
+2026-10-30T15:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,1181,,9.99,-0.56
+2026-10-30T15:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.99,2026-10-30T22:00Z,3.326,848,,9.52,-0.53
+2026-10-30T15:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.54,2026-10-30T23:00Z,3.337,179,,9.96,-0.42
+2026-10-30T15:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",9.02,2026-10-30T22:00Z,3.33,184,,9.65,-0.63
+2026-10-30T15:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,683,,10.02,-0.59
+2026-10-30T15:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.93,2026-10-30T22:00Z,3.322,423,,9.37,-0.44
+2026-10-30T15:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.94,2026-10-30T22:00Z,3.324,94,,9.41,-0.47
+2026-10-30T15:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",9.25,2026-10-30T23:00Z,3.338,134,,10.0,-0.75
+2026-10-30T15:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.94,2026-10-30T22:00Z,3.324,23,,9.42,-0.48
+2026-10-30T15:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.94,2026-10-30T22:00Z,3.323,1356,,9.42,-0.48
+2026-10-30T15:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",9.39,2026-10-30T23:00Z,3.338,260,,10.02,-0.63
+2026-10-30T15:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",9.43,2026-10-30T23:00Z,3.337,982,,9.99,-0.56
+2026-10-30T15:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",9.44,2026-10-30T23:00Z,3.338,1411,,10.0,-0.56
+2026-10-30T15:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",9.17,2026-10-30T22:00Z,3.337,97,,9.97,-0.8
+2026-10-30T15:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",9.39,2026-10-30T23:00Z,3.338,21,,10.02,-0.63
+2026-10-30T15:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.93,2026-10-30T22:00Z,3.321,1066,,9.35,-0.42
+2026-10-30T15:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",9.43,2026-10-30T23:00Z,3.338,1289,,10.01,-0.58
+2026-10-30T15:00Z,gauge,9414290,San Francisco,,,3.294,92,0.024
+2026-10-30T15:00Z,gauge,9414750,Alameda,,,3.335,68,0.031
+2026-10-30T15:00Z,gauge,9414523,Redwood City,,,3.338,68,0.041
+2026-10-30T21:00Z,outlet,CO-001,Guadalupe Valley,8.52,2026-10-30T23:00Z,3.259,153,
+2026-10-30T21:00Z,outlet,CO-002,Colma Creek,8.62,2026-10-30T23:00Z,3.26,804,
+2026-10-30T21:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.62,2026-10-30T23:00Z,3.261,105,
+2026-10-30T21:00Z,outlet,CO-005,Highline Creek,8.69,2026-10-30T23:00Z,3.266,585,
+2026-10-30T21:00Z,outlet,CO-006,El Portal Creek,8.69,2026-10-30T23:00Z,3.266,1011,
+2026-10-30T21:00Z,outlet,CO-007,Mills Creek,8.69,2026-10-30T23:00Z,3.268,137,
+2026-10-30T21:00Z,outlet,CO-008,Easton Creek,8.7,2026-10-30T23:00Z,3.268,158,
+2026-10-30T21:00Z,outlet,CO-009,Sanchez Creek,8.7,2026-10-30T23:00Z,3.269,413,
+2026-10-30T21:00Z,outlet,CO-010,Guanold,8.82,2026-10-30T23:00Z,3.275,121,
+2026-10-30T21:00Z,outlet,CO-011,San Mateo Creek,8.8,2026-10-30T23:00Z,3.274,74,
+2026-10-30T21:00Z,outlet,CO-012,Borel Creek,8.8,2026-10-30T23:00Z,3.274,847,
+2026-10-30T21:00Z,outlet,CO-013,Seal Creek,8.82,2026-10-30T23:00Z,3.276,723,
+2026-10-30T21:00Z,outlet,CO-014,Bay Slough,8.99,2026-10-30T23:00Z,3.279,54,
+2026-10-30T21:00Z,outlet,CO-015,Laurel Creek,8.96,2026-10-30T23:00Z,3.279,1536,
+2026-10-30T21:00Z,outlet,CO-016,Seal Slough,8.96,2026-10-30T23:00Z,3.279,1574,
+2026-10-30T21:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,8.96,2026-10-30T23:00Z,3.28,174,
+2026-10-30T21:00Z,outlet,CO-019,Belmont Creek,9.13,2026-10-30T23:00Z,3.28,1448,
+2026-10-30T21:00Z,outlet,CO-020,Steinberger Slough,9.17,2026-10-30T23:00Z,3.281,83,
+2026-10-30T21:00Z,outlet,CO-021 CO-022,Cordilleras Creek,9.16,2026-10-30T23:00Z,3.281,272,
+2026-10-30T21:00Z,outlet,CO-023,Pulgas Creek,9.16,2026-10-30T23:00Z,3.281,284,
+2026-10-30T21:00Z,outlet,CO-024,Redwood Creek,9.21,2026-10-30T23:00Z,3.281,1247,
+2026-10-30T21:00Z,outlet,CO-025,Ravenswood Slough,9.25,2026-10-30T23:00Z,3.28,862,
+2026-10-30T21:00Z,outlet,CO-026,San Francisquito Creek,9.43,2026-10-30T23:00Z,3.279,59,
+2026-10-30T21:00Z,outlet,CO-027,Atherton Creek,9.25,2026-10-30T23:00Z,3.28,4465,
+2026-10-30T21:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",9.1,2026-10-30T23:00Z,3.281,1370,,8.01,1.09
+2026-10-30T21:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.41,2026-10-30T23:00Z,3.279,442,,7.96,1.45
+2026-10-30T21:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.39,2026-10-30T23:00Z,3.279,320,,7.96,1.43
+2026-10-30T21:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.279,374,,7.97,1.38
+2026-10-30T21:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",8.99,2026-10-30T23:00Z,3.279,7,,7.96,1.03
+2026-10-30T21:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",8.98,2026-10-30T23:00Z,3.279,53,,7.96,1.02
+2026-10-30T21:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.281,31,,8.02,1.19
+2026-10-30T21:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.69,2026-10-30T23:00Z,3.266,91,,7.51,1.18
+2026-10-30T21:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",9.21,2026-10-30T23:00Z,3.281,83,,8.02,1.19
+2026-10-30T21:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",9.14,2026-10-30T23:00Z,3.281,38,,8.0,1.14
+2026-10-30T21:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",8.98,2026-10-30T23:00Z,3.279,46,,7.95,1.03
+2026-10-30T21:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.62,2026-10-30T23:00Z,3.263,53,,7.42,1.2
+2026-10-30T21:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.34,2026-10-30T23:00Z,3.279,91,,7.96,1.38
+2026-10-30T21:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.28,1036,,7.97,1.4
+2026-10-30T21:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.28,83,,8.0,1.07
+2026-10-30T21:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.63,2026-10-30T23:00Z,3.263,17,,7.42,1.21
+2026-10-30T21:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",9.2,2026-10-30T23:00Z,3.281,379,,8.02,1.18
+2026-10-30T21:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.281,96,,8.02,1.19
+2026-10-30T21:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,276,,7.98,1.27
+2026-10-30T21:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.61,2026-10-30T23:00Z,3.262,53,,7.38,1.23
+2026-10-30T21:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.53,2026-10-30T23:00Z,3.26,81,,7.3,1.23
+2026-10-30T21:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.281,64,,8.02,1.19
+2026-10-30T21:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",9.31,2026-10-30T23:00Z,3.28,98,,7.97,1.34
+2026-10-30T21:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",8.98,2026-10-30T23:00Z,3.279,21,,7.94,1.04
+2026-10-30T21:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",8.99,2026-10-30T23:00Z,3.279,89,,7.96,1.03
+2026-10-30T21:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.281,277,,9.02,0.19
+2026-10-30T21:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.4,2026-10-30T23:00Z,3.28,1139,,8.97,0.43
+2026-10-30T21:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.28,1326,,9.0,0.25
+2026-10-30T21:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,804,,8.99,0.26
+2026-10-30T21:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,441,,9.02,0.23
+2026-10-30T21:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.28,488,,8.97,0.38
+2026-10-30T21:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.33,2026-10-30T23:00Z,3.28,322,,8.97,0.36
+2026-10-30T21:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.279,269,,8.96,0.42
+2026-10-30T21:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,846,,9.02,0.23
+2026-10-30T21:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,913,,9.01,0.24
+2026-10-30T21:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",9.18,2026-10-30T23:00Z,3.281,54,,9.02,0.16
+2026-10-30T21:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,1529,,9.01,0.24
+2026-10-30T21:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",9.26,2026-10-30T23:00Z,3.28,1075,,8.98,0.28
+2026-10-30T21:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.281,630,,9.02,0.2
+2026-10-30T21:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.28,933,,9.0,0.25
+2026-10-30T21:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.62,2026-10-30T23:00Z,3.26,964,,8.35,0.27
+2026-10-30T21:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,1308,,8.98,0.27
+2026-10-30T21:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,284,,9.01,0.25
+2026-10-30T21:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",9.2,2026-10-30T23:00Z,3.281,407,,9.02,0.18
+2026-10-30T21:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.63,2026-10-30T23:00Z,3.263,109,,8.41,0.22
+2026-10-30T21:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,159,,9.02,0.23
+2026-10-30T21:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",8.98,2026-10-30T23:00Z,3.279,42,,8.94,0.04
+2026-10-30T21:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",8.97,2026-10-30T23:00Z,3.28,35,,8.97,0.0
+2026-10-30T21:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,306,,8.98,0.27
+2026-10-30T21:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.69,2026-10-30T23:00Z,3.266,52,,8.5,0.19
+2026-10-30T21:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.28,1015,,8.97,0.4
+2026-10-30T21:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.39,2026-10-30T23:00Z,3.279,464,,8.96,0.43
+2026-10-30T21:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",8.98,2026-10-30T23:00Z,3.279,60,,8.96,0.02
+2026-10-30T21:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,704,,9.01,0.25
+2026-10-30T21:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,366,,9.01,0.25
+2026-10-30T21:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",9.17,2026-10-30T23:00Z,3.281,50,,9.01,0.16
+2026-10-30T21:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",8.99,2026-10-30T23:00Z,3.279,61,,8.96,0.03
+2026-10-30T21:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.281,467,,9.02,0.2
+2026-10-30T21:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,1010,,8.98,0.27
+2026-10-30T21:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.35,2026-10-30T23:00Z,3.28,702,,8.97,0.38
+2026-10-30T21:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.63,2026-10-30T23:00Z,3.263,51,,8.42,0.21
+2026-10-30T21:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",8.82,2026-10-30T23:00Z,3.276,236,,8.82,0.0
+2026-10-30T21:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.62,2026-10-30T23:00Z,3.263,48,,8.42,0.2
+2026-10-30T21:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,400,,8.98,0.27
+2026-10-30T21:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,606,,9.01,0.25
+2026-10-30T21:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",9.19,2026-10-30T23:00Z,3.281,431,,9.01,0.18
+2026-10-30T21:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.69,2026-10-30T23:00Z,3.266,33,,8.52,0.17
+2026-10-30T21:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.28,423,,9.0,0.07
+2026-10-30T21:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.28,48,,8.99,0.08
+2026-10-30T21:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.28,753,,8.97,0.41
+2026-10-30T21:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.281,77,,9.02,0.19
+2026-10-30T21:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,970,,9.98,-0.73
+2026-10-30T21:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,48,,9.99,-0.74
+2026-10-30T21:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",9.19,2026-10-30T23:00Z,3.281,175,,10.01,-0.82
+2026-10-30T21:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",9.17,2026-10-30T23:00Z,3.281,697,,10.01,-0.84
+2026-10-30T21:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",9.12,2026-10-30T23:00Z,3.281,518,,10.0,-0.88
+2026-10-30T21:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.43,2026-10-30T23:00Z,3.279,964,,9.95,-0.52
+2026-10-30T21:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.28,1223,,10.0,-0.75
+2026-10-30T21:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,1506,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.28,63,,9.99,-0.92
+2026-10-30T21:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.279,620,,9.97,-0.59
+2026-10-30T21:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,1593,,10.01,-0.76
+2026-10-30T21:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",9.18,2026-10-30T23:00Z,3.281,46,,10.01,-0.83
+2026-10-30T21:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,323,,10.01,-0.75
+2026-10-30T21:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",8.7,2026-10-30T23:00Z,3.268,501,,9.58,-0.88
+2026-10-30T21:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,1084,,10.0,-0.75
+2026-10-30T21:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.69,2026-10-30T23:00Z,3.266,129,,9.52,-0.83
+2026-10-30T21:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",8.69,2026-10-30T23:00Z,3.266,407,,9.53,-0.84
+2026-10-30T21:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.28,841,,9.97,-0.6
+2026-10-30T21:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.281,380,,10.02,-0.8
+2026-10-30T21:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",9.21,2026-10-30T23:00Z,3.281,630,,10.02,-0.81
+2026-10-30T21:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,38,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.42,2026-10-30T23:00Z,3.279,328,,9.96,-0.54
+2026-10-30T21:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,871,,10.01,-0.75
+2026-10-30T21:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.62,2026-10-30T23:00Z,3.262,42,,9.4,-0.78
+2026-10-30T21:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",8.96,2026-10-30T23:00Z,3.279,722,,9.96,-1.0
+2026-10-30T21:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",9.32,2026-10-30T23:00Z,3.279,64,,9.97,-0.65
+2026-10-30T21:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,42,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",9.19,2026-10-30T23:00Z,3.281,932,,10.01,-0.82
+2026-10-30T21:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.42,2026-10-30T23:00Z,3.279,91,,9.95,-0.53
+2026-10-30T21:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,338,,10.01,-0.75
+2026-10-30T21:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.62,2026-10-30T23:00Z,3.262,141,,9.39,-0.77
+2026-10-30T21:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.69,2026-10-30T23:00Z,3.266,506,,9.52,-0.83
+2026-10-30T21:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.39,2026-10-30T23:00Z,3.28,1006,,9.97,-0.58
+2026-10-30T21:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.37,2026-10-30T23:00Z,3.279,418,,9.97,-0.6
+2026-10-30T21:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,1228,,10.01,-0.76
+2026-10-30T21:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.281,497,,10.01,-0.76
+2026-10-30T21:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,780,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",8.8,2026-10-30T23:00Z,3.274,632,,9.78,-0.98
+2026-10-30T21:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.59,2026-10-30T23:00Z,3.262,60,,9.36,-0.77
+2026-10-30T21:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",8.98,2026-10-30T23:00Z,3.279,80,,9.94,-0.96
+2026-10-30T21:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",8.7,2026-10-30T23:00Z,3.268,663,,9.59,-0.89
+2026-10-30T21:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",9.25,2026-10-30T23:00Z,3.28,38,,10.0,-0.75
+2026-10-30T21:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,659,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.36,2026-10-30T23:00Z,3.28,498,,9.97,-0.61
+2026-10-30T21:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.69,2026-10-30T23:00Z,3.266,34,,9.5,-0.81
+2026-10-30T21:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",9.22,2026-10-30T23:00Z,3.281,74,,10.02,-0.8
+2026-10-30T21:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,65,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,281,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,933,,9.97,-0.72
+2026-10-30T21:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.41,2026-10-30T23:00Z,3.279,711,,9.96,-0.55
+2026-10-30T21:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",8.69,2026-10-30T23:00Z,3.267,82,,9.54,-0.85
+2026-10-30T21:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,1239,,10.01,-0.76
+2026-10-30T21:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,1181,,9.99,-0.74
+2026-10-30T21:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.69,2026-10-30T23:00Z,3.266,848,,9.52,-0.83
+2026-10-30T21:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.38,2026-10-30T23:00Z,3.279,179,,9.96,-0.58
+2026-10-30T21:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",8.72,2026-10-30T23:00Z,3.27,184,,9.65,-0.93
+2026-10-30T21:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,683,,10.02,-0.77
+2026-10-30T21:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.62,2026-10-30T23:00Z,3.261,423,,9.37,-0.75
+2026-10-30T21:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.62,2026-10-30T23:00Z,3.262,94,,9.41,-0.79
+2026-10-30T21:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",9.07,2026-10-30T23:00Z,3.28,134,,10.0,-0.93
+2026-10-30T21:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.62,2026-10-30T23:00Z,3.263,23,,9.42,-0.8
+2026-10-30T21:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.62,2026-10-30T23:00Z,3.262,1356,,9.42,-0.8
+2026-10-30T21:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",9.21,2026-10-30T23:00Z,3.281,260,,10.02,-0.81
+2026-10-30T21:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",9.25,2026-10-30T23:00Z,3.28,982,,9.99,-0.74
+2026-10-30T21:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",9.26,2026-10-30T23:00Z,3.281,1411,,10.0,-0.74
+2026-10-30T21:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",8.96,2026-10-30T23:00Z,3.28,97,,9.97,-1.01
+2026-10-30T21:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",9.21,2026-10-30T23:00Z,3.281,21,,10.02,-0.81
+2026-10-30T21:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.62,2026-10-30T23:00Z,3.26,1066,,9.35,-0.73
+2026-10-30T21:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",9.25,2026-10-30T23:00Z,3.281,1289,,10.01,-0.76
+2026-10-30T21:00Z,gauge,9414290,San Francisco,,,3.229,92,0.016
+2026-10-30T21:00Z,gauge,9414750,Alameda,,,3.274,68,0.019
+2026-10-30T21:00Z,gauge,9414523,Redwood City,,,3.281,68,0.028
+2026-10-31T03:00Z,outlet,CO-001,Guadalupe Valley,8.39,2026-10-31T23:00Z,3.155,153,
+2026-10-31T03:00Z,outlet,CO-002,Colma Creek,8.44,2026-10-31T23:00Z,3.156,804,
+2026-10-31T03:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.44,2026-10-31T23:00Z,3.157,105,
+2026-10-31T03:00Z,outlet,CO-005,Highline Creek,8.49,2026-10-31T23:00Z,3.16,585,
+2026-10-31T03:00Z,outlet,CO-006,El Portal Creek,8.49,2026-10-31T23:00Z,3.161,1011,
+2026-10-31T03:00Z,outlet,CO-007,Mills Creek,8.5,2026-10-31T23:00Z,3.162,137,
+2026-10-31T03:00Z,outlet,CO-008,Easton Creek,8.5,2026-10-31T23:00Z,3.163,158,
+2026-10-31T03:00Z,outlet,CO-009,Sanchez Creek,8.51,2026-10-31T23:00Z,3.163,413,
+2026-10-31T03:00Z,outlet,CO-010,Guanold,8.58,2026-10-31T23:00Z,3.168,121,
+2026-10-31T03:00Z,outlet,CO-011,San Mateo Creek,8.57,2026-10-31T23:00Z,3.168,74,
+2026-10-31T03:00Z,outlet,CO-012,Borel Creek,8.57,2026-10-31T23:00Z,3.167,847,
+2026-10-31T03:00Z,outlet,CO-013,Seal Creek,8.58,2026-10-31T23:00Z,3.169,723,
+2026-10-31T03:00Z,outlet,CO-014,Bay Slough,8.69,2026-10-31T23:00Z,3.172,54,
+2026-10-31T03:00Z,outlet,CO-015,Laurel Creek,8.67,2026-10-31T23:00Z,3.171,1536,
+2026-10-31T03:00Z,outlet,CO-016,Seal Slough,8.67,2026-10-31T23:00Z,3.171,1574,
+2026-10-31T03:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,8.67,2026-10-31T23:00Z,3.172,174,
+2026-10-31T03:00Z,outlet,CO-019,Belmont Creek,8.81,2026-11-01T00:00Z,3.172,1448,
+2026-10-31T03:00Z,outlet,CO-020,Steinberger Slough,8.85,2026-11-01T00:00Z,3.173,83,
+2026-10-31T03:00Z,outlet,CO-021 CO-022,Cordilleras Creek,8.84,2026-11-01T00:00Z,3.173,272,
+2026-10-31T03:00Z,outlet,CO-023,Pulgas Creek,8.84,2026-11-01T00:00Z,3.173,284,
+2026-10-31T03:00Z,outlet,CO-024,Redwood Creek,8.89,2026-11-01T00:00Z,3.173,1247,
+2026-10-31T03:00Z,outlet,CO-025,Ravenswood Slough,8.93,2026-11-01T00:00Z,3.172,862,
+2026-10-31T03:00Z,outlet,CO-026,San Francisquito Creek,9.09,2026-11-01T00:00Z,3.171,59,
+2026-10-31T03:00Z,outlet,CO-027,Atherton Creek,8.94,2026-11-01T00:00Z,3.172,4465,
+2026-10-31T03:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",8.78,2026-11-01T00:00Z,3.173,1370,,8.01,0.77
+2026-10-31T03:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.07,2026-11-01T00:00Z,3.172,442,,7.96,1.11
+2026-10-31T03:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.172,320,,7.96,1.09
+2026-10-31T03:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.02,2026-11-01T00:00Z,3.172,374,,7.97,1.05
+2026-10-31T03:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",8.69,2026-10-31T23:00Z,3.172,7,,7.96,0.73
+2026-10-31T03:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",8.69,2026-10-31T23:00Z,3.172,53,,7.96,0.73
+2026-10-31T03:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,31,,8.02,0.87
+2026-10-31T03:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.49,2026-10-31T23:00Z,3.16,91,,7.51,0.98
+2026-10-31T03:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",8.89,2026-11-01T00:00Z,3.173,83,,8.02,0.87
+2026-10-31T03:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",8.82,2026-11-01T00:00Z,3.173,38,,8.0,0.82
+2026-10-31T03:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",8.68,2026-10-31T23:00Z,3.171,46,,7.95,0.73
+2026-10-31T03:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.45,2026-10-31T23:00Z,3.158,53,,7.42,1.03
+2026-10-31T03:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.172,91,,7.96,1.04
+2026-10-31T03:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.04,2026-11-01T00:00Z,3.172,1036,,7.97,1.07
+2026-10-31T03:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",8.75,2026-10-31T23:00Z,3.172,83,,8.0,0.75
+2026-10-31T03:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.45,2026-10-31T23:00Z,3.158,17,,7.42,1.03
+2026-10-31T03:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",8.88,2026-11-01T00:00Z,3.173,379,,8.02,0.86
+2026-10-31T03:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,96,,8.02,0.87
+2026-10-31T03:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,276,,7.98,0.95
+2026-10-31T03:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.44,2026-10-31T23:00Z,3.157,53,,7.38,1.06
+2026-10-31T03:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.39,2026-10-31T23:00Z,3.156,81,,7.3,1.09
+2026-10-31T03:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,64,,8.02,0.87
+2026-10-31T03:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",8.98,2026-11-01T00:00Z,3.172,98,,7.97,1.01
+2026-10-31T03:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",8.68,2026-10-31T23:00Z,3.171,21,,7.94,0.74
+2026-10-31T03:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",8.69,2026-10-31T23:00Z,3.172,89,,7.96,0.73
+2026-10-31T03:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,277,,9.02,-0.13
+2026-10-31T03:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.06,2026-11-01T00:00Z,3.172,1139,,8.97,0.09
+2026-10-31T03:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",8.93,2026-11-01T00:00Z,3.172,1326,,9.0,-0.07
+2026-10-31T03:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,804,,8.99,-0.06
+2026-10-31T03:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,441,,9.02,-0.09
+2026-10-31T03:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.02,2026-11-01T00:00Z,3.172,488,,8.97,0.05
+2026-10-31T03:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.172,322,,8.97,0.03
+2026-10-31T03:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.04,2026-11-01T00:00Z,3.172,269,,8.96,0.08
+2026-10-31T03:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,846,,9.02,-0.09
+2026-10-31T03:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,913,,9.01,-0.08
+2026-10-31T03:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",8.86,2026-11-01T00:00Z,3.173,54,,9.02,-0.16
+2026-10-31T03:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,1529,,9.01,-0.08
+2026-10-31T03:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",8.94,2026-11-01T00:00Z,3.172,1075,,8.98,-0.04
+2026-10-31T03:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,630,,9.02,-0.13
+2026-10-31T03:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",8.93,2026-11-01T00:00Z,3.173,933,,9.0,-0.07
+2026-10-31T03:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.44,2026-10-31T23:00Z,3.156,964,,8.35,0.09
+2026-10-31T03:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,1308,,8.98,-0.05
+2026-10-31T03:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,284,,9.01,-0.07
+2026-10-31T03:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",8.88,2026-11-01T00:00Z,3.173,407,,9.02,-0.14
+2026-10-31T03:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.45,2026-10-31T23:00Z,3.158,109,,8.41,0.04
+2026-10-31T03:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,159,,9.02,-0.09
+2026-10-31T03:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",8.68,2026-10-31T23:00Z,3.171,42,,8.94,-0.26
+2026-10-31T03:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",8.68,2026-10-31T23:00Z,3.172,35,,8.97,-0.29
+2026-10-31T03:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,306,,8.98,-0.05
+2026-10-31T03:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.49,2026-10-31T23:00Z,3.16,52,,8.5,-0.01
+2026-10-31T03:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.04,2026-11-01T00:00Z,3.172,1015,,8.97,0.07
+2026-10-31T03:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.172,464,,8.96,0.09
+2026-10-31T03:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",8.68,2026-10-31T23:00Z,3.172,60,,8.96,-0.28
+2026-10-31T03:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,704,,9.01,-0.07
+2026-10-31T03:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,366,,9.01,-0.07
+2026-10-31T03:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",8.85,2026-11-01T00:00Z,3.173,50,,9.01,-0.16
+2026-10-31T03:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",8.69,2026-10-31T23:00Z,3.172,61,,8.96,-0.27
+2026-10-31T03:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,467,,9.02,-0.13
+2026-10-31T03:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,1010,,8.98,-0.05
+2026-10-31T03:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.02,2026-11-01T00:00Z,3.172,702,,8.97,0.05
+2026-10-31T03:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.45,2026-10-31T23:00Z,3.158,51,,8.42,0.03
+2026-10-31T03:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",8.58,2026-10-31T23:00Z,3.169,236,,8.82,-0.24
+2026-10-31T03:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.45,2026-10-31T23:00Z,3.158,48,,8.42,0.03
+2026-10-31T03:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,400,,8.98,-0.05
+2026-10-31T03:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,606,,9.01,-0.07
+2026-10-31T03:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",8.87,2026-11-01T00:00Z,3.173,431,,9.01,-0.14
+2026-10-31T03:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.49,2026-10-31T23:00Z,3.161,33,,8.52,-0.03
+2026-10-31T03:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",8.76,2026-11-01T00:00Z,3.173,423,,9.0,-0.24
+2026-10-31T03:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",8.75,2026-11-01T00:00Z,3.172,48,,8.99,-0.24
+2026-10-31T03:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.172,753,,8.97,0.08
+2026-10-31T03:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,77,,9.02,-0.13
+2026-10-31T03:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,970,,9.98,-1.05
+2026-10-31T03:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,48,,9.99,-1.06
+2026-10-31T03:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",8.86,2026-11-01T00:00Z,3.173,175,,10.01,-1.15
+2026-10-31T03:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",8.85,2026-11-01T00:00Z,3.173,697,,10.01,-1.16
+2026-10-31T03:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",8.79,2026-11-01T00:00Z,3.173,518,,10.0,-1.21
+2026-10-31T03:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.09,2026-11-01T00:00Z,3.171,964,,9.95,-0.86
+2026-10-31T03:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",8.93,2026-11-01T00:00Z,3.173,1223,,10.0,-1.07
+2026-10-31T03:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,1506,,10.02,-1.09
+2026-10-31T03:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",8.75,2026-11-01T00:00Z,3.172,63,,9.99,-1.24
+2026-10-31T03:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.172,620,,9.97,-0.92
+2026-10-31T03:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,1593,,10.01,-1.08
+2026-10-31T03:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",8.86,2026-11-01T00:00Z,3.173,46,,10.01,-1.15
+2026-10-31T03:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,323,,10.01,-1.07
+2026-10-31T03:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",8.5,2026-10-31T23:00Z,3.162,501,,9.58,-1.08
+2026-10-31T03:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,1084,,10.0,-1.07
+2026-10-31T03:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.49,2026-10-31T23:00Z,3.161,129,,9.52,-1.03
+2026-10-31T03:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",8.49,2026-10-31T23:00Z,3.161,407,,9.53,-1.04
+2026-10-31T03:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.04,2026-11-01T00:00Z,3.172,841,,9.97,-0.93
+2026-10-31T03:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,380,,10.02,-1.13
+2026-10-31T03:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,630,,10.02,-1.13
+2026-10-31T03:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,38,,10.02,-1.09
+2026-10-31T03:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.08,2026-11-01T00:00Z,3.172,328,,9.96,-0.88
+2026-10-31T03:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,871,,10.01,-1.07
+2026-10-31T03:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.45,2026-10-31T23:00Z,3.158,42,,9.4,-0.95
+2026-10-31T03:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",8.68,2026-10-31T23:00Z,3.172,722,,9.96,-1.28
+2026-10-31T03:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",8.99,2026-11-01T00:00Z,3.172,64,,9.97,-0.98
+2026-10-31T03:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,42,,10.02,-1.09
+2026-10-31T03:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",8.87,2026-11-01T00:00Z,3.173,932,,10.01,-1.14
+2026-10-31T03:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.08,2026-11-01T00:00Z,3.171,91,,9.95,-0.87
+2026-10-31T03:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,338,,10.01,-1.07
+2026-10-31T03:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.44,2026-10-31T23:00Z,3.157,141,,9.39,-0.95
+2026-10-31T03:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.49,2026-10-31T23:00Z,3.16,506,,9.52,-1.03
+2026-10-31T03:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.172,1006,,9.97,-0.92
+2026-10-31T03:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.04,2026-11-01T00:00Z,3.172,418,,9.97,-0.93
+2026-10-31T03:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,1228,,10.01,-1.08
+2026-10-31T03:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",8.93,2026-11-01T00:00Z,3.173,497,,10.01,-1.08
+2026-10-31T03:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,780,,10.02,-1.09
+2026-10-31T03:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",8.57,2026-10-31T23:00Z,3.167,632,,9.78,-1.21
+2026-10-31T03:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.43,2026-10-31T23:00Z,3.157,60,,9.36,-0.93
+2026-10-31T03:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",8.68,2026-10-31T23:00Z,3.171,80,,9.94,-1.26
+2026-10-31T03:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",8.5,2026-10-31T23:00Z,3.162,663,,9.59,-1.09
+2026-10-31T03:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",8.93,2026-11-01T00:00Z,3.173,38,,10.0,-1.07
+2026-10-31T03:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,659,,10.02,-1.09
+2026-10-31T03:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.02,2026-11-01T00:00Z,3.172,498,,9.97,-0.95
+2026-10-31T03:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.49,2026-10-31T23:00Z,3.16,34,,9.5,-1.01
+2026-10-31T03:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",8.89,2026-11-01T00:00Z,3.173,74,,10.02,-1.13
+2026-10-31T03:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",8.92,2026-11-01T00:00Z,3.173,65,,10.02,-1.1
+2026-10-31T03:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,281,,10.02,-1.09
+2026-10-31T03:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,933,,9.97,-1.04
+2026-10-31T03:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.07,2026-11-01T00:00Z,3.172,711,,9.96,-0.89
+2026-10-31T03:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",8.5,2026-10-31T23:00Z,3.161,82,,9.54,-1.04
+2026-10-31T03:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,1239,,10.01,-1.08
+2026-10-31T03:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,1181,,9.99,-1.06
+2026-10-31T03:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.49,2026-10-31T23:00Z,3.16,848,,9.52,-1.03
+2026-10-31T03:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.04,2026-11-01T00:00Z,3.172,179,,9.96,-0.92
+2026-10-31T03:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",8.52,2026-10-31T23:00Z,3.164,184,,9.65,-1.13
+2026-10-31T03:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,683,,10.02,-1.09
+2026-10-31T03:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.44,2026-10-31T23:00Z,3.156,423,,9.37,-0.93
+2026-10-31T03:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.45,2026-10-31T23:00Z,3.158,94,,9.41,-0.96
+2026-10-31T03:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",8.75,2026-11-01T00:00Z,3.173,134,,10.0,-1.25
+2026-10-31T03:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.45,2026-10-31T23:00Z,3.158,23,,9.42,-0.97
+2026-10-31T03:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.45,2026-10-31T23:00Z,3.157,1356,,9.42,-0.97
+2026-10-31T03:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",8.89,2026-11-01T00:00Z,3.173,260,,10.02,-1.13
+2026-10-31T03:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",8.93,2026-11-01T00:00Z,3.172,982,,9.99,-1.06
+2026-10-31T03:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",8.94,2026-11-01T00:00Z,3.173,1411,,10.0,-1.06
+2026-10-31T03:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",8.68,2026-10-31T23:00Z,3.172,97,,9.97,-1.29
+2026-10-31T03:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",8.89,2026-11-01T00:00Z,3.173,21,,10.02,-1.13
+2026-10-31T03:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.44,2026-10-31T23:00Z,3.156,1066,,9.35,-0.91
+2026-10-31T03:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.173,1289,,10.01,-1.08
+2026-10-31T03:00Z,gauge,9414290,San Francisco,,,3.128,92,0.024
+2026-10-31T03:00Z,gauge,9414750,Alameda,,,3.169,68,0.02
+2026-10-31T03:00Z,gauge,9414523,Redwood City,,,3.173,68,0.019
+2026-10-31T09:00Z,outlet,CO-001,Guadalupe Valley,8.45,2026-10-31T23:00Z,3.163,153,
+2026-10-31T09:00Z,outlet,CO-002,Colma Creek,8.5,2026-10-31T23:00Z,3.164,804,
+2026-10-31T09:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.5,2026-10-31T23:00Z,3.165,105,
+2026-10-31T09:00Z,outlet,CO-005,Highline Creek,8.55,2026-10-31T23:00Z,3.17,585,
+2026-10-31T09:00Z,outlet,CO-006,El Portal Creek,8.55,2026-10-31T23:00Z,3.17,1011,
+2026-10-31T09:00Z,outlet,CO-007,Mills Creek,8.56,2026-10-31T23:00Z,3.172,137,
+2026-10-31T09:00Z,outlet,CO-008,Easton Creek,8.56,2026-10-31T23:00Z,3.173,158,
+2026-10-31T09:00Z,outlet,CO-009,Sanchez Creek,8.57,2026-10-31T23:00Z,3.174,413,
+2026-10-31T09:00Z,outlet,CO-010,Guanold,8.64,2026-10-31T23:00Z,3.18,121,
+2026-10-31T09:00Z,outlet,CO-011,San Mateo Creek,8.63,2026-10-31T23:00Z,3.179,74,
+2026-10-31T09:00Z,outlet,CO-012,Borel Creek,8.63,2026-10-31T23:00Z,3.179,847,
+2026-10-31T09:00Z,outlet,CO-013,Seal Creek,8.65,2026-10-31T23:00Z,3.181,723,
+2026-10-31T09:00Z,outlet,CO-014,Bay Slough,8.76,2026-10-31T23:00Z,3.184,54,
+2026-10-31T09:00Z,outlet,CO-015,Laurel Creek,8.74,2026-10-31T23:00Z,3.184,1536,
+2026-10-31T09:00Z,outlet,CO-016,Seal Slough,8.74,2026-10-31T23:00Z,3.184,1574,
+2026-10-31T09:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,8.74,2026-10-31T23:00Z,3.185,174,
+2026-10-31T09:00Z,outlet,CO-019,Belmont Creek,8.88,2026-11-01T00:00Z,3.185,1448,
+2026-10-31T09:00Z,outlet,CO-020,Steinberger Slough,8.91,2026-11-01T00:00Z,3.186,83,
+2026-10-31T09:00Z,outlet,CO-021 CO-022,Cordilleras Creek,8.91,2026-11-01T00:00Z,3.186,272,
+2026-10-31T09:00Z,outlet,CO-023,Pulgas Creek,8.91,2026-11-01T00:00Z,3.186,284,
+2026-10-31T09:00Z,outlet,CO-024,Redwood Creek,8.96,2026-11-01T00:00Z,3.186,1247,
+2026-10-31T09:00Z,outlet,CO-025,Ravenswood Slough,9.0,2026-11-01T00:00Z,3.185,862,
+2026-10-31T09:00Z,outlet,CO-026,San Francisquito Creek,9.15,2026-11-01T00:00Z,3.184,59,
+2026-10-31T09:00Z,outlet,CO-027,Atherton Creek,9.0,2026-11-01T00:00Z,3.185,4465,
+2026-10-31T09:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",8.85,2026-11-01T00:00Z,3.186,1370,,8.01,0.84
+2026-10-31T09:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.13,2026-11-01T00:00Z,3.184,442,,7.96,1.17
+2026-10-31T09:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.12,2026-11-01T00:00Z,3.184,320,,7.96,1.16
+2026-10-31T09:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.08,2026-11-01T00:00Z,3.184,374,,7.97,1.11
+2026-10-31T09:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",8.75,2026-10-31T23:00Z,3.184,7,,7.96,0.79
+2026-10-31T09:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",8.75,2026-10-31T23:00Z,3.184,53,,7.96,0.79
+2026-10-31T09:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,31,,8.02,0.94
+2026-10-31T09:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.55,2026-10-31T23:00Z,3.17,91,,7.51,1.04
+2026-10-31T09:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",8.96,2026-11-01T00:00Z,3.186,83,,8.02,0.94
+2026-10-31T09:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",8.89,2026-11-01T00:00Z,3.185,38,,8.0,0.89
+2026-10-31T09:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",8.75,2026-10-31T23:00Z,3.184,46,,7.95,0.8
+2026-10-31T09:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.51,2026-10-31T23:00Z,3.167,53,,7.42,1.09
+2026-10-31T09:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.07,2026-11-01T00:00Z,3.184,91,,7.96,1.11
+2026-10-31T09:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.185,1036,,7.97,1.13
+2026-10-31T09:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",8.82,2026-11-01T00:00Z,3.185,83,,8.0,0.82
+2026-10-31T09:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.51,2026-10-31T23:00Z,3.167,17,,7.42,1.09
+2026-10-31T09:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",8.95,2026-11-01T00:00Z,3.186,379,,8.02,0.93
+2026-10-31T09:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",8.95,2026-11-01T00:00Z,3.186,96,,8.02,0.93
+2026-10-31T09:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,276,,7.98,1.02
+2026-10-31T09:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.5,2026-10-31T23:00Z,3.166,53,,7.38,1.12
+2026-10-31T09:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.45,2026-10-31T23:00Z,3.164,81,,7.3,1.15
+2026-10-31T09:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,64,,8.02,0.94
+2026-10-31T09:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.184,98,,7.97,1.08
+2026-10-31T09:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",8.75,2026-10-31T23:00Z,3.184,21,,7.94,0.81
+2026-10-31T09:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",8.76,2026-10-31T23:00Z,3.184,89,,7.96,0.8
+2026-10-31T09:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,277,,9.02,-0.06
+2026-10-31T09:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.13,2026-11-01T00:00Z,3.185,1139,,8.97,0.16
+2026-10-31T09:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",9.0,2026-11-01T00:00Z,3.185,1326,,9.0,0.0
+2026-10-31T09:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,804,,8.99,0.01
+2026-10-31T09:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,441,,9.02,-0.02
+2026-10-31T09:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.08,2026-11-01T00:00Z,3.184,488,,8.97,0.11
+2026-10-31T09:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.06,2026-11-01T00:00Z,3.184,322,,8.97,0.09
+2026-10-31T09:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.184,269,,8.96,0.14
+2026-10-31T09:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,846,,9.02,-0.02
+2026-10-31T09:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,913,,9.01,-0.01
+2026-10-31T09:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",8.93,2026-11-01T00:00Z,3.186,54,,9.02,-0.09
+2026-10-31T09:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,1529,,9.01,-0.01
+2026-10-31T09:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",9.01,2026-11-01T00:00Z,3.185,1075,,8.98,0.03
+2026-10-31T09:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,630,,9.02,-0.06
+2026-10-31T09:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",9.0,2026-11-01T00:00Z,3.185,933,,9.0,0.0
+2026-10-31T09:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.5,2026-10-31T23:00Z,3.164,964,,8.35,0.15
+2026-10-31T09:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,1308,,8.98,0.02
+2026-10-31T09:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,284,,9.01,0.0
+2026-10-31T09:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",8.95,2026-11-01T00:00Z,3.186,407,,9.02,-0.07
+2026-10-31T09:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.51,2026-10-31T23:00Z,3.167,109,,8.41,0.1
+2026-10-31T09:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",8.99,2026-11-01T00:00Z,3.186,159,,9.02,-0.03
+2026-10-31T09:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",8.74,2026-10-31T23:00Z,3.184,42,,8.94,-0.2
+2026-10-31T09:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",8.75,2026-10-31T23:00Z,3.184,35,,8.97,-0.22
+2026-10-31T09:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,306,,8.98,0.02
+2026-10-31T09:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.55,2026-10-31T23:00Z,3.17,52,,8.5,0.05
+2026-10-31T09:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.185,1015,,8.97,0.13
+2026-10-31T09:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.11,2026-11-01T00:00Z,3.184,464,,8.96,0.15
+2026-10-31T09:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",8.75,2026-10-31T23:00Z,3.184,60,,8.96,-0.21
+2026-10-31T09:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,704,,9.01,0.0
+2026-10-31T09:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,366,,9.01,0.0
+2026-10-31T09:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",8.92,2026-11-01T00:00Z,3.186,50,,9.01,-0.09
+2026-10-31T09:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",8.75,2026-10-31T23:00Z,3.184,61,,8.96,-0.21
+2026-10-31T09:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,467,,9.02,-0.06
+2026-10-31T09:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,1010,,8.98,0.02
+2026-10-31T09:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.08,2026-11-01T00:00Z,3.185,702,,8.97,0.11
+2026-10-31T09:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.51,2026-10-31T23:00Z,3.167,51,,8.42,0.09
+2026-10-31T09:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",8.64,2026-10-31T23:00Z,3.18,236,,8.82,-0.18
+2026-10-31T09:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.51,2026-10-31T23:00Z,3.167,48,,8.42,0.09
+2026-10-31T09:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,400,,8.98,0.02
+2026-10-31T09:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,606,,9.01,0.0
+2026-10-31T09:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",8.94,2026-11-01T00:00Z,3.186,431,,9.01,-0.07
+2026-10-31T09:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.55,2026-10-31T23:00Z,3.17,33,,8.52,0.03
+2026-10-31T09:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",8.82,2026-11-01T00:00Z,3.185,423,,9.0,-0.18
+2026-10-31T09:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",8.81,2026-11-01T00:00Z,3.185,48,,8.99,-0.18
+2026-10-31T09:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.11,2026-11-01T00:00Z,3.184,753,,8.97,0.14
+2026-10-31T09:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,77,,9.02,-0.06
+2026-10-31T09:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,970,,9.98,-0.98
+2026-10-31T09:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,48,,9.99,-0.99
+2026-10-31T09:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",8.93,2026-11-01T00:00Z,3.186,175,,10.01,-1.08
+2026-10-31T09:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",8.92,2026-11-01T00:00Z,3.186,697,,10.01,-1.09
+2026-10-31T09:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",8.86,2026-11-01T00:00Z,3.186,518,,10.0,-1.14
+2026-10-31T09:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.15,2026-11-01T00:00Z,3.184,964,,9.95,-0.8
+2026-10-31T09:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",9.0,2026-11-01T00:00Z,3.185,1223,,10.0,-1.0
+2026-10-31T09:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,1506,,10.02,-1.02
+2026-10-31T09:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",8.81,2026-11-01T00:00Z,3.185,63,,9.99,-1.18
+2026-10-31T09:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.11,2026-11-01T00:00Z,3.184,620,,9.97,-0.86
+2026-10-31T09:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,1593,,10.01,-1.01
+2026-10-31T09:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",8.93,2026-11-01T00:00Z,3.186,46,,10.01,-1.08
+2026-10-31T09:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,323,,10.01,-1.0
+2026-10-31T09:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",8.56,2026-10-31T23:00Z,3.172,501,,9.58,-1.02
+2026-10-31T09:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,1084,,10.0,-1.0
+2026-10-31T09:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.55,2026-10-31T23:00Z,3.17,129,,9.52,-0.97
+2026-10-31T09:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",8.55,2026-10-31T23:00Z,3.171,407,,9.53,-0.98
+2026-10-31T09:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.185,841,,9.97,-0.87
+2026-10-31T09:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,380,,10.02,-1.06
+2026-10-31T09:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,630,,10.02,-1.06
+2026-10-31T09:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,38,,10.02,-1.02
+2026-10-31T09:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.14,2026-11-01T00:00Z,3.184,328,,9.96,-0.82
+2026-10-31T09:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,871,,10.01,-1.0
+2026-10-31T09:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.51,2026-10-31T23:00Z,3.167,42,,9.4,-0.89
+2026-10-31T09:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",8.74,2026-10-31T23:00Z,3.184,722,,9.96,-1.22
+2026-10-31T09:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.184,64,,9.97,-0.92
+2026-10-31T09:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",8.99,2026-11-01T00:00Z,3.186,42,,10.02,-1.03
+2026-10-31T09:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",8.94,2026-11-01T00:00Z,3.186,932,,10.01,-1.07
+2026-10-31T09:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.15,2026-11-01T00:00Z,3.184,91,,9.95,-0.8
+2026-10-31T09:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,338,,10.01,-1.0
+2026-10-31T09:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.5,2026-10-31T23:00Z,3.166,141,,9.39,-0.89
+2026-10-31T09:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.55,2026-10-31T23:00Z,3.17,506,,9.52,-0.97
+2026-10-31T09:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.11,2026-11-01T00:00Z,3.185,1006,,9.97,-0.86
+2026-10-31T09:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.184,418,,9.97,-0.87
+2026-10-31T09:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,1228,,10.01,-1.01
+2026-10-31T09:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",9.0,2026-11-01T00:00Z,3.186,497,,10.01,-1.01
+2026-10-31T09:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",8.99,2026-11-01T00:00Z,3.186,780,,10.02,-1.03
+2026-10-31T09:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",8.63,2026-10-31T23:00Z,3.179,632,,9.78,-1.15
+2026-10-31T09:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.49,2026-10-31T23:00Z,3.166,60,,9.36,-0.87
+2026-10-31T09:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",8.74,2026-10-31T23:00Z,3.184,80,,9.94,-1.2
+2026-10-31T09:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",8.56,2026-10-31T23:00Z,3.173,663,,9.59,-1.03
+2026-10-31T09:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",9.0,2026-11-01T00:00Z,3.185,38,,10.0,-1.0
+2026-10-31T09:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,659,,10.02,-1.02
+2026-10-31T09:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.09,2026-11-01T00:00Z,3.184,498,,9.97,-0.88
+2026-10-31T09:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.55,2026-10-31T23:00Z,3.17,34,,9.5,-0.95
+2026-10-31T09:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",8.96,2026-11-01T00:00Z,3.186,74,,10.02,-1.06
+2026-10-31T09:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",8.99,2026-11-01T00:00Z,3.186,65,,10.02,-1.03
+2026-10-31T09:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",8.99,2026-11-01T00:00Z,3.186,281,,10.02,-1.03
+2026-10-31T09:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,933,,9.97,-0.97
+2026-10-31T09:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.13,2026-11-01T00:00Z,3.184,711,,9.96,-0.83
+2026-10-31T09:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",8.55,2026-10-31T23:00Z,3.171,82,,9.54,-0.99
+2026-10-31T09:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,1239,,10.01,-1.01
+2026-10-31T09:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,1181,,9.99,-0.99
+2026-10-31T09:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.55,2026-10-31T23:00Z,3.17,848,,9.52,-0.97
+2026-10-31T09:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.184,179,,9.96,-0.86
+2026-10-31T09:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",8.58,2026-10-31T23:00Z,3.175,184,,9.65,-1.07
+2026-10-31T09:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,683,,10.02,-1.02
+2026-10-31T09:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.5,2026-10-31T23:00Z,3.165,423,,9.37,-0.87
+2026-10-31T09:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.51,2026-10-31T23:00Z,3.167,94,,9.41,-0.9
+2026-10-31T09:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",8.82,2026-11-01T00:00Z,3.185,134,,10.0,-1.18
+2026-10-31T09:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.51,2026-10-31T23:00Z,3.167,23,,9.42,-0.91
+2026-10-31T09:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.51,2026-10-31T23:00Z,3.166,1356,,9.42,-0.91
+2026-10-31T09:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",8.96,2026-11-01T00:00Z,3.186,260,,10.02,-1.06
+2026-10-31T09:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",9.0,2026-11-01T00:00Z,3.185,982,,9.99,-0.99
+2026-10-31T09:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",9.01,2026-11-01T00:00Z,3.186,1411,,10.0,-0.99
+2026-10-31T09:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",8.74,2026-10-31T23:00Z,3.184,97,,9.97,-1.23
+2026-10-31T09:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",8.96,2026-11-01T00:00Z,3.186,21,,10.02,-1.06
+2026-10-31T09:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.5,2026-10-31T23:00Z,3.164,1066,,9.35,-0.85
+2026-10-31T09:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.186,1289,,10.01,-1.01
+2026-10-31T09:00Z,gauge,9414290,San Francisco,,,3.13,92,0.022
+2026-10-31T09:00Z,gauge,9414750,Alameda,,,3.18,68,0.022
+2026-10-31T09:00Z,gauge,9414523,Redwood City,,,3.186,68,0.028
+2026-10-31T15:00Z,outlet,CO-001,Guadalupe Valley,8.5,2026-10-31T23:00Z,3.316,153,
+2026-10-31T15:00Z,outlet,CO-002,Colma Creek,8.55,2026-10-31T23:00Z,3.317,804,
+2026-10-31T15:00Z,outlet,CO-003 CO-004,El Zanjon Creek; San Bruno Creek,8.55,2026-10-31T23:00Z,3.318,105,
+2026-10-31T15:00Z,outlet,CO-005,Highline Creek,8.6,2026-10-31T23:00Z,3.321,585,
+2026-10-31T15:00Z,outlet,CO-006,El Portal Creek,8.6,2026-10-31T23:00Z,3.321,1011,
+2026-10-31T15:00Z,outlet,CO-007,Mills Creek,8.61,2026-10-31T23:00Z,3.322,137,
+2026-10-31T15:00Z,outlet,CO-008,Easton Creek,8.61,2026-10-31T23:00Z,3.323,158,
+2026-10-31T15:00Z,outlet,CO-009,Sanchez Creek,8.62,2026-10-31T23:00Z,3.323,413,
+2026-10-31T15:00Z,outlet,CO-010,Guanold,8.69,2026-10-31T23:00Z,3.327,121,
+2026-10-31T15:00Z,outlet,CO-011,San Mateo Creek,8.68,2026-10-31T23:00Z,3.327,74,
+2026-10-31T15:00Z,outlet,CO-012,Borel Creek,8.68,2026-10-31T23:00Z,3.327,847,
+2026-10-31T15:00Z,outlet,CO-013,Seal Creek,8.69,2026-10-31T23:00Z,3.328,723,
+2026-10-31T15:00Z,outlet,CO-014,Bay Slough,8.81,2026-10-31T23:00Z,3.33,54,
+2026-10-31T15:00Z,outlet,CO-015,Laurel Creek,8.8,2026-10-31T23:00Z,3.33,1536,
+2026-10-31T15:00Z,outlet,CO-016,Seal Slough,8.8,2026-10-31T23:00Z,3.33,1574,
+2026-10-31T15:00Z,outlet,CO-017 CO-018,Belmont Creek; Belmont Slough,8.8,2026-10-31T23:00Z,3.33,174,
+2026-10-31T15:00Z,outlet,CO-019,Belmont Creek,8.93,2026-11-01T00:00Z,3.33,1448,
+2026-10-31T15:00Z,outlet,CO-020,Steinberger Slough,8.96,2026-11-01T00:00Z,3.331,83,
+2026-10-31T15:00Z,outlet,CO-021 CO-022,Cordilleras Creek,8.96,2026-11-01T00:00Z,3.331,272,
+2026-10-31T15:00Z,outlet,CO-023,Pulgas Creek,8.96,2026-11-01T00:00Z,3.331,284,
+2026-10-31T15:00Z,outlet,CO-024,Redwood Creek,9.0,2026-11-01T00:00Z,3.331,1247,
+2026-10-31T15:00Z,outlet,CO-025,Ravenswood Slough,9.05,2026-11-01T00:00Z,3.33,862,
+2026-10-31T15:00Z,outlet,CO-026,San Francisquito Creek,9.2,2026-11-01T00:00Z,3.33,59,
+2026-10-31T15:00Z,outlet,CO-027,Atherton Creek,9.05,2026-11-01T00:00Z,3.33,4465,
+2026-10-31T15:00Z,lowpoint,SH-001,"Redwood City shoreline, Steinberger Slough watershed",8.9,2026-11-01T00:00Z,3.331,1370,,8.01,0.89
+2026-10-31T15:00Z,lowpoint,SH-002,"Menlo Park shoreline, Ravenswood Slough watershed",9.18,2026-11-01T00:00Z,3.33,442,,7.96,1.22
+2026-10-31T15:00Z,lowpoint,SH-003,"Menlo Park shoreline, Ravenswood Slough watershed",9.16,2026-11-01T00:00Z,3.33,320,,7.96,1.2
+2026-10-31T15:00Z,lowpoint,SH-004,"Menlo Park shoreline, Ravenswood Slough watershed",9.13,2026-11-01T00:00Z,3.33,374,,7.97,1.16
+2026-10-31T15:00Z,lowpoint,SH-005,"Foster City shoreline, Belmont Slough watershed",8.8,2026-10-31T23:00Z,3.33,7,,7.96,0.84
+2026-10-31T15:00Z,lowpoint,SH-006,"Redwood City shoreline, Belmont Slough watershed",8.8,2026-10-31T23:00Z,3.33,53,,7.96,0.84
+2026-10-31T15:00Z,lowpoint,SH-007,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,31,,8.02,0.99
+2026-10-31T15:00Z,lowpoint,SH-008,"Millbrae shoreline, Highline Creek watershed",8.6,2026-10-31T23:00Z,3.321,91,,7.51,1.09
+2026-10-31T15:00Z,lowpoint,SH-009,"Redwood City shoreline, Steinberger Slough watershed",9.0,2026-11-01T00:00Z,3.331,83,,8.02,0.98
+2026-10-31T15:00Z,lowpoint,SH-010,"Redwood City shoreline, Steinberger Slough watershed",8.94,2026-11-01T00:00Z,3.331,38,,8.0,0.94
+2026-10-31T15:00Z,lowpoint,SH-011,"Foster City shoreline, Belmont Slough watershed",8.8,2026-10-31T23:00Z,3.33,46,,7.95,0.85
+2026-10-31T15:00Z,lowpoint,SH-012,"South San Francisco shoreline, Highline Creek watershed",8.56,2026-10-31T23:00Z,3.319,53,,7.42,1.14
+2026-10-31T15:00Z,lowpoint,SH-013,"Menlo Park shoreline, Ravenswood Slough watershed",9.12,2026-11-01T00:00Z,3.33,91,,7.96,1.16
+2026-10-31T15:00Z,lowpoint,SH-014,"Menlo Park shoreline, Ravenswood Slough watershed",9.15,2026-11-01T00:00Z,3.33,1036,,7.97,1.18
+2026-10-31T15:00Z,lowpoint,SH-015,"Redwood City shoreline, Steinberger Slough watershed",8.87,2026-11-01T00:00Z,3.331,83,,8.0,0.87
+2026-10-31T15:00Z,lowpoint,SH-016,"South San Francisco shoreline, Highline Creek watershed",8.56,2026-10-31T23:00Z,3.319,17,,7.42,1.14
+2026-10-31T15:00Z,lowpoint,SH-017,"Redwood City shoreline, Cordilleras Creek watershed",9.0,2026-11-01T00:00Z,3.331,379,,8.02,0.98
+2026-10-31T15:00Z,lowpoint,SH-018,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.331,96,,8.02,0.98
+2026-10-31T15:00Z,lowpoint,SH-019,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,276,,7.98,1.07
+2026-10-31T15:00Z,lowpoint,SH-020,"South San Francisco shoreline, Colma Creek watershed",8.55,2026-10-31T23:00Z,3.319,53,,7.38,1.17
+2026-10-31T15:00Z,lowpoint,SH-021,"Brisbane shoreline, Guadalupe Valley watershed",8.5,2026-10-31T23:00Z,3.317,81,,7.3,1.2
+2026-10-31T15:00Z,lowpoint,SH-022,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,64,,8.02,0.99
+2026-10-31T15:00Z,lowpoint,SH-023,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.33,98,,7.97,1.13
+2026-10-31T15:00Z,lowpoint,SH-024,"Foster City shoreline, Bay Slough watershed",8.8,2026-10-31T23:00Z,3.33,21,,7.94,0.86
+2026-10-31T15:00Z,lowpoint,SH-025,"Redwood City shoreline, Belmont Slough watershed",8.81,2026-10-31T23:00Z,3.33,89,,7.96,0.85
+2026-10-31T15:00Z,lowpoint,SH-026,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,277,,9.02,-0.01
+2026-10-31T15:00Z,lowpoint,SH-027,"Menlo Park shoreline, Ravenswood Slough watershed",9.17,2026-11-01T00:00Z,3.33,1139,,8.97,0.2
+2026-10-31T15:00Z,lowpoint,SH-028,"Menlo Park shoreline, Atherton Creek watershed",9.04,2026-11-01T00:00Z,3.331,1326,,9.0,0.04
+2026-10-31T15:00Z,lowpoint,SH-029,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.331,804,,8.99,0.06
+2026-10-31T15:00Z,lowpoint,SH-030,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,441,,9.02,0.02
+2026-10-31T15:00Z,lowpoint,SH-031,"Menlo Park shoreline, Ravenswood Slough watershed",9.13,2026-11-01T00:00Z,3.33,488,,8.97,0.16
+2026-10-31T15:00Z,lowpoint,SH-032,"Menlo Park shoreline, Ravenswood Slough watershed",9.11,2026-11-01T00:00Z,3.33,322,,8.97,0.14
+2026-10-31T15:00Z,lowpoint,SH-033,"Menlo Park shoreline, Ravenswood Slough watershed",9.15,2026-11-01T00:00Z,3.33,269,,8.96,0.19
+2026-10-31T15:00Z,lowpoint,SH-034,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,846,,9.02,0.02
+2026-10-31T15:00Z,lowpoint,SH-035,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,913,,9.01,0.03
+2026-10-31T15:00Z,lowpoint,SH-036,"Redwood City shoreline, Steinberger Slough watershed",8.98,2026-11-01T00:00Z,3.331,54,,9.02,-0.04
+2026-10-31T15:00Z,lowpoint,SH-037,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,1529,,9.01,0.03
+2026-10-31T15:00Z,lowpoint,SH-038,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,1075,,8.98,0.07
+2026-10-31T15:00Z,lowpoint,SH-039,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,630,,9.02,-0.01
+2026-10-31T15:00Z,lowpoint,SH-040,"Menlo Park shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,933,,9.0,0.05
+2026-10-31T15:00Z,lowpoint,SH-041,"South San Francisco shoreline, Colma Creek watershed",8.55,2026-10-31T23:00Z,3.317,964,,8.35,0.2
+2026-10-31T15:00Z,lowpoint,SH-042,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,1308,,8.98,0.07
+2026-10-31T15:00Z,lowpoint,SH-043,"Redwood City shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,284,,9.01,0.04
+2026-10-31T15:00Z,lowpoint,SH-044,"Redwood City shoreline, Cordilleras Creek watershed",9.0,2026-11-01T00:00Z,3.331,407,,9.02,-0.02
+2026-10-31T15:00Z,lowpoint,SH-045,"South San Francisco shoreline, San Bruno Creek watershed",8.56,2026-10-31T23:00Z,3.319,109,,8.41,0.15
+2026-10-31T15:00Z,lowpoint,SH-046,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,159,,9.02,0.02
+2026-10-31T15:00Z,lowpoint,SH-047,"Foster City shoreline, Belmont Slough watershed",8.79,2026-10-31T23:00Z,3.33,42,,8.94,-0.15
+2026-10-31T15:00Z,lowpoint,SH-048,"Redwood City shoreline, Belmont Slough watershed",8.8,2026-10-31T23:00Z,3.33,35,,8.97,-0.17
+2026-10-31T15:00Z,lowpoint,SH-049,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,306,,8.98,0.07
+2026-10-31T15:00Z,lowpoint,SH-050,"Millbrae shoreline, Highline Creek watershed",8.6,2026-10-31T23:00Z,3.321,52,,8.5,0.1
+2026-10-31T15:00Z,lowpoint,SH-051,"Menlo Park shoreline, Ravenswood Slough watershed",9.15,2026-11-01T00:00Z,3.33,1015,,8.97,0.18
+2026-10-31T15:00Z,lowpoint,SH-052,"Menlo Park shoreline, Ravenswood Slough watershed",9.16,2026-11-01T00:00Z,3.33,464,,8.96,0.2
+2026-10-31T15:00Z,lowpoint,SH-053,"Foster City shoreline, Belmont Slough watershed",8.8,2026-10-31T23:00Z,3.33,60,,8.96,-0.16
+2026-10-31T15:00Z,lowpoint,SH-054,"Redwood City shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,704,,9.01,0.04
+2026-10-31T15:00Z,lowpoint,SH-055,"Redwood City shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,366,,9.01,0.04
+2026-10-31T15:00Z,lowpoint,SH-056,"Redwood City shoreline, Steinberger Slough watershed",8.97,2026-11-01T00:00Z,3.331,50,,9.01,-0.04
+2026-10-31T15:00Z,lowpoint,SH-057,"Redwood City shoreline, Belmont Slough watershed",8.81,2026-10-31T23:00Z,3.33,61,,8.96,-0.15
+2026-10-31T15:00Z,lowpoint,SH-058,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,467,,9.02,-0.01
+2026-10-31T15:00Z,lowpoint,SH-059,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,1010,,8.98,0.07
+2026-10-31T15:00Z,lowpoint,SH-060,"Menlo Park shoreline, Ravenswood Slough watershed",9.13,2026-11-01T00:00Z,3.33,702,,8.97,0.16
+2026-10-31T15:00Z,lowpoint,SH-061,"South San Francisco shoreline, Highline Creek watershed",8.56,2026-10-31T23:00Z,3.319,51,,8.42,0.14
+2026-10-31T15:00Z,lowpoint,SH-062,"San Mateo shoreline, Guanold watershed",8.69,2026-10-31T23:00Z,3.328,236,,8.82,-0.13
+2026-10-31T15:00Z,lowpoint,SH-063,"San Bruno shoreline, El Zanjon Creek watershed",8.56,2026-10-31T23:00Z,3.319,48,,8.42,0.14
+2026-10-31T15:00Z,lowpoint,SH-064,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,400,,8.98,0.07
+2026-10-31T15:00Z,lowpoint,SH-065,"Redwood City shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,606,,9.01,0.04
+2026-10-31T15:00Z,lowpoint,SH-066,"Redwood City shoreline, Redwood Creek watershed",8.98,2026-11-01T00:00Z,3.331,431,,9.01,-0.03
+2026-10-31T15:00Z,lowpoint,SH-067,"Millbrae shoreline, Highline Creek watershed",8.6,2026-10-31T23:00Z,3.321,33,,8.52,0.08
+2026-10-31T15:00Z,lowpoint,SH-068,"Redwood City shoreline, Steinberger Slough watershed",8.87,2026-11-01T00:00Z,3.331,423,,9.0,-0.13
+2026-10-31T15:00Z,lowpoint,SH-069,"Redwood City shoreline, Steinberger Slough watershed",8.86,2026-11-01T00:00Z,3.331,48,,8.99,-0.13
+2026-10-31T15:00Z,lowpoint,SH-070,"Menlo Park shoreline, Ravenswood Slough watershed",9.16,2026-11-01T00:00Z,3.33,753,,8.97,0.19
+2026-10-31T15:00Z,lowpoint,SH-071,"Redwood City shoreline, Redwood Creek watershed",9.0,2026-11-01T00:00Z,3.331,77,,9.02,-0.02
+2026-10-31T15:00Z,lowpoint,SH-072,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,970,,9.98,-0.93
+2026-10-31T15:00Z,lowpoint,SH-073,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,48,,9.99,-0.94
+2026-10-31T15:00Z,lowpoint,SH-074,"Redwood City shoreline, Redwood Creek watershed",8.98,2026-11-01T00:00Z,3.331,175,,10.01,-1.03
+2026-10-31T15:00Z,lowpoint,SH-075,"Redwood City shoreline, Cordilleras Creek watershed",8.97,2026-11-01T00:00Z,3.331,697,,10.01,-1.04
+2026-10-31T15:00Z,lowpoint,SH-076,"Redwood City shoreline, Steinberger Slough watershed",8.91,2026-11-01T00:00Z,3.331,518,,10.0,-1.09
+2026-10-31T15:00Z,lowpoint,SH-077,"East Palo Alto shoreline, San Francisquito Creek watershed",9.2,2026-11-01T00:00Z,3.33,964,,9.95,-0.75
+2026-10-31T15:00Z,lowpoint,SH-078,"Menlo Park shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,1223,,10.0,-0.95
+2026-10-31T15:00Z,lowpoint,SH-079,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,1506,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-080,"Redwood City shoreline, Steinberger Slough watershed",8.86,2026-11-01T00:00Z,3.331,63,,9.99,-1.13
+2026-10-31T15:00Z,lowpoint,SH-081,"Menlo Park shoreline, Ravenswood Slough watershed",9.16,2026-11-01T00:00Z,3.33,620,,9.97,-0.81
+2026-10-31T15:00Z,lowpoint,SH-082,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,1593,,10.01,-0.97
+2026-10-31T15:00Z,lowpoint,SH-083,"Redwood City shoreline, Steinberger Slough watershed",8.97,2026-11-01T00:00Z,3.331,46,,10.01,-1.04
+2026-10-31T15:00Z,lowpoint,SH-084,"Menlo Park shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,323,,10.01,-0.96
+2026-10-31T15:00Z,lowpoint,SH-085,"Burlingame shoreline, Mills Creek watershed",8.61,2026-10-31T23:00Z,3.322,501,,9.58,-0.97
+2026-10-31T15:00Z,lowpoint,SH-086,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.331,1084,,10.0,-0.95
+2026-10-31T15:00Z,lowpoint,SH-087,"Millbrae shoreline, Highline Creek watershed",8.6,2026-10-31T23:00Z,3.321,129,,9.52,-0.92
+2026-10-31T15:00Z,lowpoint,SH-088,"Burlingame shoreline, El Portal Creek watershed",8.6,2026-10-31T23:00Z,3.321,407,,9.53,-0.93
+2026-10-31T15:00Z,lowpoint,SH-089,"Menlo Park shoreline, Ravenswood Slough watershed",9.15,2026-11-01T00:00Z,3.33,841,,9.97,-0.82
+2026-10-31T15:00Z,lowpoint,SH-090,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,380,,10.02,-1.01
+2026-10-31T15:00Z,lowpoint,SH-091,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,630,,10.02,-1.01
+2026-10-31T15:00Z,lowpoint,SH-092,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,38,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-093,"East Palo Alto shoreline, San Francisquito Creek watershed",9.19,2026-11-01T00:00Z,3.33,328,,9.96,-0.77
+2026-10-31T15:00Z,lowpoint,SH-094,"Redwood City shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,871,,10.01,-0.96
+2026-10-31T15:00Z,lowpoint,SH-095,"South San Francisco shoreline, San Bruno Creek watershed",8.56,2026-10-31T23:00Z,3.319,42,,9.4,-0.84
+2026-10-31T15:00Z,lowpoint,SH-096,"Belmont shoreline, Seal Slough watershed",8.8,2026-10-31T23:00Z,3.33,722,,9.96,-1.16
+2026-10-31T15:00Z,lowpoint,SH-097,"Menlo Park shoreline, Ravenswood Slough watershed",9.1,2026-11-01T00:00Z,3.33,64,,9.97,-0.87
+2026-10-31T15:00Z,lowpoint,SH-098,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,42,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-099,"Redwood City shoreline, Steinberger Slough watershed",8.98,2026-11-01T00:00Z,3.331,932,,10.01,-1.03
+2026-10-31T15:00Z,lowpoint,SH-100,"East Palo Alto shoreline, San Francisquito Creek watershed",9.19,2026-11-01T00:00Z,3.33,91,,9.95,-0.76
+2026-10-31T15:00Z,lowpoint,SH-101,"Redwood City shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,338,,10.01,-0.96
+2026-10-31T15:00Z,lowpoint,SH-102,"South San Francisco shoreline, San Bruno Creek watershed",8.55,2026-10-31T23:00Z,3.318,141,,9.39,-0.84
+2026-10-31T15:00Z,lowpoint,SH-103,"Millbrae shoreline, Highline Creek watershed",8.6,2026-10-31T23:00Z,3.321,506,,9.52,-0.92
+2026-10-31T15:00Z,lowpoint,SH-104,"Menlo Park shoreline, Ravenswood Slough watershed",9.16,2026-11-01T00:00Z,3.33,1006,,9.97,-0.81
+2026-10-31T15:00Z,lowpoint,SH-105,"Menlo Park shoreline, Ravenswood Slough watershed",9.15,2026-11-01T00:00Z,3.33,418,,9.97,-0.82
+2026-10-31T15:00Z,lowpoint,SH-106,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,1228,,10.01,-0.97
+2026-10-31T15:00Z,lowpoint,SH-107,"Redwood City shoreline, Atherton Creek watershed",9.04,2026-11-01T00:00Z,3.331,497,,10.01,-0.97
+2026-10-31T15:00Z,lowpoint,SH-108,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,780,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-109,"San Mateo shoreline, San Mateo Creek watershed",8.68,2026-10-31T23:00Z,3.327,632,,9.78,-1.1
+2026-10-31T15:00Z,lowpoint,SH-110,"South San Francisco shoreline, Colma Creek watershed",8.54,2026-10-31T23:00Z,3.318,60,,9.36,-0.82
+2026-10-31T15:00Z,lowpoint,SH-111,"Foster City shoreline, Bay Slough watershed",8.79,2026-10-31T23:00Z,3.33,80,,9.94,-1.15
+2026-10-31T15:00Z,lowpoint,SH-112,"Burlingame shoreline, Easton Creek watershed",8.61,2026-10-31T23:00Z,3.322,663,,9.59,-0.98
+2026-10-31T15:00Z,lowpoint,SH-113,"Menlo Park shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,38,,10.0,-0.95
+2026-10-31T15:00Z,lowpoint,SH-114,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,659,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-115,"Menlo Park shoreline, Ravenswood Slough watershed",9.14,2026-11-01T00:00Z,3.33,498,,9.97,-0.83
+2026-10-31T15:00Z,lowpoint,SH-116,"Millbrae shoreline, Highline Creek watershed",8.6,2026-10-31T23:00Z,3.321,34,,9.5,-0.9
+2026-10-31T15:00Z,lowpoint,SH-117,"Redwood City shoreline, Redwood Creek watershed",9.01,2026-11-01T00:00Z,3.331,74,,10.02,-1.01
+2026-10-31T15:00Z,lowpoint,SH-118,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,65,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-119,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,281,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-120,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,933,,9.97,-0.92
+2026-10-31T15:00Z,lowpoint,SH-121,"East Palo Alto shoreline, Ravenswood Slough watershed",9.18,2026-11-01T00:00Z,3.33,711,,9.96,-0.78
+2026-10-31T15:00Z,lowpoint,SH-122,"Burlingame shoreline, El Portal Creek watershed",8.6,2026-10-31T23:00Z,3.322,82,,9.54,-0.94
+2026-10-31T15:00Z,lowpoint,SH-123,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,1239,,10.01,-0.97
+2026-10-31T15:00Z,lowpoint,SH-124,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,1181,,9.99,-0.94
+2026-10-31T15:00Z,lowpoint,SH-125,"Millbrae shoreline, Highline Creek watershed",8.6,2026-10-31T23:00Z,3.321,848,,9.52,-0.92
+2026-10-31T15:00Z,lowpoint,SH-126,"Menlo Park shoreline, Ravenswood Slough watershed",9.15,2026-11-01T00:00Z,3.33,179,,9.96,-0.81
+2026-10-31T15:00Z,lowpoint,SH-127,"Burlingame shoreline, Sanchez Creek watershed",8.63,2026-10-31T23:00Z,3.324,184,,9.65,-1.02
+2026-10-31T15:00Z,lowpoint,SH-128,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,683,,10.02,-0.98
+2026-10-31T15:00Z,lowpoint,SH-129,"South San Francisco shoreline, Colma Creek watershed",8.55,2026-10-31T23:00Z,3.317,423,,9.37,-0.82
+2026-10-31T15:00Z,lowpoint,SH-130,"San Bruno shoreline, San Bruno Creek watershed",8.56,2026-10-31T23:00Z,3.319,94,,9.41,-0.85
+2026-10-31T15:00Z,lowpoint,SH-131,"Redwood City shoreline, Steinberger Slough watershed",8.86,2026-10-31T23:00Z,3.331,134,,10.0,-1.14
+2026-10-31T15:00Z,lowpoint,SH-132,"San Bruno shoreline, El Zanjon Creek watershed",8.56,2026-10-31T23:00Z,3.319,23,,9.42,-0.86
+2026-10-31T15:00Z,lowpoint,SH-133,"San Bruno shoreline, San Bruno Creek watershed",8.56,2026-10-31T23:00Z,3.318,1356,,9.42,-0.86
+2026-10-31T15:00Z,lowpoint,SH-134,"Redwood City shoreline, Cordilleras Creek watershed",9.0,2026-11-01T00:00Z,3.331,260,,10.02,-1.02
+2026-10-31T15:00Z,lowpoint,SH-135,"Menlo Park shoreline, Ravenswood Slough watershed",9.05,2026-11-01T00:00Z,3.33,982,,9.99,-0.94
+2026-10-31T15:00Z,lowpoint,SH-136,"Menlo Park shoreline, Atherton Creek watershed",9.05,2026-11-01T00:00Z,3.331,1411,,10.0,-0.95
+2026-10-31T15:00Z,lowpoint,SH-137,"Redwood City shoreline, Belmont Slough watershed",8.8,2026-10-31T23:00Z,3.33,97,,9.97,-1.17
+2026-10-31T15:00Z,lowpoint,SH-138,"Redwood City shoreline, Cordilleras Creek watershed",9.0,2026-11-01T00:00Z,3.331,21,,10.02,-1.02
+2026-10-31T15:00Z,lowpoint,SH-139,"South San Francisco shoreline, Colma Creek watershed",8.55,2026-10-31T23:00Z,3.317,1066,,9.35,-0.8
+2026-10-31T15:00Z,lowpoint,SH-140,"Redwood City shoreline, Redwood Creek watershed",9.04,2026-11-01T00:00Z,3.331,1289,,10.01,-0.97
+2026-10-31T15:00Z,gauge,9414290,San Francisco,,,3.29,92,0.038
+2026-10-31T15:00Z,gauge,9414750,Alameda,,,3.331,68,0.044
+2026-10-31T15:00Z,gauge,9414523,Redwood City,,,3.331,68,0.052
