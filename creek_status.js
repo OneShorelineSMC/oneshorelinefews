@@ -493,6 +493,9 @@
     if (notes.length) h += '<div class="cs-bnotes">' + (SV ? '<span class="sv-ink sv-offline">' + SV.icon("offline") + "</span>" : "") +
       "<span>" + notes.map(esc).join("<br>") + "</span></div>";
     if (!act.length) h += '<p class="cs-wscope">' + esc(T("home_none_note")) + ' <span class="cs-dim">Updated ' + esc(clock(data.generated)) + ".</span></p>";
+    // what these alerts cover (staff, 2026-10-31): creeks rising with rain, not high tides backing up the tidal reaches
+    var tidesHref = "Tides.html" + (/[?&]preview=1\b/.test(location.search) ? "?preview=1" : "");
+    h += '<p class="cs-wscope cs-wtide">' + esc(T("home_creek_scope")) + ' <a href="' + tidesHref + '">' + esc(T("home_creek_scope_link")) + "</a></p>";
     h += "</div>";
     if (groups.length) h += '<p class="cs-wdo"><b>What to do:</b> ' + esc(T("verdict_" + groups[0].k + "_todo")) + "</p>";   // for the worst status
     if (groups.some(function (g) { return g.k === "likely" || g.k === "ready"; })) {
@@ -715,6 +718,7 @@
     ".cs-wrow .cs-bwhy{-webkit-line-clamp:3}",
     ".cs-wnone{display:flex;align-items:center;gap:10px;padding:16px 14px 6px;font-size:18px;font-weight:700;color:var(--ink,#16202b)}",
     ".cs-wscope{margin:0;padding:0 14px 14px;font-size:14px;line-height:1.45;color:var(--muted,#556274)}",
+    ".cs-wscope+.cs-wtide{margin-top:-6px}.cs-wtide{border-top:1px solid var(--line,#e3e8ee);padding-top:10px}.cs-wtide a{font-weight:600;white-space:nowrap}",
     ".cs-wboard .cs-bquiet a{font-weight:600}.cs-wdo{margin:0 0 10px;font-size:14.5px;line-height:1.45}",
     "@media (max-width:640px){.cs-wcols{display:none}.cs-bhead{flex-wrap:wrap;gap:2px 10px}" +
     ".cs-wrow{grid-template-columns:8px 1fr auto 14px;grid-template-areas:'b n w g' 'b y y g' 'b r s g';row-gap:3px;padding:7px 10px 7px 0}" +

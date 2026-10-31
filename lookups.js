@@ -145,6 +145,8 @@
     home_none: "No alerts at OneShoreline’s creek gauges right now",
     home_none_offline: "{creeks} gauge not reporting",
     home_none_note: "Conditions can change quickly in a storm; watch for National Weather Service alerts and flooding where you are.",
+    home_creek_scope: "Creek alerts come from creek gauges and rain: they warn when a creek rises enough to flood downstream. They don’t show high-tide flooding in low-lying areas along tidally connected creeks.",
+    home_creek_scope_link: "See Bay tides ›",
     tide_day_astro: "Astronomical high tide: the tide table reaches the 1-year tide ({ft} ft)",
     tide_day_astro_short: "Astronomical high tide (the tide table reaches the 1-year tide)",
     tide_upcoming_note: "Based on the tide table plus current conditions: NOAA’s projection for the next 2 days, then how high the {water} has been running. Coastal storms after that aren’t included and can push water higher.",
