@@ -511,6 +511,33 @@ Done Oct 15, 2026; see [RISING_FAST_BASIS.md](RISING_FAST_BASIS.md) for the rule
 and the choices made. It also records which parts of the earlier plan (fitted slope, 99th-percentile threshold,
 minimum stage, tide subtraction) were not used, and why. Rerun `scripts/evaluate_rising_fast.py` after each winter.
 
+## 12. Storms at each creek (storm tracker) — `settings.csv` `STORM_*`, `scripts/storm_tracker.py`
+
+Added Oct 31, 2026 (Summer: live capture in this repo; the OneRain archive fills in earlier seasons with the **same rules**).
+Shown on the staff page `StormTracker.html`; nothing public. Provisional: tune after the first few storms.
+
+- **Wet hour:** any of the creek's rain gauges (its own and its supporting gauges in `creek_gauges.csv`) has at least
+  `STORM_WET_IN` (0.01 in) in the clock hour. A report at 10:00 is the rain of 9:00–10:00.
+- **Storm:** wet hours less than `STORM_DRY_HOURS` (6) apart are one storm, from its first wet hour to its last. It counts
+  when one of the creek's gauges has at least `STORM_MIN_IN` (0.10 in) in it. A storm spanning two creeks is one storm at
+  each (each creek has its own gauges).
+- **Rain at each gauge:** total; the largest amount in any 1, 3, 6, 12 and 24 consecutive hours (from hourly sums); the
+  largest 15- and 30-minute totals (sampled from the data job's rolling totals every run while the storm is open; a
+  backfill from raw readings can compute them directly). Each rated against NOAA Atlas 14 at that gauge (§8): level
+  1–3 = Heavy / Very heavy / Intense, plus a rough storm size in years (log-log between Atlas 14 values). The storm's rain
+  level is the highest at any of its gauges.
+- **Creek response:** each creek level gauge's highest hourly reading from the storm's start to `STORM_RESPONSE_HOURS`
+  (12) after its last wet hour; when it came; hours whose highest reading reached each flood level (§1); the highest
+  level reached. Lag: from the wettest hour at the creek's own (not supporting) gauge to the peak, given only when the creek
+  rose at least 0.1 ft and peaked after that hour. Tidal gauges also move with the tide.
+- **Closed:** `STORM_DRY_HOURS` + `STORM_RESPONSE_HOURS` after the last wet hour with no new rain joining it; then kept
+  as it is. Also kept: the highest creek status during the storm, rising fast seen, gauges that went quiet.
+- **Season:** water year from Oct 1. Rain per gauge per day, each level gauge's highest reading per day, each creek's
+  highest status per day, and each gauge's share of data runs when it had reported recently.
+- **For the archive backfill:** produce `storms` entries in the same shape as `storm_tracker.json` (one per creek per
+  storm, with `rain[].peaks`, `levels[]`, `series`), and day totals for `days.rain` / `days.level`; the live job keeps any
+  storm already in the list.
+
 ## Data sources
 
 | Data | Source | How the pages get it | Refresh |

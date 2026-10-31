@@ -54,4 +54,7 @@ FORECAST_KEEP_HOURS,12,hours,"data job, creek cards","If NWS can't be reached, k
 STORM_MODE,0,"0, 1 or 2",gauge pages,"0 = each gauge page picks storm or normal view by itself (National Weather Service flood or rain products, creek alerts, or rain at the gauges); 1 = storm view everywhere; 2 = normal view everywhere. Viewers can still switch on the page.",,
 STORM_RAIN_3H_IN,0.1,in,gauge pages,Automatic storm view: a rain gauge with at least this much rain in the last 3 hours counts as a storm.,,
 STORM_RAIN_24H_IN,0.5,in,gauge pages,Automatic storm view: or at least this much in the last 24 hours.,,
-STORM_DRY_HOURS,6,hours,gauge pages,Storm total: the storm starts after the last stretch of at least this many hours with no rain.,,
+STORM_DRY_HOURS,6,hours,"gauge pages, storm tracker","Storm total (gauge pages) and storms (storm tracker): a storm starts after, and ends with, a stretch of at least this many hours with no rain.",,
+STORM_MIN_IN,0.1,in,storm tracker,A storm at a creek counts when one of its rain gauges gets at least this much.,,
+STORM_WET_IN,0.01,in,storm tracker,An hour is wet (part of a storm) when one of the creek's rain gauges gets at least this much.,,
+STORM_RESPONSE_HOURS,12,hours,storm tracker,"The creek's response (its peak, hours at each flood level) is read until this long after the rain ends; the storm is closed after that.",,
