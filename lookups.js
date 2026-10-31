@@ -163,6 +163,7 @@
     home_gauge_out_note: "{creek}: creek gauge out of service, so its level isn’t known right now.",
     home_gauge_silent_note: "{creek}: creek gauge not reporting, so its level isn’t known right now.",
     tide_flood_where: "near the Bay shoreline and in low-lying areas along tidally connected creeks",
+    tide_flood_where_short: "near the Bay shoreline and tidal creeks",   // kiosk one-line versions
     hero_tide_head: "Flooding likely near the Bay shoreline and in low-lying areas along tidally connected creeks {when}",
     hero_tide_strip: "{when}: flooding likely near the Bay shoreline and tidal creeks",   // kiosk alert strip: one line, time first
     hero_tide_peak: "highest around {time}",

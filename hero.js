@@ -152,8 +152,11 @@
       var last = D.obs && D.obs.length ? D.obs[D.obs.length - 1] : null, observed = !!(last && now - last.t < 36e5 && last.v >= red), f = flood[0];
       st.level = SV.cap("advisory", SV.nwsFor(o.nws || [], "tide"), observed);
       st.flood = f; st.when = when(f); st.peakT = f.peakT; st.peakClock = clock(f.peakT); st.started = f.start <= now;
-      st.head = (st.level === "advisory" ? "Flooding likely" : "Flooding possible") + " " + LK.text("tide_flood_where") + " " + st.when;   // staff wording, display_text.csv
-      st.word = st.level === "advisory" ? "Flooding likely" : "Flooding possible"; st.more = flood.length - 1;
+      var fl = st.level === "advisory" ? "Flooding likely" : "Flooding possible", bay = water === "Bay";
+      st.head = fl + " " + (bay ? LK.text("tide_flood_where") : "in low areas near the " + water) + " " + st.when;   // staff wording, display_text.csv
+      // kiosk (one line): time first so it isn't cut off
+      st.short = st.when.charAt(0).toUpperCase() + st.when.slice(1) + ": " + fl.toLowerCase() + " " + (bay ? LK.text("tide_flood_where_short") : "in low areas near the " + water);
+      st.word = st.level === "advisory" ? "Tidal flooding likely" : "Tidal flooding possible"; st.more = flood.length - 1;
     } else if (ups.length) {
       st.level = "watch"; st.when = when(ups[0]); st.head = "Higher than usual tide " + st.when + (isFinite(red) ? ". No flooding expected" : "");
       st.word = "Higher than usual"; st.more = ups.length - 1;

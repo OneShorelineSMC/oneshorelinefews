@@ -888,8 +888,11 @@ function renderTides() {
     var ts = HERO.tideState({ D: { pred: s.pred, obs: s.obs, ofs: modelOK(s, now) ? s.ofs : null }, mhhw: st.mhhw, red: redFor(st),
       water: st.id === "9414523" ? "Bay" : "ocean", nws: A.list || [], now: now });
     hd.className = "sv-card sv-" + ts.level;
-    hm.innerHTML = esc(ts.head) + '<span class="hd"><span class="lvw sv-ink sv-' + ts.level + '">' + SEVERITY.icon(ts.level) + esc(ts.word) + "</span>" +
+    hm.innerHTML = esc(ts.short || ts.head) + '<span class="hd"><span class="lvw sv-ink sv-' + ts.level + '">' + SEVERITY.icon(ts.level) + esc(ts.word) + "</span>" +
       (ts.more > 0 ? " · +" + ts.more + " more this week" : "") + (ts.tech.length ? " · " + esc(ts.tech.join(" · ")) : "") + "</span>";
+    // shrink a long title line (down to 14.5px) before the ellipsis cuts it off; the line under it keeps its own size
+    hm.style.fontSize = ""; var hd0 = hm.querySelector(".hd"); if (hd0) hd0.style.fontSize = "13px";
+    for (var hf = parseFloat(getComputedStyle(hm).fontSize); hf > 14.5 && hm.scrollWidth > hm.clientWidth; hf -= 0.5) hm.style.fontSize = (hf - 0.5) + "px";
     if (typeof renderSeason === "function") renderSeason();
     if (st.id === "9414523") renderAlerts();   // the Bay window in the alert strip, from the same series
   }
