@@ -77,8 +77,16 @@
   .lvls b { color: var(--text); }
   .note { font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
   .olink { display: inline-block; font-weight: 600; margin: 4px 0 0; min-height: 24px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  /* graph and its numbers: side by side on wide screens (graph left), numbers under the graph on phones */
+  .gd { display: grid; grid-template-columns: 1fr; gap: 6px 22px; align-items: start; }
+  .gcol, .dcol { min-width: 0; }
+  .dcol { margin-top: 8px; }
+  @media (min-width: 760px) { .gd { grid-template-columns: minmax(0, 1.7fr) minmax(250px, 1fr); } .dcol { margin-top: 4px; } .gbox.tall { height: 260px; } }
+  .rare { margin: 6px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .trend { margin: 4px 0 0; font-size: 15px; }
+  .trend.fast { font-weight: 700; color: var(--lv3); }
+  table.lvt { margin-top: 8px; }
+  .dcol .cs-chip { white-space: nowrap; }
   .empty { color: var(--muted); }
   .fine { font-size: 13px; color: var(--muted); margin: 14px 4px 0; }
   nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); border-top: 1px solid var(--line);
@@ -289,8 +297,8 @@ function rainChart(id, R, now) {
       { type: "line", label: "Running total", data: cpts, borderColor: css("--cum"), borderWidth: 2, pointRadius: 0, stepped: false, yAxisID: "y2" }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { title: tipTitle(now), label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " in"; } } } },
-      scales: { x: xAxis(x0, now, now), y: { beginAtZero: true, suggestedMax: maxB, position: "left", ticks: { color: css("--muted") }, grid: { color: css("--line") }, title: { display: true, text: "in per hour", color: css("--muted") } },
-        y2: { beginAtZero: true, suggestedMax: Math.max(cum, 0.2), position: "right", ticks: { color: css("--muted") }, grid: { display: false }, title: { display: true, text: "running total (in)", color: css("--muted") } } } } });
+      scales: { x: xAxis(x0, now, now), y: { beginAtZero: true, grace: "10%", suggestedMax: maxB, position: "left", ticks: { color: css("--muted") }, grid: { color: css("--line") }, title: { display: true, text: "in per hour", color: css("--muted") } },
+        y2: { beginAtZero: true, grace: "10%", suggestedMax: Math.max(cum, 0.2), position: "right", ticks: { color: css("--muted") }, grid: { display: false }, title: { display: true, text: "running total (in)", color: css("--muted") } } } } });
 }
 function levelChart(id, L, now, hours) {
   var x0 = now - hours * 36e5, pts = L.pts.filter(function (p) { return p[0] >= x0 && p[0] <= now + 6e5; }).map(function (p) { return { x: (p[0] - now) / 36e5, y: p[1] }; });
@@ -310,6 +318,8 @@ function levelChart(id, L, now, hours) {
 
 /* ---------- the page ---------- */
 function chip(l) { return window.CREEK_STATUS && CREEK_STATUS.chip ? CREEK_STATUS.chip(l, false) : esc(["", "Heavy", "Very heavy", "Intense"][l] || ""); }
+// Each card: the graph first, then its numbers. Wide screens: side by side (graph left); phones: the numbers under the graph.
+function gd(graph, data) { return graph ? '<div class="gd"><div class="gcol">' + graph + '</div><div class="dcol">' + data + "</div></div>" : data; }
 function rainCard(G, storm, now) {
   var R = G.rain, f = R.freq, rows = "", drv = null;
   WINS.forEach(function (w) {
@@ -318,30 +328,30 @@ function rainCard(G, storm, now) {
     var l = levelOf(f, w[0], v); if (l && (!drv || l > drv.l)) drv = { l: l, w: w[1] };
     rows += "<tr" + (l ? ' class="drv"' : "") + "><td>" + w[1] + '</td><td class="n">' + inch(v) + " in</td><td>" + (l ? chip(l) : f ? '<span class="empty">below Heavy</span>' : '<span class="empty">–</span>') + "</td></tr>";
   });
-  var st = R.storm, h = '<div class="card"><h2>Rain</h2>';
-  h += '<div class="grid2"><div><div class="big">' + (st ? inch(st.inches) : "0.00") + " <small>in</small></div>" +
-    '<p class="sub">' + (st ? (st.cut ? "at least, in the last " + R.hours + " hours (the rain began earlier)" : "this storm, since " + fWhen(st.start, now)) : "no rain in the last " + R.hours + " hours") + "</p></div>" +
-    "<div>" + (drv ? '<div class="big" style="font-size:22px">' + chip(drv.l) + '</div><p class="sub">rarest window: ' + drv.w + "</p>" : !st ? "" : f ? '<p class="sub">Below the Heavy level in every window.</p>' : '<p class="sub">No rain levels set for this gauge.</p>') + "</div></div>";
-  if (storm) h += "<table><thead><tr><th>Rain in the last</th><th class='n'>Amount</th><th>How rare</th></tr></thead><tbody>" + rows + "</tbody></table>" +
-    '<p class="note">How rare: NOAA Atlas 14 at this gauge. Heavy = the 1-year storm for that window (reached in most years), Very heavy = 2-year, Intense = 5-year. ' +
-    "It says how unusual the rain is, not whether a creek floods.</p>";
-  if (st || storm) h += '<div class="gbox tall"><canvas id="chRain" role="img" aria-label="Rain each hour and the running total, last ' + R.hours + ' hours"></canvas></div>' +
-    '<div class="key"><span><i style="height:10px;background:' + css("--rain") + '"></i>Rain each hour</span><span><i style="border-top:2px solid ' + css("--cum") + '"></i>Running total</span></div>';
-  h += '<p class="sub">Last report ' + (R.last ? fWhen(R.last, now) + " (" + ago(now - R.last) + ")" : "–") + ". Rain gauges report every few hours in dry weather and with each bit of rain in a storm.</p></div>";
-  return h;
+  var st = R.storm;
+  var data = '<div class="big">' + (st ? inch(st.inches) : "0.00") + " <small>in</small></div>" +
+    '<p class="sub">' + (st ? (st.cut ? "at least, in the last " + R.hours + " hours (the rain began earlier)" : "this storm, since " + fWhen(st.start, now)) : "no rain in the last " + R.hours + " hours") + "</p>" +
+    (drv ? '<p class="rare">' + chip(drv.l) + ' <span class="sub">rarest window: ' + drv.w + "</span></p>" : !st ? "" : f ? '<p class="sub">Below the Heavy level in every window.</p>' : '<p class="sub">No rain levels set for this gauge.</p>');
+  if (storm) data += "<table><thead><tr><th>Rain in the last</th><th class='n'>Amount</th><th>How rare</th></tr></thead><tbody>" + rows + "</tbody></table>";
+  data += '<p class="sub">Last report ' + (R.last ? fWhen(R.last, now) + " (" + ago(now - R.last) + ")" : "–") + ".</p>";
+  var graph = st || storm ? '<div class="gbox tall"><canvas id="chRain" role="img" aria-label="Rain each hour and the running total, last ' + R.hours + ' hours"></canvas></div>' +
+    '<div class="key"><span><i style="height:10px;background:' + css("--rain") + '"></i>Rain each hour</span><span><i style="border-top:2px solid ' + css("--cum") + '"></i>Running total</span></div>' : "";
+  return '<div class="card"><h2>Rain</h2>' + gd(graph, data) +
+    (storm ? '<p class="note">How rare: NOAA Atlas 14 at this gauge. Heavy = the 1-year storm for that window (reached in most years), Very heavy = 2-year, Intense = 5-year. ' +
+      "It says how unusual the rain is, not whether a creek floods. Rain gauges report every few hours in dry weather and with each bit of rain in a storm.</p>" : "") + "</div>";
 }
 function levelCard(L, i, now, hours) {
   var sig = L.sig || {}, tr = sig.trend, words = { fast: "rising fast", rising: "rising", steady: "steady", falling: "falling" };
   var at = null; (L.thresholds || []).forEach(function (t) { if (L.last && L.last[1] >= t.value) at = t; });
-  var h = '<div class="card"><h2>' + esc(L.name) + "</h2>";
-  h += '<div class="big">' + (L.last ? L.last[1].toFixed(2) : "–") + " <small>" + esc(L.unit) + "</small></div>" +
-    '<p class="sub">' + (L.last ? fWhen(L.last[0], now) + " (" + ago(now - L.last[0]) + ")" : "no recent reading") +
-    (tr ? " · " + (words[tr] || tr) + (sig.ft_per_hr != null && tr !== "steady" ? " " + (sig.ft_per_hr > 0 ? "+" : "") + sig.ft_per_hr.toFixed(2) + " ft/hr" : "") : "") +
-    (at ? " · <b>at " + esc(at.name) + "</b>" : "") + "</p>";
-  if ((L.thresholds || []).length) h += '<div class="lvls">' + L.thresholds.map(function (t) { return "<span>" + esc(t.name) + " <b>" + t.value + " " + esc(L.unit) + "</b></span>"; }).join("") + "</div>";
-  h += '<div class="gbox"><canvas id="chLv' + i + '" role="img" aria-label="' + esc(L.name) + ', last ' + hours + ' hours"></canvas></div><div class="key" id="kLv' + i + '"></div>';
-  if (L.g && L.g.tidal) h += '<p class="note">This gauge is affected by the tide, so its level goes up and down with the Bay as well as with rain. See the creek page for the tide.</p>';
-  return h + "</div>";
+  var data = '<div class="big">' + (L.last ? L.last[1].toFixed(2) : "–") + " <small>" + esc(L.unit) + "</small></div>" +
+    '<p class="sub">' + (L.last ? fWhen(L.last[0], now) + " (" + ago(now - L.last[0]) + ")" : "no recent reading") + "</p>" +
+    (tr ? '<p class="trend' + (tr === "fast" ? " fast" : "") + '">' + esc(words[tr] || tr) + (sig.ft_per_hr != null && tr !== "steady" ? " " + (sig.ft_per_hr > 0 ? "+" : "") + sig.ft_per_hr.toFixed(2) + " ft/hr" : "") + "</p>" : "") +
+    (at ? '<p class="trend"><b>At ' + esc(at.name) + "</b></p>" : "");
+  if ((L.thresholds || []).length) data += '<table class="lvt"><tbody>' + L.thresholds.map(function (t) {
+    return "<tr" + (at === t ? ' class="drv"' : "") + "><td>" + esc(t.name) + '</td><td class="n">' + t.value + " " + esc(L.unit) + "</td></tr>"; }).join("") + "</tbody></table>";
+  var graph = '<div class="gbox"><canvas id="chLv' + i + '" role="img" aria-label="' + esc(L.name) + ', last ' + hours + ' hours"></canvas></div><div class="key" id="kLv' + i + '"></div>';
+  return '<div class="card"><h2>' + esc(L.name) + "</h2>" + gd(graph, data) +
+    (L.g && L.g.tidal ? '<p class="note">This gauge is affected by the tide, so its level goes up and down with the Bay as well as with rain. See the creek page for the tide.</p>' : "") + "</div>";
 }
 function render() {
   var now = nowLocal(), G = gauge(now);
