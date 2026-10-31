@@ -334,6 +334,17 @@
   .wlist, .flist { font-size: 14px; margin: 6px 0 0; padding: 0; list-style: none; }
   .flist li { padding: 5px 0; border-top: 1px solid var(--line); } .flist b { color: var(--red); } .flist .lv { font-size: 12.5px; color: var(--muted); }
   .clh { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
+  /* This season so far (staff, 2026-10-31): from the tide tracker's data (tide_tracker.json), between the flood-level list and the calendar */
+  #sstats { margin: 14px 0 0; padding-top: 2px; border-top: 1px solid var(--line); }
+  .sgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 6px; }
+  @media (max-width: 560px) { .sgrid { grid-template-columns: 1fr; } }
+  .stile { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .stile .sl { font-size: 13px; color: var(--muted); line-height: 1.3; }
+  .stile .sv { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.25; font-variant-numeric: tabular-nums; }
+  .stile .sv small { font-size: 13px; font-weight: 600; }
+  .stile .st { font-size: 13px; color: var(--muted); }
+  .stile.hi { border-color: var(--sv-advisory-stripe, #e07b00); }
+  .slist { margin: 4px 0 0; padding-left: 18px; font-size: 14px; } .slist li { margin: 3px 0; }
   .outl { margin: 10px 0 0; font-size: 14px; line-height: 1.45; color: var(--text); background: var(--soft); border-radius: 8px; padding: 8px 10px; }
   .calfull { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 2px; }
   .flist .go { font-weight: 700; color: var(--red); text-underline-offset: 3px; }
@@ -405,6 +416,7 @@
          footnote). The stretches are also the calendar's text version: what the red and dashed days show, in words. -->
     <h3 class="clh">Tides that could reach the flood level</h3>
     <ul class="flist" id="flist"></ul>
+    <div id="sstats" class="hide" aria-live="off"></div>
     <div class="calfull" id="calfull"><h3 class="clh" id="calh">Calendar</h3>
     <div class="ckey"><span><i style="background:var(--ambbg);box-shadow:inset 0 -3px 0 var(--amb)"></i><span data-text="tide_day_amber"></span></span>
       <span><i class="lgr"></i><span data-text="tide_day_red"></span></span>
@@ -450,10 +462,10 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261031a"></script>
-<script src="tide_season.js?v=20261031a"></script>
-<script src="severity.js?v=20261031a"></script>
-<script src="hero.js?v=20261031a"></script>
+<script src="lookups.js?v=20261031b"></script>
+<script src="tide_season.js?v=20261031b"></script>
+<script src="severity.js?v=20261031b"></script>
+<script src="hero.js?v=20261031b"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -1139,6 +1151,54 @@ function tsAdd(iso, n) { return new Date(Date.parse(iso + "T00:00:00Z") + n * 86
 function tsFmt(iso, o) { return new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
 function tsDay(iso) { return tsFmt(iso, { weekday: "short" }) + " " + tsFmt(iso, { month: "short", day: "numeric" }); }
 var TSN = COAST ? window.TIDE_SEASON_COAST : window.TIDE_SEASON;   // Monterey or Redwood City high tides, King Tides and calendar
+// ---- This season so far, from the tide tracker (written hourly by the data job). Shown only when its numbers are in.
+var TRK = null, TRK_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/tide_tracker.json";
+function seasonStats(trk) {
+  var el = $("sstats"), sid = COAST ? "9413450" : "9414523";
+  var st = trk && (trk.stations || []).filter(function (x) { return x.id === sid; })[0];
+  if (!st || !st.days || !st.history || !st.history.pace) { el.classList.add("hide"); return; }
+  var esc2 = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); };
+  var med = function (a) { a = a.slice().sort(function (x, y) { return x - y; }); var n = a.length; return n ? (n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2) : null; };
+  var lvl = function (k) { return (st.levels || []).filter(function (l) { return l.key === k; })[0]; };
+  // the season so far: complete days, plus today once its peak has passed (as on the tracker)
+  var keys = Object.keys(st.days).filter(function (k) { var d = st.days[k]; return !(d.partial && d.peak_passed === false); }).sort();
+  if (!keys.length) { el.classList.add("hide"); return; }
+  var best = keys.reduce(function (a, k) { return st.days[k].max > st.days[a].max ? k : a; }, keys[0]);
+  var top = lvl("flood") || lvl("oneyear"), mh = lvl("mhhw");
+  var cnt = function (l) { return l ? keys.filter(function (k) { return st.days[k].max >= l.ft; }).length : null; };
+  var b = st.history.base || [0, 9999], wy = +String(trk.water_year || "").replace("WY", "");
+  var past = st.history.pace.years.filter(function (y) { return y.wy >= b[0] && y.wy <= b[1] && y.wy !== wy; });
+  var typ = function (k) { var v = med(past.map(function (y) { return (y.by || {})[k]; }).filter(function (x) { return x != null; })); return v == null ? null : Math.round(v); };
+  var typMax = med(past.map(function (y) { return y.max_by; }).filter(function (x) { return x != null; }));
+  var typTxt = function (v, unit) { return v == null ? "" : '<div class="st">' + esc2(LK.text("tide_stats_typical", { v: v + (unit || "") })) + "</div>"; };
+  var d0 = best, t = st.days[best].t;
+  var when = tsFmt(d0, { month: "short", day: "numeric" }) + (t ? ", " + fmt(Date.UTC(2000, 0, 1, +t.slice(0, 2), +t.slice(3, 5)), { hour: "numeric", minute: "2-digit" }) : "");
+  var nTop = cnt(top), nMh = cnt(mh);
+  var h = '<h3 class="clh">' + esc2(LK.text("tide_stats_title", { gauge: st.name })) + "</h3>" +
+    '<p class="calpre" style="margin:2px 0 0">' + esc2(LK.text("tide_stats_since", { from: tsFmt(trk.wy_start, { month: "long", day: "numeric" }) })) + "</p>" +
+    '<div class="sgrid">' +
+    '<div class="stile"><div class="sl">' + esc2(LK.text("tide_stats_max")) + '</div><div class="sv">' + st.days[best].max.toFixed(2) + " <small>ft</small></div>" +
+      '<div class="st">' + esc2(when) + "</div>" + typTxt(typMax != null ? typMax.toFixed(2) : null, " ft") + "</div>" +
+    (mh ? '<div class="stile"><div class="sl">' + esc2(LK.text("tide_stats_mhhw", { ft: mh.ft.toFixed(2) })) + '</div><div class="sv">' + nMh + " <small>" + (nMh === 1 ? "day" : "days") + "</small></div>" + typTxt(typ("mhhw")) + "</div>" : "") +
+    (top ? '<div class="stile' + (nTop ? " hi" : "") + '"><div class="sl">' + esc2(LK.text(top.key === "flood" ? "tide_stats_flood" : "tide_stats_oneyear", { ft: top.ft.toFixed(2) })) + '</div><div class="sv">' + nTop + " <small>" + (nTop === 1 ? "day" : "days") + "</small></div>" + typTxt(typ(top.key)) + "</div>" : "") +
+    "</div>";
+  var li = [];
+  // how far above or below the tide table the water has run: the last 7 complete days
+  var wk = Object.keys(st.days).filter(function (k) { return !st.days[k].partial && st.days[k].res_mean != null; }).sort().slice(-7);
+  if (wk.length >= 4) {
+    var r = wk.reduce(function (a, k) { return a + st.days[k].res_mean; }, 0) / wk.length;
+    li.push(LK.text(Math.abs(r) < 0.1 ? "tide_stats_running_near" : r > 0 ? "tide_stats_running_above" : "tide_stats_running_below", { ft: Math.abs(r).toFixed(1), water: SIDE.water }));
+  }
+  li.push(LK.text("tide_stats_when"));
+  var e = trk.enso && trk.enso.latest;
+  if (e && e[2] >= 0.5) li.push(LK.text("tide_stats_nino", { water: SIDE.water }));
+  h += '<ul class="slist">' + li.map(function (x) { return "<li>" + esc2(x) + "</li>"; }).join("") + "</ul>";
+  el.innerHTML = h; el.classList.remove("hide");
+}
+function loadSeasonStats() {
+  fetch(TRK_URL + "?t=" + Math.floor(Date.now() / 6e5), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (j) { TRK = j; seasonStats(j); }).catch(function () { $("sstats").classList.add("hide"); });
+}
 function renderSeason() {
   var st = TSN ? TSN.line(tsDay) : null, el = $("season"), ok = !!(TSN && TSN.state.highs);
   $("calcard").classList.toggle("hide", !ok);
@@ -1362,11 +1422,12 @@ function refreshTides() { S.forEach(function (s) { loadObserved(s); }); }
 LK.onChange(function () {   // edited lookups/ files: new MHHW or settings
   applyLookups();
   S.forEach(function (s) { s.st.mhhw = LK.mhhw(s.st.id); s.st.name = LK.station(s.st.id).name; if (s.pred) { s.wins = findWindows(s.pred, s.st.mhhw); applyOfficialPeaks(s.wins, s.highs); } });
-  render(); renderSeason();
+  render(); renderSeason(); if (TRK) seasonStats(TRK);
 });
 function refreshAll() { if (!EMBED) { loadAlerts(); loadHeroData(); } S.forEach(function (s) { loadPredictions(s).then(function () { loadObserved(s); }); }); }
 refreshAll();
 S.forEach(loadModel);
+loadSeasonStats(); setInterval(loadSeasonStats, 60 * 60000);   // the tracker updates hourly
 if (!EMBED) { loadAFD(); setInterval(loadAFD, 30 * 60000); }
 setInterval(function () { S.forEach(loadModel); }, 60 * 60000);   // the model runs 4 times a day
 if (TSN) {   // Redwood City tide table (6 months ahead, twice a day) and the NOAA projection (hourly)
