@@ -227,7 +227,7 @@
     if (!q(".hh")) el.innerHTML = '<div class="hh"><span class="hic"></span><div><h2 class="hhd"></h2><p class="hsub src"></p></div></div><div class="hmore"></div>';
     if (!lead) {
       if (s.nws == null) { head = s.nwsFailed ? "National Weather Service alerts unavailable" : "Checking National Weather Service alerts…"; sub = s.nwsFailed ? "Retrying…" : "San Mateo County"; }
-      else { head = LK.text("hero_none"); sub = s.bay && s.creeks ? LK.text("hero_none_sub") : "San Mateo County"; }
+      else { head = LK.text("hero_none"); sub = s.checked ? LK.text("hero_none_checked", { time: s.checked }) : s.bay && s.creeks ? LK.text("hero_none_sub") : "San Mateo County"; }
     } else if (lead.kind === "tide") {
       head = tideHead(s.bay);
       h += '<p class="act">' + esc(LK.text("tide_red_what")) + "</p>";

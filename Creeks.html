@@ -339,10 +339,10 @@
   <button data-tab="about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261031e"></script>
-<script src="severity.js?v=20261031e"></script>
-<script src="creek_status.js?v=20261031e"></script>
-<script src="hero.js?v=20261031e"></script>
+<script src="lookups.js?v=20261102a"></script>
+<script src="severity.js?v=20261102a"></script>
+<script src="creek_status.js?v=20261102a"></script>
+<script src="hero.js?v=20261102a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -436,7 +436,8 @@ function loadAlerts() {
 function loadBay() { HERO.loadBay(function (bd) { HB.D = bd; renderHero(); }); }
 function renderHero() {
   if (HB.D) HB.bay = HERO.tideState({ D: HB.D, mhhw: LK.mhhw("9414523"), red: LK.num("TIDE_RED_FT_RWC"), water: "Bay", nws: D.alerts || [] });
-  HERO.render($("hero"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, bay: HB.bay, creeks: D.creek ? HERO.creeks(D.creek, D.alerts || []) : null, creekLink: false, compactTide: true });
+  HERO.render($("hero"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, bay: HB.bay, creeks: D.creek ? HERO.creeks(D.creek, D.alerts || []) : null, creekLink: false, compactTide: true,
+    checked: HB.bay && D.creek ? fTime(nowLocal()) : null });
 }
 
 

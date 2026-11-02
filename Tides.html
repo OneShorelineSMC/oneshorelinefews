@@ -345,6 +345,11 @@
   .stile .st { font-size: 13px; color: var(--muted); }
   .stile.hi { border-color: var(--sv-advisory-stripe, #e07b00); }
   .slist { margin: 4px 0 0; padding-left: 18px; font-size: 14px; } .slist li { margin: 3px 0; }
+  .sfold > summary { cursor: pointer; list-style: none; padding: 6px 0; min-height: 44px; }
+  .sfold > summary::-webkit-details-marker { display: none; }
+  .sfold > summary::before { content: "\25B8"; display: inline-block; width: 1.1em; color: var(--ink); transition: transform .15s; }
+  .sfold[open] > summary::before { transform: rotate(90deg); }
+  .sfold .ssum { display: block; font-size: 14px; color: var(--muted); margin: 2px 0 0 1.1em; }
   .outl { margin: 10px 0 0; font-size: 14px; line-height: 1.45; color: var(--text); background: var(--soft); border-radius: 8px; padding: 8px 10px; }
   .calfull { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 2px; }
   .flist .go { font-weight: 700; color: var(--red); text-underline-offset: 3px; }
@@ -387,6 +392,8 @@
   /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
   .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
   @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  .oshort { display: none; }
+  @media (max-width: 480px) { .olong { display: none; } .oshort { display: inline; } }   /* phones: a short line under the title (2026-11-02) */
 </style>
 </head>
 <body>
@@ -394,7 +401,7 @@
   <div class="wrap">
     <img class="mark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="36" height="36">
     <div><div class="ht">Flood Early Warning</div>
-      <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
+      <div class="org"><span class="olong">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</span><span class="oshort">San Mateo County · OneShoreline</span></div></div>
     <div class="h911" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
@@ -462,10 +469,10 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<script src="lookups.js?v=20261031e"></script>
-<script src="tide_season.js?v=20261031e"></script>
-<script src="severity.js?v=20261031e"></script>
-<script src="hero.js?v=20261031e"></script>
+<script src="lookups.js?v=20261102a"></script>
+<script src="tide_season.js?v=20261102a"></script>
+<script src="severity.js?v=20261102a"></script>
+<script src="hero.js?v=20261102a"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -513,7 +520,8 @@ function loadHeroData() {
 function renderHero() {
   if (EMBED) return;
   if (COAST && HB.D) HB.bay = HERO.tideState({ D: HB.D, mhhw: LK.mhhw("9414523"), red: LK.num("TIDE_RED_FT_RWC"), water: "Bay", nws: D.alerts || [] });
-  HERO.render($("hero"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, bay: HB.bay, creeks: HB.creeks ? HERO.creeks(HB.creeks, D.alerts || []) : null });
+  HERO.render($("hero"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, bay: HB.bay, creeks: HB.creeks ? HERO.creeks(HB.creeks, D.alerts || []) : null,
+    checked: HB.bay && HB.creeks ? fTime(nowLocal()) : null });
 }
 function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
 
@@ -1174,7 +1182,10 @@ function seasonStats(trk) {
   var d0 = best, t = st.days[best].t;
   var when = tsFmt(d0, { month: "short", day: "numeric" }) + (t ? ", " + fmt(Date.UTC(2000, 0, 1, +t.slice(0, 2), +t.slice(3, 5)), { hour: "numeric", minute: "2-digit" }) : "");
   var nTop = cnt(top), nMh = cnt(mh);
-  var h = '<h3 class="clh">' + esc2(LK.text("tide_stats_title", { gauge: st.name })) + "</h3>" +
+  // folded (2026-11-02: one tap down); the summary line carries the season's highest water and days at the top level
+  var h = '<details class="sfold"><summary><h3 class="clh" style="display:inline">' + esc2(LK.text("tide_stats_title", { gauge: st.name })) + "</h3>" +
+    '<span class="ssum">' + esc2(LK.text("tide_stats_fold", { ft: st.days[best].max.toFixed(2), n: nTop == null ? 0 : nTop,
+      level: top ? (top.key === "flood" ? LK.text("tide_stats_fold_flood") : LK.text("tide_stats_fold_oneyear")) : "" })) + "</span></summary>" +
     '<p class="calpre" style="margin:2px 0 0">' + esc2(LK.text("tide_stats_since", { from: tsFmt(trk.wy_start, { month: "long", day: "numeric" }) })) + "</p>" +
     '<div class="sgrid">' +
     '<div class="stile"><div class="sl">' + esc2(LK.text("tide_stats_max")) + '</div><div class="sv">' + st.days[best].max.toFixed(2) + " <small>ft</small></div>" +
@@ -1193,7 +1204,7 @@ function seasonStats(trk) {
   var e = trk.enso && trk.enso.latest;
   if (e && e[2] >= 0.5) li.push(LK.text("tide_stats_nino", { water: SIDE.water }));
   h += '<ul class="slist">' + li.map(function (x) { return "<li>" + esc2(x) + "</li>"; }).join("") + "</ul>";
-  el.innerHTML = h; el.classList.remove("hide");
+  el.innerHTML = h + "</details>"; el.classList.remove("hide");
 }
 function loadSeasonStats() {
   fetch(TRK_URL + "?t=" + Math.floor(Date.now() / 6e5), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })

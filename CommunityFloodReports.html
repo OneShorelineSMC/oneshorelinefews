@@ -55,6 +55,8 @@
   /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
   .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
   @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  .oshort { display: none; }
+  @media (max-width: 480px) { .olong { display: none; } .oshort { display: inline; } }   /* phones: a short line under the title (2026-11-02) */
 </style>
 </head>
 <body>
@@ -62,7 +64,7 @@
   <div class="wrap">
     <img class="mark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="36" height="36">
     <div><h1 data-text="report_title">Report flooding</h1>
-      <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
+      <div class="org"><span class="olong">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</span><span class="oshort">San Mateo County · OneShoreline</span></div></div>
     <div class="h911" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
@@ -95,9 +97,9 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261031e"></script>
-<script src="tide_season.js?v=20261031e"></script>
-<script src="tide_banner.js?v=20261031e"></script>
+<script src="lookups.js?v=20261102a"></script>
+<script src="tide_season.js?v=20261102a"></script>
+<script src="tide_banner.js?v=20261102a"></script>
 <script>
 // The report form is an ArcGIS Survey123 form (COMMUNITY_FLOOD_REPORTS_SETUP.md). Its link lives in lookups/display_text.csv
 // (url_report_form); blank = reporting not open yet. Only a survey123.arcgis.com/share/<item id> link is accepted,

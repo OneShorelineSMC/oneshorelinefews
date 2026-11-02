@@ -174,28 +174,25 @@
     var name = !th.length ? T("no_flood_level_title") : at ? at.name : T("status_normal");
     return '<span class="nw">' + esc(name) + '</span> · <span class="nw">' + trendText(sig, true) + "</span>";
   }
+  /* A creek with no alert (or a gauge out of service), as one row (staff, 2026-11-02: a simpler Creeks page): its name,
+     the status word, the creek level in words and rain only when it is raining; the whole row opens the creek's page. */
   function briefCard(data, c, v, opts) {
-    var st = v.st, r = st.rain || {}, gs = c.stages || [], h = "";
-    h += '<article class="cs-card cs-brief cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
-    h += '<div class="cs-head"><h3>' + esc(c.name) + "</h3>" + review(c) + "</div>";
-    h += '<div class="cs-stat"><div class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</div></div>";
-    h += '<div class="cs-factw"><dl class="cs-facts">';
-    if (gs.length === 1) {
-      h += "<div><dt>" + esc(T("brief_location")) + "</dt><dd>" + esc(gs[0].label) + "</dd></div>";
-      h += "<div><dt>" + esc(T("brief_level")) + "</dt><dd>" + levelWords(gs[0], data.sensors[gs[0].key]) + "</dd></div>";
-    } else gs.forEach(function (g) {
-      h += "<div><dt>" + esc(levelLabel(g)) + "</dt><dd>" + levelWords(g, data.sensors[g.key]) + "</dd></div>";
-    });
-    h += "<div><dt>" + esc(T("rain_row")) + "</dt><dd>" + chip(r.level, r.now, true) + "</dd></div></dl>" + forecastRow(c) + "</div>";
-    if (opts.link) h += '<div class="cs-foot cs-more"><a href="' + esc(opts.link) + '" aria-label="' + esc(T("card_more_aria", { creek: c.name })) + '">' + esc(T("card_more")) + ' <span aria-hidden="true">→</span></a></div>';
-    return h + "</article>";
+    var st = v.st, r = st.rain || {}, gs = c.stages || [];
+    var lvl = gs.length ? levelWords(gs[0], data.sensors[gs[0].key]) + (gs.length > 1 ? ' <span class="cs-dim">· ' + esc(T("brief_more_gauges", { n: gs.length - 1 })) + "</span>" : "") : "";
+    var det = v.key === "offline" ? esc(v.reasons[0] || "") : lvl + (r.level || r.now ? " · " + chip(r.level, r.now, true) : "");
+    var inner = '<span class="cs-rowt"><span class="cs-rown"><b>' + esc(c.name) + '</b><span class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</span></span>" +
+      (det ? '<span class="cs-rowd">' + det + "</span>" : "") + (c.preview_only ? '<span class="cs-rowd cs-dim">' + esc(T("method_review_short")) + "</span>" : "") + "</span>";
+    var lab = c.name + ": " + v.word;
+    return '<article class="cs-card cs-brief cs-rowc cs-' + v.key + '" data-creek="' + esc(c.id) + '">' +
+      (opts.link ? '<a class="cs-rowa" href="' + esc(opts.link) + '" aria-label="' + esc(lab + ". " + T("card_more_aria", { creek: c.name })) + '">' + inner + '<span class="cs-go" aria-hidden="true">›</span></a>' : '<div class="cs-rowa">' + inner + "</div>") +
+      "</article>";
   }
 
   /* A creek card: status, reason, What to do, then details. opts.link: where "details" goes; opts.compact: no details */
   function card(data, c, opts) {
     opts = opts || {};
     var v = view(data, c), st = v.st, h = "";
-    if (opts.quiet && v.key === "none" && !opts.compact) return briefCard(data, c, v, opts);
+    if (opts.quiet && (v.key === "none" || v.key === "offline") && !opts.compact) return briefCard(data, c, v, opts);
     h += '<article class="cs-card cs-' + v.key + '" data-creek="' + esc(c.id) + '">';
     var noLv = (c.stages || []).length && (c.stages || []).every(function (g) {
       return !lvls(g).length; });
@@ -307,14 +304,14 @@
     var co = function (c, quiet) { return { link: link(c), lvlTag: !!opts.compactNotes, noAsOf: !!opts.compactNotes, quiet: !!quiet }; };
     var stormy = rows.some(function (x) { return x.v.key !== "none" && x.v.key !== "offline" && x.v.key !== "delayed"; });
     var by = SORT || (stormy ? "sev" : "ns");
-    var hm = home(data, linkFor, { noMore: true, nws: opts.nws });   // the same status board as the home page
+    var hm = home(data, linkFor, { noMore: true, nws: opts.nws, slim: true });   // the same status board as the home page
     // then one "find your creek" block: the city box (with the map link) and "How to read this page" as a plain link under it
     var h = badge() + (opts.noBanner ? "" : hm.banner) + hm.html +   // noBanner: the page's alert at the top says it (hero.js) '<div class="cs-find"><div id="cpSlot"></div>' + howTo() + "</div>" +   // cpSlot: the page puts its city finder here
       '<div class="cs-allh"><h2 class="cs-qh">' + esc(T("quiet_title")) + '</h2><div class="cs-sort" role="group" aria-label="Order the creeks">' +
       [["sev", "Most serious first"], ["ns", "North to south"], ["az", "A–Z"]].map(function (b) {
         return '<button type="button" data-sort="' + b[0] + '" aria-pressed="' + (b[0] === by) + '">' + b[1] + "</button>"; }).join("") + "</div></div>" +
       '<div class="cs-grid" id="csAll">' + rows.map(function (x) {
-        var q = x.v.key === "none";
+        var q = x.v.key === "none" || x.v.key === "offline";
         return card(data, x.c, co(x.c, q)).replace(/^<article /, '<article data-sev="' + (x.v.rank || 0) + '" data-ns="' + nsKey(x.c, x.i) + '" data-az="' + esc(x.c.name.toLowerCase()) + '" ');
       }).join("") + "</div>";
     setTimeout(function () { sortCards(by); }, 0);   // once the page has put the html in place
@@ -470,6 +467,7 @@
     } else {
       h += '<div class="cs-bsum">' + esc(T(act.length === 1 ? "home_alerts_one" : "home_alerts_many", { n: act.length })) +
         ' <span class="cs-dim">· updated ' + esc(clock(data.generated)) + "</span></div>";
+      var cutAt = h.length;   // Creeks page (slim): the creek list below shows each creek with an alert in full
       h += '<div class="cs-bcols cs-wcols" aria-hidden="true"><i></i><span>' + esc(T("board_col_creek")) + "</span><span>" + esc(T("board_col_status")) + "</span><span>" +
         esc(T("board_col_why")) + "</span><span>" + esc(T("board_col_rain")) + '</span><span class="cs-bsince">' + esc(T("board_col_since")) + "</span><i></i></div>";
       h += '<ul class="cs-wrows' + (late ? " cs-dimmed" : "") + '">' + act.map(function (r) {
@@ -485,19 +483,21 @@
           '<span class="cs-bsince">' + (st.since ? "since " + esc(clock(st.since)) : "") + "</span>" +
           '<span class="cs-wgo" aria-hidden="true">' + (href ? "›" : "") + "</span>" + (href ? "</a>" : "</div>") + "</li>";
       }).join("") + "</ul>";
-      if (nq.length) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + nq.map(function (r) {
+      if (hopts && hopts.slim) h = h.slice(0, cutAt);
+      if (nq.length && !(hopts && hopts.slim)) h += '<div class="cs-bquiet"><b>' + esc(T("verdict_none")) + ":</b> " + nq.map(function (r) {
         var href = linkFor ? linkFor(r.c) : "";
         return href ? '<a href="' + esc(href) + '">' + esc(r.c.name) + "</a>" : esc(r.c.name);
       }).join(" · ") + "</div>";
     }
-    if (notes.length) h += '<div class="cs-bnotes">' + (SV ? '<span class="sv-ink sv-offline">' + SV.icon("offline") + "</span>" : "") +
+    var slim = hopts && hopts.slim;   // Creeks page (2026-11-02): out-of-service gauges are in the creek list; no storm line
+    if (notes.length && !slim) h += '<div class="cs-bnotes">' + (SV ? '<span class="sv-ink sv-offline">' + SV.icon("offline") + "</span>" : "") +
       "<span>" + notes.map(esc).join("<br>") + "</span></div>";
-    if (!act.length) h += '<p class="cs-wscope">' + esc(T("home_none_note")) + ' <span class="cs-dim">Updated ' + esc(clock(data.generated)) + ".</span></p>";
+    if (!act.length && !slim) h += '<p class="cs-wscope">' + esc(T("home_none_note")) + ' <span class="cs-dim">Updated ' + esc(clock(data.generated)) + ".</span></p>";
     // what these alerts cover (staff, 2026-10-31): creeks rising with rain, not high tides backing up the tidal reaches
     var tidesHref = "Tides.html" + (/[?&]preview=1\b/.test(location.search) ? "?preview=1" : "");
     h += '<p class="cs-wscope cs-wtide">' + esc(T("home_creek_scope")) + ' <a href="' + tidesHref + '">' + esc(T("home_creek_scope_link")) + "</a></p>";
     h += "</div>";
-    if (groups.length) h += '<p class="cs-wdo"><b>What to do:</b> ' + esc(T("verdict_" + groups[0].k + "_todo")) + "</p>";   // for the worst status
+    if (groups.length && !(hopts && hopts.slim)) h += '<p class="cs-wdo"><b>What to do:</b> ' + esc(T("verdict_" + groups[0].k + "_todo")) + "</p>";   // for the worst status
     if (groups.some(function (g) { return g.k === "likely" || g.k === "ready"; })) {
       var u = T("url_evacuation");
       if (/^https:\/\//.test(u)) h += '<a class="cs-evac cs-evacb" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T("evac_button")) + " →</a>";
@@ -627,6 +627,12 @@
     "text-transform:uppercase;color:var(--muted,#556274);border-bottom:1px solid var(--line,#e3e8ee)}.cs-bcols .cs-bsince{font-size:inherit;color:inherit}",
     ".cs-foot{margin-top:auto;padding:8px 14px;border-top:1px solid var(--line,#e3e7ec);font-size:12.5px;color:var(--muted,#556274);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}",
     ".cs-foot a{font-weight:600}",
+    // one-row creeks (2026-11-02)
+    ".cs-rowc{padding:0!important;min-height:0!important;height:auto!important}.cs-grid>.cs-rowc{display:block!important;grid-row:auto!important}.cs-grid:has(.cs-rowc){align-items:start}.cs-grid:has(.cs-rowc)>.cs-card:not(.cs-rowc){display:flex!important;grid-row:auto!important}.cs-rowa{display:flex;align-items:center;gap:10px;padding:12px 14px;color:inherit;text-decoration:none;min-height:56px}",
+    ".cs-rowt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.cs-rown{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}",
+    ".cs-rown b{font-size:17px;color:var(--ink,#16202b)}.cs-rowc .cs-verdict{font-size:14px;padding:1px 9px 1px 6px;margin:0;border-radius:999px;min-height:0}",
+    ".cs-rowc .cs-verdict .cs-ic,.cs-rowc .cs-verdict svg{width:15px;height:15px}.cs-rowd{font-size:14px;color:var(--muted,#5b6877);line-height:1.35}",
+    ".cs-go{color:var(--muted,#5b6877);font-size:22px}.cs-rowa:focus-visible{outline:3px solid #1e6fd9;outline-offset:-3px;border-radius:10px}",
     ".cs-quiet,.cs-staff{margin:4px 0 14px}.cs-quiet>summary,.cs-staff>summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center;color:var(--ink,#16202b)}",
     ".cs-tw{overflow-x:auto;background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:10px}",
     ".cs-tbl{border-collapse:collapse;min-width:980px;width:100%;font-size:13px}.cs-tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted,#556274);padding:8px 10px;border-bottom:1px solid var(--line,#d5dae1)}",

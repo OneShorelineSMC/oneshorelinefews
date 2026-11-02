@@ -130,6 +130,30 @@
   .card .lnk { margin-top: auto; padding-top: 8px; font-size: 14px; font-weight: 600; color: var(--link); }
 
   /* SMC Alert */
+  /* Right now rows (2026-11-02) */
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .nrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; color: var(--text); border-radius: 12px; min-height: 56px; }
+  .nrow .ri { color: var(--ink); flex: none; display: flex; }
+  .nrow .rt { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .nrow .rt b { font-size: 17px; color: var(--ink); }
+  .nrow .rt small { flex-basis: 100%; color: var(--muted); font-size: 14px; line-height: 1.35; }
+  .nrow .sv-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 9px 1px 6px; font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+  .nrow .sv-badge .sv-ic { width: 15px; height: 15px; }
+  .oshort { display: none; }
+  @media (max-width: 480px) { .olong { display: none; } .oshort { display: inline; } }
+  .nrow .go2 { margin-left: auto; color: var(--muted); font-size: 22px; }
+  .nrow:focus-visible { outline: 3px solid #1e88e5; outline-offset: 2px; }
+  #evacBox:empty { display: none; }
+  #evacBox .btn { display: block; text-align: center; margin: 10px 0 0; }
+  .getal { margin: 22px 0 0; text-align: center; }
+  .smcbtn { display: block; border: 1.5px solid var(--brand); color: var(--brand); background: var(--card); border-radius: 10px; padding: 12px 14px;
+    font-weight: 700; text-decoration: none; }
+  @media (prefers-color-scheme: dark) { .smcbtn { color: #8cc8ff; border-color: #8cc8ff; } }
+  .getal .tiny { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .flinks { text-align: center; font-size: 14px; color: var(--muted); margin: 20px 0 0; }
+  .more { margin: 10px 0 0; }
+  .more > summary { cursor: pointer; text-align: center; font-size: 14px; color: var(--muted); padding: 6px; }
+  .sec2 { font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; }
   .smc { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
   .smc p { margin: 0; flex: 1; min-width: 240px; font-size: 15px; }
   .smc .not { display: block; margin-top: 6px; font-size: 14px; color: var(--muted); }
@@ -167,7 +191,7 @@
   <div class="wrap">
     <img class="mark" src="img/oneshoreline-mark-white.png" alt="OneShoreline" width="36" height="36">
     <div><h1>Flood Early Warning</h1>
-      <div class="org">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</div></div>
+      <div class="org"><span class="olong">OneShoreline · San Mateo County Flood and Sea Level Rise Resiliency District</span><span class="oshort">San Mateo County · OneShoreline</span></div></div>
     <div class="h911" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
@@ -175,13 +199,17 @@
 <main class="wrap">
   <!-- The one alert at the top: National Weather Service products, the Bay tide and the creeks (renderHero) -->
   <section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section>
-  <!-- Tides and creeks: put in order by renderOrder (an active condition first, the more severe first) -->
-  <div id="secTides"><h2 class="sec"><span id="hTide">Tides</span> <a href="Tides.html">Tide details ›</a></h2>
+  <div id="evacBox"></div>
+  <!-- Right now (staff, 2026-11-02: a simpler first screen): one row each for the Bay tides, the coast tides and the
+       creeks, a word and one detail line, worst first; tap for the page. The detailed cards below stay hidden here. -->
+  <div id="secNow"><h2 class="sec">Right now</h2><div id="rows" class="rows"><div class="nrow sv-card sv-offline"><span class="rt"><b>Loading…</b></span></div></div></div>
+  <!-- Tides and creeks in full: kept for their numbers (hidden; the rows above read them) -->
+  <div id="secTides" hidden><h2 class="sec"><span id="hTide">Tides</span> <a href="Tides.html">Tide details ›</a></h2>
   <div class="tides2">
     <a class="tcard2" id="tide" href="Tides.html"><span class="sd">Bayside</span><span class="th">Loading…</span></a>
     <a class="tcard2" id="tideCoast" href="Tides.html?side=coast"><span class="sd">Coastside</span><span class="th">Loading…</span></a>
   </div></div>
-  <div id="secCreeks"><h2 class="sec"><span id="hCreeks">Creeks</span> <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
+  <div id="secCreeks" hidden><h2 class="sec"><span id="hCreeks">Creeks</span> <a href="Creeks.html" id="creeksLink">All creek details ›</a></h2>
   <div id="csPreview"></div>
   <div class="creeks" id="creeks">
     <div class="box ck gray"><span class="nm">Loading…</span></div>
@@ -189,7 +217,7 @@
   <div class="rising" id="rising"></div>
   <div class="calm" id="calm"></div></div>
 
-  <div id="secMore"><h2 class="sec">More</h2>
+  <div id="secMore" hidden><h2 class="sec">More</h2>
   <div class="grid">
     <a class="card" href="SiteMap.html">
       <span class="ic">🗺️</span><h3>Sensor map</h3>
@@ -197,14 +225,17 @@
       <span class="lnk">Open map ›</span></a>
   </div></div>
 
-  <h2 class="sec" id="secAlerts">Get alerts</h2>
-  <div class="box smc">
-    <p><span data-text="smc_alert_intro"></span>
-      <span class="not" data-text="smc_alert_note" data-lead></span></p>
-    <a class="btn" href="https://www.smcgov.org/dem/smc-alert" data-href="url_smc_alert" target="_blank" rel="noopener">Sign up for SMC Alert</a>
+  <div id="secAlerts" class="getal">
+    <a class="smcbtn" href="https://www.smcgov.org/dem/smc-alert" data-href="url_smc_alert" target="_blank" rel="noopener"><span data-text="smc_alert_button">Get emergency alerts: SMC Alert</span> ›</a>
+    <p class="tiny" data-text="smc_alert_short">This site shows conditions; it doesn’t send alerts.</p>
   </div>
 
-  <div id="secSys"><h2 class="sec">System status</h2>
+  <!-- About, system status, contact and the disclaimer: one tap away -->
+  <p class="flinks"><a href="Creeks.html#about">About this site</a> · <a href="#more" data-open="more">Disclaimer</a> · <a href="#more" data-open="more">System status</a> · <a href="#more" data-open="more">Contact</a></p>
+  <details id="more" class="more"><summary>System status, contact and disclaimer</summary>
+  <p class="fine" style="margin-top:8px"><span data-text="smc_alert_intro"></span> <span data-text="smc_alert_note"></span></p>
+
+  <div id="secSys"><h3 class="sec2">System status</h3>
   <div class="box sys" id="sys">
     <div class="row"><span class="dot" id="dCreek"></span><span class="k">Creek data</span><span class="v" id="vCreek">checking…</span></div>
     <div class="row"><span class="dot" id="dGauges"></span><span class="k">Creek gauges</span><span class="v" id="vGauges">checking…</span></div>
@@ -218,7 +249,7 @@
       <span class="lnk">Open OneRain ↗</span></a>
   </div></div>
 
-  <h2 class="sec">Contact</h2>
+  <h3 class="sec2">Contact</h3>
   <div class="contact">
     <b data-text="contact_org"></b> · <span data-text="contact_address_1"></span>, <span data-text="contact_address_2"></span><br>
     <a href="tel:+16508448310" data-tel data-text="contact_phone"></a> · <a href="mailto:info@oneshoreline.org" data-mailto data-text="contact_email"></a> ·
@@ -236,6 +267,7 @@
     <p class="fine">Data: OneShoreline Early Warning System (OneRain), National Weather Service, NOAA Tides &amp; Currents.
       <a href="ShorelineKiosk.html" style="color:inherit">Office display</a></p>
   </footer>
+  </details>
 </main>
 
 <!-- Bottom bar, same as the Creeks, Tides and Map pages -->
@@ -247,10 +279,10 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 
-<script src="lookups.js?v=20261031e"></script>
-<script src="severity.js?v=20261031e"></script>
-<script src="creek_status.js?v=20261031e"></script>
-<script src="hero.js?v=20261031e"></script>
+<script src="lookups.js?v=20261102a"></script>
+<script src="severity.js?v=20261102a"></script>
+<script src="creek_status.js?v=20261102a"></script>
+<script src="hero.js?v=20261102a"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -264,11 +296,7 @@ if (HOME_PREVIEW) (function () {
   // the National Weather Service bar sits above the page (like the Creeks page); then a creek's "call 911" banner, then the creeks
   document.getElementById("hCreeks").textContent = "Creeks right now";
   document.getElementById("hTide").textContent = "Tides right now";
-  document.getElementById("secMore").hidden = true;
-  var sys = document.getElementById("secSys"), d = document.createElement("details");
-  d.className = "sysfold"; d.innerHTML = "<summary>System status and data sources</summary>";
-  sys.parentNode.insertBefore(d, sys); d.appendChild(sys);
-  sys.querySelector("h2").hidden = true;
+  // (system status, contact and the disclaimer sit in the folded section at the bottom: 2026-11-02)
 })();
 // (The alert list under the bar is a live region; renderAlerts rewrites it only when its content changes, so screen
 // readers aren't re-read the same alerts every few minutes. Creek cards and the tide box update quietly.)
@@ -338,9 +366,57 @@ function nws() {
 var TIDE_STATE = { bay: null, coast: null };
 var CR = null;   // the creeks' line for the card (hero.js creeks)
 function renderHero() {
-  HERO.render($("hero"), { nws: NWS.list, nwsFailed: NWS.failed, bay: TIDE_STATE.bay, creeks: CR });
+  HERO.render($("hero"), { nws: NWS.list, nwsFailed: NWS.failed, bay: TIDE_STATE.bay, creeks: CR,
+    checked: TIDE_STATE.bay && CR ? fTime(nowLocal()) : null });
   renderOrder();
+  renderRows();
 }
+/* ---------- Right now: one row each, worst first (the same states as the tide cards and the creek board) ---------- */
+var ICONS = {
+  wave: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+  coast: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M2 15q2.5-3 5 0t5 0 5 0 5 0M2 20q2.5-3 5 0t5 0 5 0 5 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 2.5C8.5 7.5 5.5 11 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 11 15.5 7.5 12 2.5Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>'
+};
+function cap1(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
+function tideRow(st, name, href, icon) {
+  if (!st) return { level: "offline", html: rowHTML(href, icon, name, "offline", "Loading…", "") };
+  var lv = st.level || "normal", word = lv === "normal" ? LK.text("home_row_normal") : st.word, det;
+  if (st.level === "offline" || !st.word) { lv = "offline"; word = LK.text("home_row_nodata"); det = ""; }
+  else if (lv === "normal") det = LK.text("home_row_tide_quiet");
+  else det = cap1(st.when) + (st.flood ? "" : " · " + LK.text("home_row_no_flooding")) + (st.more > 0 ? " · +" + st.more + " more this week" : "");
+  return { level: lv, html: rowHTML(href, icon, name, lv, word, det) };
+}
+function creekRow() {
+  var href = "Creeks.html" + PV_Q;
+  if (!C.data) return { level: "offline", html: rowHTML(href, ICONS.drop, LK.text("home_row_creeks"), "offline", "Loading…", "") };
+  var cs = C.data.creeks || [], off = cs.filter(function (c) { return (c.status || {}).key === "offline"; }).length;
+  var lv = CR && CR.level || "normal", worst = CR && CR.worst, word, det;
+  if (worst) {
+    word = LK.text("verdict_" + worst);
+    det = CR.names.join(", ") + (cs.length - CR.names.length - off > 0 ? " · " + LK.text("home_row_creeks_others", { n: cs.length - CR.names.length - off }) : "");
+  } else {
+    word = LK.text("home_row_no_alerts");
+    det = LK.text("home_row_creeks_n", { n: cs.length }) + (off ? " · " + LK.text(off === 1 ? "home_row_out_one" : "home_row_out_many", { n: off }) : "");
+  }
+  return { level: lv, html: rowHTML(href, ICONS.drop, LK.text("home_row_creeks"), lv, word, det) };
+}
+function rowHTML(href, icon, name, lv, word, det) {
+  return '<a class="nrow sv-card sv-' + lv + '" href="' + href + '" aria-label="' + esc(name + ": " + word + (det ? ". " + det : "")) + '">' +
+    '<span class="ri">' + icon + '</span><span class="rt"><b>' + esc(name) + '</b><span class="sv-badge sv-' + lv + '">' + SV.icon(lv) + esc(word) + "</span>" +
+    (det ? "<small>" + esc(det) + "</small>" : "") + '</span><span class="go2" aria-hidden="true">›</span></a>';
+}
+function renderRows() {
+  var rows = [tideRow(TIDE_STATE.bay, LK.text("home_row_bay"), "Tides.html", ICONS.wave), tideRow(TIDE_STATE.coast, LK.text("home_row_coast"), "Tides.html?side=coast", ICONS.coast), creekRow()];
+  rows.forEach(function (r, i) { r.i = i; });
+  rows.sort(function (a, b) { return (SV.RANK[b.level] || 0) - (SV.RANK[a.level] || 0) || a.i - b.i; });
+  $("rows").innerHTML = rows.map(function (r) { return r.html; }).join("");
+  // a creek at Be ready or Flooding likely: the evacuation-order button under the alert at the top
+  var u = LK.text("url_evacuation");
+  $("evacBox").innerHTML = CR && (CR.worst === "likely" || CR.worst === "ready") && /^https:\/\//.test(u) ?
+    '<a class="btn" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(LK.text("evac_button")) + " →</a>" : "";
+}
+// footer links open the folded section
+document.addEventListener("click", function (e) { var a = e.target.closest("[data-open]"); if (a) { var d = $(a.dataset.open); if (d) d.open = true; } });
 // Tides and creeks in order: an active condition first, the more severe first (severity.js order; tested)
 function renderOrder() {
   var tl = SV.top([TIDE_STATE.bay ? TIDE_STATE.bay.level : "normal", TIDE_STATE.coast ? TIDE_STATE.coast.level : "normal"]);
@@ -606,7 +682,7 @@ function renderTide(T) {
   if (T.el === "tide") TIDE_STATE.bay = st; else TIDE_STATE.coast = st;
   el.className = c.cls; el.setAttribute("aria-label", c.label + " Tide details.");
   el.innerHTML = c.html + '<span class="go2" aria-hidden="true">›</span>';
-  if (T.el === "tide") renderHero(); else renderOrder();
+  if (T.el === "tide") renderHero(); else { renderOrder(); renderRows(); }
 }
 
 /* ---------- Monitoring network ---------- */
