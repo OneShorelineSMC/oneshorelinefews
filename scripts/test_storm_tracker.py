@@ -124,6 +124,10 @@ check("season: 2 storms, one reaching Flood Watch, none Flood Warning", sm["stor
 check("season rain at the creek's gauge = all its rain (2.25 in)", abs([x for x in sm["rain"] if x["key"] == "col_rain"][0]["total"] - 2.25) < 0.01)
 check("season: days at each status counted", sm["status_days"]["likely"] == 1 and sm["status_days"]["none"] >= 3)
 check("season: biggest storm is storm 1", sm["biggest"]["start"] == "2026-11-03 10:00")
+sl = sm["levels"][0]
+check("season creek level: highest 5.5 ft on Nov 3, reached Flood Watch", sl["max"] == 5.5 and sl["max_day"] == "2026-11-03" and sl["max_reached"] == 2)
+check("season hours at each flood level, added up over the storms (Monitoring 8, Watch 2)",
+      {t["name"]: t["storm_hours"] for t in sl["thresholds"]} == {"Flood Monitoring": 8, "Flood Watch": 2, "Flood Warning": 0})
 check("reporting share for a gauge that went quiet < 1", [x for x in sm["rain"] if x["key"] == "col_rain_41200"][0]["reporting"] < 1)
 check("hourly record kept to 10 days", all(k >= T.hkey(T0 + dt.timedelta(hours=99) - dt.timedelta(days=10)) for rec in state["ledger"].values() for k in rec["h"]))
 # a late report fixes an hour

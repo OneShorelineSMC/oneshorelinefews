@@ -247,7 +247,22 @@ def season_summary(c, days, storms, wy0):
         rep = days.get("report", {}).get(g["key"], {})
         runs, fresh = sum(v[1] for v in rep.values()), sum(v[0] for v in rep.values())
         top = max(d.items(), key=lambda kv: kv[1]) if d else None
+        th = g.get("thresholds") or []
+        # the season's highest reading (any day, storm or not) and the flood level it reached; hours at each flood level
+        # and the storm peaks, added up over this season's storms
+        at = max([t.get("level") or 0 for t in th if top and top[1] >= t["value"]] or [0])
+        hrs, peaks = {}, []
+        for st in mine:
+            for x in st.get("levels", []):
+                if x["key"] != g["key"] or x.get("peak") is None:
+                    continue
+                peaks.append(x["peak"])
+                for t in x.get("thresholds", []):
+                    hrs[t["name"]] = hrs.get(t["name"], 0) + t["hours"]
         out["levels"].append({"key": g["key"], "label": g.get("label"), "max": top[1] if top else None, "max_day": top[0] if top else None,
+                              "max_reached": at, "tidal": bool(g.get("tidal")),
+                              "thresholds": [{"name": t["name"], "level": t.get("level"), "value": t["value"], "storm_hours": hrs.get(t["name"], 0)} for t in th],
+                              "storm_peak_median": sorted(peaks)[len(peaks) // 2] if peaks else None,
                               "reporting": round(fresh / runs, 3) if runs else None})
     sd = days.get("status", {}).get(c["id"], {})
     for k, v in STATUS_RANK.items():
