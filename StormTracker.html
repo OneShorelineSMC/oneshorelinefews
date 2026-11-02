@@ -71,6 +71,8 @@
   .key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
   .key i { display: inline-block; width: 16px; vertical-align: middle; margin-right: 5px; }
   .empty { color: var(--muted); }
+  .nw { white-space: nowrap; }
+  .lvc + .lvc { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
   nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }
   nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
@@ -103,8 +105,8 @@
   <div class="card">
     <h2>The season so far, by creek</h2>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Season by creek (scrolls sideways)"><table id="season"></table></div>
-    <p class="note">Rain: the creek's own gauge(s), from the first day this record covers. Storms reaching Flood Watch or Flood Warning: the highest level any
-      of its creek gauges reached. Status days: days the creek's status reached that level at least once. Reporting: share of data runs (about every 5 minutes)
+    <p class="note">Rain: the creek's own gauge(s), from the first day this record covers. Highest creek level: the highest hourly reading on any
+      day this season (a tidal gauge's can be a high tide); hours at each flood level are added up over the season's storms. Status days: days the creek's status reached that level at least once. Reporting: share of data runs (about every 5 minutes)
       when the gauge had reported recently.</p>
   </div>
 
@@ -195,12 +197,20 @@ function render() {
       '<td class="n">' + rain.map(function (x) { return inch(x.total) + (rain.length > 1 ? '<span class="sm">' + esc(x.label) + "</span>" : ""); }).join("") + "</td>" +
       '<td class="n">' + c.storms + "</td>" +
       "<td>" + (c.biggest ? esc(day(c.biggest.start)) + " · " + inch(c.biggest.total) + " in " + chip(c.biggest.rain_level) : '<span class="empty">–</span>') + "</td>" +
-      '<td class="n">' + (c.watch || 0) + " / " + (c.warning || 0) + "</td>" +
+      // creek level: the season's highest reading at each gauge and the flood level it reached; hours at each level in storms
+      "<td>" + (c.levels.length ? c.levels.map(function (l) {
+        return '<div class="lvc">' + (l.max != null ? '<span class="nw"><b>' + l.max.toFixed(2) + " ft</b> " + esc(day(l.max_day)) + "</span> " +
+          (l.thresholds && l.thresholds.length ? (l.max_reached ? '<span class="chip l' + l.max_reached + '">' + LEVEL[l.max_reached] + "</span>" : '<span class="sm">below Monitoring</span>') : '<span class="sm">no flood levels set</span>') : '<span class="empty">no readings</span>') +
+          (c.levels.length > 1 ? '<span class="sm">' + esc(l.label) + (l.tidal ? " · tidal" : "") + "</span>" : l.tidal ? '<span class="sm">tidal gauge</span>' : "") + "</div>"; }).join("") : '<span class="empty">no creek level gauge</span>') + "</td>" +
+      '<td class="n">' + (c.levels.length ? c.levels.map(function (l) {
+        var t = l.thresholds || [], by = {}; t.forEach(function (x) { if (x.level >= 1 && x.level <= 3) by[x.level] = x.storm_hours; });
+        return '<div class="lvc">' + (t.length ? [1, 2, 3].map(function (k) { return by[k] == null ? "–" : by[k]; }).join(" / ") : "–") + "</div>"; }).join("") : "–") + "</td>" +
       '<td class="n">' + (sd.likely || 0) + " / " + (sd.ready || 0) + " / " + (sd.alert || 0) + "</td>" +
       '<td class="n">' + (rep.length ? Math.round(100 * Math.min.apply(null, rep)) + "%" : "–") + "</td></tr>";
   }).join("");
-  $("season").innerHTML = "<thead><tr><th>Creek</th><th class='n'>Rain<span class='sm'>in</span></th><th class='n'>Storms</th><th>Biggest storm</th>" +
-    "<th class='n'>Reached Watch / Warning<span class='sm'>storms</span></th><th class='n'>Days Flooding likely / Be ready / Stay alert</th><th class='n'>Reporting<span class='sm'>lowest gauge</span></th></tr></thead><tbody>" + rows + "</tbody>";
+  $("season").innerHTML = "<thead><tr><th>Creek</th><th class='n'>Rain<span class='sm'>in</span></th><th class='n'>Storms</th><th>Biggest storm</th><th>Highest creek level<span class='sm'>ft, day, flood level reached</span></th>" +
+    "<th class='n'>Hours at Monitoring / Watch / Warning<span class='sm'>during storms</span></th>" +
+    "<th class='n'>Days Flooding likely / Be ready / Stay alert</th><th class='n'>Reporting<span class='sm'>lowest gauge</span></th></tr></thead><tbody>" + rows + "</tbody>";
   // creek filter
   var f = $("fCreek");
   if (f.options.length < 2) (J.creeks || []).forEach(function (c) { var o = document.createElement("option"); o.value = c.id; o.textContent = c.name; f.appendChild(o); });
