@@ -165,6 +165,13 @@ function nowLocal() {
     .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
   return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
 }
+// A reading's time on the graphs: from its UTC time when the data has it (creeks.json's third field), shown on today's
+// Pacific clock, so the hour repeated when clocks fall back (Nov 1) doesn't fold the line back on itself (2026-11-02)
+function ptime(p) {
+  var u = p && p[2] ? Date.parse(p[2]) : NaN;
+  if (isNaN(u)) return parseLocal(p[0]);
+  return u - Math.round((Date.now() - nowLocal()) / 9e5) * 9e5;
+}
 function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
 function fTime(ms) { return fmt(ms, { hour: "numeric", minute: "2-digit" }); }
 function fWhen(ms, now) { var d = Math.round((Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) - Date.UTC(new Date(ms).getUTCFullYear(), new Date(ms).getUTCMonth(), new Date(ms).getUTCDate())) / 864e5);
@@ -218,8 +225,8 @@ function gauge(now) {
         if (!G.url && /^https:\/\//.test(g.url || "")) G.url = g.url;
         var e = S[g.key]; if (!e || seen[g.key]) return; seen[g.key] = true;
         if (pair[0] === "stage") G.levels.push({ name: "Creek level" + (g.label ? " · " + g.label : ""), unit: "ft", g: g, e: e,
-          pts: (e.points || []).map(function (p) { return [parseLocal(p[0]), p[1]]; }), thresholds: g.thresholds || [], sig: e.signals || {} });
-        else if (!G.rain) G.rain = { e: e, sig: e.signals || {}, pts: (e.points || []).map(function (p) { return [parseLocal(p[0]), p[1]]; }), hours: 48 };
+          pts: (e.points || []).map(function (p) { return [ptime(p), p[1]]; }).sort(function (a, b) { return a[0] - b[0]; }), thresholds: g.thresholds || [], sig: e.signals || {} });
+        else if (!G.rain) G.rain = { e: e, sig: e.signals || {}, pts: (e.points || []).map(function (p) { return [ptime(p), p[1]]; }).sort(function (a, b) { return a[0] - b[0]; }), hours: 48 };
       });
     });
   });

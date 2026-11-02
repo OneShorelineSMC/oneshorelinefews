@@ -333,6 +333,13 @@ function nowLocal() {
     .forEach(function (x) { p[x.type] = +x.value; });
   return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
 }
+// A reading's time on the graphs: from its UTC time when the data has it (creeks.json's third field), shown on today's
+// Pacific clock, so the hour repeated when clocks fall back (Nov 1) doesn't fold the line back on itself (2026-11-02)
+function ptime(p) {
+  var u = p && p[2] ? Date.parse(p[2]) : NaN;
+  if (isNaN(u)) return parseLocal(p[0]);
+  return u - Math.round((Date.now() - nowLocal()) / 9e5) * 9e5;
+}
 function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
 function fTime(ms) { return fmt(ms, { hour: "numeric", minute: "2-digit" }); }
 function agoText(ms) { var m = Math.round(ms / 60000); return m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " hr ago" : Math.round(m / 1440) + " days ago"; }
@@ -431,7 +438,7 @@ function renderOrder() {
 var C = { data: null, tides: {} };
 function pts(key) {
   var s = C.data.sensors[key];
-  return s && s.points ? s.points.map(function (p) { return { t: parseLocal(p[0]), v: p[1] }; }) : [];
+  return s && s.points ? s.points.map(function (p) { return { t: ptime(p), v: p[1] }; }).sort(function (a, b) { return a.t - b.t; }) : [];
 }
 function rainSum(p, from, to) { var s = 0; p.forEach(function (x) { if (x.t > from && x.t <= to) s += x.v; }); return s; }
 function stageLevel(g, v) { var l = null; (g.thresholds || []).forEach(function (t) { if (v >= t.value) l = t; }); return l; }

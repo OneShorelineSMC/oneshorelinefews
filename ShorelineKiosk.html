@@ -674,6 +674,13 @@ window.addEventListener("resize", fit); fit();
 
 /* ---------- Time helpers (NOAA gives local clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4]); }
+// A reading's time on the graphs: from its UTC time when the data has it (creeks.json's third field), shown on today's
+// Pacific clock, so the hour repeated when clocks fall back (Nov 1) doesn't fold the line back on itself (2026-11-02)
+function ptime(p) {
+  var u = p && p[2] ? Date.parse(p[2]) : NaN;
+  if (isNaN(u)) return parseLocal(p[0]);
+  return u - Math.round((Date.now() - nowLocal()) / 9e5) * 9e5;
+}
 function nowLocal() {
   var p = {};
   new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit",
@@ -1539,7 +1546,7 @@ function loadCreek() {
 }
 function pts(key) {
   var s = C.data && C.data.sensors && C.data.sensors[key];
-  return s ? s.points.map(function (p) { return { t: parseLocal(p[0]), v: p[1] }; }) : [];
+  return s ? s.points.map(function (p) { return { t: ptime(p), v: p[1] }; }).sort(function (a, b) { return a.t - b.t; }) : [];
 }
 function rainSum(p, from, to) {
   var sum = 0; p.forEach(function (x) { if (x.t > from && x.t <= to) sum += x.v; }); return sum;
