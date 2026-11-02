@@ -389,7 +389,9 @@ function tideRow(st, name, href, icon) {
 function creekRow() {
   var href = "Creeks.html" + PV_Q;
   if (!C.data) return { level: "offline", html: rowHTML(href, ICONS.drop, LK.text("home_row_creeks"), "offline", "Loading…", "") };
-  var cs = C.data.creeks || [], off = cs.filter(function (c) { return (c.status || {}).key === "offline"; }).length;
+  // every creek the Creeks page gives a status to (the four original creeks and those under review)
+  var cs = (C.data.creeks || []).concat(C.data.creeks_preview || []).filter(function (c) { return c.status && c.status.key; });
+  var off = cs.filter(function (c) { return c.status.key === "offline"; }).length;
   var lv = CR && CR.level || "normal", worst = CR && CR.worst, word, det;
   if (worst) {
     word = LK.text("verdict_" + worst);
