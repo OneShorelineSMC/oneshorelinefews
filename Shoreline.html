@@ -10,21 +10,26 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<title>Shoreline – OneShoreline</title>
+<title>Shoreline and creek outlets – OneShoreline</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
   crossorigin="anonymous" referrerpolicy="no-referrer">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root {
+    --bfe: #4527a0; --outlet: #7A1F5C; --gauge: #4F641C; --noaa: #00838f; --table: #4a4f55; --sel: #e8f1fa; --link: #0a5587; --warnbg: #fff4e5; --warnink: #7a3d00;
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5b6877; --line: #e3e8ee;
-    --red: #c0392b; --blue: #1e88e5; --info: #0a5587; --soon: #c62828; --later: #b45a00; --spot: #1e6fb8;
+    --red: #c0392b; --blue: #1e88e5; --info: #0a5587; --soon: #c62828; --later: #a35200; --spot: #1e6fb8;
     --okbg: rgba(46,125,50,.08); --okb: #2e7d32; --nearbg: rgba(30,136,229,.08); --nearb: #1e88e5; --reachbg: rgba(198,40,40,.07); --reachb: #c62828;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
+    :root { --bfe: #b39ddb; --outlet: #f08ac8; --gauge: #b5cc6a; --noaa: #4fc3d9; --table: #a7b0ba; --sel: #1d3247; --link: #8cc8ff; --warnbg: #3a2a12; --warnink: #ffd59a;
+      --bg: #0e1319; --card: #18202a; --ink: #e6edf5; --text: #dbe3ec; --muted: #9aa8b8; --line: #2a3542;
       --red: #f47c79; --info: #8cc8ff; --soon: #f47c79; --later: #ffa94d; --spot: #6ea8fe;
       --okbg: rgba(102,187,106,.12); --okb: #66bb6a; --nearbg: rgba(78,163,240,.12); --nearb: #4ea3f0; --reachbg: rgba(244,124,121,.12); --reachb: #f47c79; }
   }
@@ -42,7 +47,37 @@
   #alert { display: none; color: #fff; background: #9a5b00; padding: 10px max(16px, calc((100% - 860px) / 2 + 16px)); gap: 10px; align-items: center; text-decoration: none; }
   #alert.show { display: flex; } #alert.warning { background: #b71c1c; } #alert.statement { background: #455a75; }
   #alert .ic { font-size: 22px; line-height: 1; } #alert .tx { flex: 1; min-width: 0; } #alert b { font-size: 16px; } #alert small { display: block; font-size: 12.5px; opacity: .92; }
-  main { max-width: 900px; margin: 0 auto; padding: 0 12px; }
+  main { max-width: 1000px; margin: 0 auto; padding: 0 12px; }
+  /* city picker and the Bay model parts (from the creek outlets page, 2026-11-03) */
+  .citybar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; position: sticky; top: 0; z-index: 900; }
+  .citybar label { font-weight: 700; color: var(--ink); font-size: 15px; }
+  .citybar select { font: inherit; font-size: 16px; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); min-height: 40px; min-width: 14em; }
+  .citybar .cnt { font-size: 13.5px; color: var(--muted); }
+  .btn { font: inherit; font-size: 14px; color: var(--link); background: transparent; border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; min-height: 36px; }
+  .btn:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
+  .qc { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--warnink); background: var(--warnbg); border-radius: 8px; padding: 7px 10px; }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: .04em; color: #fff; background: #b45a00; border-radius: 999px; padding: 1px 8px; margin-right: 6px; vertical-align: 1px; }
+  .warn { background: var(--warnbg); color: var(--warnink); border-radius: 8px; padding: 8px 10px; margin-top: 8px; font-size: 14px; }
+  .warn:empty { display: none; }
+  .meta, .note { font-size: 13px; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
+  .card h2 { font-size: 17px; color: var(--ink); margin: 0 0 6px; }
+  .chartbox { position: relative; height: 300px; }
+  .chkey { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-top: 0; white-space: nowrap; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.row { cursor: pointer; } tr.row:hover td, tr.row.on td { background: var(--sel); }
+  tr.row button { all: unset; cursor: pointer; color: var(--link); font-weight: 600; }
+  tr.row button:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; border-radius: 3px; }
+  .sm { display: block; font-size: 12.5px; color: var(--muted); }
+  .flag { color: var(--warnink); background: var(--warnbg); border-radius: 4px; padding: 0 4px; font-size: 12px; font-weight: 600; }
+  .mg { font-weight: 700; border-radius: 4px; padding: 0 4px; }
+  .mg.reach { background: #d32f2f; color: #fff; } .mg.near { background: #f57c00; color: #1a1a1a; }
+  #list li .md { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
+  #list li.on { background: var(--sel); }
+  details code { font-size: 12.5px; }
   h1.page { font-size: 22px; color: var(--ink); margin: 12px 2px 2px; }
   .intro { font-size: 14px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.45; }
   .card { background: var(--card); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
@@ -109,8 +144,17 @@
 <a id="alert" href="index.html"><span class="ic" aria-hidden="true">⚠</span><span class="tx"><b id="aMain"></b><small id="aSub"></small></span></a>
 
 <main>
-  <h1 class="page">Shoreline<span class="draft" id="draftTag" hidden>Draft</span></h1>
-  <p class="intro" data-text="shore_intro"></p>
+  <h1 class="page">Shoreline and creek outlets<span class="draft">Beta</span><span class="draft" id="draftTag" hidden>Draft</span></h1>
+  <p class="intro"><span data-text="shore_intro"></span> With NOAA’s San Francisco Bay model (SFBOFS) at each low spot and creek outlet for the next 48 hours.</p>
+  <p class="qc"><span class="chip">BETA</span> Low points and creek outlet coordinates are undergoing QC review.</p>
+
+  <!-- Cities: pick one to zoom the map and list only its low spots and creek outlets; the link can be sent to the city -->
+  <div class="card citybar">
+    <label for="city">City</label>
+    <select id="city"><option value="">All of San Mateo County</option></select>
+    <button type="button" class="btn" id="cityLink" hidden>Copy a link to this city</button>
+    <span class="cnt" id="cityCnt" aria-live="polite"></span>
+  </div>
 
   <div class="card" id="head" aria-live="polite"><h2>Loading tides…</h2></div>
 
@@ -119,7 +163,38 @@
     <div class="key" id="key"></div>
   </div>
 
+  <!-- The Bay model at the selected creek outlet or low spot -->
+  <div class="card" id="chcard" hidden>
+    <h2 id="chTitle">Bay model</h2>
+    <div class="chartbox"><canvas id="ch" role="img" aria-label="Water level graph"></canvas></div>
+    <div class="chkey" id="chKey"></div>
+    <p class="note" id="chSum" aria-live="polite"></p>
+  </div>
+
+  <div class="card" id="outlets" hidden>
+    <h2>Creek outlets: highest water in the next 48 hours (Bay model)</h2>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Creek outlets table (scrolls sideways)"><table id="tbl"></table></div>
+    <p class="note" id="tblnone" hidden>No creek outlets in this city.</p>
+    <p class="note">“vs gauge”: how much higher (+) or lower (−) the model expects the high water at this outlet than at the nearest NOAA tide gauge
+      over the same 48 hours; + means the water at this creek runs higher than the gauge shows. Select a row for its graph; the map zooms to it and
+      shows the model point used (magenta dot).</p>
+    <p class="meta" id="meta"></p>
+    <div class="warn" id="warn"></div>
+  </div>
+
   <div class="card" id="list"></div>
+
+  <details class="card" id="datum">
+    <summary>Bay model: datum check at the NOAA gauges</summary>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Datum check table (scrolls sideways)"><table id="refs"></table></div>
+    <p>The model’s water level is relative to its own datum (about mean sea level). At each gauge, the offset to NAVD88 is the median difference
+      between NOAA’s projection at the gauge (ft NAVD88) and the model at the gauge’s nearest model point. “Left over” is the spread after the
+      offset. Each outlet and low spot uses the gauges’ offsets weighted by distance. The model point is the nearest point at least
+      <span id="mind">1.6 ft</span> deep whose level moves with the tide. Model: SFBOFS, four runs a day (about 1 AM, 7 AM, 1 PM and 7 PM Pacific
+      Standard Time), usually available about 2 hours later. Not included: creek flow, waves and wind at the shoreline.
+      <a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/scripts/outlet_tides.py" target="_blank" rel="noopener">scripts/outlet_tides.py</a> ·
+      <a href="https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/outlet_tides_log.csv" target="_blank" rel="noopener">the log (CSV)</a></p>
+  </details>
 
   <details class="card" id="about">
     <summary>About this map</summary>
@@ -180,6 +255,23 @@ function ft1(v) { return "about " + v.toFixed(1) + " ft"; }
 var AHEAD_DAYS = 30;   // how far ahead the list says when a spot could be reached (the tide table; the recent offset stops at BAY_OFFSET_AHEAD_DAYS)
 
 var SP = { rows: null, draft: false, shapes: null, expo: null, wet: null }, map = null, layers = {}, extra = {};
+/* The city picker (2026-11-03): one city's low spots and creek outlets, the map zoomed to them. Remembered on this device;
+   a link with ?city=Name opens straight to it (the "Copy a link" button), so a city can be sent its own view. */
+var CITY = "";
+try { CITY = new URLSearchParams(location.search).get("city") || localStorage.getItem("fews_city") || ""; } catch (e) { /* no storage */ }
+function cityOf(x) { return String((x && x.city) || "").replace(/\s*\(nearest\)$/i, "").trim(); }
+function inCity(x) { return !CITY || cityOf(x) === CITY; }
+function cityOptions() {
+  var cs = {};
+  (SP.rows || []).forEach(function (r) { if (cityOf(r)) cs[cityOf(r)] = 1; });
+  ((window.OT && OT.D && OT.D.outlets) || []).forEach(function (o) { if (cityOf(o)) cs[cityOf(o)] = 1; });
+  var names = Object.keys(cs).sort(), sel = $("city");
+  if (CITY && names.length && !cs[CITY]) CITY = "";
+  var h = "<option value=''>All of San Mateo County</option>" + names.map(function (c) { return "<option" + (c === CITY ? " selected" : "") + ">" + esc(c) + "</option>"; }).join("");
+  if (sel.innerHTML !== h) sel.innerHTML = h;
+  sel.value = CITY;
+  $("cityLink").hidden = !CITY;
+}
 function isDev(r) { return !/^no$/i.test(r.developed || ""); }   // unknown (blank) counts as developed
 // What is in a spot, in a short line: buildings, streets (by name), critical facilities and transportation
 function expText(r) {
@@ -280,7 +372,10 @@ function render() {
   var head = $("head");
   if (!ready || !rows) { head.className = "card"; head.innerHTML = "<h2>" + esc(!rows ? "Loading the low spots…" : "Loading tides…") + "</h2>"; }
   else if (!rows.length) { head.className = "card"; head.innerHTML = "<h2>" + esc(LK.text("shore_no_list")) + "</h2>"; }
-  var ds = ready ? days(now) : [], info = (rows || []).map(function (r) { var nx = nextFor(r, ds); return { r: r, nx: nx, st: status(nx, now) }; });
+  var ds = ready ? days(now) : [], info = (rows || []).filter(inCity).map(function (r) { var nx = nextFor(r, ds); return { r: r, nx: nx, st: status(nx, now) }; });
+  cityOptions();
+  var no = ((window.OT && OT.D && OT.D.outlets) || []).filter(inCity).length;
+  $("cityCnt").textContent = rows ? info.length + " low spot" + (info.length === 1 ? "" : "s") + (window.OT && OT.D ? " · " + no + " creek outlet" + (no === 1 ? "" : "s") : "") + (CITY ? " in " + CITY : "") : "";
 
   // Headline: the next 2 days, then later this month. Counts the spots with buildings or streets; open land only mentioned
   if (ready && rows && rows.length) {
@@ -330,7 +425,7 @@ function render() {
       return "<h3>" + esc(LK.text("shore_group", { ft: ft1(levelFt(g[0].r)) })) + "</h3><ul>" + g.map(function (x) {
         return '<li tabindex="0" role="button" data-id="' + esc(x.r.id) + '">' + esc(x.r.name || x.r.id) +
           '<span class="nx ' + (x.st === "soon" ? "soon" : x.st === "none" ? "" : "later") + '">' + esc(whenText(x.nx, now)) + "</span>" +
-          (function (ex) { return ex.t ? '<span class="ex' + (ex.open ? " open" : "") + '">' + esc(ex.t) + "</span>" : ""; })(expText(x.r)) + "</li>";
+          (function (ex) { return ex.t ? '<span class="ex' + (ex.open ? " open" : "") + '">' + esc(ex.t) + "</span>" : ""; })(expText(x.r)) + (window.OT && OT.D ? OT.lpLine(x.r.id) : "") + "</li>";
       }).join("") + "</ul>";
     }).join("");
   }
@@ -467,7 +562,13 @@ function drawMap(info, now) {
         el.appendChild(b); el.appendChild(p); lay.bindPopup(el);
       } }).addTo(map);
   }
-  if (bounds.length && !map._fitted) { var bb = bounds[0]; bounds.forEach(function (b) { bb.extend(b); }); map.fitBounds(bb, { padding: [12, 12] }); map._fitted = true; }
+  if (window.OT) OT.drawOn(map);   // the creek outlets and the NOAA gauges, on top
+  var ob = window.OT ? OT.bounds() : null;
+  if ((bounds.length || ob) && map._fitKey !== CITY) {
+    var bb = bounds.length ? L.latLngBounds(bounds[0].getSouthWest(), bounds[0].getNorthEast()) : ob;
+    bounds.forEach(function (b) { bb.extend(b); }); if (ob) bb.extend(ob);
+    map.fitBounds(bb, { padding: [16, 16], maxZoom: CITY ? 15 : 12 }); map._fitKey = CITY;
+  }
   var seen = {}; info.forEach(function (x) { seen[x.st] = 1; });
   var k = [["soon", "shore_key_soon"], ["later", "shore_key_later"], ["high", "shore_key_high"], ["none", "shore_key_none"]].filter(function (p) { return seen[p[0]]; });
   var html = k.map(function (p) {
@@ -479,15 +580,162 @@ function drawMap(info, now) {
   if (has.bld) html.push('<span><i class="dot" style="background:' + BLD_COL + '"></i>' + esc(LK.text("shore_key_bld")) + "</span>");
   if (has.critical) html.push('<span><i class="ring" style="border:3px solid ' + CRIT_COL + '"></i>' + esc(LK.text("shore_key_critical")) + "</span>");
   if (has.transport) html.push('<span><i class="ln" style="border-top:4px dashed ' + TRANS_COL + '"></i>' + esc(LK.text("shore_key_transport")) + "</span>");
+  if (window.OT && OT.D) {
+    html.push('<span><i class="dot" style="background:#0A5587;border:2px solid #fff;box-shadow:0 0 0 1px #0A5587"></i>Creek outlet (tap for the Bay model graph)</span>');
+    html.push('<span><i style="width:0;height:0;background:none;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #e65100"></i>NOAA tide gauge</span>');
+  }
   KEY = html; drawKey();
 }
 // Tap a spot in the list: open it on the map
 $("list").addEventListener("click", function (e) {
   var li = e.target.closest("li[data-id]"); if (!li || !map || !layers[li.dataset.id]) return;
   var lay = layers[li.dataset.id]; map.fitBounds(lay.getBounds(), { maxZoom: 16, padding: [20, 20] }); lay.openPopup();
+  OT.pickLow(li.dataset.id);
   $("map").scrollIntoView({ behavior: "smooth", block: "center" });
 });
 $("list").addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target.matches("li[data-id]")) { e.preventDefault(); e.target.click(); } });
+
+/* ===== The Bay model at the creek outlets and low spots (outlet_tides.json, scripts/outlet_tides.py): the outlets table,
+   the low spots' 48-hour margin, the graph for the selected place, the outlet markers and the model point on the map.
+   (Until Nov 3 this was its own page, OutletTides.html, which now opens this one.) ===== */
+var OT = (function () {
+  var URL_ = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/outlet_tides.json";
+  var O = { D: null, sel: null }, chart = null, over = null, selLayer = null, marks = {};
+  function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function ms(iso) { return Date.parse(iso.replace("Z", ":00Z")); }
+  var fDay = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
+  var fHour = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric" });
+  var fWd = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short" });
+  var fTz = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+  function when(iso) { return fDay.format(new Date(ms(iso))); }
+  function ft(v) { return v == null ? "–" : v.toFixed(2); }
+  function sgn(v) { return v == null ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
+  function dist(m) { var f = m * 3.28084; return f >= 5280 ? (f / 5280).toFixed(1) + " mi" : (f < 100 ? Math.round(f) : Math.round(f / 10) * 10).toLocaleString() + " ft"; }
+  function deep(m) { return (m * 3.28084).toFixed(1) + " ft"; }
+  var RED = isFinite(LK.num("TIDE_RED_FT_RWC")) ? LK.num("TIDE_RED_FT_RWC") : 8.5, NEAR_FT = 0.5;
+  function peakIn(series, t0, t1) { var b = null; (series || []).forEach(function (p) { var t = ms(p[0]); if (t >= t0 && t <= t1 && (!b || p[1] > b[1])) b = p; }); return b; }
+  function refOf(o) { return O.D.refs.filter(function (r) { return r.id === o.nearest_gauge; })[0]; }
+  function item(k) { return !k || !O.D ? null : k[0] === "l" ? (O.D.lowpoints || [])[+k.slice(1)] : O.D.outlets[+k.slice(1)]; }
+  function oName(o) { return o.creeks.join(" / "); }
+  function lpState(p) { return p.margin_ft == null ? "none" : p.margin_ft >= 0 ? "reach" : p.margin_ft >= -NEAR_FT ? "near" : "below"; }
+  function lowIdx(id) { var lp = (O.D && O.D.lowpoints) || []; for (var i = 0; i < lp.length; i++) if (lp[i].id === id) return i; return -1; }
+  function nodeCell(n) { return "<td>" + dist(n.dist_m) + " away, " + deep(n.depth_m) + " deep" + (n.far ? " <span class='flag'>far</span>" : "") +
+    (n.nearest_any_m < n.dist_m - 50 ? "<span class='sm'>nearest point of any depth: " + dist(n.nearest_any_m) + "</span>" : "") + "</td>"; }
+
+  function render() {
+    if (!O.D) return;
+    var D = O.D, now = Date.now(), end = now + 48 * 3600000;
+    var first = $("outlets").hidden;
+    $("outlets").hidden = false;
+    if (first && location.hash === "#outlets") setTimeout(function () { $("outlets").scrollIntoView({ block: "start" }); }, 50);
+    $("meta").innerHTML = "Bay model run " + esc(fTz.format(new Date(ms(D.cycle_utc)))) + " · read " + esc(fTz.format(new Date(ms(D.generated_utc)))) +
+      " · outlets from <code>" + esc(D.outlets_source) + "</code> · " + D.mesh_points.toLocaleString() + " model points";
+    $("warn").textContent = (D.problem ? "The last look for a new model run had a problem: " + D.problem + ". " : "") +
+      (now - ms(D.cycle_utc) > 14 * 3600000 ? "This model run is more than 14 hours old; NOAA may be late, or the data job can’t reach it." : "");
+    $("mind").textContent = deep(D.min_depth_m);
+    var rows = D.outlets.map(function (o, i) { var r = refOf(o), pk = peakIn(o.series, now, end), gp = r && peakIn(r.series.model, now, end);
+      return { o: o, k: "o" + i, r: r, pk: pk, diff: pk && gp ? pk[1] - gp[1] : null }; }).filter(function (x) { return inCity(x.o); })
+      .sort(function (a, b) { return (b.pk ? b.pk[1] : -99) - (a.pk ? a.pk[1] : -99); });
+    $("tblnone").hidden = rows.length > 0; $("tbl").parentNode.hidden = !rows.length;
+    $("tbl").innerHTML = "<thead><tr><th>Outlet</th><th>City</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th>When</th><th class='n'>vs gauge<span class='sm'>ft</span></th><th>Model point</th></tr></thead><tbody>" +
+      rows.map(function (x) { var o = x.o;
+        return "<tr class='row" + (O.sel === x.k ? " on" : "") + "' data-k='" + x.k + "'><td><button type='button'>" + esc(oName(o)) + "</button><span class='sm'>" + esc(o.ids.join(", ")) + "</span></td><td>" + esc(o.city) + "</td>" +
+          "<td class='n'><b>" + (x.pk ? ft(x.pk[1]) : "–") + "</b>" + (x.pk && x.pk[1] >= RED ? " <span class='flag'>≥ " + RED.toFixed(1) + "</span>" : "") +
+          (o.bfe_ft != null ? "<span class='sm'>FEMA BFE " + ft(o.bfe_ft) + (x.pk ? " (" + sgn(x.pk[1] - o.bfe_ft) + ")" : "") + "</span>" : "") + "</td>" +
+          "<td>" + (x.pk ? esc(when(x.pk[0])) : "") + "</td><td class='n'>" + sgn(x.diff) + "<span class='sm'>" + esc(x.r ? x.r.name : "") + "</span></td>" + nodeCell(o.node) + "</tr>"; }).join("") + "</tbody>";
+    $("refs").innerHTML = "<thead><tr><th>Gauge</th><th>Model point</th><th class='n'>Offset to NAVD88<span class='sm'>ft</span></th><th>How</th><th class='n'>Left over<span class='sm'>ft</span></th><th class='n'>MHHW<span class='sm'>ft NAVD88</span></th></tr></thead><tbody>" +
+      D.refs.map(function (r) { return "<tr><td>" + esc(r.name) + " <span class='sm'>" + esc(r.id) + "</span></td><td>" + dist(r.node.dist_m) + " away, " + deep(r.node.depth_m) + " deep</td>" +
+        "<td class='n'>" + (r.offset_ft == null ? "–" : "+" + r.offset_ft.toFixed(2)) + "</td><td>" + esc(r.offset_method || "") + "</td><td class='n'>" + (r.check_rms_ft == null ? "–" : r.check_rms_ft.toFixed(2)) +
+        "</td><td class='n'>" + ft(r.mhhw_ft) + "</td></tr>"; }).join("") + "</tbody>";
+    // the graph: the selection if it is still in this city, else the highest outlet shown
+    if (!O.sel || !item(O.sel) || !inCity(item(O.sel))) O.sel = rows.length ? rows[0].k : null;
+    pick(O.sel, true);
+  }
+  function lpLine(id) {   // one line under each low spot in the list: the model's highest water in the next 48 hours
+    var i = lowIdx(id); if (i < 0) return "";
+    var p = O.D.lowpoints[i], st = lpState(p);
+    if (!p.peak) return "";
+    return '<span class="md">Bay model, next 48 h: highest ' + ft(p.peak.ft) + " ft NAVD88 " + esc(when(p.peak.t)) + " · <span class='mg " + st + "'>" + sgn(p.margin_ft) + " ft</span> " +
+      (p.margin_ft >= 0 ? "above where it comes over" : "from where it comes over (" + ft(p.overtop_ft) + " ft)") + (p.reaches_utc ? " · reaches it " + esc(when(p.reaches_utc)) : "") + "</span>";
+  }
+  function pick(key, quiet) {
+    var o = item(key), card = $("chcard");
+    Array.prototype.forEach.call(document.querySelectorAll("#tbl tr.row"), function (tr) { tr.classList.toggle("on", tr.getAttribute("data-k") === key); });
+    if (!o || typeof Chart === "undefined") { card.hidden = true; if (selLayer) selLayer.clearLayers(); return; }
+    O.sel = key; card.hidden = false;
+    var low = key[0] === "l", r = refOf(o), now = Date.now(), name = low ? o.name : oName(o) + " outlet";
+    $("chTitle").textContent = "Bay model at " + name;
+    var P = function (s) { return (s || []).map(function (p) { return { x: ms(p[0]), y: p[1] }; }); };
+    var all = P(o.series).concat(r ? P(r.series.model).concat(P(r.series.table)) : []);
+    var x0 = Math.min.apply(null, all.map(function (p) { return p.x; })), x1 = Math.max.apply(null, all.map(function (p) { return p.x; }));
+    var lvl = low ? o.overtop_ft : RED;
+    var ys = all.map(function (p) { return p.y; }).concat(lvl != null ? [lvl] : [], !low && o.bfe_ft != null ? [o.bfe_ft] : []);
+    var y0 = Math.floor(Math.min.apply(null, ys)) - 0.5, y1 = Math.ceil(Math.max.apply(null, ys)) + 0.5;
+    var mine = { label: "SFBOFS at the model point for this " + (low ? "low spot" : "outlet"), data: P(o.series), borderColor: css("--outlet"), borderWidth: 3.5, pointRadius: 0, tension: 0.3 };
+    var gauge = r ? { label: "SFBOFS at the " + r.name + " gauge’s model point", data: P(r.series.model), borderColor: css("--gauge"), borderWidth: 2, borderDash: [7, 4], pointRadius: 0, tension: 0.3 } : null;
+    var proj = r ? { label: "NOAA projection at " + r.name, data: P(r.series.noaa), borderColor: css("--noaa"), borderWidth: 3, borderDash: [0.1, 5], borderCapStyle: "round", pointRadius: 0 } : null;
+    var table = r ? { label: "Tide table at " + r.name, data: P(r.series.table), borderColor: css("--table"), borderWidth: 1.5, pointRadius: 0, tension: 0.3 } : null;
+    var level = lvl == null ? null : { label: low ? "Comes over here at " + ft(lvl) + " ft (BCDC ART, MHHW + " + o.level_in + " in)" : "Flood level " + RED.toFixed(1) + " ft (Redwood City, provisional)",
+      data: [{ x: x0, y: lvl }, { x: x1, y: lvl }], borderColor: css("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0 };
+    var bfe = !low && o.bfe_ft != null ? { label: "FEMA base flood elevation " + ft(o.bfe_ft) + " ft", data: [{ x: x0, y: o.bfe_ft }, { x: x1, y: o.bfe_ft }], borderColor: css("--bfe"), borderWidth: 2.5, borderDash: [14, 5], pointRadius: 0 } : null;
+    var nowL = { label: "Now", data: [{ x: now, y: y0 }, { x: now, y: y1 }], borderColor: css("--muted"), borderWidth: 1, pointRadius: 0 };
+    var sets = [table, level, bfe, nowL, proj, gauge, mine].filter(Boolean), keyOrder = [mine, gauge, proj, table, level, bfe].filter(Boolean);
+    if (chart) chart.destroy();
+    chart = new Chart($("ch"), { type: "line", data: { datasets: sets }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+      interaction: { mode: "nearest", axis: "x", intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: function (it) { return fDay.format(new Date(it[0].parsed.x)); }, label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " ft"; } } } },
+      scales: { x: { type: "linear", min: x0, max: x1, ticks: { stepSize: 6 * 3600000, maxRotation: 0, autoSkipPadding: 8, color: css("--muted"), callback: function (v) { var d = new Date(v), h = fHour.format(d); return h === "12 AM" ? fWd.format(d) : h; } }, grid: { color: css("--line") } },
+        y: { min: y0, max: y1, ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") }, title: { display: true, text: "ft NAVD88", color: css("--muted") } } } } });
+    $("chKey").innerHTML = keyOrder.map(function (s) { var d = s.borderDash ? (s.borderDash[0] < 1 ? "0.1 " + s.borderDash[1] : s.borderDash.join(" ")) : "";
+      return "<span><svg width='26' height='8' aria-hidden='true' style='vertical-align:middle;margin-right:5px'><line x1='2' y1='4' x2='24' y2='4' stroke='" + s.borderColor + "' stroke-width='" + Math.max(1.5, s.borderWidth) + "'" +
+        (d ? " stroke-dasharray='" + d + "'" : "") + (s.borderCapStyle === "round" ? " stroke-linecap='round'" : "") + "/></svg>" + esc(s.label) + "</span>"; }).join("");
+    var pk = peakIn(o.series, now, now + 48 * 3600000), gp = r && peakIn(r.series.model, now, now + 48 * 3600000);
+    $("chSum").textContent = pk ? "Highest in the next 48 hours: " + ft(pk[1]) + " ft NAVD88, " + when(pk[0]) + "." +
+      (low && o.overtop_ft != null ? (o.reaches_utc ? " Reaches where the Bay comes over (" + ft(o.overtop_ft) + " ft) " + when(o.reaches_utc) + "." : " " + Math.abs(o.margin_ft).toFixed(2) + " ft below where the Bay comes over (" + ft(o.overtop_ft) + " ft).") : "") +
+      (gp ? " At the " + r.name + " gauge’s model point: " + ft(gp[1]) + " ft, " + when(gp[0]) + "." : "") + " Model point " + dist(o.node.dist_m) + " away." : "No model values for this point.";
+    $("ch").setAttribute("aria-label", name + ". " + $("chSum").textContent);
+    Object.keys(marks).forEach(function (k) { var m = marks[k]; m.setStyle({ weight: k === key ? 4 : 2, radius: k === key ? 10 : 7 }); if (k === key) m.bringToFront(); });
+    if (selLayer) {
+      selLayer.clearLayers();
+      var a = [o.lat, o.lon], n = [o.node.lat, o.node.lon];
+      L.polyline([a, n], { color: "#ffffff", weight: 3, dashArray: "4 3", interactive: false }).addTo(selLayer);
+      L.circleMarker(n, { radius: 6, color: "#fff", weight: 2, fillColor: "#c2185b", fillOpacity: 1 }).bindTooltip("Bay model point used: " + deep(o.node.depth_m) + " deep").addTo(selLayer);
+      if (!quiet && map) map.fitBounds([a, n], { padding: [40, 40], maxZoom: 16 });
+    }
+  }
+  function drawOn(m) {   // creek outlets (dark blue with a white edge) and the NOAA gauges (orange triangles) on the page's map
+    if (!O.D || !window.L || !m) return;
+    if (!over) { over = L.layerGroup().addTo(m); selLayer = L.layerGroup().addTo(m); }
+    over.clearLayers(); marks = {};
+    O.D.outlets.forEach(function (o, i) {
+      if (!inCity(o)) return;
+      marks["o" + i] = L.circleMarker([o.lat, o.lon], { radius: 7, color: "#fff", weight: 2, fillColor: "#0A5587", fillOpacity: 1 })
+        .bindTooltip(esc(oName(o)) + " creek outlet").on("click", function () { pick("o" + i); }).addTo(over);
+    });
+    O.D.refs.forEach(function (r) {
+      L.marker([r.lat, r.lon], { icon: L.divIcon({ className: "", html: "<div style='width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #e65100'></div>", iconSize: [16, 14], iconAnchor: [8, 7] }),
+        title: "NOAA gauge " + r.name, alt: "NOAA gauge " + r.name, keyboard: false }).bindTooltip("NOAA tide gauge " + esc(r.name) + " (" + esc(r.id) + ")").addTo(over);
+    });
+    pick(O.sel, true);
+  }
+  function bounds() {
+    if (!O.D || !window.L) return null;
+    var pts = O.D.outlets.filter(inCity).map(function (o) { return [o.lat, o.lon]; });
+    return pts.length ? L.latLngBounds(pts) : null;
+  }
+  function load() {
+    fetch(URL_ + "?t=" + Math.floor(Date.now() / 300000), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) { if (!d.outlets || !d.outlets.length) throw new Error("no outlets"); O.D = d; if (typeof window.render === "function") window.render(); render(); })
+      .catch(function () { /* the low spots and tides still show; the model parts stay hidden */ });
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("#tbl tr.row");
+    if (t) { pick(t.getAttribute("data-k")); if (window.innerWidth < 860) $("chcard").scrollIntoView({ behavior: "smooth", block: "start" }); }
+  });
+  setInterval(load, 15 * 60000);
+  return { load: load, render: render, drawOn: drawOn, bounds: bounds, lpLine: lpLine, pickLow: function (id) { var i = lowIdx(id); if (i >= 0) pick("l" + i, true); },
+    get D() { return O.D; }, get sel() { return O.sel; }, set sel(v) { O.sel = v; } };
+})();
 
 /* Weather Service coastal alerts for the county: one line, full details on the home page */
 function loadAlerts() {
@@ -508,7 +756,19 @@ if (TS) {
   setInterval(TS.loadModel, 60 * 60000);
   setInterval(TS.loadOffset, 60 * 60000);
 }
-loadSpots(); loadShapes(); loadAlerts();
+$("city").addEventListener("change", function () {
+  CITY = this.value;
+  try { localStorage.setItem("fews_city", CITY); } catch (e) { /* no storage */ }
+  try { var u = new URL(location.href); if (CITY) u.searchParams.set("city", CITY); else u.searchParams.delete("city"); history.replaceState(null, "", u.toString()); } catch (e) { /* old browser */ }
+  OT.sel = null; render();
+});
+$("cityLink").addEventListener("click", function () {
+  var u = location.origin + location.pathname + "?city=" + encodeURIComponent(CITY), b = this;
+  var done = function () { b.textContent = "Link copied"; setTimeout(function () { b.textContent = "Copy a link to this city"; }, 2500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(done, function () { prompt("Link to this city:", u); });
+  else prompt("Link to this city:", u);
+});
+loadSpots(); loadShapes(); loadAlerts(); OT.load();
 setInterval(loadAlerts, 5 * 60000);
 setInterval(render, 60000);
 LK.onChange(render);   // edited lookups/ files: wording and MHHW (the wording on the page is filled in by lookups.js)
