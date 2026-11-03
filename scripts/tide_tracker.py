@@ -282,6 +282,13 @@ def update_history(hist, station, first_year, wy_start, fetch=get_json, budget_s
             except ValueError as ex:   # NOAA answered with an error for this source (e.g. no NAVD88 for old data): try the next
                 errs.append("%s/%s: %s" % (product, datum, str(ex)[:80]))
                 continue
+            except urllib.error.HTTPError as ex:
+                if ex.code in (400, 404):   # NOAA refuses this request for this year (e.g. 400 before its NAVD88 record): try the next
+                    errs.append("%s/%s: HTTP %d" % (product, datum, ex.code))
+                    continue
+                log("  %s %d %s: %s" % (station, y, product, ex))   # 403/429 (too many requests), 5xx: try again next run
+                stop = True
+                break
             except Exception as ex:   # noqa: BLE001  (network, request limit): try again next run
                 log("  %s %d %s: %s" % (station, y, product, ex))
                 stop = True

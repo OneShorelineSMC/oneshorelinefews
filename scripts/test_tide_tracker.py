@@ -294,5 +294,14 @@ for metres in (False, True):
     check("study read from SWEL fields" + (" in metres, turned into feet" if metres else " in feet") + " (a number kept as text too)",
           "_error" not in su and abs(v.get("1", 0) - 8.3) < 0.02 and abs(v.get("5", 0) - 9.0) < 0.02 and abs(v.get("100", 0) - 10.3) < 0.02)
 
+# NOAA answering 400 for an old year (as it does for 1968 at Alameda and San Francisco): the next source is tried,
+# and the download keeps going to older years instead of stopping there every run
+def bad400(url):
+    if "product=high_low" in url and "begin_date=1968" in url and "datum=NAVD" in url:
+        raise urllib.error.HTTPError(url, 400, "Bad Request", {}, None)
+    return fetch(url)
+hh = {"9414290": {str(y): {"to": "%d-12-31" % y, "d": {"0101": 5.0}} for y in range(1969, 2026)}}
+T.update_history(hh, "9414290", 1966, dt.date(2026, 10, 1), bad400, 30, lambda *a: None, clock)
+check("HTTP 400 for one source: the next source is tried and older years still come", hh["9414290"]["1968"].get("src") == "hl_mllw" and "1966" in hh["9414290"])
 print("tide_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
