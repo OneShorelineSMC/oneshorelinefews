@@ -47,7 +47,7 @@
   #alert { display: none; color: #fff; background: #9a5b00; padding: 10px max(16px, calc((100% - 860px) / 2 + 16px)); gap: 10px; align-items: center; text-decoration: none; }
   #alert.show { display: flex; } #alert.warning { background: #b71c1c; } #alert.statement { background: #455a75; }
   #alert .ic { font-size: 22px; line-height: 1; } #alert .tx { flex: 1; min-width: 0; } #alert b { font-size: 16px; } #alert small { display: block; font-size: 12.5px; opacity: .92; }
-  main { max-width: 1000px; margin: 0 auto; padding: 0 12px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 0 12px; }
   /* city picker and the Bay model parts (from the creek outlets page, 2026-11-03) */
   .citybar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; position: sticky; top: 0; z-index: 900; }
   .citybar label { font-weight: 700; color: var(--ink); font-size: 15px; }
@@ -62,6 +62,7 @@
   .meta, .note { font-size: 13px; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
   .card h2 { font-size: 17px; color: var(--ink); margin: 0 0 6px; }
   .chartbox { position: relative; height: 300px; }
+  .warn:empty, .meta:empty { display: none; }
   .chkey { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
   .tablewrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
@@ -75,8 +76,6 @@
   .flag { color: var(--warnink); background: var(--warnbg); border-radius: 4px; padding: 0 4px; font-size: 12px; font-weight: 600; }
   .mg { font-weight: 700; border-radius: 4px; padding: 0 4px; }
   .mg.reach { background: #d32f2f; color: #fff; } .mg.near { background: #f57c00; color: #1a1a1a; }
-  #list li .md { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
-  #list li.on { background: var(--sel); }
   details code { font-size: 12.5px; }
   h1.page { font-size: 22px; color: var(--ink); margin: 12px 2px 2px; }
   .intro { font-size: 14px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.45; }
@@ -93,6 +92,43 @@
   #head .later { font-size: 14px; color: var(--muted); }
   /* the map */
   #map { height: 62vh; min-height: 340px; max-height: 620px; border-radius: 10px; }
+  /* The places panel and the map (2026-11-03): side by side on a wide screen, like a store finder; on a phone the map first */
+  .explore { display: grid; gap: 12px; margin-top: 12px; }
+  .explore > .card { margin-top: 0; }
+  #panel { display: flex; flex-direction: column; min-width: 0; padding: 10px 12px; }
+  #panel h2 { margin: 0 0 6px; font-size: 17px; color: var(--ink); }
+  .ptabs { display: flex; gap: 6px; margin: 0 0 8px; }
+  .ptabs button { flex: 1; font: inherit; font-size: 14px; font-weight: 600; min-height: 36px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+  .ptabs button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--card); }
+  .popts { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 13.5px; color: var(--muted); margin: 0 0 6px; }
+  .popts label { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; cursor: pointer; }
+  .popts input { width: 18px; height: 18px; margin: 0; }
+  .popts select { font: inherit; font-size: 13.5px; padding: 3px 6px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); min-height: 30px; }
+  #plist { list-style: none; margin: 0; padding: 0; }
+  #plist li { border-top: 1px solid var(--line); }
+  #plist button.pl { display: block; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: 0; border-left: 5px solid var(--line);
+    padding: 7px 8px 7px 9px; cursor: pointer; line-height: 1.3; }
+  #plist button.pl:hover { background: var(--sel); }
+  #plist button.pl:focus-visible { outline: 3px solid var(--blue); outline-offset: -3px; }
+  #plist button.pl.on { background: var(--sel); box-shadow: inset 0 0 0 2px var(--outlet); }
+  #plist button.pl b { font-size: 14.5px; color: var(--ink); }
+  #plist button.pl .r { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  #plist button.pl .r.w.soon { color: var(--soon); font-weight: 700; } #plist button.pl .r.w.later { color: var(--later); }
+  #plist button.pl.st-soon { border-left-color: var(--soon); } #plist button.pl.st-later { border-left-color: var(--later); }
+  #plist button.pl.st-high { border-left: 5px dashed var(--later); } #plist button.pl.st-outlet { border-left-color: #0A5587; }
+  #pmore { margin: 8px 0 0; }
+  .pnone { font-size: 14px; color: var(--muted); padding: 8px 2px; }
+  .mapbar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin: 0 4px 8px; }
+  .mapbar .lbl { font-size: 13px; }
+  .leaflet-popup-content .pgo { display: inline-block; margin-top: 6px; font: inherit; font-size: 13.5px; color: #0a5587; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+  @media (min-width: 900px) {
+    .explore { grid-template-columns: minmax(310px, 400px) 1fr; align-items: start; }
+    #panel { order: 1; height: calc(min(72vh, 680px) + 74px); }
+    .explore .mapcard { order: 2; }
+    .explore #map { height: min(72vh, 680px); max-height: none; }
+    #plist { overflow-y: auto; flex: 1; min-height: 0; margin: 0 -12px; padding: 0 12px; }
+    #pmore { display: none; }
+  }
   .mapcard { padding: 8px; }
   .key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); margin: 8px 4px 2px; }
   .key i { display: inline-block; width: 16px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
@@ -100,17 +136,9 @@
   .leaflet-container .leaflet-control-attribution { font-size: 10px; } .leaflet-control-attribution a { text-decoration: underline; }
   .leaflet-popup-content { font-size: 14px; line-height: 1.4; margin: 10px 12px; } .leaflet-popup-content b { color: #003B5C; }
   /* the list */
-  #list h2 { margin: 0 0 6px; font-size: 17px; color: var(--ink); }
-  #list h3 { margin: 12px 0 4px; font-size: 15px; color: var(--ink); }
-  #list ul { list-style: none; margin: 0; padding: 0; }
-  #list li { padding: 7px 0; border-top: 1px solid var(--line); font-size: 14.5px; line-height: 1.35; cursor: pointer; }
-  #list li .nx { display: block; font-size: 13px; color: var(--muted); }
-  #list li .nx.soon { color: var(--soon); font-weight: 700; } #list li .nx.later { color: var(--later); }
-  #list li .ex { display: block; font-size: 13px; color: var(--text); margin-top: 1px; } #list li .ex.open { color: var(--muted); font-style: italic; }
   .key i.dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 5px 0 4px; vertical-align: 1px; }
   .key i.ring { width: 12px; height: 12px; border-radius: 50%; background: #fff; vertical-align: -2px; }
   .key i.ln { width: 18px; height: 0; border-radius: 0; vertical-align: 3px; }
-  #list li:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   details.card summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 32px; display: flex; align-items: center; }
   details.card p { font-size: 14px; line-height: 1.5; margin: 8px 0; }
   .lbl { font-size: 12.5px; color: var(--muted); }
@@ -158,9 +186,32 @@
 
   <div class="card" id="head" aria-live="polite"><h2>Loading tides…</h2></div>
 
-  <div class="card mapcard">
-    <div id="map" role="region" aria-label="Map of low spots along the Bay shoreline. The same places are listed below the map."></div>
-    <div class="key" id="key"></div>
+  <div class="explore">
+    <div class="card mapcard">
+      <div class="mapbar"><button type="button" class="btn" id="zoomAll">Zoom out to the county</button>
+        <span class="lbl">Select a place in the list or on the map to zoom in and see the Bay model for it.</span></div>
+      <div id="map" role="region" aria-label="Map of low spots and creek outlets along the Bay shoreline. The same places are listed beside the map."></div>
+      <div class="key" id="key"></div>
+    </div>
+    <!-- Every low spot and creek outlet in the city (or the county): one short row each, closest to coming over first -->
+    <section class="card" id="panel" aria-labelledby="pTitle">
+      <h2 id="pTitle">Low spots</h2>
+      <div class="ptabs" id="ptabs" hidden>
+        <button type="button" data-tab="spots" aria-pressed="true">Low spots</button>
+        <button type="button" data-tab="outlets" aria-pressed="false">Creek outlets</button>
+      </div>
+      <div class="popts">
+        <label id="devWrap"><input type="checkbox" id="devOnly"> Only with buildings or streets</label>
+        <label>Order <select id="pOrder">
+          <option value="close">Closest to coming over</option>
+          <option value="low">Lowest first</option>
+          <option value="name">A to Z</option>
+        </select></label>
+      </div>
+      <p class="pnone" id="pcount" aria-live="polite"></p>
+      <ul id="plist"></ul>
+      <p id="pmore" hidden><button type="button" class="btn" id="pmoreBtn">Show all</button></p>
+    </section>
   </div>
 
   <!-- The Bay model at the selected creek outlet or low spot -->
@@ -169,20 +220,18 @@
     <div class="chartbox"><canvas id="ch" role="img" aria-label="Water level graph"></canvas></div>
     <div class="chkey" id="chKey"></div>
     <p class="note" id="chSum" aria-live="polite"></p>
+    <p class="meta" id="meta"></p>
+    <div class="warn" id="warn"></div>
   </div>
 
-  <div class="card" id="outlets" hidden>
-    <h2>Creek outlets: highest water in the next 48 hours (Bay model)</h2>
+  <details class="card" id="outlets" hidden>
+    <summary>Creek outlets table: highest water in the next 48 hours, the model points and FEMA base flood elevations</summary>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Creek outlets table (scrolls sideways)"><table id="tbl"></table></div>
     <p class="note" id="tblnone" hidden>No creek outlets in this city.</p>
     <p class="note">“vs gauge”: how much higher (+) or lower (−) the model expects the high water at this outlet than at the nearest NOAA tide gauge
       over the same 48 hours; + means the water at this creek runs higher than the gauge shows. Select a row for its graph; the map zooms to it and
       shows the model point used (magenta dot).</p>
-    <p class="meta" id="meta"></p>
-    <div class="warn" id="warn"></div>
-  </div>
-
-  <div class="card" id="list"></div>
+  </details>
 
   <details class="card" id="datum">
     <summary>Bay model: datum check at the NOAA gauges</summary>
@@ -359,6 +408,14 @@ function popupFor(r, nx, now) {
   el.appendChild(b); el.appendChild(p1); el.appendChild(p2);
   var ex = expText(r);
   if (ex.t) { var p3 = document.createElement("div"); p3.textContent = ex.t; p3.style.marginTop = "4px"; if (ex.open) p3.style.fontStyle = "italic"; el.appendChild(p3); }
+  var lp = window.OT && OT.D && OT.low(r.id);
+  if (lp && lp.peak) {
+    var p4 = document.createElement("div"), g = document.createElement("button");
+    p4.style.marginTop = "4px";
+    p4.textContent = "Bay model, next 48 h: highest " + lp.peak.ft.toFixed(2) + " ft, " + OT.when(lp.peak.t) + " (" + (lp.margin_ft >= 0 ? "+" : "−") + Math.abs(lp.margin_ft).toFixed(2) + " ft from where it comes over)";
+    g.type = "button"; g.className = "pgo"; g.textContent = "Bay model graph ↓";
+    el.appendChild(p4); el.appendChild(g);
+  }
   return el;
 }
 
@@ -411,24 +468,8 @@ function render() {
   // Map
   drawMap(info, now);
 
-  // List, grouped by level (lowest first), each with when the tide could next reach it
-  var L = $("list");
-  if (!rows || !rows.length) { L.innerHTML = ""; L.style.display = "none"; }
-  else {
-    L.style.display = "";
-    var groups = {}; info.forEach(function (x) { (groups[x.r.level_in] = groups[x.r.level_in] || []).push(x); });
-    L.innerHTML = "<h2>" + esc(LK.text("shore_list_title")) + "</h2>" + Object.keys(groups).sort(function (a, b) { return a - b; }).map(function (k) {
-      var ORD = ["soon", "later", "high", "none"];
-      var g = groups[k].sort(function (a, b) {
-        return ORD.indexOf(a.st) - ORD.indexOf(b.st) || (isDev(b.r) - isDev(a.r)) || ((+b.r.buildings || 0) - (+a.r.buildings || 0));
-      });
-      return "<h3>" + esc(LK.text("shore_group", { ft: ft1(levelFt(g[0].r)) })) + "</h3><ul>" + g.map(function (x) {
-        return '<li tabindex="0" role="button" data-id="' + esc(x.r.id) + '">' + esc(x.r.name || x.r.id) +
-          '<span class="nx ' + (x.st === "soon" ? "soon" : x.st === "none" ? "" : "later") + '">' + esc(whenText(x.nx, now)) + "</span>" +
-          (function (ex) { return ex.t ? '<span class="ex' + (ex.open ? " open" : "") + '">' + esc(ex.t) + "</span>" : ""; })(expText(x.r)) + (window.OT && OT.D ? OT.lpLine(x.r.id) : "") + "</li>";
-      }).join("") + "</ul>";
-    }).join("");
-  }
+  LAST = { info: info, now: now };
+  drawPanel();
   $("updated").textContent = "Tides from NOAA at Redwood City · updated " + TS.clock(now) + " · refreshes automatically";
 }
 
@@ -532,6 +573,7 @@ function drawMap(info, now) {
         lay.addLayer(L.circleMarker([+x.r.lat, +x.r.lon], o ? { radius: 5, color: sty.color, weight: 2, fillColor: "#fff", fillOpacity: 1 }   // open land: hollow
           : { radius: 7, color: "#fff", weight: 2, fillColor: sty.color, fillOpacity: 1 }));
       lay.bindPopup(popupFor(x.r, x.nx, now)).addTo(map);
+      lay.on("click", (function (id) { return function () { selectSpot(id, true); }; })(x.r.id));
       layers[x.r.id] = lay;
       bounds.push(lay.getBounds());
     });
@@ -569,6 +611,7 @@ function drawMap(info, now) {
     bounds.forEach(function (b) { bb.extend(b); }); if (ob) bb.extend(ob);
     map.fitBounds(bb, { padding: [16, 16], maxZoom: CITY ? 15 : 12 }); map._fitKey = CITY;
   }
+  $("zoomAll").textContent = CITY ? "Zoom out to all of " + CITY : "Zoom out to the county";
   var seen = {}; info.forEach(function (x) { seen[x.st] = 1; });
   var k = [["soon", "shore_key_soon"], ["later", "shore_key_later"], ["high", "shore_key_high"], ["none", "shore_key_none"]].filter(function (p) { return seen[p[0]]; });
   var html = k.map(function (p) {
@@ -586,14 +629,101 @@ function drawMap(info, now) {
   }
   KEY = html; drawKey();
 }
-// Tap a spot in the list: open it on the map
-$("list").addEventListener("click", function (e) {
-  var li = e.target.closest("li[data-id]"); if (!li || !map || !layers[li.dataset.id]) return;
-  var lay = layers[li.dataset.id]; map.fitBounds(lay.getBounds(), { maxZoom: 16, padding: [20, 20] }); lay.openPopup();
-  OT.pickLow(li.dataset.id);
-  $("map").scrollIntoView({ behavior: "smooth", block: "center" });
+/* ===== The places panel beside the map (2026-11-03): every low spot (or creek outlet) in the city, one short row each.
+   Select a row: the map zooms to it, its popup opens and the Bay model graph below shows it. Select a place on the map:
+   its row is marked and scrolled into view in the panel. ===== */
+var LAST = null, PSEL = null, PALL = false, PAGE_N = 12;
+var PS = { tab: "spots", dev: true, ord: "close" };
+try { var _ps = JSON.parse(localStorage.getItem("fews_shore_panel") || "{}"); if (_ps.ord) PS.ord = _ps.ord; if (_ps.dev === false) PS.dev = false; if (_ps.tab) PS.tab = _ps.tab; } catch (e) { /* none */ }
+function savePS() { try { localStorage.setItem("fews_shore_panel", JSON.stringify(PS)); } catch (e) { /* no storage */ } }
+function shortWhen(x, now) {   // the first day the tide could reach a spot, short
+  var f = firstOf(x.nx); if (!f) return "";
+  return (f.ifHigh ? "If the Bay stays high: " : "Tide reaches it ") + dayName(f.x.d, f.x.today) + " " + TS.clock(f.x.t) + " (" + (f.ifHigh ? f.x.ov : f.x.v).toFixed(1) + " ft)";
+}
+function drawPanel() {
+  if (!LAST) return;
+  var info = LAST.info, now = LAST.now, OD = window.OT && OT.D, outs = OD ? OT.outletRows() : [];
+  var tabs = $("ptabs"); tabs.hidden = !outs.length;
+  if (!outs.length) PS.tab = "spots";
+  Array.prototype.forEach.call(tabs.querySelectorAll("button"), function (b) {
+    var t = b.getAttribute("data-tab"); b.setAttribute("aria-pressed", t === PS.tab ? "true" : "false");
+    b.textContent = (t === "spots" ? "Low spots" : "Creek outlets") + " (" + (t === "spots" ? info.length : outs.length) + ")";
+  });
+  $("devWrap").hidden = PS.tab !== "spots"; $("devOnly").checked = PS.dev;
+  $("pOrder").value = PS.ord;
+  $("pOrder").options[1].textContent = PS.tab === "spots" ? "Lowest first" : "Highest water first";
+  var where = CITY ? " in " + CITY : " in the county", items;
+  if (PS.tab === "spots") {
+    $("pTitle").textContent = "Low spots" + where;
+    var list = info.filter(function (x) { return !PS.dev || isDev(x.r); });
+    var mg = function (x) { var p = OD && OT.low(x.r.id); return p && p.margin_ft != null ? p.margin_ft : -99; };
+    var RANK = { soon: 0, later: 1, high: 2, none: 3 };
+    list.sort(PS.ord === "name" ? function (a, b) { return String(a.r.name).localeCompare(String(b.r.name)); }
+      : PS.ord === "low" ? function (a, b) { return levelFt(a.r) - levelFt(b.r) || mg(b) - mg(a); }
+      : function (a, b) { return RANK[a.st] - RANK[b.st] || mg(b) - mg(a) || levelFt(a.r) - levelFt(b.r); });
+    $("pcount").textContent = PS.dev && list.length < info.length ? list.length + " of " + info.length + " low spots have buildings or streets; untick to see open land too." : "";
+    items = list.map(function (x) {
+      var p = OD && OT.low(x.r.id), ex = expText(x.r), w = shortWhen(x, now);
+      return { k: "s:" + x.r.id, cls: "st-" + x.st, html: "<b>" + esc(x.r.name || x.r.id) + "</b>" +
+        "<span class='r'>" + esc(x.r.id) + (x.r.length_m ? " · " + Math.round(+x.r.length_m * 3.28084).toLocaleString() + " ft long" : "") + "</span>" +
+        "<span class='r'>Comes over at " + levelFt(x.r).toFixed(1) + " ft" + (p && p.peak ? " · Bay model, 48 h: " + p.peak.ft.toFixed(1) + " ft <span class='mg " + OT.lpState(p) + "'>" +
+          (p.margin_ft >= 0 ? "+" : "−") + Math.abs(p.margin_ft).toFixed(1) + "</span>" : "") + "</span>" +
+        (w ? "<span class='r w " + (x.st === "soon" ? "soon" : "later") + "'>" + esc(w) + "</span>" : "") +
+        "<span class='r'>" + esc([ex.t, CITY ? "" : cityOf(x.r)].filter(Boolean).join(" · ")) + "</span>" };
+    });
+  } else {
+    $("pTitle").textContent = "Creek outlets" + where;
+    $("pcount").textContent = "";
+    var ol = outs.slice();
+    if (PS.ord === "name") ol.sort(function (a, b) { return OT.oName(a.o).localeCompare(OT.oName(b.o)); });   // else highest water first (as given)
+    items = ol.map(function (x) { var o = x.o;
+      return { k: x.k, cls: "st-outlet", html: "<b>" + esc(OT.oName(o)) + "</b>" +
+        "<span class='r'>" + (x.pk ? "Bay model, 48 h: " + x.pk[1].toFixed(2) + " ft, " + esc(OT.when(x.pk[0])) : "No model values") +
+        (x.diff != null ? " · " + (x.diff >= 0 ? "+" : "−") + Math.abs(x.diff).toFixed(2) + " vs the " + esc(x.r.name) + " gauge" : "") + "</span>" +
+        "<span class='r'>" + esc([o.bfe_ft != null ? "FEMA BFE " + o.bfe_ft.toFixed(1) + " ft" : "", CITY ? "" : cityOf(o)].filter(Boolean).join(" · ")) + "</span>" };
+    });
+  }
+  var wide = window.matchMedia("(min-width: 900px)").matches, show = wide || PALL ? items : items.slice(0, PAGE_N);
+  if (!wide && PSEL && !PALL && !show.some(function (it) { return it.k === PSEL; })) { var sel = items.filter(function (it) { return it.k === PSEL; }); show = show.concat(sel); }
+  $("plist").innerHTML = items.length ? show.map(function (it) {
+    return "<li><button type='button' class='pl " + it.cls + (it.k === PSEL ? " on" : "") + "' data-k='" + esc(it.k) + "'" + (it.k === PSEL ? " aria-current='true'" : "") + ">" + it.html + "</button></li>";
+  }).join("") : "<li class='pnone'>" + esc(PS.tab === "spots" ? "No low spots" + where + (PS.dev ? " with buildings or streets." : ".") : "No creek outlets" + where + ".") + "</li>";
+  $("pmore").hidden = wide || PALL || items.length <= PAGE_N;
+  $("pmoreBtn").textContent = "Show all " + items.length;
+}
+function markRow(k, scroll) {   // mark the selected place's row; scroll it into view inside the panel only (the page stays put)
+  PSEL = k;
+  var tab = k && k.indexOf("s:") === 0 ? "spots" : k ? "outlets" : PS.tab;
+  if (tab !== PS.tab) { PS.tab = tab; }
+  drawPanel();
+  var b = document.querySelector("#plist button.pl.on"), L_ = $("plist");
+  if (b && scroll && L_.scrollHeight > L_.clientHeight) L_.scrollTop = b.offsetTop - L_.offsetTop - L_.clientHeight / 3;
+}
+function selectSpot(id, fromMap) {
+  var lay = layers[id]; if (!lay || !map) return;
+  markRow("s:" + id, fromMap);
+  if (!fromMap) { map.fitBounds(lay.getBounds(), { maxZoom: 16, padding: [30, 30] }); lay.openPopup(); }
+  if (window.OT) OT.pickLow(id);
+}
+function selectOutlet(k, fromMap) {
+  markRow(k, fromMap);
+  if (window.OT) OT.pick(k, !!fromMap);
+}
+$("plist").addEventListener("click", function (e) {
+  var b = e.target.closest("button.pl"); if (!b) return;
+  var k = b.getAttribute("data-k");
+  if (k.indexOf("s:") === 0) selectSpot(k.slice(2)); else selectOutlet(k);
+  if (!window.matchMedia("(min-width: 900px)").matches) $("map").scrollIntoView({ behavior: "smooth", block: "start" });
 });
-$("list").addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target.matches("li[data-id]")) { e.preventDefault(); e.target.click(); } });
+$("ptabs").addEventListener("click", function (e) { var b = e.target.closest("button[data-tab]"); if (!b) return; PS.tab = b.getAttribute("data-tab"); PALL = false; savePS(); drawPanel(); });
+$("devOnly").addEventListener("change", function () { PS.dev = this.checked; savePS(); drawPanel(); });
+$("pOrder").addEventListener("change", function () { PS.ord = this.value; savePS(); drawPanel(); });
+$("pmoreBtn").addEventListener("click", function () { PALL = true; drawPanel(); });
+$("zoomAll").addEventListener("click", function () { if (map) { map._fitKey = null; map.closePopup(); render(); } });
+window.matchMedia("(min-width: 900px)").addEventListener && window.matchMedia("(min-width: 900px)").addEventListener("change", drawPanel);
+document.addEventListener("click", function (e) {   // "Bay model graph" in a map popup
+  if (e.target.closest && e.target.closest(".pgo")) $("chcard").scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 /* ===== The Bay model at the creek outlets and low spots (outlet_tides.json, scripts/outlet_tides.py): the outlets table,
    the low spots' 48-hour margin, the graph for the selected place, the outlet markers and the model point on the map.
@@ -625,17 +755,13 @@ var OT = (function () {
   function render() {
     if (!O.D) return;
     var D = O.D, now = Date.now(), end = now + 48 * 3600000;
-    var first = $("outlets").hidden;
     $("outlets").hidden = false;
-    if (first && location.hash === "#outlets") setTimeout(function () { $("outlets").scrollIntoView({ block: "start" }); }, 50);
     $("meta").innerHTML = "Bay model run " + esc(fTz.format(new Date(ms(D.cycle_utc)))) + " · read " + esc(fTz.format(new Date(ms(D.generated_utc)))) +
       " · outlets from <code>" + esc(D.outlets_source) + "</code> · " + D.mesh_points.toLocaleString() + " model points";
     $("warn").textContent = (D.problem ? "The last look for a new model run had a problem: " + D.problem + ". " : "") +
       (now - ms(D.cycle_utc) > 14 * 3600000 ? "This model run is more than 14 hours old; NOAA may be late, or the data job can’t reach it." : "");
     $("mind").textContent = deep(D.min_depth_m);
-    var rows = D.outlets.map(function (o, i) { var r = refOf(o), pk = peakIn(o.series, now, end), gp = r && peakIn(r.series.model, now, end);
-      return { o: o, k: "o" + i, r: r, pk: pk, diff: pk && gp ? pk[1] - gp[1] : null }; }).filter(function (x) { return inCity(x.o); })
-      .sort(function (a, b) { return (b.pk ? b.pk[1] : -99) - (a.pk ? a.pk[1] : -99); });
+    var rows = outletRows();
     $("tblnone").hidden = rows.length > 0; $("tbl").parentNode.hidden = !rows.length;
     $("tbl").innerHTML = "<thead><tr><th>Outlet</th><th>City</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th>When</th><th class='n'>vs gauge<span class='sm'>ft</span></th><th>Model point</th></tr></thead><tbody>" +
       rows.map(function (x) { var o = x.o;
@@ -650,6 +776,13 @@ var OT = (function () {
     // the graph: the selection if it is still in this city, else the highest outlet shown
     if (!O.sel || !item(O.sel) || !inCity(item(O.sel))) O.sel = rows.length ? rows[0].k : null;
     pick(O.sel, true);
+  }
+  function outletRows() {   // the outlets in the city, highest water in the next 48 hours first
+    if (!O.D) return [];
+    var now = Date.now(), end = now + 48 * 3600000;
+    return O.D.outlets.map(function (o, i) { var r = refOf(o), pk = peakIn(o.series, now, end), gp = r && peakIn(r.series.model, now, end);
+      return { o: o, k: "o" + i, r: r, pk: pk, diff: pk && gp ? pk[1] - gp[1] : null }; }).filter(function (x) { return inCity(x.o); })
+      .sort(function (a, b) { return (b.pk ? b.pk[1] : -99) - (a.pk ? a.pk[1] : -99); });
   }
   function lpLine(id) {   // one line under each low spot in the list: the model's highest water in the next 48 hours
     var i = lowIdx(id); if (i < 0) return "";
@@ -710,7 +843,7 @@ var OT = (function () {
     O.D.outlets.forEach(function (o, i) {
       if (!inCity(o)) return;
       marks["o" + i] = L.circleMarker([o.lat, o.lon], { radius: 7, color: "#fff", weight: 2, fillColor: "#0A5587", fillOpacity: 1 })
-        .bindTooltip(esc(oName(o)) + " creek outlet").on("click", function () { pick("o" + i); }).addTo(over);
+        .bindTooltip(esc(oName(o)) + " creek outlet").on("click", function () { if (window.selectOutlet) selectOutlet("o" + i, true); else pick("o" + i); }).addTo(over);
     });
     O.D.refs.forEach(function (r) {
       L.marker([r.lat, r.lon], { icon: L.divIcon({ className: "", html: "<div style='width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #e65100'></div>", iconSize: [16, 14], iconAnchor: [8, 7] }),
@@ -730,10 +863,12 @@ var OT = (function () {
   }
   document.addEventListener("click", function (e) {
     var t = e.target.closest && e.target.closest("#tbl tr.row");
-    if (t) { pick(t.getAttribute("data-k")); if (window.innerWidth < 860) $("chcard").scrollIntoView({ behavior: "smooth", block: "start" }); }
+    if (t) { selectOutlet(t.getAttribute("data-k")); $("map").scrollIntoView({ behavior: "smooth", block: "start" }); }
   });
   setInterval(load, 15 * 60000);
   return { load: load, render: render, drawOn: drawOn, bounds: bounds, lpLine: lpLine, pickLow: function (id) { var i = lowIdx(id); if (i >= 0) pick("l" + i, true); },
+    pick: pick, outletRows: outletRows, oName: oName, when: when, lpState: lpState,
+    low: function (id) { var i = lowIdx(id); return i < 0 ? null : O.D.lowpoints[i]; },
     get D() { return O.D; }, get sel() { return O.sel; }, set sel(v) { O.sel = v; } };
 })();
 
@@ -760,7 +895,7 @@ $("city").addEventListener("change", function () {
   CITY = this.value;
   try { localStorage.setItem("fews_city", CITY); } catch (e) { /* no storage */ }
   try { var u = new URL(location.href); if (CITY) u.searchParams.set("city", CITY); else u.searchParams.delete("city"); history.replaceState(null, "", u.toString()); } catch (e) { /* old browser */ }
-  OT.sel = null; render();
+  OT.sel = null; PSEL = null; PALL = false; if (map) map.closePopup(); render();
 });
 $("cityLink").addEventListener("click", function () {
   var u = location.origin + location.pathname + "?city=" + encodeURIComponent(CITY), b = this;
