@@ -143,6 +143,7 @@
   @media (max-width: 480px) { .olong { display: none; } .oshort { display: inline; } }
   .nrow .go2 { margin-left: auto; color: var(--muted); font-size: 22px; }
   .nrow:focus-visible { outline: 3px solid #1e88e5; outline-offset: 2px; }
+  .ntop { margin-top: 14px; }
   #evacBox:empty { display: none; }
   #evacBox .btn { display: block; text-align: center; margin: 10px 0 0; }
   .getal { margin: 22px 0 0; text-align: center; }
@@ -206,8 +207,9 @@
 </nav>
 
 <main class="wrap">
-  <!-- The one alert at the top: National Weather Service products, the Bay tide and the creeks (renderHero) -->
-  <section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section>
+  <!-- The top (staff, 2026-11-08): the National Weather Service in three small cards, the Bay shoreline, the coast, and
+       creeks and rain (tap one for its text); then "Right now", OneShoreline's own reading of the tides and creeks. -->
+  <div id="ncards" class="ntop"></div>
   <div id="evacBox"></div>
   <!-- Right now (staff, 2026-11-02: a simpler first screen): one row each for the Bay tides, the coast tides and the
        creeks, a word and one detail line, worst first; tap for the page. The detailed cards below stay hidden here. -->
@@ -280,10 +282,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261108a"></script>
-<script src="severity.js?v=20261108a"></script>
-<script src="creek_status.js?v=20261108a"></script>
-<script src="hero.js?v=20261108a"></script>
+<script src="lookups.js?v=20261108c"></script>
+<script src="severity.js?v=20261108c"></script>
+<script src="creek_status.js?v=20261108c"></script>
+<script src="hero.js?v=20261108c"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -374,8 +376,7 @@ function nws() {
 var TIDE_STATE = { bay: null, coast: null };
 var CR = null;   // the creeks' line for the card (hero.js creeks)
 function renderHero() {
-  HERO.render($("hero"), { nws: NWS.list, nwsFailed: NWS.failed, bay: TIDE_STATE.bay, creeks: CR,
-    checked: TIDE_STATE.bay && CR ? fTime(nowLocal()) : null });
+  HERO.nwsCards($("ncards"), { nws: NWS.list, nwsFailed: NWS.failed, current: null, inland: true });
   renderOrder();
   renderRows();
 }

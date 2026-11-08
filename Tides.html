@@ -472,10 +472,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261108a"></script>
-<script src="tide_season.js?v=20261108a"></script>
-<script src="severity.js?v=20261108a"></script>
-<script src="hero.js?v=20261108a"></script>
+<script src="lookups.js?v=20261108c"></script>
+<script src="tide_season.js?v=20261108c"></script>
+<script src="severity.js?v=20261108c"></script>
+<script src="hero.js?v=20261108c"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -1329,7 +1329,21 @@ function renderCalendar() {
       (r.length > 1 ? " · " + r.length + " days" : "") + " · high tide about " + esc(times) +
       ' <span class="lv">· ' + (r.length > 1 ? "up to " : "") + (top.est ? "≈" : "") + esc(TSN.ft(top.v)) + " (" + esc(srcs.join(", then ")) + ")</span></li>";
   }
-  $("flist").innerHTML = isFinite(TSN.red()) ? (runs.length ? runs.slice(0, 6).map(runLine).join("") +
+  // If the Bay stays as high as it is now (not easing): the first flood-level day, when that is earlier than the estimate's
+  // (staff, 2026-11-08: NWS and NOAA reason from current conditions, so their start dates can come a day or two sooner)
+  var odS = TSN.offsetDays(null, true), oS = TSN.offset(), steady = "";
+  var flS = Object.keys(dh).filter(function (d) { return d >= today; }).sort().filter(function (d) {
+    var e = ex[d], o = odS[d], v = e && !(o && o.v > e.v) ? e.v : o ? o.v : dh[d].v;
+    return TSN.level(v) === 2;
+  });
+  var f0 = fl.length ? fl[0].d : null, s0 = flS.length ? flS[0] : null;
+  if (oS && s0 && (!f0 || s0 < f0)) {
+    var nd = f0 ? Math.round((Date.parse(f0 + "T12:00:00Z") - Date.parse(s0 + "T12:00:00Z")) / 864e5) : 0;
+    var nTxt = f0 ? ", " + nd + (nd === 1 ? " day" : " days") + " earlier than the estimate" : ", which the estimate below doesn’t reach";
+    steady = '<li class="lv steady">' + esc(LK.text("tide_steady_start", { water: SIDE.water, off: Math.max(oS.ft, oS.recent7 || 0).toFixed(2), date: "\u0001", n: nTxt }))
+      .replace("\u0001", '<a class="go" href="#cal-' + esc(s0) + '" data-go="' + esc(s0) + '">' + esc(tsDay(s0)) + "</a>") + "</li>";
+  }
+  $("flist").innerHTML = isFinite(TSN.red()) ? steady + (runs.length ? runs.slice(0, 6).map(runLine).join("") +
       (runs.length > 6 ? '<li class="lv">and ' + (runs.length - 6) + " more in the calendar (red or dashed red)</li>" : "")
     : '<li class="lv">None through ' + esc(tsFmt(Object.keys(dh).sort().pop(), { month: "long" })) + ".</li>") : "";
   $("flist").previousElementSibling.hidden = $("flist").hidden = !isFinite(TSN.red());   // Coastside: no flood level yet

@@ -67,9 +67,13 @@
       ".tcard2 .lv{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;border-radius:6px;padding:1px 8px 1px 6px;margin:3px 0 1px}.tcard2 .lv .sv-ic{width:15px;height:15px}",
       ".tcard2 .t2{display:block;font-size:13.5px;color:var(--muted,#56657a);margin-top:3px}",
       // the shoreline NWS cards (2026-11-08): two small cards side by side, even on a phone
-      ".ncards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}",
+      ".ncards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ncards.n3{grid-template-columns:repeat(3,minmax(0,1fr))}",
+      "@media (max-width:520px){.ncards.n3{grid-template-columns:repeat(2,minmax(0,1fr))}.ncards.n3>:last-child{grid-column:1/-1}}",
+      "button.ncard{font:inherit;text-align:left;width:100%;cursor:pointer}.ncard .nrd{color:var(--link,var(--info,#0A5587));text-decoration:underline}",
+      ".ncard.open{box-shadow:0 0 0 2px var(--link,var(--info,#0A5587))}",
+      ".npanel{margin-top:8px;background:var(--card,#fff);border:1px solid var(--line,#e3e8ee);border-radius:10px;padding:4px 14px;font-size:14px}.npanel h3{margin:6px 0 2px;font-size:16px}.npanel .when{font-size:13px;color:var(--muted,#56657a)}.npanel .src{font-size:12.5px;color:var(--muted,#56657a)}.npanel dt{font-weight:700;margin-top:6px}.npanel dd{margin:0}",
       ".ncard{display:block;text-decoration:none;color:inherit;background:var(--card,#fff);border:1px solid var(--line,#e3e8ee);border-left-width:5px;border-radius:10px;padding:7px 10px;box-shadow:0 1px 3px rgba(0,0,0,.06);min-width:0}",
-      "a.ncard:hover,a.ncard:focus-visible{box-shadow:0 0 0 2px var(--brand,#0A5587)}.ncard.cur{box-shadow:0 0 0 2px var(--ink,#003B5C)}",
+      "button.ncard:hover,button.ncard:focus-visible{box-shadow:0 0 0 2px var(--brand,#0A5587);outline:none}.ncard.cur{box-shadow:0 0 0 2px var(--ink,#003B5C)}",
       ".ncard .nsd{display:block;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted,#56657a)}",
       ".ncard .nhd{display:flex;align-items:center;gap:6px;font-size:14.5px;line-height:1.25;margin-top:2px}.ncard .nhd .sv-ic{width:16px;height:16px;flex:none}",
       ".ncard .nsub{display:block;font-size:12.5px;color:var(--muted,#56657a);margin-top:1px}",
@@ -127,37 +131,60 @@
     return (list || []).filter(function (p) { return SHORE_RX.test(p.event) && onSide(p, side); })
       .sort(function (a, b) { return SV.RANK[SV.nwsLevel(b.event)] - SV.RANK[SV.nwsLevel(a.event)]; });
   }
-  // Small cards, one per shoreline: the NWS products in effect there (or none), the most serious first; the current
-  // page's side outlined. Under them, one line for anything else in effect (a Flood Watch, creeks with an alert), then
-  // the full NWS text folded. s: { nws, nwsFailed, current: "bay"|"coast", creeks (HERO.creeks), creekLink }
+  // Small cards, one per area: the NWS products in effect there (or none), the most serious first; the current page's
+  // side outlined. Tap a card with an alert: its NWS text opens under the cards (tap again to close). Under them, one line
+  // for anything else in effect (with its text folded). s: { nws, nwsFailed, current: "bay"|"coast"|null,
+  // inland: true adds a third card, "Creeks and rain" (NWS flood products for the county), creeks (HERO.creeks), creekLink }
   function nwsCards(el, s) {
     injectCSS();
-    var list = s.nws || [], shoreKeys = {};
-    var cards = [["bay", "Bay shoreline", "Tides.html"], ["coast", "Coast", "Tides.html?side=coast"]].map(function (sd) {
-      var ps = s.nws ? shoreFor(list, sd[0]) : null, lv, head, sub = "";
+    var list = s.nws || [], used = {}, key = function (p) { return p.id || p.event + "|" + p.sent; };
+    var areas = [["bay", "Bay shoreline"], ["coast", "Coast"]];
+    if (s.inland) areas.push(["creek", "Creeks and rain"]);
+    var groups = areas.map(function (sd) {
+      var ps = !s.nws ? null : sd[0] === "creek" ? list.filter(function (p) { return SV.hazardOf(p.event) === "creek"; }) : shoreFor(list, sd[0]);
+      if (ps) ps.forEach(function (p) { used[key(p)] = true; });
+      return { id: sd[0], name: sd[1], ps: ps };
+    });
+    var open = el._open || null;
+    if (open && !groups.some(function (g) { return g.id === open && g.ps && g.ps.length; })) open = null;
+    var cards = groups.map(function (g) {
+      var ps = g.ps, lv, head, sub = "";
       if (!ps) { lv = s.nwsFailed ? "offline" : "normal"; head = s.nwsFailed ? "Alerts unavailable" : "Checking…"; sub = s.nwsFailed ? "Retrying" : ""; }
       else if (!ps.length) { lv = "normal"; head = "No alerts"; }
-      else {
-        lv = SV.top(ps.map(function (p) { return SV.nwsLevel(p.event); }));
-        head = ps[0].event; sub = nwsUntil(ps[0]) + (ps.length > 1 ? " · +" + (ps.length - 1) + " more" : "");
-        ps.forEach(function (p) { shoreKeys[p.id || p.event + p.sent] = true; });
-      }
-      var cur = s.current === sd[0], tag = cur || !s.current ? "div" : "a";
-      return "<" + tag + ' class="ncard sv-card sv-' + lv + (cur ? " cur" : "") + '"' + (tag === "a" ? ' href="' + sd[2] + (hasPreview() ? (sd[2].indexOf("?") >= 0 ? "&preview=1" : "?preview=1") : "") + '"' : "") +
-        (cur ? ' aria-current="true"' : "") + '><span class="nsd">' + esc(sd[1]) + " · NWS</span>" +
-        '<span class="nhd">' + SV.icon(lv) + "<b>" + esc(head) + "</b></span>" + (sub ? '<span class="nsub">' + esc(sub) + "</span>" : "") + "</" + tag + ">";
+      else { lv = SV.top(ps.map(function (p) { return SV.nwsLevel(p.event); })); head = ps[0].event; sub = nwsUntil(ps[0]) + (ps.length > 1 ? " · +" + (ps.length - 1) + " more" : ""); }
+      var cur = s.current === g.id, btn = !!(ps && ps.length);
+      var inner = '<span class="nsd">' + esc(g.name) + " · NWS</span>" + '<span class="nhd">' + SV.icon(lv) + "<b>" + esc(head) + "</b></span>" +
+        (sub || btn ? '<span class="nsub">' + esc(sub) + (btn ? (sub ? " · " : "") + '<span class="nrd">' + (open === g.id ? "Hide text" : "Read the alert") + "</span>" : "") + "</span>" : "");
+      var cls = 'ncard sv-card sv-' + lv + (cur ? " cur" : "") + (open === g.id ? " open" : "");
+      return btn ? '<button type="button" class="' + cls + '" data-area="' + g.id + '" aria-expanded="' + (open === g.id) + '" aria-controls="npanel">' + inner + "</button>"
+        : '<div class="' + cls + '"' + (cur ? ' aria-current="true"' : "") + ">" + inner + "</div>";
     }).join("");
-    var others = list.filter(function (p) { return !shoreKeys[p.id || p.event + p.sent]; }).map(function (p) { return esc(p.event + " " + nwsUntil(p)); });
+    var openG = groups.filter(function (g) { return g.id === open; })[0];
+    var panel = openG ? openG.ps.map(function (p) {
+      return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + (p.areaDesc ? " · " + esc(p.areaDesc) : "") + "</div>" + alertBody(p) + "</div>";
+    }).join("") + '<p class="src">National Weather Service San Francisco Bay Area.</p>' : "";
+    var rest = list.filter(function (p) { return !used[key(p)]; });
+    var others = rest.map(function (p) { return esc(p.event + " " + nwsUntil(p)); });
     var CR = s.creeks;
     if (CR && CR.worst) others.push((s.creekLink === false ? "" : '<a href="Creeks.html' + hasPreview() + '">') + esc(CR.headline) + (s.creekLink === false ? "" : " ›</a>"));
-    var h = '<div class="ncards" role="group" aria-label="National Weather Service alerts for the Bay shoreline and the coast">' + cards + "</div>";
+    var h = '<div class="ncards n' + groups.length + '" role="group" aria-label="National Weather Service alerts by area">' + cards + "</div>" +
+      '<div class="npanel" id="npanel"' + (panel ? "" : " hidden") + ">" + panel + "</div>";
     if (others.length) h += '<p class="nalso"><b>Also in effect:</b> ' + others.join(" · ") + "</p>";
     var d0 = el.querySelector(".nwsfull-d"), wasOpen = d0 && d0.open;
-    if (list.length) h += '<details class="nwsfull-d"' + (wasOpen ? " open" : "") + "><summary>National Weather Service text (" + list.length + ')</summary><div class="nwsfull">' + list.map(function (p) {
-      return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + (p.areaDesc ? " · " + esc(p.areaDesc) : "") +
-        "</div>" + alertBody(p) + "</div>";
+    if (rest.length) h += '<details class="nwsfull-d"' + (wasOpen ? " open" : "") + "><summary>Text of the other alerts (" + rest.length + ')</summary><div class="nwsfull">' + rest.map(function (p) {
+      return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + (p.areaDesc ? " · " + esc(p.areaDesc) : "") + "</div>" + alertBody(p) + "</div>";
     }).join("") + "</div></details>";
-    el.classList.add("nwrap"); el.innerHTML = h;
+    el.classList.add("nwrap"); el.innerHTML = h; el._s = s;
+    if (!el._bound) {
+      el._bound = true;
+      el.addEventListener("click", function (e) {
+        var b = e.target.closest && e.target.closest("button.ncard"); if (!b) return;
+        var a = b.getAttribute("data-area");
+        el._open = el._open === a ? null : a;
+        nwsCards(el, el._s);
+        var nb = el.querySelector('button.ncard[data-area="' + a + '"]'); if (nb) nb.focus();
+      });
+    }
   }
 
   /* ---------- tides ---------- */

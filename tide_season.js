@@ -142,7 +142,9 @@
     if (!o) return b;
     return b0 != null && b != null && r1 != null ? b + (o.ft - b0) * Math.pow(r1, Math.max(0, t - now) / (30.4 * 86400000)) : o.ft;
   }
-  function offsetDays(now) {
+  // steady (staff, 2026-11-08): the offset held as it is now (the larger of the 30-day and 7-day averages), not easing,
+  // for the "if the Bay stays as high as it is now" start date beside the estimate (how NWS frames it)
+  function offsetDays(now, steady) {
     now = now || nowLocal();
     var o = offset(), out = {};
     if (!o || !S.highs) return out;
@@ -153,7 +155,7 @@
       // (staff, 2026-10-24: the projection ending at 2 AM no longer hides that afternoon's higher tide)
       if (h.t < now - MATCH_MIN * 60000 || h.t > now + LK.num("BAY_OFFSET_AHEAD_DAYS") * 86400000) return;
       if (modelOK(now) && h.t <= S.ofs[S.ofs.length - 1].t) return;   // still inside the projection
-      var add = addAt(h.t, now), x = { t: h.t, v: h.v + add, table: h.v, off: add };
+      var add = steady ? Math.max(o.ft, o.recent7 || 0) : addAt(h.t, now), x = { t: h.t, v: h.v + add, table: h.v, off: add };
       if (!out[d] || x.v > out[d].v) out[d] = x;
     });
     return out;

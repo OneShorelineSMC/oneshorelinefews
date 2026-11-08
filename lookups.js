@@ -250,6 +250,7 @@
     tide_offset_cal: "could reach the flood level: about {ft} if the {water} stays as high as it has been running (an estimate)",
     tide_offset_cal_key: "Dashed orange ring: possible flood level ({red} ft) if the {water} stays this high",
     tide_maybe_head: "Possible flood-level tides {days} if the {water} stays about {off} ft higher than the tide table, its average over the past month.",
+    tide_steady_start: "If the {water} stays as high as it is now (about {off} ft above the tide table, not easing), flood-level tides could start {date}{n}.",
     tide_maybe_day: "Possible flood level",
     tide_offset_later: "If the {water} stays {off} ft higher than the tide table (its average this past month): {list}",
     tide_offset_assume: "It assumes the {water} stays that high. It isn’t a forecast, and storms can add more.",
