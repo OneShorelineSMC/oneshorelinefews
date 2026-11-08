@@ -211,4 +211,6 @@ OneShoreline (San Mateo County Flood and Sea Level Rise Resiliency District) ·
 
 GPL-3.0 – see `LICENSE`.
 
-| `nav.css` | **Nov 8:** on screens 760 px and wider, the bottom bar becomes a tab strip under the header (sticky at the top; the current page underlined). Phones keep the bottom bar unchanged. Loaded by every page with the page bar; the same `<nav>` markup, moved with CSS `order`. |
+| `nav.css` | **Nov 8:** on screens 760 px and wider, the page bar is a tab strip under the header (sticky at the top; the current page underlined). Phones keep the bottom bar unchanged. Every page puts its `<nav>` right after `</header>` in the source (fixed to the bottom on phones; on the Map page a flex item with `order: 99`). |
+
+| `hero.js` (Nov 8) | **Shoreline NWS cards:** `HERO.nwsCards(el, {nws, current})` shows two small cards, Bay shoreline (NWS zone CAZ508) and Coast (CAZ509), each with the coastal flood, high surf, storm surge, tsunami, beach hazards or rip current products in effect there, from each alert's own zone list. The Tides page shows them at the top (this page's side outlined), then anything else in effect, then its own side's tide status; Coastside Tides no longer shows the Bay tide at the top. `tideState` now caps each side's tide status only by its own side's NWS products. |

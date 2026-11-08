@@ -395,7 +395,7 @@
   .oshort { display: none; }
   @media (max-width: 480px) { .olong { display: none; } .oshort { display: inline; } }   /* phones: a short line under the title (2026-11-02) */
 </style>
-<link rel="stylesheet" href="nav.css?v=20261108a">
+<link rel="stylesheet" href="nav.css?v=20261108b">
 </head>
 <body>
 <header>
@@ -406,8 +406,17 @@
     <div class="h911" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
+<nav>
+  <button data-href="index.html"><span class="i">🏠</span>Home</button>
+  <button data-href="Creeks.html"><span class="i">💧</span>Creeks</button>
+  <button class="on"><span class="i"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</button>
+  <button data-href="SiteMap.html"><span class="i">🗺️</span>Map</button>
+  <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
+</nav>
 
-<div class="heroWrap"><section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section></div>
+<!-- Top (staff, 2026-11-08): the National Weather Service for each shoreline in two small cards, this page's side outlined;
+     then this page's own tide status (the card under the title). Coastside Tides no longer shows the Bay's tide up here. -->
+<div class="heroWrap"><div id="ncards"></div></div>
 
 <main>
   <h1 class="page" id="h1">Bayside Tides</h1>
@@ -462,18 +471,11 @@
 </div>
 </main>
 
-<nav>
-  <button data-href="index.html"><span class="i">🏠</span>Home</button>
-  <button data-href="Creeks.html"><span class="i">💧</span>Creeks</button>
-  <button class="on"><span class="i"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</button>
-  <button data-href="SiteMap.html"><span class="i">🗺️</span>Map</button>
-  <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
-</nav>
 
-<script src="lookups.js?v=20261102a"></script>
-<script src="tide_season.js?v=20261102a"></script>
-<script src="severity.js?v=20261102a"></script>
-<script src="hero.js?v=20261102a"></script>
+<script src="lookups.js?v=20261108a"></script>
+<script src="tide_season.js?v=20261108a"></script>
+<script src="severity.js?v=20261108a"></script>
+<script src="hero.js?v=20261108a"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -503,7 +505,7 @@ function getJSON(url, accept) {
 }
 var $ = function (id) { return document.getElementById(id); };
 
-/* ---------- the alert at the top: National Weather Service, the Bay tide at the flood level, the creeks (hero.js) ---------- */
+/* ---------- the top: National Weather Service for each shoreline, then anything else in effect (hero.js nwsCards) ---------- */
 var HB = { bay: null, D: null, creeks: null };
 function loadAlerts() {
   HERO.loadNWS(function (list, failed) {
@@ -511,18 +513,15 @@ function loadAlerts() {
     renderHero(); if (list) render();
   });
 }
-// The Bay for the card: this page's own series on Bayside Tides; NOAA Redwood City downloaded on Coastside Tides.
-// The creeks: creeks.json (data branch), for their line in the card.
+// The creeks: creeks.json (data branch), for the "Also in effect" line when a creek has an alert.
 function loadHeroData() {
-  if (COAST) HERO.loadBay(function (bd) { HB.D = bd; renderHero(); });
   fetch("https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { return r.json(); }).then(function (d) { HB.creeks = d; renderHero(); }).catch(function () {});
 }
 function renderHero() {
   if (EMBED) return;
-  if (COAST && HB.D) HB.bay = HERO.tideState({ D: HB.D, mhhw: LK.mhhw("9414523"), red: LK.num("TIDE_RED_FT_RWC"), water: "Bay", nws: D.alerts || [] });
-  HERO.render($("hero"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, bay: HB.bay, creeks: HB.creeks ? HERO.creeks(HB.creeks, D.alerts || []) : null,
-    checked: HB.bay && HB.creeks ? fTime(nowLocal()) : null });
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay",
+    creeks: HB.creeks ? HERO.creeks(HB.creeks, D.alerts || []) : null });
 }
 function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
 
@@ -835,7 +834,6 @@ function render() {
       var ts = HERO.tideState({ D: { pred: s.pred, obs: s.obs, ofs: useModel ? s.ofs : null }, mhhw: st.mhhw, red: redFor(st), water: SIDE.water, nws: D.alerts || [], days: DAYS, now: now });
       var tc = HERO.tideCard(Object.assign({}, ts, { tech: [], more: 0 }), null);   // numbers: in the day list and graph below
       hd.className = "head " + tc.cls; hd.setAttribute("role", "status"); hd.setAttribute("aria-label", tc.label); hd.innerHTML = tc.html;
-      if (st.id === "9414523" && !COAST) { HB.bay = ts; renderHero(); }
     }
     var md = s.pred ? maybeDays(s, now, fe) : [];
     if (md.length) {

@@ -185,7 +185,7 @@
   .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
   @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
 </style>
-<link rel="stylesheet" href="nav.css?v=20261108a">
+<link rel="stylesheet" href="nav.css?v=20261108b">
 </head>
 <body>
 <header>
@@ -196,6 +196,14 @@
     <div class="h911" data-text="e911">In an emergency, call 911.</div>
   </div>
 </header>
+<!-- Bottom bar, same as the Creeks, Tides and Map pages -->
+<nav aria-label="Pages">
+  <a class="on" href="index.html" aria-current="page"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
 
 <main class="wrap">
   <!-- The one alert at the top: National Weather Service products, the Bay tide and the creeks (renderHero) -->
@@ -271,19 +279,11 @@
   </details>
 </main>
 
-<!-- Bottom bar, same as the Creeks, Tides and Map pages -->
-<nav aria-label="Pages">
-  <a class="on" href="index.html" aria-current="page"><span class="i" aria-hidden="true">🏠</span>Home</a>
-  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
-  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
-  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
-  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
-</nav>
 
-<script src="lookups.js?v=20261102a"></script>
-<script src="severity.js?v=20261102a"></script>
-<script src="creek_status.js?v=20261102a"></script>
-<script src="hero.js?v=20261102a"></script>
+<script src="lookups.js?v=20261108a"></script>
+<script src="severity.js?v=20261108a"></script>
+<script src="creek_status.js?v=20261108a"></script>
+<script src="hero.js?v=20261108a"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),

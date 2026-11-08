@@ -1,12 +1,12 @@
 /* Wide screens (2026-11-08): the bottom bar becomes a tab strip under the header, because on a computer people look
-   for page links at the top. Phones keep the bottom bar exactly as it is. The same <nav> on every page; this file only
-   moves and restyles it. (CSS order: header, then the tabs, then everything after the header.) */
+   for page links at the top. Phones keep the bottom bar exactly as it is (it is fixed to the bottom of the screen there;
+   on the Map page, a flex item with order 99). Every page puts its <nav> right after the header in the source, so on a
+   wide screen it simply sits there, sticky at the top. */
 @media (min-width: 760px) {
-  body { display: flex; flex-direction: column; padding-bottom: 0 !important; min-height: 100vh; }
-  body > header ~ * { order: 3; }
-  body > nav { order: 2; position: sticky !important; top: 0; bottom: auto !important; flex: none;
-    justify-content: center; gap: 4px; padding: 0 16px; border-top: 0 !important; border-bottom: 1px solid var(--line);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .06); z-index: 1100; }   /* above Leaflet maps (to 1000) */
+  body { padding-bottom: 0 !important; }
+  body > nav { order: 0 !important; position: sticky !important; top: 0; bottom: auto !important; left: auto !important; right: auto !important;
+    flex: none; display: flex; justify-content: center; gap: 4px; padding: 0 16px !important; border-top: 0 !important;
+    border-bottom: 1px solid var(--line); box-shadow: 0 1px 3px rgba(0, 0, 0, .06); z-index: 1100; }   /* above Leaflet maps (to 1000) */
   body > nav a, body > nav button { flex: 0 0 auto !important; flex-direction: row !important; gap: 8px !important;
     font-size: 15px !important; padding: 13px 18px 11px !important; border-bottom: 3px solid transparent !important;
     border-radius: 0; cursor: pointer; }

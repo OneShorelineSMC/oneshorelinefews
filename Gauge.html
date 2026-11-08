@@ -99,7 +99,7 @@
   nav a.on { color: var(--ink); font-weight: bold; }
   @media print { nav, .seg { display: none; } body { padding-bottom: 0; } }
 </style>
-<link rel="stylesheet" href="nav.css?v=20261108a">
+<link rel="stylesheet" href="nav.css?v=20261108b">
 </head>
 <body>
 <header>
@@ -107,6 +107,13 @@
   <div><h1 id="htitle">Gauge</h1><div class="hsubt">OneShoreline Early Warning · San Mateo County</div></div>
   <div class="h911" data-text="e911">In an emergency, call 911.</div>
 </header>
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
 <div class="heroWrap"><section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section></div>
 
 <main>
@@ -135,18 +142,11 @@
   <p class="fine" id="updated"></p>
 </main>
 
-<nav aria-label="Pages">
-  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
-  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
-  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
-  <a class="on" href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
-  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
-</nav>
 
-<script src="lookups.js?v=20261102a"></script>
-<script src="severity.js?v=20261102a"></script>
-<script src="creek_status.js?v=20261102a"></script>
-<script src="hero.js?v=20261102a"></script>
+<script src="lookups.js?v=20261108a"></script>
+<script src="severity.js?v=20261108a"></script>
+<script src="creek_status.js?v=20261108a"></script>
+<script src="hero.js?v=20261108a"></script>
 <script>
 "use strict";
 var LK = window.LOOKUPS, $ = function (id) { return document.getElementById(id); };
