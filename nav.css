@@ -1,0 +1,18 @@
+/* Wide screens (2026-11-08): the bottom bar becomes a tab strip under the header, because on a computer people look
+   for page links at the top. Phones keep the bottom bar exactly as it is. The same <nav> on every page; this file only
+   moves and restyles it. (CSS order: header, then the tabs, then everything after the header.) */
+@media (min-width: 760px) {
+  body { display: flex; flex-direction: column; padding-bottom: 0 !important; min-height: 100vh; }
+  body > header ~ * { order: 3; }
+  body > nav { order: 2; position: sticky !important; top: 0; bottom: auto !important; flex: none;
+    justify-content: center; gap: 4px; padding: 0 16px; border-top: 0 !important; border-bottom: 1px solid var(--line);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .06); z-index: 1100; }   /* above Leaflet maps (to 1000) */
+  body > nav a, body > nav button { flex: 0 0 auto !important; flex-direction: row !important; gap: 8px !important;
+    font-size: 15px !important; padding: 13px 18px 11px !important; border-bottom: 3px solid transparent !important;
+    border-radius: 0; cursor: pointer; }
+  body > nav a .i, body > nav button .i { font-size: 18px !important; }
+  body > nav a:hover, body > nav button:hover { background: var(--bg); color: var(--ink); }
+  body > nav .on { color: var(--ink) !important; font-weight: 700; border-bottom-color: var(--brand, #0A5587) !important; }
+  body > nav a:focus-visible, body > nav button:focus-visible { outline: 3px solid var(--link, #0A5587); outline-offset: -3px; }
+  .citybar { top: 50px !important; }   /* Shoreline: the city bar sticks just under the tabs */
+}

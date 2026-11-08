@@ -210,3 +210,5 @@ OneShoreline (San Mateo County Flood and Sea Level Rise Resiliency District) ·
 ## License
 
 GPL-3.0 – see `LICENSE`.
+
+| `nav.css` | **Nov 8:** on screens 760 px and wider, the bottom bar becomes a tab strip under the header (sticky at the top; the current page underlined). Phones keep the bottom bar unchanged. Loaded by every page with the page bar; the same `<nav>` markup, moved with CSS `order`. |
