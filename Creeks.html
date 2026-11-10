@@ -340,10 +340,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261108c"></script>
-<script src="severity.js?v=20261108c"></script>
-<script src="creek_status.js?v=20261108c"></script>
-<script src="hero.js?v=20261108c"></script>
+<script src="lookups.js?v=20261108d"></script>
+<script src="severity.js?v=20261108d"></script>
+<script src="creek_status.js?v=20261108d"></script>
+<script src="hero.js?v=20261108d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -403,7 +403,7 @@ if (hashCreek && hashCreek !== "about") D.sel = hashCreek;   // e.g. Creeks.html
 
 /* ---------- data loading ---------- */
 function loadCreek() {
-  return getJSON(CREEK_DATA_URL + "?t=" + Date.now()).then(function (j) { D.creek = j; D.creekFailed = false; render(); loadTides(); })
+  return getJSON(CREEK_DATA_URL + "?t=" + Date.now()).then(function (j) { D.creek = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; D.creekFailed = false; render(); loadTides(); })
     .catch(function () { D.creekFailed = true; render(); });
 }
 function noaa(station, product, begin, end) {
@@ -453,7 +453,9 @@ function renderHero() {
 function creeks() { return (D.creek && D.creek.creeks) || []; }
 // "More creeks": creeks without flood levels yet (preview_only in creeks.csv), shown as readings only, with no status.
 // Everyone sees them when MORE_CREEKS_PUBLIC = 1 (lookups/settings.csv); the staff preview always has them.
+// Public pages with CREEK_PUBLIC_LEVELS_ONLY = 1: creek_status.js prepare() moves them to creeks_readings (no status).
 function moreCreeks() {
+  if (D.creek && D.creek.creeks_readings) return D.creek.creeks_readings;
   var pv = window.CREEK_STATUS && window.CREEK_STATUS.preview;
   return D.creek && (pv || LK.num("MORE_CREEKS_PUBLIC") === 1) ? (D.creek.creeks_preview || []) : [];
 }
@@ -583,8 +585,8 @@ document.addEventListener("click", function (e) {
 function renderCity() {
   if (!CITY.list || !D.creek) return;
   $("cityPick").hidden = false;
-  var CS = window.CREEK_STATUS, all = (D.creek.creeks || []).concat(D.creek.creeks_preview || []);
-  var views = all.map(function (c) { return { c: c, v: CS ? CS.view(D.creek, c) : null }; });
+  var CS = window.CREEK_STATUS, all = (D.creek.creeks || []).concat(D.creek.creeks_preview || [], D.creek.creeks_readings || []);
+  var views = all.map(function (c) { return { c: c, v: CS && c.status ? CS.view(D.creek, c) : null }; });   // readings-only creeks: no status word
   var out = $("cpOut"), h = "";
   if (CITY.sel === "_other") h = '<p class="cp-note">' + esc(LK.text("city_other_note")) + "</p>";
   else if (CITY.sel) {
@@ -667,7 +669,7 @@ function render() {
     else renderAll(states, now);
     // (a creek's "call 911" banner: in the alert at the top now)
     $("cpBanner").innerHTML = ""; renderHero();
-    if (!PV) renderMore(now);
+    if (!PV || D.creek.creeks_readings) renderMore(now);   // readings-only creeks under the status cards (public, flood levels only)
     var gen0 = states.length && states[0].gen;
     $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
     return;
@@ -675,7 +677,8 @@ function render() {
   document.title = c.name + " – OneShoreline";
   showCreekMap(c);
   $("intro").textContent = c.intro;
-  $("csOne").innerHTML = PV ? CS.badge() + CS.card(D.creek, c, { compact: true }) : "";
+  $("csOne").innerHTML = !PV ? "" : CS.badge() + (ro ? '<div class="card acard ro"><div class="ah"><span class="an">' + esc(c.name) + '</span><span class="ac ro">' +
+    esc(LK.text("more_creeks_badge")) + '</span></div><p class="morei" style="margin:6px 0 0">' + esc(LK.text("more_creeks_note")) + "</p></div>" : CS.card(D.creek, c, { compact: true }));
   ["intro", "stages", "rainBox"].forEach(function (id) { $(id).style.display = PV ? "none" : ""; });
   $("csRead").style.display = "none";   // (readings now sit in the tiles beside each graph)
   $("csNotes").style.display = PV ? "" : "none";
@@ -1093,7 +1096,7 @@ function drawCharts(st, now) {
     (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "") +
     (T && T.st.id === "9414523" ? "<span><svg width='16' height='4' aria-hidden='true' style='vertical-align:middle;margin-right:3px'><line x1='0' y1='2' x2='16' y2='2' style='stroke:var(--red)' stroke-width='3' stroke-dasharray='7 2 2 2'/></svg>" + esc(LK.text("tide_red_line_creek", { ft: LK.num("TIDE_RED_FT_RWC").toFixed(1) })) + "</span>" : "");
   var notes = [];
-  if (readingsOnly(c)) notes.push(esc(LK.text("more_creeks_note")));   // creeks.csv notes are for staff
+  if (readingsOnly(c)) { if (!PVk) notes.push(esc(LK.text("more_creeks_note"))); }   // creeks.csv notes are for staff; with the status layer the note sits at the top
   else if (c.note) notes.push(esc(c.note));
   (c.rain_triggers || []).forEach(function (tr) { notes.push("<b>Flooding likely:</b> " + esc(tr.label.toLowerCase()) + " of " + tr.value.toFixed(2) + " in or more" + (tr.high_tide ? (tr.tide_min != null ? " while the " + esc(T ? T.st.name : "Bay") + " tide is at or above " + tr.tide_min.toFixed(2) + " ft NAVD88" : " while the tide is at or above MHHW") : "")); });
   if (PVk) {   // staff preview: the creek's intro, level meanings, triggers and gauge notes, folded under the graphs
@@ -1117,7 +1120,7 @@ function fillTiles(st, now) {
     var lv = s.lvl ? Math.min(4, s.lvl.level) : 0, arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[sig.trend] || "";
     var word = !th.length ? "" : s.lvl ? s.lvl.name.replace(/^Flood | Flood Stage$/g, "") : LK.text("status_normal");
     set("tlStage" + i, !th.length ? "" : "l" + lv, '<span class="tv">' + s.last.v.toFixed(2) + "<small> ft " + arrow + "</small></span>" +
-      (word ? '<span class="tw">' + (s.lvl ? lvIcon(s.lvl.level) : "") + esc(word) + "</span>" : '<span class="tx">' + esc(LK.text("no_flood_level_title")) + "</span>") +
+      (word ? '<span class="tw">' + (s.lvl ? lvIcon(s.lvl.level) : "") + esc(word) + "</span>" : '<span class="tx">' + esc(LK.text(D.creek.creeks_readings && readingsOnly(st.c) ? "more_creeks_badge" : "no_flood_level_title")) + "</span>") +
       (sig.trend === "fast" || sig.rising_fast ? '<span class="tt"><b>' + esc(LK.text("trend_fast")) + "</b>" + (sig.ft_per_hr > 0 ? " · +" + sig.ft_per_hr.toFixed(1) + " ft/hr" : "") + "</span>" : "") +   // same words as the kiosk tile
       (s.next && th.length ? '<span class="tt">' + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "")) + "</span>" : "") +
       '<span class="tt">' + esc(ago(s.last.t)) + "</span>");

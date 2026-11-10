@@ -34,7 +34,7 @@
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
    
     TIDE_RED_FT_RWC: [8.5, 6, 15], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
-    MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1],
+    MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1], CREEK_PUBLIC_LEVELS_ONLY: [1, 0, 1],
     // NWS rain forecast on creek cards (scripts/nws_forecast.py); the data job uses FORECAST_EVERY_MIN and FORECAST_KEEP_HOURS too
     FORECAST_PUBLIC: [1, 0, 1], FORECAST_SHOW_IN: [0.25, 0, 5], FORECAST_KEEP_HOURS: [12, 1, 48], FORECAST_EVERY_MIN: [60, 15, 360],
     RAIN_NOW_MIN: [60, 15, 180], RAIN_NOW_IN: [0.01, 0.01, 0.5],
@@ -316,9 +316,9 @@
     tide_cal_day: "highest tide {ft} at {time} (tide table)",
     tide_cal_source: "Heights at NOAA’s Redwood City tide gauge (9414523), ft NAVD88: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Yellow = above MHHW ({mhhw} ft), the average high tide: higher than usual, not flooding. Orange with “!” = {red} ft or more, OneShoreline’s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king} ft.",
     more_creeks_title: "More creeks · readings only",
-    more_creeks_intro: "Readings from gauges on other San Mateo County creeks. Flood levels for these creeks haven't been set yet, so no status is shown. Tap a creek for its graphs.",
+    more_creeks_intro: "Readings from gauges on other San Mateo County creeks. Only Colma, San Bruno, Belmont and Atherton have a flood status here, so these show readings alone. Tap a creek for its graphs.",
     more_creeks_badge: "Readings only",
-    more_creeks_note: "Flood levels for this creek haven't been set yet, so these are readings only, with no status. A higher or rising level doesn't by itself mean flooding. In an emergency, call 911.",
+    more_creeks_note: "This creek has no flood status on this dashboard, so these are readings only. A higher or rising level doesn't by itself mean flooding. In an emergency, call 911.",
     no_flood_level_title: "Flood levels not set yet",
     method_review: "Methodology under review",
     method_review_short: "Under review",

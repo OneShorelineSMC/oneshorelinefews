@@ -282,10 +282,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261108c"></script>
-<script src="severity.js?v=20261108c"></script>
-<script src="creek_status.js?v=20261108c"></script>
-<script src="hero.js?v=20261108c"></script>
+<script src="lookups.js?v=20261108d"></script>
+<script src="severity.js?v=20261108d"></script>
+<script src="creek_status.js?v=20261108d"></script>
+<script src="hero.js?v=20261108d"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -404,7 +404,13 @@ function creekRow() {
   var lv = CR && CR.level || "normal", worst = CR && CR.worst, word, det;
   if (worst) {
     word = LK.text("verdict_" + worst);
-    det = CR.names.join(", ") + (cs.length - CR.names.length - off > 0 ? " · " + LK.text("home_row_creeks_others", { n: cs.length - CR.names.length - off }) : "");
+    // the worst creeks, then any with a lesser alert by name, then how many are quiet (a lesser alert isn't "no alerts")
+    var lesser = ["likely", "ready", "alert"].filter(function (k) { return k !== worst; }).map(function (k) {
+      var n = cs.filter(function (c) { return c.status.key === k; }).map(function (c) { return c.name; });
+      return n.length && ["likely", "ready", "alert"].indexOf(k) > ["likely", "ready", "alert"].indexOf(worst) ? LK.text("verdict_" + k) + ": " + n.join(", ") : "";
+    }).filter(Boolean);
+    var quiet = cs.filter(function (c) { return c.status.key === "none"; }).length;
+    det = [CR.names.join(", ")].concat(lesser, quiet ? [LK.text("home_row_creeks_others", { n: quiet })] : []).join(" · ");
   } else {
     word = LK.text("home_row_no_alerts");
     det = LK.text("home_row_creeks_n", { n: cs.length }) + (off ? " · " + LK.text(off === 1 ? "home_row_out_one" : "home_row_out_many", { n: off }) : "");
@@ -649,7 +655,7 @@ function loadTides() {   // only the stations that a rain + high tide trigger ne
 }
 function creeks() {
   getJSON(DATA + "creeks.json?t=" + Date.now()).then(function (d) {
-    C.data = d; renderCreeks();
+    C.data = window.CREEK_STATUS ? CREEK_STATUS.prepare(d) : d; renderCreeks();
     return loadTides().then(renderCreeks);
   }).catch(function () {
     if (!C.data) $("creeks").innerHTML = '<div class="box ck gray" style="grid-column:1/-1"><span class="nm">Creek data unavailable right now</span><span class="g">Retrying in a few minutes. <a href="Creeks.html">Creek page ›</a></span></div>';

@@ -79,6 +79,13 @@
   .lvls b { color: var(--text); }
   .note { font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
   .olink { display: inline-block; font-weight: 600; margin: 4px 0 0; min-height: 24px; }
+  .dl { font: inherit; font-weight: 600; color: var(--link); background: transparent; border: 1.5px solid var(--link); border-radius: 8px; padding: 6px 12px; min-height: 36px; cursor: pointer; }
+  .dl:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+  .rfold summary { cursor: pointer; font-weight: 600; color: var(--link); padding: 6px 0; min-height: 24px; }
+  .rh { font-size: 15px; margin: 12px 0 4px; color: var(--ink); }
+  .rtab { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .rtab table { width: 100%; margin: 0; }
+  .rtab thead th { position: sticky; top: 0; background: var(--card); }
   /* graph and its numbers: side by side on wide screens (graph left), numbers under the graph on phones */
   .gd { display: grid; grid-template-columns: 1fr; gap: 6px 22px; align-items: start; }
   .gcol, .dcol { min-width: 0; }
@@ -143,10 +150,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261108c"></script>
-<script src="severity.js?v=20261108c"></script>
-<script src="creek_status.js?v=20261108c"></script>
-<script src="hero.js?v=20261108c"></script>
+<script src="lookups.js?v=20261108d"></script>
+<script src="severity.js?v=20261108d"></script>
+<script src="creek_status.js?v=20261108d"></script>
+<script src="hero.js?v=20261108d"></script>
 <script>
 "use strict";
 var LK = window.LOOKUPS, $ = function (id) { return document.getElementById(id); };
@@ -214,7 +221,7 @@ function levelOf(freq, m, depth) {
 /* ---------- this gauge, put together from sites.json (OneRain's public site) and creeks.json (creek gauges, 48 h) ---------- */
 function gauge(now) {
   var site = (D.sites && D.sites.sites || []).filter(function (s) { return String(s.number) === SITE; })[0] || null;
-  var C = D.creeks || {}, all = (C.creeks || []).concat(C.creeks_preview || []), S = C.sensors || {};
+  var C = D.creeks || {}, all = (C.creeks || []).concat(C.creeks_preview || [], C.creeks_readings || []), S = C.sensors || {};
   var G = { number: SITE, name: site ? site.name : "", url: site ? site.url : "", creeks: [], rain: null, levels: [], usgs: /^USGS /.test(SITE) };
   var seen = {};
   all.forEach(function (c) {
@@ -247,7 +254,8 @@ function gauge(now) {
     var R = G.rain, sig = R.sig || {};
     if (sig.totals) { R.totals = {}; Object.keys(sig.totals).forEach(function (m) { R.totals[m] = sig.totals[m]; }); }
     if (!R.last) { var lr = sig.last_report || (R.e && R.e.latest && R.e.latest[0]); R.last = lr ? parseLocal(lr) : R.pts.length ? R.pts[R.pts.length - 1][0] : null; }
-    R.freq = (D.freq || {})[SITE] || null;
+    R.noRate = !!(window.CREEK_STATUS && CREEK_STATUS.levelsOnly && CREEK_STATUS.levelsOnly());   // public pages: no Heavy / Very heavy / Intense ratings
+    R.freq = R.noRate ? null : (D.freq || {})[SITE] || null;
     R.storm = stormTotal(R.pts, now);
   }
   G.levels.forEach(function (l) { var p = l.pts.length ? l.pts[l.pts.length - 1] : null, lt = l.e && l.e.latest;
@@ -350,18 +358,18 @@ function rainCard(G, storm, now) {
     var v = R.totals ? R.totals[w[0]] : null; if (v == null) return;
     if (w[0] * 60000 > R.hours * 36e5 + 1) return;
     var l = levelOf(f, w[0], v); if (l && (!drv || l > drv.l)) drv = { l: l, w: w[1] };
-    rows += "<tr" + (l ? ' class="drv"' : "") + "><td>" + w[1] + '</td><td class="n">' + inch(v) + " in</td><td>" + (l ? chip(l) : f ? '<span class="empty">below Heavy</span>' : '<span class="empty">–</span>') + "</td></tr>";
+    rows += "<tr" + (l ? ' class="drv"' : "") + "><td>" + w[1] + '</td><td class="n">' + inch(v) + " in</td>" + (R.noRate ? "" : "<td>" + (l ? chip(l) : f ? '<span class="empty">below Heavy</span>' : '<span class="empty">–</span>') + "</td>") + "</tr>";
   });
   var st = R.storm;
   var data = '<div class="big">' + (st ? inch(st.inches) : "0.00") + " <small>in</small></div>" +
     '<p class="sub">' + (st ? (st.cut ? "at least, in the last " + R.hours + " hours (the rain began earlier)" : "this storm, since " + fWhen(st.start, now)) : "no rain in the last " + R.hours + " hours") + "</p>" +
-    (drv ? '<p class="rare">' + chip(drv.l) + ' <span class="sub">rarest window: ' + drv.w + "</span></p>" : !st ? "" : f ? '<p class="sub">Below the Heavy level in every window.</p>' : '<p class="sub">No rain levels set for this gauge.</p>');
-  if (storm) data += "<table><thead><tr><th>Rain in the last</th><th class='n'>Amount</th><th>How rare</th></tr></thead><tbody>" + rows + "</tbody></table>";
+    (drv ? '<p class="rare">' + chip(drv.l) + ' <span class="sub">rarest window: ' + drv.w + "</span></p>" : !st || R.noRate ? "" : f ? '<p class="sub">Below the Heavy level in every window.</p>' : '<p class="sub">No rain levels set for this gauge.</p>');
+  if (storm) data += "<table><thead><tr><th>Rain in the last</th><th class='n'>Amount</th>" + (R.noRate ? "" : "<th>How rare</th>") + "</tr></thead><tbody>" + rows + "</tbody></table>";
   data += '<p class="sub">Last report ' + (R.last ? fWhen(R.last, now) + " (" + ago(now - R.last) + ")" : "–") + ".</p>";
   var graph = st || storm ? '<div class="gbox tall"><canvas id="chRain" role="img" aria-label="Rain each hour and the running total, last ' + G.hrs + ' hours"></canvas></div>' +
     '<div class="key"><span><i style="height:10px;background:' + css("--rain") + '"></i>Rain each hour</span><span><i style="border-top:2px solid ' + css("--cum") + '"></i>Running total from the start of the graph</span></div>' : "";
   return '<div class="card"><h2>Rain</h2>' + gd(graph, data) +
-    (storm ? '<p class="note">How rare: NOAA Atlas 14 at this gauge. Heavy = the 1-year storm for that window (reached in most years), Very heavy = 2-year, Intense = 5-year. ' +
+    (storm && !R.noRate ? '<p class="note">How rare: NOAA Atlas 14 at this gauge. Heavy = the 1-year storm for that window (reached in most years), Very heavy = 2-year, Intense = 5-year. ' +
       "It says how unusual the rain is, not whether a creek floods. Rain gauges report every few hours in dry weather and with each bit of rain in a storm.</p>" : "") + "</div>";
 }
 function levelCard(L, i, now, hours) {
@@ -420,6 +428,7 @@ function render() {
   var fc = G.creeks.map(function (x) { return window.CREEK_STATUS && CREEK_STATUS.forecast ? CREEK_STATUS.forecast(x.c) : ""; }).filter(Boolean)[0];
   if (fc) parts.push('<div class="card"><h2>Rain expected (National Weather Service)</h2><div class="cs-details cs-fcbox">' + fc + "</div></div>");
   var src = G.usgs ? "USGS" : "OneRain";
+  parts.push(readingsCard(G, now, hours, siteH));
   parts.push('<div class="card"><h2>More data</h2><p style="margin:0">' + (G.url && /^https:\/\//.test(G.url) ? '<a class="olink" href="' + esc(G.url) + '" target="_blank" rel="noopener">Full data on ' + src + " ↗</a>" : "") + "</p>" +
     '<p class="note">' + esc(LK.text(G.usgs ? "gauge_more_usgs" : "gauge_more_onerain")) + "</p></div>");
   $("body").innerHTML = parts.join("");
@@ -432,6 +441,46 @@ function render() {
   var gen = D.creeks && D.creeks.generated || D.sites && D.sites.generated;
   $("updated").textContent = "Data updated " + (gen ? fTime(parseLocal(gen)) : "–") + " · all times Pacific · refreshes automatically";
 }
+
+/* ---------- the readings themselves: a table per sensor (newest first) and a CSV of the same readings ---------- */
+function readingSeries(G, now, hours, siteH) {
+  var out = [];
+  G.levels.forEach(function (l) {
+    var x0 = now - Math.min(hours, l.e ? 48 : siteH) * 36e5;
+    out.push({ name: l.name, unit: l.unit || "", what: "reading", pts: l.pts.filter(function (p) { return p[0] >= x0 && p[0] <= now + 6e5; }) });
+  });
+  if (G.rain) {
+    var x0 = now - Math.min(hours, G.rain.hours) * 36e5;
+    out.push({ name: "Rain", unit: "in", what: G.rain.s ? "each hour" : "since the previous report", pts: G.rain.pts.filter(function (p) { return p[0] >= x0 && p[0] <= now + 6e5; }) });
+  }
+  return out;
+}
+function stamp(ms) { return new Date(ms).toISOString().slice(0, 16).replace("T", " "); }   // Pacific clock time
+function readingsCard(G, now, hours, siteH) {
+  var ser = readingSeries(G, now, hours, siteH), n = ser.reduce(function (a, x) { return a + x.pts.length; }, 0);
+  if (!n) return "";
+  var tables = ser.filter(function (x) { return x.pts.length; }).map(function (x) {
+    var rows = x.pts.slice().reverse(), cap = 400, more = rows.length > cap;
+    return '<h3 class="rh">' + esc(x.name) + " <span class=\"sub\">(" + esc(x.unit) + (x.what !== "reading" ? ", " + esc(x.what) : "") + ")</span></h3>" +
+      '<div class="rtab" tabindex="0" role="region" aria-label="' + esc(x.name) + ' readings"><table><thead><tr><th>Time (Pacific)</th><th class="n">' + esc(x.unit || "Value") + "</th></tr></thead><tbody>" +
+      rows.slice(0, cap).map(function (p) { return "<tr><td>" + esc(fWhen(p[0], now)) + '</td><td class="n">' + (x.unit === "in" ? p[1].toFixed(2) : (+p[1]).toFixed(2)) + "</td></tr>"; }).join("") +
+      "</tbody></table></div>" + (more ? '<p class="sub">Newest ' + cap + " shown here; the download has all " + rows.length + ".</p>" : "");
+  }).join("");
+  return '<div class="card"><h2>Readings</h2><p class="sub" style="margin:0 0 8px">The readings behind the graphs, last ' + hours + " hours, as reported. " +
+    "Not checked or corrected.</p>" +
+    '<p style="margin:0 0 6px"><button type="button" class="dl" id="dlCsv">Download readings (CSV)</button></p>' +
+    '<details class="rfold"><summary>Show the readings (' + n + ")</summary>" + tables + "</details></div>";
+}
+function downloadCsv() {
+  var now = nowLocal(), G = gauge(now), siteH = (D.sites && D.sites.hours) || 24, hours = G.hrs || +(document.querySelector("#hseg button[aria-pressed=true]") || {}).dataset.h || 48;
+  var q = function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var lines = ["time_pacific,sensor,value,unit,note"];
+  readingSeries(G, now, hours, siteH).forEach(function (x) { x.pts.forEach(function (p) { lines.push([stamp(p[0]), x.name, p[1], x.unit, x.what === "reading" ? "" : x.what].map(q).join(",")); }); });
+  var blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/csv" }), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "gauge_" + String(SITE).replace(/\W+/g, "_") + "_" + stamp(now).replace(/\D/g, "").slice(0, 12) + ".csv";
+  document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+document.addEventListener("click", function (e) { if (e.target && e.target.id === "dlCsv") downloadCsv(); });
 
 /* ---------- the alert at the top, as on the other pages ---------- */
 function renderHero() {
@@ -446,7 +495,7 @@ function renderHero() {
 function load() {
   Promise.all([
     getJSON(DATA + "sites.json").then(function (j) { D.sites = j; }).catch(function () {}),
-    getJSON(DATA + "creeks.json").then(function (j) { D.creeks = j; }).catch(function () {}),
+    getJSON(DATA + "creeks.json").then(function (j) { D.creeks = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; }).catch(function () {}),
     D.freq ? null : loadFreq().then(function (f) { D.freq = f; }).catch(function () { D.freq = {}; })
   ]).then(function () { render(); renderHero(); });
 }

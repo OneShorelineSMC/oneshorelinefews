@@ -745,6 +745,49 @@
         quiet.length ? T("verdict_none") + ": " + list(quiet.map(function (c) { return c.name; })) : ""].filter(Boolean).join(" · ") };
   }
 
-  window.CREEK_STATUS = { chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
+  /* Public pages, flood levels only (CREEK_PUBLIC_LEVELS_ONLY = 1 in lookups/settings.csv; staff, 2026-11-08).
+     Call on creeks.json as soon as it loads. The staff view (?preview=1) keeps the full status (rain levels, rising
+     fast, the other creeks' statuses); public pages get:
+     - the four dashboard creeks colored by their flood levels and OneRain's rain triggers (Belmont) only;
+     - the other creeks as readings only (data.creeks_readings, no status, no flood-level lines);
+     - no Heavy / Very heavy / Intense rain ratings and no "rising fast" (a fast rise shows as rising).
+     The full answer is kept beside each piece (status_full, signals_full, thresholds_full). */
+  function levelsOnly() { return !STAFF && LK.num("CREEK_PUBLIC_LEVELS_ONLY") === 1; }
+  var KEEP = { why_out_of_service: 1, why_level_note: 1, why_warning: 1, why_watch: 1, why_monitoring: 1, why_trigger: 1, why_trigger_tide: 1 };
+  function publicStatus(s) {
+    var lv = s.level || 0, tl = s.trigger ? s.trigger.level || 0 : 0;
+    var noGauge = s.key === "offline" || (s.reasons || []).some(function (r) { return r.code === "why_gauge_offline"; });
+    var key = lv >= 3 || tl >= 3 ? "likely" : lv === 2 || tl === 2 ? "ready" : lv === 1 || tl >= 1 ? "alert" : noGauge ? "offline" : "none";
+    var o = JSON.parse(JSON.stringify(s));
+    o.key = key;
+    o.rain = Object.assign({}, o.rain || {}, { level: 0, driver: null, elevated: 0, silent: [] });
+    if (o.trend && o.trend.trend === "fast") o.trend.trend = "rising";
+    o.reasons = (o.reasons || []).filter(function (r) { return KEEP[r.code] || (r.code === "why_gauge_offline" && tl); })
+      .map(function (r) { return r.code === "why_watch" || r.code === "why_monitoring" ? Object.assign({}, r, { rising_fast: false, rising: !!(r.rising || r.rising_fast) }) : r; });
+    if (key !== s.key) o.since = null;
+    o.prev = null;
+    return o;
+  }
+  function prepare(data) {
+    if (!data || data._prepared || !levelsOnly()) return data;
+    data._prepared = true;
+    (data.creeks || []).forEach(function (c) { if (c.status) { c.status_full = c.status; c.status = publicStatus(c.status); } });
+    data.creeks_readings = (data.creeks_preview || []).map(function (c) {
+      c.status_full = c.status; delete c.status;
+      (c.stages || []).forEach(function (g) { g.thresholds_full = g.thresholds; g.thresholds = []; });
+      return c;
+    });
+    data.creeks_preview = [];
+    Object.keys(data.sensors || {}).forEach(function (k) {
+      var sg = data.sensors[k].signals; if (!sg) return;
+      data.sensors[k].signals_full = JSON.parse(JSON.stringify(sg));
+      if (sg.level != null) { sg.level = 0; sg.driver = null; }
+      if (sg.trend === "fast") sg.trend = "rising";
+      if (sg.rising_fast) sg.rising_fast = false;
+    });
+    return data;
+  }
+
+  window.CREEK_STATUS = { prepare: prepare, levelsOnly: levelsOnly, chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
   Object.defineProperty(window.CREEK_STATUS, "preview", { get: shown });   // true when the status layer shows on this page
 })();

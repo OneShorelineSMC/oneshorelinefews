@@ -27,6 +27,8 @@ described under *Creek data job*.
 ---
 
 
+**Public creek status: flood levels only (Nov 8, 2026).** With `CREEK_PUBLIC_LEVELS_ONLY` = 1 (`lookups/settings.csv`), public pages color only Colma, San Bruno, Belmont and Atherton, from their OneRain flood levels and Belmont's rain trigger. Rain ratings (Heavy / Very heavy / Intense) and "rising fast" don't change a public status or show on public pages, and the other seven creeks show readings only (Creeks page, kiosk, gauge pages). `creek_status.js` `prepare()` does this in the browser as creeks.json loads; the data job is unchanged. The staff view (`?preview=1`) keeps the full status. Gauge pages now have a **Readings** card: the readings behind the graphs as a table and a CSV download. 0 = everyone sees the full status again.
+
 **Creek status layer: public since Oct 16** (`STATUS_PUBLIC` = 1 in `lookups/settings.csv`; 0 puts it back to staff-only). It shows on the home page, the Creeks page and the kiosk. `?preview=1` is now the staff view (staff badge and the staff table). Creeks other than the four dashboard creeks are tagged "Methodology under review" (`method_review`).
 ## Files
 
