@@ -86,7 +86,7 @@ San Mateo's are on flow and are converted (row below). For USGS gauges, gauge he
 | Creek · gauge | Monitoring | Watch | Warning | Above Warning | Meaning of the levels | Status | Checked by / on |
 |---|---|---|---|---|---|---|---|
 | Colma · Orange Memorial Park (41101) | 3.40 | 5.00 | 6.75 | — | 50% / 75% / 100% channel capacity exceedance downstream (100% = flooding likely) | From source, not yet signed off | |
-| San Bruno · First Avenue (41102) | 2.40 | 3.60 | 4.80 | — | **To document** (no meaning recorded; gauge is tidal) | To document | |
+| San Bruno · First Avenue (41102) | 2.40 | 3.60 | 4.80 | — | **To document.** Probably 50% / 75% / 100% channel capacity like Colma: 2.40 and 3.60 are exactly 50% and 75% of 4.80 (inferred from the values, Nov 8, 2026; not confirmed by the source). Gauge is tidal | To document | |
 | Belmont · Old County Rd (41104) | 2.25 | 3.25 | 4.00 | — | 50% / 75% / 100% channel capacity exceedance downstream | From source, not yet signed off | |
 | Atherton · Alameda de las Pulgas (41107) | 3.18 | 4.60 | 5.65 | 10.40 "Roadway Flooded": the spill elevation, same datum as the gauge (Summer, Oct 29, 2026); line always drawn, reason "Water is spilling onto the road at Alameda de las Pulgas" | 50% / 75% / 100% channel capacity downstream of Caltrain | From source, not yet signed off | |
 | Atherton · upstream of Caltrain (41106) | 2.80 | 4.10 | 5.50 | — | same as above; probe is 0.37 ft above channel bottom | From source, not yet signed off | |
@@ -480,6 +480,8 @@ Answers the open item in §2: rain levels for every creek, not just Belmont's tr
   or spill: "happening now", with little or no lead time. It is off below Stone Dam.
 
 ## 10. Creek status (in development) — `proposed/display_text.csv`, `proposed/settings.csv`
+
+**Public pages, Nov 8, 2026 (staff):** `CREEK_PUBLIC_LEVELS_ONLY` = 1 limits the public status to the four dashboard creeks, from flood levels and OneRain's rain triggers only: Flooding likely = Warning or a level-3 trigger; Be ready = Watch or a level-2 trigger; Stay alert = Monitoring or a level-1 trigger; Not reporting = no working creek gauge and no trigger; otherwise No alerts. The rain-level and rising-fast rules below apply only in the staff view (`?preview=1`) until they are signed off. The other creeks show readings only.
 
 One plain status per card, worst first:
 
