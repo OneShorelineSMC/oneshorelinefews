@@ -20,7 +20,7 @@
       "#tideBan{display:flex;align-items:center;gap:10px;padding:10px " + (/SiteMap/.test(location.pathname) ? "14px" : "max(16px, calc((100% - 860px) / 2 + 16px))") +
       ";background:#c62828;color:#fff;text-decoration:none;flex:none}" +
       "#tideBan[hidden]{display:none}#tideBan .ti{font-size:20px;line-height:1}#tideBan .tx{flex:1;min-width:0;line-height:1.35}" +
-      "#tideBan b{font-size:16px}#tideBan .sub{display:block;font-size:13.5px;opacity:.95}" +
+      "#tideBan b{font-size:16px}#tideBan .sub{display:block;font-size: 14px;opacity:.95}" +
       "#tideBan .go{font-size:24px;line-height:1}" +
       "#tideBan:focus-visible{outline:3px solid #fff;outline-offset:-5px}";
     document.head.appendChild(css);

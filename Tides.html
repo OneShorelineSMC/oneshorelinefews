@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
   integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>if (window.Chart) Chart.defaults.font.size = 13;   /* graph labels readable on phones (Nov 10, 2026) */</script>
 <style>
   :root {
     --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5b6877; --line: #e3e8ee;
@@ -39,7 +40,7 @@
   body.embed h1.page { display: none; }
 
   /* Ownership line */
-  .owner { text-align: center; font-size: 12.5px; color: var(--muted); margin: 18px 0 10px; line-height: 1.45; }
+  .owner { text-align: center; font-size: 14px; color: var(--muted); margin: 18px 0 10px; line-height: 1.45; }
   .owner img { display: block; margin: 0 auto 6px; height: 37px; width: auto; }
   .owner a { color: inherit; }
   /* NWS alert banner */
@@ -52,13 +53,13 @@
   .al { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .al:last-child { border-bottom: 0; }
   .al h3 { margin: 0 0 2px; font-size: 16px; }
-  .al .when { color: var(--muted); font-size: 12.5px; margin-bottom: 6px; }
+  .al .when { color: var(--muted); font-size: 14px; margin-bottom: 6px; }
   .al dl { display: grid; grid-template-columns: 5.6em 1fr; gap: 3px 8px; margin: 0; }
   .al dt { font-weight: bold; } .al dd { margin: 0; } .al p { margin: 0 0 5px; }
 
   main { padding: 12px; max-width: 720px; margin: 0 auto; }
   .card { background: var(--card); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-  .lbl { font-size: 12.5px; color: var(--muted); }
+  .lbl { font-size: 14px; color: var(--muted); }
 
   /* Creek stage */
   .scard { border-left: 6px solid var(--green); }
@@ -66,7 +67,7 @@
   .big small { font-size: 17px; font-weight: normal; color: var(--muted); }
   .badge { display: inline-block; color: #fff; font-weight: bold; font-size: 13px; border-radius: 6px; padding: 3px 9px; margin-top: 6px; background: var(--green); }
   .ssub { font-size: 14.5px; margin-top: 4px; }
-  .snote { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .snote { font-size: 14px; color: var(--muted); margin-top: 6px; }
   /* Creek switcher */
   /* All four creeks always visible: one tile each, with its current status */
   .pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px 12px 2px; max-width: 720px; margin: 0 auto; }
@@ -76,7 +77,7 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
   .pick button .nm { font-size: clamp(12.5px, 3.7vw, 15px); font-weight: 700; line-height: 1.15; text-align: center;
     overflow-wrap: anywhere; }
-  .pick button .stt { font-size: 11.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .pick button .stt { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .pick button.on { border-color: var(--ink); background: var(--soft); box-shadow: inset 0 0 0 1px var(--ink); }
   .two.stack { grid-template-columns: 1fr; }
   /* All creeks summary */
@@ -84,41 +85,41 @@
   .acard { border-left: 6px solid var(--green); cursor: pointer; }
   .ah { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
   .an { font-size: 18px; font-weight: 700; color: var(--ink); }
-  .ac { font-size: 12px; font-weight: 700; border-radius: 5px; padding: 2px 8px; white-space: nowrap; }
+  .ac { font-size: 13px; font-weight: 700; border-radius: 5px; padding: 2px 8px; white-space: nowrap; }
   .ag { margin-top: 5px; }
-  .ag .gl { font-size: 12.5px; color: var(--muted); }
+  .ag .gl { font-size: 14px; color: var(--muted); }
   .ag .gv { font-size: 15px; } .ag .gv b.v { font-size: 19px; color: var(--ink); margin-right: 4px; }
-  .ar { font-size: 13.5px; color: var(--muted); margin-top: 5px; } .ar b { color: var(--text); }
-  .ago { font-size: 13px; color: var(--muted); text-align: right; margin-top: 4px; }
+  .ar { font-size: 14px; color: var(--muted); margin-top: 5px; } .ar b { color: var(--text); }
+  .ago { font-size: 14px; color: var(--muted); text-align: right; margin-top: 4px; }
   table.rain.one th, table.rain.one td { text-align: center !important; }
   table.rain th { white-space: nowrap; padding-left: 8px !important; }
   table.rain td + td { padding-left: 8px; }
-  .intro { font-size: 13.5px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.4; }
-  .trig { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .intro { font-size: 14px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.4; }
+  .trig { font-size: 14px; color: var(--muted); margin-top: 6px; }
   .trig b { color: var(--ink); } .trig.met, .trig.met b { color: var(--red); font-weight: bold; }
-  .cnote { font-size: 12.5px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
-  .thr { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; font-size: 12px; }
+  .cnote { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+  .thr { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; font-size: 14px; }
   .thr span { border-radius: 5px; padding: 2px 7px; background: var(--soft); }
   .thr i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .two .card { margin-bottom: 0; }
   table.rain { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 14px; }
-  table.rain th { font-size: 11.5px; font-weight: normal; color: var(--muted); text-align: right; padding: 0 0 2px; }
+  table.rain th { font-size: 14px; font-weight: normal; color: var(--muted); text-align: right; padding: 0 0 2px; }
   table.rain th:first-child, table.rain td:first-child { text-align: left; }
   table.rain td { text-align: right; padding: 2px 0; }
   table.rain td b { font-size: 17px; }
   .mid { font-size: 28px; font-weight: bold; color: var(--ink); margin-top: 2px; }
-  .mid small { font-size: 13px; font-weight: normal; color: var(--muted); }
-  #tideSub { font-size: 13px; margin-top: 2px; }
+  .mid small { font-size: 14px; font-weight: normal; color: var(--muted); }
+  #tideSub { font-size: 14px; margin-top: 2px; }
 
   /* Graphs */
   .gtitle { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-top: 6px; }
   .gbox { position: relative; }
-  #key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+  #key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; color: var(--muted); margin-top: 8px; }
   #key i { display: inline-block; width: 16px; height: 0; margin-right: 4px; vertical-align: 3px; }
 
-  .note { font-size: 12.5px; color: var(--muted); text-align: center; margin: 4px 0 8px; }
+  .note { font-size: 14px; color: var(--muted); text-align: center; margin: 4px 0 8px; }
   .warn { color: var(--ink); font-weight: bold; } .warn::before { content: "⚠ "; }   /* data problem, not a hazard: no orange */
 
   /* About */
@@ -130,9 +131,9 @@
   .btn { display: flex; align-items: center; gap: 12px; text-decoration: none; background: var(--soft);
     border-radius: 10px; padding: 12px 14px; margin-top: 8px; font-size: 15.5px; color: var(--ink); }
   .btn .i { font-size: 20px; width: 26px; text-align: center; }
-  .btn small { display: block; color: var(--muted); font-size: 12.5px; }
+  .btn small { display: block; color: var(--muted); font-size: 14px; }
   .btn.primary { background: #0A5587; color: #fff; } .btn.primary small { color: rgba(255,255,255,.8); }
-  .addr { font-size: 13.5px; color: var(--muted); margin-top: 10px; }
+  .addr { font-size: 14px; color: var(--muted); margin-top: 10px; }
 
   /* Bottom tab bar */
   nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
@@ -140,7 +141,7 @@
   nav button { flex: 1; border: 0; background: none; font: inherit; font-size: 13px; color: var(--muted);
     padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav button .i { font-size: 21px; line-height: 1.1; }
-  @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
+  @media (max-width: 420px) { nav a, nav button { font-size: 12px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav button.on { color: var(--ink); font-weight: bold; }
   nav button .dot { display: none; width: 9px; height: 9px; border-radius: 50%; position: absolute; margin-left: 22px; }
   /* Bayside | Coastside switch (two pages, one file: ?side=coast) */
@@ -181,7 +182,7 @@
   .mhhwq { margin: 6px 2px 0; font-size: 14px; } .mhhwq summary { cursor: pointer; color: var(--info); font-weight: 600; display: inline-block; padding: 4px 0; min-height: 24px; }
   .mhhwq summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; } .mhhwq p { margin: 2px 0 4px; line-height: 1.45; }
   .nowl b { font-size: 18px; color: var(--ink); }
-  .sec { font-size: 13px; color: var(--muted); margin: 12px 2px 4px; }
+  .sec { font-size: 14px; color: var(--muted); margin: 12px 2px 4px; }
   .sec b { color: var(--ink); font-size: 14px; }
   /* condensed top: "Now" and "What is MHHW?" share a line; "Next 7 days" and the graph range share a line */
   .nowrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 14px; margin-top: 6px; }
@@ -194,10 +195,10 @@
     border-bottom: 1px solid var(--line); font-size: 14px; }
   .day .dn { font-weight: 700; color: var(--ink); }
   .day .dv { font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; }
-  .day .dv .du { font-size: 12px; font-weight: 400; }
-  .day .dt { color: var(--muted); font-size: 12.5px; line-height: 1.25; white-space: nowrap; }
+  .day .dv .du { font-size: 14px; font-weight: 400; }
+  .day .dt { color: var(--muted); font-size: 14px; line-height: 1.25; white-space: nowrap; }
   .day .dt .tag { display: block; }   /* "expected" / "measured" under the time on phones */
-  .day .dx { font-size: 13px; text-align: right; color: var(--green); max-width: 7.5em; line-height: 1.2; }
+  .day .dx { font-size: 14px; text-align: right; color: var(--green); max-width: 7.5em; line-height: 1.2; }
   .day.over { background: var(--infobg); }
   .day.over .dv, .day.over .dx { color: var(--info); font-weight: 700; }
   .day.red { background: rgba(192,57,43,.09); }
@@ -207,12 +208,12 @@
   .day.maybe { outline: 2px dashed var(--red); outline-offset: -2px; }
   .day.maybe .dx, .day.maybe .dof { color: var(--red); font-weight: 700; }
   .head .hm .maybe { display: block; margin-top: 6px; font-size: 14.5px; font-weight: 700; color: var(--red); line-height: 1.4; }
-  .tag { font-size: 11.5px; font-weight: 700; } .hd .wsep { display: none; }
+  .tag { font-size: 13px; font-weight: 700; } .hd .wsep { display: none; }
   .tag.fc { color: var(--fc); } .tag.ms { color: var(--info); }
-  .day .dof { display: block; font-size: 12px; font-weight: 400; color: var(--muted); white-space: normal; }   /* "≈ 8.12 if the Bay stays high" (after the NOAA projection): wraps in its column, never runs into the next */
+  .day .dof { display: block; font-size: 14px; font-weight: 400; color: var(--muted); white-space: normal; }   /* "≈ 8.12 if the Bay stays high" (after the NOAA projection): wraps in its column, never runs into the next */
   .day .dxw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* the height's source: read aloud only */
   .day .nrm { color: var(--muted); font-weight: 400; }
-  .estn { margin: 6px 2px 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); } .estn:empty { display: none; }
+  .estn { margin: 6px 2px 0; font-size: 14px; line-height: 1.4; color: var(--muted); } .estn:empty { display: none; }
   .estn a { color: var(--info); font-weight: 600; white-space: nowrap; }
   .calpre { margin: 2px 0 8px; font-size: 14px; line-height: 1.45; color: var(--text); }
   .tech h3.clh { margin: 14px 0 4px; } .tech .afd { margin-top: 8px; }
@@ -240,17 +241,17 @@
   .rng button[aria-pressed="true"]::before { content: "✓ "; }
   .rng button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; position: relative; z-index: 1; }
   .tcard .gbox { height: 235px; margin-top: 8px; }
-  .key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; color: var(--muted); margin-top: 6px; }
   .key i { display: inline-block; width: 16px; height: 0; margin-right: 4px; vertical-align: 3px; }
   .key i.ab { height: 9px; background: var(--infofill); border-top: 2px solid var(--infob); vertical-align: 0; }
   .afd { margin-top: 10px; border-left: 4px solid #0A5587; background: rgba(10,85,135,.07); border-radius: 6px; padding: 6px 10px; font-size: 14px; }
   .afd.ok { border-left-color: var(--green); background: rgba(46,125,50,.07); }
   .afd summary { cursor: pointer; } .afd p { margin: 6px 0 0; }
-  .afd .when { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .afd .when { font-size: 14px; color: var(--muted); margin-top: 6px; }
   details.all { margin-top: 8px; font-size: 14px; }
   details.all summary { cursor: pointer; color: var(--ink); font-weight: 600; padding: 4px 0; }
-  details.all table, .tech table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 13.5px; }
-  details.all th, .tech th { text-align: left; font-size: 12px; color: var(--muted); font-weight: normal; border-bottom: 1px solid var(--line); padding: 3px 6px 3px 0; }
+  details.all table, .tech table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 14px; }
+  details.all th, .tech th { text-align: left; font-size: 14px; color: var(--muted); font-weight: normal; border-bottom: 1px solid var(--line); padding: 3px 6px 3px 0; }
   details.all td, .tech td { border-bottom: 1px solid var(--line); padding: 6px 6px 6px 0; }
   .red { color: var(--red); } .amb { color: var(--info); }
   .explain p { font-size: 14px; line-height: 1.45; margin: 0 0 8px; }
@@ -267,12 +268,30 @@
     #months:not(.all) .mon:nth-child(n+3) { display: none; }
     #months:not(.all) ~ #moremon { display: inline-block; }
   }
+  /* Phones (accessibility, Nov 10, 2026): one month across, one at a time, with day cells big enough to read and tap (about 48 px) */
+  @media (max-width: 559px) {
+    #months.months { grid-template-columns: 1fr; }
+    #months:not(.all) .mon:nth-child(n+2) { display: none; }
+    #months .mon h3 { font-size: 16px; }
+    #months .mgrid { gap: 3px; }
+    #months .mgrid .wd { font-size: 13px; }
+    #months .mgrid .d { font-size: 16px; border-radius: 6px; }
+    #months .mgrid .d.r::after, #months .mgrid .d.k::after, #months .mgrid .d.r.kr::before { font-size: 12px; top: 2px; }
+    #months .mgrid .d.r::after, #months .mgrid .d.k::after { right: 4px; } #months .mgrid .d.r.kr::before { left: 4px; }
+    #moremon { min-height: 44px; font-size: 15px; }
+  }
+  /* The calendar key, folded under one line so the calendar comes first */
+  details.ckeyd { margin: 6px 0 4px; }
+  details.ckeyd > summary { cursor: pointer; font-weight: 600; color: var(--info); font-size: 15px; min-height: 32px; display: flex; align-items: center; }
+  details.ckeyd > summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .flmore { font: inherit; font-weight: 600; font-size: 15px; color: var(--info); background: transparent; border: 0; padding: 8px 0; min-height: 44px; cursor: pointer; text-decoration: underline; }
+  .flmore:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .nextk { margin-top: 6px; font-size: 14px; color: var(--ink); cursor: pointer; }
   .nextk:empty { display: none; }
   .nextk .kst { color: var(--king); font-weight: 700; }
   .nextk:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .day .kx { color: var(--king); font-weight: 700; }
-  .dlater { font-size: 12.5px; color: var(--muted); padding: 6px 4px 2px; border-bottom: 1px solid var(--line); }
+  .dlater { font-size: 14px; color: var(--muted); padding: 6px 4px 2px; border-bottom: 1px solid var(--line); }
   /* Redwood City only; a little wider on big screens. ?embed=1 hides the page chrome for dashboards */
   @media (min-width: 760px) { main { max-width: 900px; } #cards .card { margin-bottom: 0; } }
   body.embed header, body.embed nav, body.embed .explain, body.embed #intro, body.embed .owner { display: none; }
@@ -291,14 +310,14 @@
   #calfc b { color: var(--ink); }
   #season .st { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.3; }
   #season .st b { color: var(--ink); }
-  #season .st .src { display: block; font-size: 12px; color: var(--muted); }
+  #season .st .src { display: block; font-size: 14px; color: var(--muted); }
   #season .go { color: var(--muted); font-size: 18px; }
   @media (max-width: 520px) { #season { flex-wrap: wrap; row-gap: 6px; } #season .st { flex: 1 1 calc(100% - 30px); order: 2; } #season .go { order: 3; } }
   #calcard h2 { font-size: 17px; margin: 0 0 2px; color: var(--ink); }
   .ckey { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin: 6px 0 10px; }
   .ckey i { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; }
   .months { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 16px; }
-  .mon h3 { margin: 0 0 4px; font-size: 13.5px; color: var(--ink); }
+  .mon h3 { margin: 0 0 4px; font-size: 14px; color: var(--ink); }
   .mgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
   .mgrid .wd { font-size: 10.5px; color: var(--muted); text-align: center; padding-bottom: 2px; }
   .mgrid .d { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 4px;
@@ -332,17 +351,17 @@
   #calselx { flex: none; border: 0; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 4px; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .wlist, .flist { font-size: 14px; margin: 6px 0 0; padding: 0; list-style: none; }
-  .flist li { padding: 5px 0; border-top: 1px solid var(--line); } .flist b { color: var(--red); } .flist .lv { font-size: 12.5px; color: var(--muted); }
+  .flist li { padding: 5px 0; border-top: 1px solid var(--line); } .flist b { color: var(--red); } .flist .lv { font-size: 14px; color: var(--muted); }
   .clh { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
   /* This season so far (staff, 2026-10-31): from the tide tracker's data (tide_tracker.json), between the flood-level list and the calendar */
   #sstats { margin: 14px 0 0; padding-top: 2px; border-top: 1px solid var(--line); }
   .sgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 6px; }
   @media (max-width: 560px) { .sgrid { grid-template-columns: 1fr; } }
   .stile { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
-  .stile .sl { font-size: 13px; color: var(--muted); line-height: 1.3; }
+  .stile .sl { font-size: 14px; color: var(--muted); line-height: 1.3; }
   .stile .sv { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.25; font-variant-numeric: tabular-nums; }
-  .stile .sv small { font-size: 13px; font-weight: 600; }
-  .stile .st { font-size: 13px; color: var(--muted); }
+  .stile .sv small { font-size: 14px; font-weight: 600; }
+  .stile .st { font-size: 14px; color: var(--muted); }
   .stile.hi { border-color: var(--sv-advisory-stripe, #e07b00); }
   .slist { margin: 4px 0 0; padding-left: 18px; font-size: 14px; } .slist li { margin: 3px 0; }
   .sfold > summary { cursor: pointer; list-style: none; padding: 6px 0; min-height: 44px; }
@@ -387,7 +406,7 @@
   details.more[open] > summary::before, details.calfull[open] > summary::before { content: "▾"; }
   .wlist li { padding: 5px 0; border-top: 1px solid var(--line); }
   .wlist b { color: var(--kingtx); }
-  .wlist .lv { font-size: 12.5px; color: var(--muted); }
+  .wlist .lv { font-size: 14px; color: var(--muted); }
   body.embed #calcard, body.embed #season .src { display: none; }
   /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
   .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
@@ -435,13 +454,14 @@
     <ul class="flist" id="flist"></ul>
     <div id="sstats" class="hide" aria-live="off"></div>
     <div class="calfull" id="calfull"><h3 class="clh" id="calh">Calendar</h3>
+    <details class="ckeyd" id="ckeyd"><summary>What the colors mean</summary>
     <div class="ckey"><span><i style="background:var(--ambbg);box-shadow:inset 0 -3px 0 var(--amb)"></i><span data-text="tide_day_amber"></span></span>
       <span><i class="lgr"></i><span data-text="tide_day_red"></span></span>
       <span id="astkey" class="hide"><i class="last"></i><span id="astkeyt"></span></span>
       <span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>
       <span><i style="outline:4px double var(--ink);outline-offset:-4px"></i>Selected</span>
       <span id="fckey" class="hide"><i style="border:2px dotted var(--ink);box-sizing:border-box"></i><span data-text="tide_day_expected"></span></span>
-      <span id="ofkey" class="hide"><i style="border:2px dashed var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="ofkeyt"></span></span></div>
+      <span id="ofkey" class="hide"><i style="border:2px dashed var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="ofkeyt"></span></span></div></details>
     <div id="calfc" class="hide"></div>
     <p class="caltap" data-text="tide_cal_tap"></p>
     <div class="months" id="months" role="group" aria-label="High tides calendar. Arrow keys move between days; Enter shows a day's tide."></div>
@@ -472,10 +492,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261108d"></script>
-<script src="tide_season.js?v=20261108d"></script>
-<script src="severity.js?v=20261108d"></script>
-<script src="hero.js?v=20261108d"></script>
+<script src="lookups.js?v=20261110a"></script>
+<script src="tide_season.js?v=20261110a"></script>
+<script src="severity.js?v=20261110a"></script>
+<script src="hero.js?v=20261110a"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -995,9 +1015,9 @@ var nowLine = {
     var px = xs.getPixelForValue(x), ctx = c.ctx;
     ctx.save(); ctx.strokeStyle = "#8a96a6"; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(px, ys.top); ctx.lineTo(px, ys.bottom); ctx.stroke();
-    ctx.font = "bold 11px -apple-system, Arial, sans-serif"; var tw = ctx.measureText("Now").width;
-    ctx.fillStyle = "#6b7a8c"; ctx.fillRect(px - tw / 2 - 4, ys.top, tw + 8, 15);
-    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("Now", px, ys.top + 8);
+    ctx.font = "bold 13px -apple-system, Arial, sans-serif"; var tw = ctx.measureText("Now").width;
+    ctx.fillStyle = "#56657a"; ctx.fillRect(px - tw / 2 - 4, ys.top, tw + 8, 17);
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("Now", px, ys.top + 9);
     ctx.restore();
   }
 };
@@ -1343,8 +1363,11 @@ function renderCalendar() {
     steady = '<li class="lv steady">' + esc(LK.text("tide_steady_start", { water: SIDE.water, off: Math.max(oS.ft, oS.recent7 || 0).toFixed(2), date: "\u0001", n: nTxt }))
       .replace("\u0001", '<a class="go" href="#cal-' + esc(s0) + '" data-go="' + esc(s0) + '">' + esc(tsDay(s0)) + "</a>") + "</li>";
   }
-  $("flist").innerHTML = isFinite(TSN.red()) ? steady + (runs.length ? runs.slice(0, 6).map(runLine).join("") +
-      (runs.length > 6 ? '<li class="lv">and ' + (runs.length - 6) + " more in the calendar (red or dashed red)</li>" : "")
+  // the next 3 dates; the rest one tap away (phones: less to read; Nov 10, 2026)
+  var FL_N = 3, flAll = $("flist").classList.contains("all");
+  $("flist").innerHTML = isFinite(TSN.red()) ? steady + (runs.length ? runs.slice(0, flAll ? 6 : FL_N).map(runLine).join("") +
+      (!flAll && runs.length > FL_N ? '<li class="lv"><button type="button" class="flmore">Show ' + (Math.min(runs.length, 6) - FL_N) + " more " + (Math.min(runs.length, 6) - FL_N === 1 ? "date" : "dates") + "</button></li>" : "") +
+      (flAll && runs.length > 6 ? '<li class="lv">and ' + (runs.length - 6) + " more in the calendar (red or dashed red)</li>" : "")
     : '<li class="lv">None through ' + esc(tsFmt(Object.keys(dh).sort().pop(), { month: "long" })) + ".</li>") : "";
   $("flist").previousElementSibling.hidden = $("flist").hidden = !isFinite(TSN.red());   // Coastside: no flood level yet
   // Seasonal outlook past the next 6 weeks (tide_season.js seasonOutlook; THRESHOLDS_BASIS.md §4b): a line, not marks on days
@@ -1403,6 +1426,10 @@ $("months").addEventListener("click", function (e) {
 });
 $("calselx").addEventListener("click", function () { closeDay(true); });
 $("flist").addEventListener("click", function (e) {
+  if (e.target.closest && e.target.closest(".flmore")) {   // show the rest of the dates and keep focus in the list
+    var ul = $("flist"), n = ul.querySelectorAll("li a.go").length; ul.classList.add("all"); renderCalendar();
+    var nx = ul.querySelectorAll("li a.go")[n]; if (nx) nx.focus(); return;
+  }
   var a = e.target.closest && e.target.closest("a.go"); if (!a) return;
   var c = document.querySelector('.mgrid .d[data-d="' + a.dataset.go + '"]'); if (!c) return;
   e.preventDefault();
@@ -1427,6 +1454,7 @@ $("months").addEventListener("keydown", function (e) {
 });
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && selDay) closeDay(true); });
 $("moremon").addEventListener("click", function () { $("months").classList.add("all"); });
+try { if (matchMedia("(min-width: 760px)").matches) $("ckeyd").open = true; } catch (e) {}   // wide screens: the key stays open
 $("months").addEventListener("focusin", function (e) { if (e.target.offsetParent === null) { $("months").classList.add("all"); e.target.focus(); } });
 document.addEventListener("click", function (e) {
   if (e.target.closest && e.target.closest(".nextk") && !EMBED) $("calcard").scrollIntoView({ behavior: "smooth", block: "start" });

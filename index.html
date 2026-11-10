@@ -27,7 +27,7 @@
   nav a { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); text-decoration: none;
     padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav a .i { font-size: 21px; line-height: 1.1; }
-  @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
+  @media (max-width: 420px) { nav a, nav button { font-size: 12px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav a.on { color: var(--ink); font-weight: bold; }
   .wrap { max-width: 860px; margin: 0 auto; }
   a { color: var(--link); }
@@ -47,7 +47,7 @@
   h2.sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 22px 0 8px;
     display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   main > h2.sec:first-child { margin-top: 4px; }
-  h2.sec a { font-size: 12.5px; text-transform: none; letter-spacing: 0; font-weight: 600; white-space: nowrap; }
+  h2.sec a { font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 600; white-space: nowrap; }
   /* Status boxes: the status color goes all the way around the box */
   .box { background: var(--card); border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
     border: 3px solid var(--line); }
@@ -63,7 +63,7 @@
   .al h3 { margin: 0; font-size: 18px; color: var(--ink); }
   .al.red h3 { color: var(--red); } .al.amber h3 { color: #a35f00; }
   @media (prefers-color-scheme: dark) { .al.amber h3 { color: var(--amber); } }
-  .al .when { font-size: 13.5px; color: var(--muted); margin: 1px 0 8px; }
+  .al .when { font-size: 14px; color: var(--muted); margin: 1px 0 8px; }
   .al dl { display: grid; grid-template-columns: 5.6em 1fr; gap: 4px 10px; margin: 0; font-size: 15px; }
   .al dt { font-weight: 700; color: var(--ink); } .al dd { margin: 0; }
   .al p { margin: 6px 0 0; font-size: 15px; }
@@ -76,16 +76,16 @@
   a.ck { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; padding: 10px 12px; }
   a.ck:hover, a.ck:focus-visible { box-shadow: 0 0 0 2px var(--brand), 0 1px 4px rgba(0,0,0,.07); }
   .ck .nm { font-size: 17px; font-weight: 700; color: var(--ink); line-height: 1.2; }
-  .ck .badge { align-self: flex-start; font-size: 12px; font-weight: 700; border-radius: 5px; padding: 2px 8px; color: #fff; background: var(--gray); }
-  .ck .g { font-size: 13.5px; line-height: 1.3; }
+  .ck .badge { align-self: flex-start; font-size: 13px; font-weight: 700; border-radius: 5px; padding: 2px 8px; color: #fff; background: var(--gray); }
+  .ck .g { font-size: 14px; line-height: 1.3; }
   .ck .g b { font-size: 16px; color: var(--ink); }
   .ck .g .q { color: var(--muted); }
-  .ck .rain { font-size: 13px; color: var(--muted); }
+  .ck .rain { font-size: 14px; color: var(--muted); }
   .ck .rain b { color: var(--text); }
-  .ck .go { margin-top: auto; padding-top: 2px; font-size: 13px; font-weight: 600; color: var(--link); }
-  .note { font-size: 13px; color: var(--muted); margin: 8px 2px 0; }
+  .ck .go { margin-top: auto; padding-top: 2px; font-size: 14px; font-weight: 600; color: var(--link); }
+  .note { font-size: 14px; color: var(--muted); margin: 8px 2px 0; }
 
-  .ck .g .l, .ck .rain .l { display: block; font-size: 12px; color: var(--muted); }
+  .ck .g .l, .ck .rain .l { display: block; font-size: 14px; color: var(--muted); }
   .ck .rain .met { color: #c62828; font-weight: 700; }
   .ck .rain > span:not(.l) { white-space: nowrap; }   /* keep "15 min 0.08" together when the line wraps */
   @media (prefers-color-scheme: dark) { .ck .rain .met { color: #ef5350; } }
@@ -96,19 +96,19 @@
   .tide .th span { font-weight: normal; font-size: 14px; color: var(--text); }
   .tide .tn { display: block; font-size: 14px; color: var(--muted); margin-top: 4px; }
   .tide .tn { color: var(--text); font-size: 15px; }
-  .tide .ts { display: block; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .tide .ts { display: block; font-size: 14px; color: var(--muted); margin-top: 4px; }
   /* Bayside and Coastside: one box each, stacked on phones, side by side on wider screens; short text, details one tap away */
   .tides2 { display: grid; gap: 8px; } @media (min-width: 640px) { .tides2 { grid-template-columns: 1fr 1fr; } }
   .tides2 .box { padding: 9px 12px; position: relative; padding-right: 28px; border: 1px solid var(--line); }
   .tides2 .box.sv-card { border-left-width: 6px; }
   .tide .lv { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; border-radius: 6px; padding: 1px 8px 1px 6px; margin: 3px 0 1px; }
   .tide .lv .sv-ic { width: 15px; height: 15px; }
-  .tide .t2 { display: block; font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+  .tide .t2 { display: block; font-size: 14px; color: var(--muted); margin-top: 3px; }
   .tides2 .th { font-size: 16px; }
-  .tide .sd { display: block; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .tide .sd { display: block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
   .tides2 .tn { font-size: 14px; margin-top: 2px; }
   .tides2 .go2 { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 22px; color: var(--muted); }
-  .tide .go { display: block; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--link); }
+  .tide .go { display: block; margin-top: 6px; font-size: 14px; font-weight: 600; color: var(--link); }
 
   /* Rapidly rising */
   .rising { display: grid; gap: 10px; margin-top: 10px; }
@@ -117,7 +117,7 @@
   .rs.red .ar { color: #c62828; }
   .rs h3 { margin: 0; font-size: 16.5px; color: var(--ink); }
   .rs p { margin: 2px 0 0; font-size: 14.5px; }
-  .calm { font-size: 13.5px; color: var(--muted); margin: 8px 2px 0; }
+  .calm { font-size: 14px; color: var(--muted); margin: 8px 2px 0; }
 
   /* Page links */
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
@@ -145,12 +145,12 @@
   .nrow:focus-visible { outline: 3px solid #1e88e5; outline-offset: 2px; }
   .ntop { margin-top: 14px; }
   #evacBox:empty { display: none; }
-  #evacBox .btn { display: block; text-align: center; margin: 10px 0 0; }
+  #evacBox .btn { display: block; text-align: center; margin: 10px 0 0; white-space: normal; }   /* wraps on small screens and at large text sizes */
   .getal { margin: 22px 0 0; text-align: center; }
   .smcbtn { display: block; border: 1.5px solid var(--brand); color: var(--brand); background: var(--card); border-radius: 10px; padding: 12px 14px;
     font-weight: 700; text-decoration: none; }
   @media (prefers-color-scheme: dark) { .smcbtn { color: #8cc8ff; border-color: #8cc8ff; } }
-  .getal .tiny { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .getal .tiny { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
   .flinks { text-align: center; font-size: 14px; color: var(--muted); margin: 20px 0 0; }
   .more { margin: 10px 0 0; }
   .more > summary { cursor: pointer; text-align: center; font-size: 14px; color: var(--muted); padding: 6px; }
@@ -173,12 +173,12 @@
   .sys .v { flex: 1; min-width: 0; }
   .sys a { white-space: nowrap; }
   @media (max-width: 480px) { .sys .row { flex-wrap: wrap; } .sys .v { flex-basis: 100%; padding-left: 20px; margin-top: -4px; } }
-  .ck .met { font-size: 12.5px; font-weight: 700; color: #c62828; }
+  .ck .met { font-size: 13px; font-weight: 700; color: #c62828; }
   @media (prefers-color-scheme: dark) { .ck .met { color: #ef5350; } }
 
   .contact { font-size: 14.5px; } .contact a { color: inherit; }
-  .fine { font-size: 13px; color: var(--muted); }
-  .owner { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.45; }
+  .fine { font-size: 14px; color: var(--muted); }
+  .owner { font-size: 14px; color: var(--muted); margin: 0 0 12px; line-height: 1.45; }
   .owner img { display: block; margin: 0 0 6px; height: 37px; width: auto; }
   .owner a { color: inherit; }
   footer { border-top: 1px solid var(--line); margin-top: 26px; padding-top: 14px; }
@@ -282,10 +282,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261108d"></script>
-<script src="severity.js?v=20261108d"></script>
-<script src="creek_status.js?v=20261108d"></script>
-<script src="hero.js?v=20261108d"></script>
+<script src="lookups.js?v=20261110a"></script>
+<script src="severity.js?v=20261110a"></script>
+<script src="creek_status.js?v=20261110a"></script>
+<script src="hero.js?v=20261110a"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),

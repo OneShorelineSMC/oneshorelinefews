@@ -52,7 +52,11 @@
     var word = key === "delayed" ? T("verdict_delayed", { time: clock(data.generated) })
       : key === "offline" && (st.out_of_service || []).length ? T("verdict_out_of_service") : T("verdict_" + key);
     var todo = key === "offline" || key === "delayed" ? T("verdict_nodata_todo") : T("verdict_" + key + "_todo");
-    var reasons = (st.reasons || []).map(reason).filter(Boolean);
+    // Plain and short (Nov 10, 2026): the reason that sets the status first; "isn't reporting" drops when "out of service" already says it
+    var rs = (st.reasons || []).slice(), oos = rs.some(function (r) { return r.code === "why_out_of_service"; });
+    rs = rs.filter(function (r) { return !(oos && r.code === "why_gauge_offline"); });
+    rs.sort(function (a, b) { return (/^why_trigger/.test(b.code) ? 1 : 0) - (/^why_trigger/.test(a.code) ? 1 : 0); });
+    var reasons = rs.map(reason).filter(Boolean);
     if (late && st.key && st.key !== "none") reasons.unshift(T("verdict_" + st.key) + " at " + clock(data.generated) + ", the last update.");
     // "Since 1:40 PM · before that: Stay alert" (the data job keeps when each status started)
     var since = key !== "delayed" && key !== "none" && st.since ? T("since_line", { time: clock(st.since) }) +
@@ -201,7 +205,8 @@
     if (v.since) h += '<p class="cs-since">' + esc(v.since) + "</p>";
     v.reasons.forEach(function (r) { h += '<p class="cs-why">' + esc(r) + "</p>"; });
     h += "</div>";
-    h += '<div class="cs-body">' + (v.key === "likely" ? '<p class="cs-danger">' + esc(T("e911")) + "</p>" : "") +
+    // (no separate 911 line in the card: every page's header and the red banner already say it)
+    h += '<div class="cs-body">' + (v.key === "likely" && opts.e911 ? '<p class="cs-danger">' + esc(T("e911")) + "</p>" : "") +
       '<p class="cs-todo"><b>What to do:</b> ' + esc(v.todo) + "</p></div>";
     if (!opts.compact) {
       h += '<div class="cs-details cs-stages">';
@@ -577,7 +582,7 @@
     ".cs-banner{background:#c62828;color:#fff;border-radius:10px;padding:12px 14px;font-size:17px;font-weight:700;line-height:1.4;margin:0 0 10px}",
     ".cs-glance{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:10px;padding:12px 14px;margin:0 0 12px}",
     ".cs-main{margin:0;font-size:18px;font-weight:700;line-height:1.4;color:var(--ink,#16202b)}",
-    ".cs-sub{margin:8px 0 0;font-size:13px;line-height:1.45;color:var(--muted,#556274)}",
+    ".cs-sub{margin:8px 0 0;font-size: 14px;line-height:1.45;color:var(--muted,#556274)}",
     ".cs-evac{display:inline-flex;align-items:center;margin-top:10px;min-height:44px;padding:8px 14px;border-radius:8px;background:#0A5587;color:#fff!important;text-decoration:none;font-weight:700}",
     ".cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin:0 0 12px}",
     ".cs-card{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;color:var(--text,var(--ink,#16202b))}",
@@ -608,13 +613,13 @@
     ".cs-nolvl{margin:8px 0 2px;padding:8px 10px;border:1px dashed var(--muted,#8a96a3);border-radius:8px;font-size:13.5px;line-height:1.4;color:var(--text,#22303f);" +
     "background:repeating-linear-gradient(135deg,transparent 0 6px,rgba(138,150,163,.10) 6px 12px)}.cs-nolvl b{display:block;color:var(--ink,#003B5C)}",
     ".cs-row:last-child{border-bottom:0}.cs-lbl{color:var(--muted,#556274)}.cs-val{font-weight:600;text-align:right}",
-    ".cs-dim{color:var(--muted,#556274);font-weight:400}.cs-sm{display:block;font-size:12px;color:var(--muted,#556274)}",
+    ".cs-dim{color:var(--muted,#556274);font-weight:400}.cs-sm{display:block;font-size: 14px;color:var(--muted,#556274)}",
     ".cs-band{padding:8px 0 9px;border-bottom:1px solid var(--line,#eceff3)}",
     ".cs-bt{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:7px;flex-wrap:wrap}.cs-now{font-weight:600}",
     ".cs-track{position:relative;display:flex;gap:2px;height:12px}.cs-s{height:100%;background:rgba(138,150,163,.25)}",
     ".cs-s:first-child{border-radius:6px 0 0 6px}.cs-s:last-of-type{border-radius:0 6px 6px 0}",
     ".cs-mark{position:absolute;top:-5px;width:4px;height:22px;margin-left:-2px;background:var(--ink,#16202b);border-radius:2px;box-shadow:0 0 0 2px var(--card,var(--panel,#fff))}",
-    ".cs-ticks{display:flex;font-size:12px;color:var(--muted,#556274);margin-top:5px}.cs-ticks span{text-align:center}.cs-ticks .on{color:var(--ink,#16202b);font-weight:700}",
+    ".cs-ticks{display:flex;font-size: 14px;color:var(--muted,#556274);margin-top:5px}.cs-ticks span{text-align:center}.cs-ticks .on{color:var(--ink,#16202b);font-weight:700}",
     ".cs-chip{display:inline-flex;align-items:center;gap:7px;border-radius:6px;padding:2px 9px;font-weight:700;color:var(--ink,#16202b)}",
     ".cs-chip.heavy{background:" + TINT.alert + "}.cs-chip.vheavy{background:" + TINT.ready + "}.cs-chip.severe{background:rgba(198,40,40,.16)}",
     ".cs-meter{display:inline-flex;gap:2px;align-items:flex-end}.cs-meter i{display:block;width:5px;border-radius:2px;background:rgba(127,127,127,.3)}",
@@ -625,7 +630,7 @@
     ".cs-fcbox{margin:10px 0 4px;padding:2px 12px;border:1px solid var(--line,#d5dae1);border-radius:10px;background:var(--card,var(--panel,#fff))}",
     ".cs-bcols{display:grid;grid-template-columns:8px 130px 150px 1fr 110px 84px;gap:0 10px;padding:3px 10px 3px 0;font-size:11.5px;font-weight:700;letter-spacing:.05em;" +
     "text-transform:uppercase;color:var(--muted,#556274);border-bottom:1px solid var(--line,#e3e8ee)}.cs-bcols .cs-bsince{font-size:inherit;color:inherit}",
-    ".cs-foot{margin-top:auto;padding:8px 14px;border-top:1px solid var(--line,#e3e7ec);font-size:12.5px;color:var(--muted,#556274);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}",
+    ".cs-foot{margin-top:auto;padding:8px 14px;border-top:1px solid var(--line,#e3e7ec);font-size: 14px;color:var(--muted,#556274);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}",
     ".cs-foot a{font-weight:600}",
     // one-row creeks (2026-11-02)
     ".cs-rowc{padding:0!important;min-height:0!important;height:auto!important}.cs-grid>.cs-rowc{display:block!important;grid-row:auto!important}.cs-grid:has(.cs-rowc){align-items:start}.cs-grid:has(.cs-rowc)>.cs-card:not(.cs-rowc){display:flex!important;grid-row:auto!important}.cs-rowa{display:flex;align-items:center;gap:10px;padding:12px 14px;color:inherit;text-decoration:none;min-height:56px}",
@@ -642,9 +647,9 @@
     ".cs-tile.cs-likely{border-color:#c62828}.cs-tile.cs-ready{border-color:#e07b00}.cs-tile.cs-alert{border-color:#e6c200}.cs-tile.cs-none{border-color:rgba(138,150,163,.5)}",
     ".cs-tile.cs-offline,.cs-tile.cs-delayed{border-style:dashed}",
     ".cs-tn{font-size:17px;font-weight:700;color:var(--ink,#16202b)}.cs-tile .cs-verdict{margin:0;font-size:20px;padding:4px 10px}.cs-tile .cs-chip{padding:0 7px}",
-    ".cs-tr{font-size:14.5px;line-height:1.3;color:var(--ink,#16202b)}.cs-tm{font-size:13px;margin-top:auto}",
-    ".cs-ts{font-size:12.5px;color:var(--muted,#556274)}",
-    ".cs-since{margin:6px 14px 0;font-size:13px;color:var(--muted,#556274)}",
+    ".cs-tr{font-size:14.5px;line-height:1.3;color:var(--ink,#16202b)}.cs-tm{font-size: 14px;margin-top:auto}",
+    ".cs-ts{font-size: 14px;color:var(--muted,#556274)}",
+    ".cs-since{margin:6px 14px 0;font-size: 14px;color:var(--muted,#556274)}",
     ".cs-glance .cs-main+.cs-main{margin-top:4px}.cs-late{color:var(--muted,#556274)!important;font-size:15px!important}",
     ".cs-num{margin:0 14px 10px}.cs-num>summary,.cs-how>summary{cursor:pointer;font-weight:600;font-size:14px;min-height:36px;display:flex;align-items:center;color:var(--ink,#16202b)}",
     ".cs-how{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:10px;padding:2px 14px;margin:0 0 12px}",
@@ -686,11 +691,11 @@
     ".cs-hy{font-size:14px;line-height:1.35;color:var(--text,var(--ink,#16202b))}.cs-hc{color:var(--muted,#556274);font-size:20px;flex:none}",
     "a.cs-hrow:focus-visible{outline:3px solid #1e6fd9;outline-offset:2px;border-radius:4px}",
     ".cs-hdo{margin:0;padding:9px 14px 11px;font-size:14px;line-height:1.4;border-top:1px solid var(--line,#e3e8ee)}",
-    ".cs-hdo-l{display:block;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#556274);margin-bottom:1px}",
+    ".cs-hdo-l{display:block;font-size: 13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#556274);margin-bottom:1px}",
     ".cs-evacb{justify-content:center;margin-top:0}",
     ".cs-hlate{padding:8px 12px;background:#fff3cd;color:#5c4a00;font-weight:700;font-size:14px;border-radius:8px}",
     ".cs-hmore{background:var(--card,var(--panel,#fff));border:1px solid var(--line,#d5dae1);border-radius:12px;padding:4px 14px}",
-    ".cs-hmore p{margin:8px 0;font-size:14px;line-height:1.45}.cs-hmore a{font-weight:600}.cs-hsm{font-size:12.5px!important;color:var(--muted,#556274)}",
+    ".cs-hmore p{margin:8px 0;font-size:14px;line-height:1.45}.cs-hmore a{font-weight:600}.cs-hsm{font-size: 14px!important;color:var(--muted,#556274)}",
     // EOC kiosk board (staff preview)
     ".cs-board{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel,var(--card,#fff));border-radius:8px;overflow:hidden;border:1px solid var(--line,#d5dae1)}",
     ".cs-bhead{display:flex;justify-content:space-between;align-items:baseline;padding:6px 12px;background:transparent;color:var(--muted,#556274);border-bottom:1px solid var(--line,#e3e8ee);font-size:13px}.cs-bhead b{font-size:17px;color:var(--ink,#16202b)}",   // no navy: the brand bar only (2026-10-26)
@@ -707,14 +712,14 @@
     ".cs-blate{padding:6px 12px;background:#fff3cd;color:#5c4a00;font-weight:700;font-size:14px}",
     ".cs-bquiet{margin-top:auto;padding:7px 12px;font-size:13.5px;color:var(--ink,#16202b);border-top:1px solid var(--line,#e3e8ee)}",
     ".cs-bnone{flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--ink,#16202b)}",
-    ".cs-changed{font-size:13.5px;margin:6px 0 8px}",
+    ".cs-changed{font-size: 14px;margin:6px 0 8px}",
     // the kiosk board on the home page: rows are links; on a phone each row folds to name + status, then why, then rain
     ".cs-wboard{flex:none;margin:0 0 10px}.cs-wrows{list-style:none;margin:0;padding:0}",
     // home page board (2026-10-26): a standard card (no navy header), a summary line, muted notes for gauges not working
     ".cs-plain{border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}",
     ".cs-bsum{padding:10px 14px 8px;font-size:15px;font-weight:700;color:var(--ink,#16202b);border-bottom:1px solid var(--line,#e3e8ee)}.cs-bsum .cs-dim{font-weight:400;font-size:13px}",
     ".cs-bnotes{display:flex;gap:8px;align-items:flex-start;padding:8px 14px;font-size:13.5px;line-height:1.4;color:var(--muted,#556274);border-top:1px solid var(--line,#e3e8ee)}.cs-bnotes .sv-ic{width:16px;height:16px;margin-top:2px}",
-    ".cs-plain .cs-wnone{padding:12px 14px 6px;font-size:16.5px}.cs-plain .cs-wscope{padding:4px 14px 12px;font-size:13.5px}",
+    ".cs-plain .cs-wnone{padding:12px 14px 6px;font-size:16.5px}.cs-plain .cs-wscope{padding:4px 14px 12px;font-size: 14px}",
     ".cs-plain .cs-wnone + .cs-bnotes{border-top:0;padding-top:2px}",
     ".cs-bword.sv-badge{font-weight:700}.cs-bword .sv-ic{width:16px;height:16px}",
     ".cs-hmap{margin:0 2px 4px;font-size:14px}.cs-hmap a{font-weight:600}",

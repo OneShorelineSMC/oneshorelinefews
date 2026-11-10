@@ -38,14 +38,14 @@
   nav a { flex: 1; min-width: 0; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px;
     display: flex; flex-direction: column; align-items: center; gap: 2px; }
   nav a .i { font-size: 21px; line-height: 1.1; }
-  @media (max-width: 420px) { nav a, nav button { font-size: 11px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
+  @media (max-width: 420px) { nav a, nav button { font-size: 12px; } nav a .i, nav button .i { font-size: 19px; } }   /* six or seven tabs on a phone */
   nav a.on { color: var(--ink); font-weight: bold; }
-  #sub { font-size: 12px; }   /* site count and update time, at the end of the legend row */
+  #sub { font-size: 14px; }   /* site count and update time, at the end of the legend row */
   .seg { display: flex; background: rgba(255,255,255,.18); border-radius: 9px; padding: 2px; flex: none; }
   .seg button { border: 0; background: none; color: #fff; font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 7px; cursor: pointer; }
   .seg button.on { background: #fff; color: var(--brand); font-weight: 600; }
 
-  #legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 14px; font-size: 12px; color: var(--muted);
+  #legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 14px; font-size: 14px; color: var(--muted);
     background: var(--card); border-bottom: 1px solid var(--line); flex: none; }
   #legend span { white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
   #legend .upd { margin-left: auto; }
@@ -69,7 +69,11 @@
   /* markers */
   .mk { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
   .mk.sq { border-radius: 4px; }
-  .mk.big { width: 24px; height: 24px; }
+  .mk.big { width: 24px; height: 24px; margin: 0; }
+  .mk:not(.big) { margin: 3px; }
+  /* map layer switches: bigger boxes, easier to tap */
+  .leaflet-control-layers label { padding: 4px 0; font-size: 15px; }
+  .leaflet-control-layers input { width: 22px; height: 22px; vertical-align: -5px; margin: 0 6px 0 0; }
   .mk.sel { outline: 3px solid var(--brand); outline-offset: 2px; }
   .rl { font-size: 11px; font-weight: 700; color: #0d47a1; background: rgba(255,255,255,.92); border-radius: 4px;
     padding: 0 3px; white-space: nowrap; position: absolute; top: 19px; left: 50%; transform: translateX(-50%);
@@ -101,19 +105,19 @@
   .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 8px; }
   .shead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .sname { font-size: 18px; font-weight: 700; line-height: 1.25; }
-  .snum { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .snum { font-size: 14px; color: var(--muted); margin-top: 2px; }
   .x { border: 0; background: var(--bg); color: var(--ink); font-size: 18px; width: 34px; height: 34px; border-radius: 50%; flex: none; cursor: pointer; }
-  .badge { display: inline-block; font-size: 12.5px; font-weight: 700; color: #fff; border-radius: 6px; padding: 3px 8px; margin-top: 8px; }
+  .badge { display: inline-block; font-size: 13px; font-weight: 700; color: #fff; border-radius: 6px; padding: 3px 8px; margin-top: 8px; }
   .sens { border-top: 1px solid var(--line); padding: 10px 0 6px; }
   .sens:first-of-type { border-top: 0; }
   .srow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .slbl { font-size: 14px; font-weight: 600; }
   .sval { font-size: 22px; font-weight: 700; white-space: nowrap; }
-  .sval small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 2px; }
-  .sage { font-size: 12.5px; color: var(--muted); }
+  .sval small { font-size: 14px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .sage { font-size: 14px; color: var(--muted); }
   .sage.old { color: #a35200; }
   @media (prefers-color-scheme: dark) { .sage.old { color: #f0a050; } }
-  .lvl { font-size: 12.5px; font-weight: 700; }
+  .lvl { font-size: 13px; font-weight: 700; }
   canvas.spark { width: 100%; height: 54px; display: block; margin-top: 6px; }
   .glbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
   .olink { display: block; text-align: center; margin: 12px 0 4px; padding: 11px; border-radius: 10px; background: var(--brand);
@@ -124,18 +128,18 @@
   .clink + .clink { margin-top: 6px; }
   .clink.glink { background: transparent; color: var(--slink); border: 1.5px solid var(--slink); padding: 9.5px 14px; }   /* the gauge page: second to the creek page */
   .clink:focus-visible, .olink:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
-  .fine { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+  .fine { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
   .fine a { color: inherit; }
 
   /* list */
-  .grp { font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 12px 4px 6px; }
+  .grp { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 12px 4px 6px; }
   .row { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 10px; padding: 10px 12px;
     margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
   .row .ld { flex: none; width: 13px; height: 13px; }
   .rmain { flex: 1; min-width: 0; }
   .rname { font-size: 15px; font-weight: 600; }
-  .rvals { font-size: 13px; color: var(--muted); margin-top: 2px; }
-  .rage { font-size: 12px; color: var(--muted); text-align: right; flex: none; }
+  .rvals { font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .rage { font-size: 14px; color: var(--muted); text-align: right; flex: none; }
   #msg { position: absolute; z-index: 1300; left: 50%; top: 40%; transform: translate(-50%, -50%); background: var(--card);
     padding: 12px 16px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.2); font-size: 14px; text-align: center; max-width: 85%; }
   /* flood reports: only in the staff view (or REPORTS_PUBLIC = 1); hidden means hidden, also in the legend (Oct 26) */
@@ -150,7 +154,7 @@
   #legend #rpnote.show { display: block; }
   .rphoto { display: block; width: 100%; max-height: 260px; object-fit: cover; border-radius: 10px; margin-top: 10px; background: var(--line); }
   .rsum { font-size: 15px; margin-top: 10px; line-height: 1.45; }
-  #listfoot { font-size: 12px; color: var(--muted); margin: 18px 4px 0; line-height: 1.45; }
+  #listfoot { font-size: 14px; color: var(--muted); margin: 18px 4px 0; line-height: 1.45; }
   #listfoot a { color: inherit; }
   /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
   .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
@@ -205,11 +209,11 @@
 </div>
 
 
-<script src="lookups.js?v=20261108d"></script>
-<script src="tide_season.js?v=20261108d"></script>
-<script src="severity.js?v=20261108d"></script>
-<script src="creek_status.js?v=20261108d"></script>
-<script src="hero.js?v=20261108d"></script>
+<script src="lookups.js?v=20261110a"></script>
+<script src="tide_season.js?v=20261110a"></script>
+<script src="severity.js?v=20261110a"></script>
+<script src="creek_status.js?v=20261110a"></script>
+<script src="hero.js?v=20261110a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)
@@ -332,7 +336,7 @@ function rainOver(s, h) {
 function markerIcon(site, st) {
   var big = st.level > 0 && !st.off;
   var label = (showRain && st.rain != null) ? '<span class="rl">' + st.rain.toFixed(2) + '″</span>' : "";
-  return L.divIcon({ className: "", iconSize: big ? [24, 24] : [18, 18], iconAnchor: big ? [12, 12] : [9, 9],
+  return L.divIcon({ className: "", iconSize: [24, 24], iconAnchor: [12, 12],   // every marker taps as 24 px (WCAG 2.5.8); small ones still look 18 px
     html: '<div class="mk' + (st.rainOnly ? " sq" : "") + (big ? " big" : "") + (selected === site.site ? " sel" : "") +
       '" style="background:' + st.color + '"></div>' + label });
 }
