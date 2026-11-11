@@ -367,7 +367,7 @@
   .tech.hide, #outlp.hide, #biasabout.hide, #nrkey.hide, #outlw.hide { display: none; }   /* staff-only and empty parts (staff, 2026-11-10) */
   #calselx { flex: none; border: 0; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 4px; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  #waves { margin-top: 12px; } #waves h2 { margin: 0 0 4px; } #waves p { margin: 6px 0 0; line-height: 1.45; }
+  #waves { margin: 0 0 12px; } #waves h2 { margin: 0 0 4px; } #waves p { margin: 6px 0 0; line-height: 1.45; }
   #waves .wvnow { font-size: 17px; font-weight: 600; color: var(--ink); }
   #waves .big { display: inline-block; font-size: 13px; font-weight: 700; border-radius: 6px; padding: 0 7px; margin-left: 4px; background: var(--ambbg); color: var(--ink); box-shadow: inset 0 -2px 0 var(--amb); vertical-align: 2px; }
   #waves .wvfc { list-style: none; margin: 6px 0 0; padding: 0; font-size: 15px; }
@@ -470,10 +470,7 @@
 <main>
   <h1 class="page" id="h1">Bayside Tides</h1>
   <div class="intro vh" id="intro">When the Bay at the NOAA tide gauge in Redwood City is expected to rise above MHHW in the next 7 days.</div>
-  <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
-    <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
-  <div id="cards"></div>
-  <!-- Waves (staff, 2026-11-10; Coastside only): NOAA's tide heights leave waves out. The Half Moon Bay buoy and the NWS
+  <!-- Waves (staff, 2026-11-10; Coastside only; above the tides since 2026-11-11, since on the open coast big waves matter more than the tide): NOAA's tide heights leave waves out. The Half Moon Bay buoy and the NWS
        marine forecast for the waters off San Mateo County, from waves.json (scripts/waves.py). -->
   <section class="card hide" id="waves" aria-labelledby="wavesh"><h2 id="wavesh" data-text="waves_title">Waves</h2>
     <p class="wvnow" id="wvsum">Loading…</p>
@@ -482,6 +479,9 @@
     <p class="wvn" data-text="waves_offshore_note"></p>
     <details class="wvd"><summary>Forecast details and sources</summary>
       <p class="wvi" data-text="waves_intro"></p><div id="wvbody"></div><p class="lbl" id="wvsrc"></p></details></section>
+  <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
+    <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
+  <div id="cards"></div>
   <div style="height:12px"></div>
   <div class="card hide" id="calcard">
     <h2 data-text="tide_cal_title">High tides and King Tides</h2>
