@@ -56,6 +56,7 @@ jobs:
             git show FETCH_HEAD:tide_tracker.json > out/tide_tracker.json 2>/dev/null || true
             git show FETCH_HEAD:tide_tracker_history.json > out/tide_tracker_history.json 2>/dev/null || true
             git show FETCH_HEAD:storm_tracker.json > out/storm_tracker.json 2>/dev/null || true
+            git show FETCH_HEAD:waves.json > out/waves.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -102,6 +103,13 @@ jobs:
         timeout-minutes: 4
         run: python scripts/tide_tracker.py out/tide_tracker.json out/tide_tracker_history.json --min-age 55
 
+      - name: Waves off the coast (Coastside Tides page; scripts/waves.py, every 30 minutes)
+        # The Half Moon Bay and San Francisco NOAA buoys and the NWS Coastal Waters Forecast for the waters off San Mateo
+        # County. NOAA's tide table leaves waves out. A problem here never stops the creek data; the last values are kept.
+        continue-on-error: true
+        timeout-minutes: 3
+        run: python scripts/waves.py out/waves.json --min-age 25
+
       - name: Flood reports approved by staff (every 15 minutes)
         # A problem here never stops the creek data from being published; the last published reports are kept.
         continue-on-error: true
@@ -123,7 +131,7 @@ jobs:
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
             $( [ -s tide_tracker.json ] && echo tide_tracker.json ) $( [ -s tide_tracker_history.json ] && echo tide_tracker_history.json ) \
-            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) \
+            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
