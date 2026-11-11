@@ -264,6 +264,13 @@ flood level and the Bay running high still decide the colors. 2026-27 season: No
 **To review:** the 6-week limit, the 20-year window, using San Francisco for the whole Bay, the latest observed ONI
 standing for the winter (a staff override could be added), and showing a Bay running lower too.
 
+**Nov 10, 2026 (staff): scenarios and a 14-day offset.** After comparing with a peer's San Francisco tracker:
+- **Offset window 14 days** (`BAY_OFFSET_DAYS`, was 30), still measured at high tide: reacts sooner when the Bay rises or falls (NWS's ETSS uses 5 days).
+- **Scenario model** (`TIDE_SCENARIOS_SHOW` = 1; `tide_offset.py` `scenarios()`, weekly): San Francisco monthly mean sea level since 1950, detrended and deseasonalized. For each lead of 1 to 9 months, a regression on this month's departure and the Oceanic Niño Index, using start months within a month of the current one. The **middle path** replaces "usual + El Niño" in the estimate (step 2 above) and the outlook (step 3). The **high path** adds the model's out-of-sample misses in 1982–83 and 1997–98 (El Niño winters that kept building); the **low path** adds its miss in 2015–16 (peaked early and faded). A 3-month centred running mean is applied; the paths are kept ordered low ≤ middle ≤ high. Three plausible paths, not probabilities.
+- **Back-test** (leave-one-winter-out, start month October, 1950–2025): error 0.13 ft one month ahead vs 0.14 for the damped persistence used before; 0.18 vs 0.20 at two months; about the same beyond four months. Misses in strong El Niño winters: +0.36 ft at one month (high winters), −0.28 ft (2015–16).
+- **Caution:** October 2026 was already above the highest monthly departure on record at San Francisco (+0.95 ft above trend, March 1983), so all three paths extrapolate. A peer's tracker using the same approach found November 2026 running at its high scenario. The Tides page says which path the Bay is following now (the whole-day offset against each path's level for today).
+- Data mirrors used for the back-test: NOAA monthly means at 9414290 and CPC's ONI; the data job reads both from NOAA directly.
+
 ### 4c. Shoreline spots: BCDC Adapting to Rising Tides levels against the NOAA projection (Oct 21, 2026; staff preview, draft)
 
 - **Oct 22: low points from BCDC's shoreline overtopping layer (replaces the flood-area method below).** The flood areas
