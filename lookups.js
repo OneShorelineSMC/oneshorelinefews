@@ -28,12 +28,12 @@
     MODEL_MAX_AGE_HOURS: [12, 1, 72], MODEL_MIN_AHEAD_HOURS: [6, 0, 72],
     OFFSET_RECENT_HIGHS: [4, 1, 14], OFFSET_NOTE_FT: [0.2, 0.01, 5], OFFSET_HIGH_FT: [0.5, 0.01, 10],
     // recent offset after the NOAA projection (tide_offset.json from scripts/tide_offset.py, which uses BAY_OFFSET_DAYS)
-    BAY_OFFSET_DAYS: [30, 7, 31], BAY_OFFSET_SHOW: [1, 0, 1], BAY_OFFSET_MIN_FT: [0.1, 0, 2], BAY_OFFSET_MAX_AGE_HOURS: [48, 6, 168], BAY_OFFSET_AHEAD_DAYS: [42, 3, 90], TIDE_OUTLOOK_SHOW: [1, 0, 1], ENSO_MIN_ONI: [0.5, 0, 2], TIDE_OUTLOOK_MAX_AGE_DAYS: [21, 7, 60],
+    BAY_OFFSET_DAYS: [30, 7, 31], BAY_OFFSET_SHOW: [1, 0, 1], BAY_OFFSET_AT_HIGH_TIDE: [1, 0, 1], BAY_OFFSET_MIN_FT: [0.1, 0, 2], BAY_OFFSET_MAX_AGE_HOURS: [48, 6, 168], BAY_OFFSET_AHEAD_DAYS: [42, 3, 90], TIDE_OUTLOOK_SHOW: [1, 0, 1], ENSO_MIN_ONI: [0.5, 0, 2], TIDE_OUTLOOK_MAX_AGE_DAYS: [21, 7, 60],
     // creek status layer (the data job uses the same ranges, scripts/creek_signals.py)
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
    
-    TIDE_RED_FT_RWC: [8.5, 6, 15], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
+    TIDE_RED_FT_RWC: [8.5, 6, 15], PROJ_BIAS_CORRECT: [1, 0, 1], PROJ_BIAS_MAX_FT: [0.75, 0, 3], PROJ_BIAS_DAYS: [14, 5, 60], TIDE_NEAR_FT: [0.3, 0, 1], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
     MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1], CREEK_PUBLIC_LEVELS_ONLY: [1, 0, 1],
     // NWS rain forecast on creek cards (scripts/nws_forecast.py); the data job uses FORECAST_EVERY_MIN and FORECAST_KEEP_HOURS too
     FORECAST_PUBLIC: [1, 0, 1], FORECAST_SHOW_IN: [0.25, 0, 5], FORECAST_KEEP_HOURS: [12, 1, 48], FORECAST_EVERY_MIN: [60, 15, 360],
@@ -244,15 +244,20 @@
     tide_next_king: "Next King Tide: {day}, {ft} around {time}",
     tide_weather_higher: "NOAA projects about {diff} ft higher than the tide table",
     lbl_offset: "Tide table + recent offset",
-    tide_offset_key: "Tide table + {ft} ft ({water} average, past {days} days)",
-    tide_offset_note: "After the NOAA projection ends, the estimate (≈, the gray dotted line) is the tide table plus how much higher the {water} has run over the past {days} days: {ft} ft on average, easing back toward what is usual for the season over the coming weeks. It isn’t a forecast, and storms can add more.",
+    tide_offset_key: "Tide table + {ft} ft ({water} at high tide, past {days} days)",
+    tide_offset_note: "After the NOAA projection ends, the estimate (≈, the gray dotted line) is the tide table plus how much higher the {water} has run at high tide over the past {days} days: {ft} ft on average, easing back toward what is usual for the season over the coming weeks. It isn’t a forecast, and storms can add more.",
     tide_offset_day: "≈ {ft} if the {water} stays high",
     tide_offset_cal: "could reach the flood level: about {ft} if the {water} stays as high as it has been running (an estimate)",
     tide_offset_cal_key: "Dashed orange ring: possible flood level ({red} ft) if the {water} stays this high",
-    tide_maybe_head: "Possible flood-level tides {days} if the {water} stays about {off} ft higher than the tide table, its average over the past month.",
-    tide_steady_start: "If the {water} stays as high as it is now (about {off} ft above the tide table, not easing), flood-level tides could start {date}{n}.",
+    tide_maybe_head: "Possible flood-level tides {days} if the {water} stays about {off} ft higher than the tide table, its average at high tide over the past month.",
+    tide_proj_adjusted: "Over the past {n} days, NOAA\u2019s projection here ran about {ft} ft {dir} than the gauge measured at high tide, so this page {fix} it by that much.",
+    tide_proj_skipped: "Over the past {n} days, NOAA\u2019s projection here ran about {ft} ft {dir} than the gauge measured, more than {max} ft off, so this page leaves it out and uses the tide table plus the recent offset.",
+    tide_near_key: "Solid orange ring: close to the flood level (within {ft} ft of {red} ft); not a flooding call",
+    tide_near_line: "Close to the flood level (within {ft} ft):",
+    tide_near_day: "Close to the flood level: about {ft}",
+    tide_steady_start: "If the {water} stays as high as it is now (about {off} ft above the tide table at high tide, not easing), flood-level tides could start {date}{n}.",
     tide_maybe_day: "Possible flood level",
-    tide_offset_later: "If the {water} stays {off} ft higher than the tide table (its average this past month): {list}",
+    tide_offset_later: "If the {water} stays {off} ft higher than the tide table (its average at high tide this past month): {list}",
     tide_offset_assume: "It assumes the {water} stays that high. It isn’t a forecast, and storms can add more.",
     shore_intro: "Low spots along San Mateo County’s Bay shoreline where very high tides can come over the edge, and whether the tides in the coming days and weeks are high enough to reach them.",
     shore_no_list: "The list of low spots isn’t ready yet.",
@@ -263,7 +268,7 @@
     shore_src_projected: "NOAA projection",
     shore_src_table: "tide table",
     shore_head_later_table: "Next time the tide table reaches any of them: {day} ({n} spot{s}).",
-    shore_head_later_ifhigh: "If the Bay stays {off} ft higher than the tide table, as it has this past month: {day} could reach {n} spot{s}.",
+    shore_head_later_ifhigh: "If the Bay stays {off} ft higher than the tide table at high tide, as it has this past month: {day} could reach {n} spot{s}.",
     shore_head_none_month: "None of these spots is in reach in the next month, even if the Bay stays as high as it has been.",
     shore_head_none_more: "No other spots on this map are in reach in the next month, even if the Bay stays as high as it has been.",
     shore_list_title: "Low spots, lowest first",
@@ -280,7 +285,7 @@
     shore_about_what: "These are places where the San Francisco Bay Conservation and Development Commission (BCDC) mapped water coming over the shoreline when the Bay is 1, 2 or 3 feet above an average high tide (MHHW). They are the low parts of the shoreline, not a list of every place that can flood.",
     shore_about_levels: "Each spot’s level is turned into a tide height at NOAA’s Redwood City gauge: the average high tide there plus 1, 2 or 3 feet. The page compares that with the tide table, NOAA’s projection for the next 2 days, and after that the tide table plus how much higher than the tide table the Bay has been running.",
     shore_about_limits: "The maps show still water: waves, wind and rain runoff can add more. They use ground heights from 2010–11, so newer levees or fill may not show. The average high tide differs a little around the Bay, so heights are approximate, mostly on the northern shoreline. Nothing here says a particular home or street will flood.",
-    shore_about_offset: "This past month the Bay has run about {off} ft higher than the tide table on average (over {days} days, at Redwood City). Spots marked “only if the Bay stays high” assume it keeps doing that; it isn’t a forecast.",
+    shore_about_offset: "This past month the Bay has run about {off} ft higher than the tide table at high tide, on average (over {days} days, at Redwood City). Spots marked “only if the Bay stays high” assume it keeps doing that; it isn’t a forecast.",
     shore_about_draft: "Draft: OneShoreline staff are still checking this list of spots and their names.",
     shore_head_open: "Next 2 days: the Bay may reach open land at {n} low spot{s}, but no buildings or streets",
     shore_exp_buildings: "{n} building{s}",
@@ -478,7 +483,37 @@
     });
   }
 
+  /* NOAA's 2-day projection (ofs_water_level), corrected by its recent record at each gauge (staff, 2026-11-10;
+     PROJ_BIAS_CORRECT in settings.csv). The data job compares each day's projected highest water (made the evening
+     before) with what the gauge measured, over the past PROJ_BIAS_DAYS days (tide_offset.json "proj_bias", from
+     tide_tracker.json). Early Nov 2026 it ran about 0.6 ft high at Redwood City and 0.9 ft low at Monterey. With at least
+     5 days of record and a bias of 0.1 ft or more, the projection is shifted by it; past PROJ_BIAS_MAX_FT the projection
+     isn't used at all (the page falls back to the tide table plus the recent offset). Pages call
+     LK.fixModel(points, stationId) on the projection as it arrives; it resolves to the corrected points (or [] when not
+     used), within a few seconds even if tide_offset.json is slow. points.bias = the correction applied (ft). */
+  var BIAS = null;
+  function biasData() {
+    if (!BIAS) BIAS = fetch("https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/tide_offset.json?t=" + Math.floor(Date.now() / 3.6e6), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) { return (j && j.proj_bias) || {}; }).catch(function () { return {}; });
+    return BIAS;
+  }
+  function fixModel(points, id) {
+    points = points || [];
+    if (!points.length || L.num("PROJ_BIAS_CORRECT") !== 1) return Promise.resolve(points);
+    var wait = new Promise(function (res) { setTimeout(function () { res(null); }, 4000); });
+    return Promise.race([biasData(), wait]).then(function (all) {
+      var b = all && all[id];
+      if (!b || typeof b.ft !== "number" || !(b.n >= 5) || Math.abs(b.ft) < 0.1) return points;
+      if (Math.abs(b.ft) > L.num("PROJ_BIAS_MAX_FT")) { var none = []; none.skipped = b.ft; return none; }
+      var out = points.map(function (p) { return Object.assign({}, p, { v: Math.round((p.v - b.ft) * 1000) / 1000 }); });
+      out.bias = b.ft; out.biasDays = b.n;
+      return out;
+    });
+  }
+  function modelBias(id) { return biasData().then(function (all) { return (all || {})[id] || null; }); }
+
   L = window.LOOKUPS = {
+    fixModel: fixModel, modelBias: modelBias,
     problems: [], loaded: false,
     num: function (k) { return k in cur.settings ? cur.settings[k] : NaN; },
     station: function (id) { return cur.tides[id] || { id: id, name: id, mhhw: null }; },

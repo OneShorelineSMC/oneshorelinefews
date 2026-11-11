@@ -199,7 +199,8 @@
     Promise.all([
       getJSON(noaaURL("9414523", "predictions", t0, t6)).then(function (j) { D.pred = toPts(j.predictions); }).catch(function () {}),
       getJSON(noaaURL("9414523", "water_level", y, t0)).then(function (j) { D.obs = toPts(j.data); }).catch(function () {}),
-      getJSON(noaaURL("9414523", "ofs_water_level", y, t3)).then(function (j) { var p = toPts(j.data || j.predictions); D.ofs = p.length ? p : null; }).catch(function () {})
+      getJSON(noaaURL("9414523", "ofs_water_level", y, t3)).then(function (j) { return LK.fixModel(toPts(j.data || j.predictions), "9414523"); })
+        .then(function (p) { D.ofs = p.length ? p : null; }).catch(function () {})
     ]).then(function () { cb(D); });
   }
   function findWindows(pts, lvl) {

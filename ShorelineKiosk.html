@@ -541,11 +541,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261110a"></script>
-<script src="tide_season.js?v=20261110a"></script>
-<script src="creek_status.js?v=20261110a"></script>
-<script src="severity.js?v=20261110a"></script>
-<script src="hero.js?v=20261110a"></script>
+<script src="lookups.js?v=20261110b"></script>
+<script src="tide_season.js?v=20261110b"></script>
+<script src="creek_status.js?v=20261110b"></script>
+<script src="severity.js?v=20261110b"></script>
+<script src="hero.js?v=20261110b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1159,7 +1159,9 @@ function loadModel() {   // every station: Redwood City for the Bay Tides tab, a
     return getJSON(noaa(s.st, "ofs_water_level", ymd(now - 86400000), ymd(now + 3 * 86400000)))
       .then(function (r) {
         var rows = r.data || r.predictions || [];
-        var p = rows.map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); });
+        return LK.fixModel(rows.map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); }), s.st.id);   // corrected by its recent record (lookups.js)
+      })
+      .then(function (p) {
         if (p.length) { s.ofs = p; s.tOfs = Date.now(); }
         // the King Tide line and calendar use the same projection: hand it over instead of downloading it again
         [window.TIDE_SEASON, window.TIDE_SEASON_COAST].forEach(function (T) { if (T && T.station === s.st.id) T.setModel(p, s.tOfs); });

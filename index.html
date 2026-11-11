@@ -282,10 +282,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110a"></script>
-<script src="severity.js?v=20261110a"></script>
-<script src="creek_status.js?v=20261110a"></script>
-<script src="hero.js?v=20261110a"></script>
+<script src="lookups.js?v=20261110b"></script>
+<script src="severity.js?v=20261110b"></script>
+<script src="creek_status.js?v=20261110b"></script>
+<script src="hero.js?v=20261110b"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -687,7 +687,8 @@ function loadTide() {
     Promise.all([
       getJSON(noaaURL(T.id, "predictions", t0, t6)).then(function (j) { D.pred = toPts(j.predictions); }),
       T.obs ? getJSON(noaaURL(T.id, "water_level", y, t0)).then(function (j) { D.obs = toPts(j.data); }).catch(function () {}) : null,
-      getJSON(noaaURL(T.id, "ofs_water_level", y, t3)).then(function (j) { var p = toPts(j.data || j.predictions); D.ofs = p.length ? p : null; }).catch(function () { D.ofs = null; })
+      getJSON(noaaURL(T.id, "ofs_water_level", y, t3)).then(function (j) { return LK.fixModel(toPts(j.data || j.predictions), T.id); })   // corrected by its recent record (lookups.js)
+        .then(function (p) { D.ofs = p.length ? p : null; }).catch(function () { D.ofs = null; })
     ]).then(function () { D.tried = true; renderTide(T); }).catch(function () { D.tried = true; renderTide(T); });
   });
 }

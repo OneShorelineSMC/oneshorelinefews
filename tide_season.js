@@ -86,7 +86,8 @@
   function loadModel() {
     var n = nowLocal();
     return get(url("ofs_water_level", ymd(n - 86400000), ymd(n + 3 * 86400000)))
-      .then(function (j) { setModel(pts(j.data || j.predictions)); }).catch(function () {});
+      .then(function (j) { return LK.fixModel ? LK.fixModel(pts(j.data || j.predictions), STATION) : pts(j.data || j.predictions); })   // corrected by its recent record (lookups.js)
+      .then(function (p) { setModel(p); }).catch(function () {});
   }
   function modelOK(now) {
     return !!(S.ofs && S.ofs.length && Date.now() - S.tOfs < LK.num("MODEL_MAX_AGE_HOURS") * 3600000 &&
@@ -95,12 +96,16 @@
 
   /* The recent offset at this gauge: {ft, days, from, to, recent7} or null when it's switched off, too old, missing,
      or smaller than BAY_OFFSET_MIN_FT (only a Bay running higher than the tide table is shown). */
+  // At high tide (staff, 2026-11-10; BAY_OFFSET_AT_HIGH_TIDE = 1): each day's measured peak minus its highest tide-table
+  // high tide, the figure the estimate adds to; the whole-day average ran about 0.1 ft lower this fall at Redwood City.
   function offset() {
     var j = OFF.data, r = j && j.stations ? j.stations[STATION] : null;
     if (!r || LK.num("BAY_OFFSET_SHOW") !== 1 || typeof r.offset_ft !== "number" || !r.computed_utc) return null;
+    var hi = LK.num("BAY_OFFSET_AT_HIGH_TIDE") === 1 && typeof r.high_offset_ft === "number";
+    var ft = hi ? r.high_offset_ft : r.offset_ft, r7 = hi ? r.high_recent7_ft : r.recent7_ft;
     var age = (Date.now() - Date.parse(r.computed_utc.replace(/Z$/, ":00Z"))) / 3600000;
-    if (!(age >= 0 && age <= LK.num("BAY_OFFSET_MAX_AGE_HOURS")) || r.offset_ft < LK.num("BAY_OFFSET_MIN_FT")) return null;
-    return { ft: r.offset_ft, days: r.days_used || r.days, from: r.from, to: r.to, recent7: r.recent7_ft };
+    if (!(age >= 0 && age <= LK.num("BAY_OFFSET_MAX_AGE_HOURS")) || ft < LK.num("BAY_OFFSET_MIN_FT")) return null;
+    return { ft: ft, days: r.days_used || r.days, from: r.from, to: r.to, recent7: r7, atHigh: hi };
   }
   /* The calendar outlook from the data job (tide_offset.json "outlook", weekly; scripts/tide_offset.py): the usual height
      above the tide table for each month, the month-to-month persistence (r1) and El Niño's winter effect. null when off,

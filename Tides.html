@@ -284,6 +284,7 @@
   details.ckeyd { margin: 6px 0 4px; }
   details.ckeyd > summary { cursor: pointer; font-weight: 600; color: var(--info); font-size: 15px; min-height: 32px; display: flex; align-items: center; }
   details.ckeyd > summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  #flist li.near { border-left: 4px solid var(--sv-advisory-stripe); padding-left: 10px; }
   .flmore { font: inherit; font-weight: 600; font-size: 15px; color: var(--info); background: transparent; border: 0; padding: 8px 0; min-height: 44px; cursor: pointer; text-decoration: underline; }
   .flmore:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .nextk { margin-top: 6px; font-size: 14px; color: var(--ink); cursor: pointer; }
@@ -328,6 +329,7 @@
   /* NOAA projection days (next 2 days): dotted, like the projection line on the graphs; white dots on the red and purple fills */
   .mgrid .d.xp { border: 2px dotted var(--ink); }
   .mgrid .d.of:not(.past) { border: 2px dashed var(--red); }   /* possible flood level if the Bay stays this high */
+  .mgrid .d.nr:not(.past) { border: 2px solid var(--sv-advisory-stripe); }   /* close to the flood level */
   .mgrid .d.xp.r:not(.past), .mgrid .d.xp.k:not(.past) { border-color: #fff; }
   .mgrid .d.past { color: var(--muted); font-weight: 400; }   /* past days: plain, still readable (no see-through fading) */
   .mgrid .d.past.a, .mgrid .d.past.r { background: transparent; color: var(--muted); box-shadow: none; }
@@ -461,7 +463,8 @@
       <span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>
       <span><i style="outline:4px double var(--ink);outline-offset:-4px"></i>Selected</span>
       <span id="fckey" class="hide"><i style="border:2px dotted var(--ink);box-sizing:border-box"></i><span data-text="tide_day_expected"></span></span>
-      <span id="ofkey" class="hide"><i style="border:2px dashed var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="ofkeyt"></span></span></div></details>
+      <span id="ofkey" class="hide"><i style="border:2px dashed var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="ofkeyt"></span></span>
+      <span id="nrkey" class="hide"><i style="border:2px solid var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="nrkeyt"></span></span></div></details>
     <div id="calfc" class="hide"></div>
     <p class="caltap" data-text="tide_cal_tap"></p>
     <div class="months" id="months" role="group" aria-label="High tides calendar. Arrow keys move between days; Enter shows a day's tide."></div>
@@ -480,6 +483,7 @@
     <p data-text="gloss_table"></p>
     <p data-text="noaa_forecast_note"></p>
     <p id="offabout" class="hide"></p>
+    <p id="biasabout" class="hide"></p>
   </details>
   <p class="lbl always">All heights are in feet, NAVD88.
     <span data-text="disclaimer_short"></span> <a href="Creeks.html#about">Disclaimer</a> · <span data-text="e911"></span></p>
@@ -492,10 +496,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110a"></script>
-<script src="tide_season.js?v=20261110a"></script>
-<script src="severity.js?v=20261110a"></script>
-<script src="hero.js?v=20261110a"></script>
+<script src="lookups.js?v=20261110b"></script>
+<script src="tide_season.js?v=20261110b"></script>
+<script src="severity.js?v=20261110b"></script>
+<script src="hero.js?v=20261110b"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -655,7 +659,8 @@ function loadObserved(s) {
 function loadModel(s) {
   var now = nowLocal();
   return getJSON(noaa(s.st, "ofs_water_level", ymd(now - 86400000), ymd(now + 3 * 86400000)))
-    .then(function (r) { var p = toPts(r.data || r.predictions); if (p.length) { s.ofs = p; s.tOfs = Date.now(); if (TSN && TSN.station === s.st.id) TSN.setModel(p, s.tOfs); } render(); })
+    .then(function (r) { return LK.fixModel(toPts(r.data || r.predictions), s.st.id); })   // corrected by its recent record (lookups.js)
+    .then(function (p) { s.ofsBias = p.bias || 0; s.ofsSkipped = p.skipped; if (p.length) { s.ofs = p; s.tOfs = Date.now(); if (TSN && TSN.station === s.st.id) TSN.setModel(p, s.tOfs); } render(); })
     .catch(function () { render(); });   // no model: the page shows the predictions as before
 }
 function modelOK(s, now) {
@@ -840,6 +845,17 @@ if (!EMBED && S.length === 1) (function () {
   // carries the Bay at the flood level and the National Weather Service, staff 2026-10-26)
 })();
 
+// NOAA's projection, corrected by its recent record here (lookups.js fixModel; staff, 2026-11-10): one sentence in
+// "What the words and lines mean", and the same in the day list's projection lines through s.ofsBias
+function renderBias(s) {
+  var el = $("biasabout"); if (!el) return;
+  LK.modelBias(s.st.id).then(function (b) {
+    var on = LK.num("PROJ_BIAS_CORRECT") === 1 && b && b.n >= 5 && Math.abs(b.ft) >= 0.1, skip = on && Math.abs(b.ft) > LK.num("PROJ_BIAS_MAX_FT");
+    el.classList.toggle("hide", !on);
+    if (on) el.textContent = LK.text(skip ? "tide_proj_skipped" : "tide_proj_adjusted", { n: b.n, ft: Math.abs(b.ft).toFixed(2),
+      dir: b.ft > 0 ? "higher" : "lower", fix: b.ft > 0 ? "lowers" : "raises", max: LK.num("PROJ_BIAS_MAX_FT").toFixed(2) });
+  });
+}
 function render() {
   var now = nowLocal();
   S.forEach(function (s, i) {
@@ -942,7 +958,7 @@ function render() {
       '<p class="lbl" style="margin-top:8px">' + (useModel ? "Measured so far, then the NOAA projection through " + esc(fmt(fe, { weekday: "short" })) + " " + esc(fTime(fe)) +
         (off ? ", then the estimate (≈)." : ", then the tide table.") : "Tide table only; the NOAA projection isn’t available right now.") + " MHHW = " + st.mhhw.toFixed(2) + " ft NAVD88.</p>";
     if (i === 0) {
-      var oa = $("offabout"); oa.classList.toggle("hide", !off); oa.textContent = off ? offWords(off, "tide_offset_note") : "";
+      var oa = $("offabout"); oa.classList.toggle("hide", !off); oa.textContent = off ? offWords(off, "tide_offset_note") : ""; renderBias(s);
       $("wMhhw").textContent = LK.text("gloss_mhhw", { mhhw: st.mhhw.toFixed(2) });
       $("wFlood").textContent = isFinite(redFor(st)) ? LK.text("gloss_flood", { red: redFor(st).toFixed(1) }) : LK.text("gloss_flood_coast");
     }
@@ -1247,6 +1263,16 @@ function ofReach(day) {
   var o = TSN.offsetDays()[day], h = TSN.dayHighs()[day], x = TSN.expected()[day];
   return o && TSN.level(o.v) === 2 && TSN.level(x ? x.v : h ? h.v : null) < 2 ? o : null;
 }
+/* Close to the flood level (staff, 2026-11-10; TIDE_NEAR_FT in settings.csv): a coming day whose best number (the NOAA
+   projection, else the estimate, else the tide table) is within TIDE_NEAR_FT below the flood level. Solid orange ring in
+   the calendar and its own line under the flood-level list: the start of a high-tide stretch, not a flooding call. */
+function nearLevel(day) {
+  var red = TSN.red(), w = LK.num("TIDE_NEAR_FT");
+  if (!isFinite(red) || !(w > 0) || day < tsToday()) return null;
+  var x = TSN.expected()[day], o = TSN.offsetDays()[day], h = TSN.dayHighs()[day];
+  var v = x && !(o && o.v > x.v) ? x.v : o ? o.v : h ? h.v : null;
+  return v != null && v < red && v >= red - w ? { v: v, est: !(x && !(o && o.v > x.v)) && !!o, src: x && !(o && o.v > x.v) ? "NOAA projection" : o ? "estimate" : "tide table" } : null;
+}
 function ofText(o) { return LK.text("tide_offset_cal", { off: o.off.toFixed(2), ft: "≈" + TSN.ft(o.v), water: SIDE.water }); }
 var SOD = {};   // seasonal-outlook days that could reach the flood level (renderCalendar fills it)
 // A day past the NOAA projection that could reach the flood level only with the Bay running high: the estimate
@@ -1281,6 +1307,7 @@ function calLabel(day, today) {
   out.push(tsFmt(day, { weekday: "long", month: "long", day: "numeric" }) + (day === today ? ", today" : day < today ? ", past" : ""));
   if (lv === 2) out.push(LK.text("tide_day_red").replace(/ \(.*\)$/, ""));
   else if (e && day >= today) out.push("Possible flood level");
+  else if (nearLevel(day)) out.push(LK.text("tide_near_day", { ft: nearLevel(day).v.toFixed(2) + " ft" + (nearLevel(day).est ? " (estimate)" : "") }));
   else if (lv === 1) out.push(LK.text("tide_day_amber"));
   if (x) out.push("NOAA projection " + TSN.ft(x.v));
   if (e && day >= today) out.push(cap(e.words));
@@ -1304,7 +1331,7 @@ function renderCalendar() {
   var months = [], m0 = new Date(S0.from);
   for (var k = 0; k <= TSN.months; k++) months.push(new Date(Date.UTC(m0.getUTCFullYear(), m0.getUTCMonth() + k, 1)).toISOString().slice(0, 10));
   closeDay(false);   // take the summary box out before the months are rebuilt
-  var anyOf = false;
+  var anyOf = false, anyNr = false;
   $("months").innerHTML = months.map(function (mm) {
     var first = new Date(mm + "T12:00:00Z"), pad = first.getUTCDay(), h = "";
     h += '<div class="mon"><h3>' + esc(tsFmt(mm, { month: "long", year: "numeric" })) + '</h3><div class="mgrid">' +
@@ -1317,6 +1344,7 @@ function renderCalendar() {
       if (ad[day]) { c += " ast"; anyAst = true; }   // astronomical high tide (the 1-year tide in the tide table)
       if (xp) c += " xp";
       if (ofReach(day) || (sod[day] && lv < 2)) { c += " of"; anyOf = true; }   // estimate (≤ 6 weeks) or seasonal outlook
+      else if (lv < 2 && nearLevel(day)) { c += " nr"; anyNr = true; }   // close to the flood level
       if (day < today) c += " past";
       if (day === today) c += " today";
       // roving focus: one day in the calendar takes Tab (today, or the first day); arrow keys move between days
@@ -1365,7 +1393,13 @@ function renderCalendar() {
   }
   // the next 3 dates; the rest one tap away (phones: less to read; Nov 10, 2026)
   var FL_N = 3, flAll = $("flist").classList.contains("all");
-  $("flist").innerHTML = isFinite(TSN.red()) ? steady + (runs.length ? runs.slice(0, flAll ? 6 : FL_N).map(runLine).join("") +
+  // Close to the flood level, before the first flood-level day (or in the next 3 weeks when none): up to 3 dates
+  var nrDays = Object.keys(dh).filter(function (d) { return d >= today && (f0 ? d < f0 : d <= tsAdd(today, 21)) && TSN.level((ex[d] || dh[d]).v) < 2 && !ofReach(d) && nearLevel(d); }).sort().slice(0, 3);
+  var nrLine = nrDays.length ? '<li class="near">' + esc(LK.text("tide_near_line", { ft: LK.num("TIDE_NEAR_FT").toFixed(1), red: TSN.red().toFixed(1) })) + " " + nrDays.map(function (d) {
+    var n = nearLevel(d);
+    return '<a class="go" href="#cal-' + esc(d) + '" data-go="' + esc(d) + '">' + esc(md(d)) + "</a> " + (n.est ? "≈" : "") + n.v.toFixed(2) + " ft" + (n.src === "NOAA projection" ? " (NOAA projection)" : "");
+  }).join(" · ") + "</li>" : "";
+  $("flist").innerHTML = isFinite(TSN.red()) ? steady + nrLine + (runs.length ? runs.slice(0, flAll ? 6 : FL_N).map(runLine).join("") +
       (!flAll && runs.length > FL_N ? '<li class="lv"><button type="button" class="flmore">Show ' + (Math.min(runs.length, 6) - FL_N) + " more " + (Math.min(runs.length, 6) - FL_N === 1 ? "date" : "dates") + "</button></li>" : "") +
       (flAll && runs.length > 6 ? '<li class="lv">and ' + (runs.length - 6) + " more in the calendar (red or dashed red)</li>" : "")
     : '<li class="lv">None through ' + esc(tsFmt(Object.keys(dh).sort().pop(), { month: "long" })) + ".</li>") : "";
@@ -1389,6 +1423,8 @@ function renderCalendar() {
   $("astkey").classList.toggle("hide", !anyAst);
   $("astkeyt").textContent = LK.text("tide_day_astro", { ft: +TSN.king().toFixed(2) });
   $("ofkeyt").textContent = anyOf ? LK.text("tide_offset_cal_key", { red: TSN.red().toFixed(1), water: SIDE.water }) : "";
+  $("nrkey").classList.toggle("hide", !anyNr);
+  $("nrkeyt").textContent = anyNr ? LK.text("tide_near_key", { ft: LK.num("TIDE_NEAR_FT").toFixed(1), red: TSN.red().toFixed(1) }) : "";
   if (!document.querySelector('.mgrid .d[tabindex="0"]')) { var f0 = document.querySelector(".mgrid .d"); if (f0) f0.tabIndex = 0; }
   $("calsrc").innerHTML = noaaLinks(esc(LK.text(COAST ? "tide_cal_source_short_coast" : "tide_cal_source_short", { red: TSN.red().toFixed(1), mhhw: TSN.mhhw().toFixed(2), king: +TSN.king().toFixed(2) })));
 }

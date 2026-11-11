@@ -342,10 +342,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110a"></script>
-<script src="severity.js?v=20261110a"></script>
-<script src="creek_status.js?v=20261110a"></script>
-<script src="hero.js?v=20261110a"></script>
+<script src="lookups.js?v=20261110b"></script>
+<script src="severity.js?v=20261110b"></script>
+<script src="creek_status.js?v=20261110b"></script>
+<script src="hero.js?v=20261110b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -431,8 +431,8 @@ function loadTide(id) {
     getJSON(noaa(id, "water_level", b, ymd(now))).then(function (j) { T.obs = toPts(j.data); }).catch(function () { T.obs = T.obs || []; }),
     // NOAA model forecast (SFBOFS water level guidance at this station, ft NAVD88); optional, the graph works without it
     getJSON(noaa(id, "ofs_water_level", ymd(now - 86400000), ymd(now + 3 * 86400000))).then(function (j) {
-      var p = toPts(j.data || j.predictions); if (p.length) { T.ofs = p; T.tOfs = Date.now(); }
-    }).catch(function () {})
+      return LK.fixModel(toPts(j.data || j.predictions), id);   // corrected by its recent record (lookups.js)
+    }).then(function (p) { if (p.length) { T.ofs = p; T.tOfs = Date.now(); } }).catch(function () {})
   ]).then(function () { T.at = Date.now(); }).catch(function () {}).then(function () { T.loading = false; render(); });
 }
 /* ---------- the alert at the top: National Weather Service, the Bay tide at the flood level, the creeks (hero.js) ---------- */
