@@ -171,5 +171,23 @@ check("projection bias written to tide_offset.json (empty when no record)", rb["
 rk, _ = T.update({"proj_bias": {"x": 1}}, NOW, ST, 30, fake({d: 0.4 for d in days}))
 check("no tracker file: the last projection bias kept", rk["proj_bias"] == {"x": 1})
 
+# ---- scenarios: a made-up record with persistence and an El Nino effect; three ordered, smoothed paths
+import random
+rnd = random.Random(4)
+msl_s, oni_s, prev = {}, {}, 0.0
+for y in range(1950, 2026):
+    for m in range(1, 13):
+        o = 2.0 if y in (1982, 1997, 2015) and (m >= 9 or m <= 3) else rnd.uniform(-1, 1)
+        oni_s[(y, m)] = o
+        prev = 0.6 * prev + 0.08 * o + rnd.gauss(0, 0.12) + (0.3 if y in (1982, 1997) and m in (12, 1, 2) else 0) - (0.2 if y == 2015 and m in (12, 1) else 0)
+        msl_s[(y, m)] = 3.0 + 0.006 * (y - 1950) + 0.1 * math.sin(m / 12 * 6.28) + prev
+sc = T.scenarios(msl_s, oni_s, (2026, 10), 0.75, 2.46)
+ks = sorted(sc["paths"])
+check("scenarios: 9 months ahead, starting the month after the last observed", ks[0] == "2026-11" and len(ks) == 9 and sc["start"] == "2026-10")
+check("scenarios: low <= middle <= high every month", all(p["low"] <= p["mid"] <= p["high"] for p in sc["paths"].values()))
+check("scenarios: the departure fades toward zero in the middle path", sc["paths"]["2026-11"]["mid"] > sc["paths"]["2027-07"]["mid"])
+check("scenarios: the model beats or matches damped persistence a month out", sc["skill"]["1"]["rmse_ft"] <= sc["skill"]["1"]["rmse_damped_ft"] + 0.01)
+check("scenarios: high and low come from the strong El Nino winters", sc["skill"]["2"]["err_high_ft"] is not None and sc["high_winters"] == [1982, 1997])
+
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)

@@ -48,6 +48,9 @@ OUTLOOK_EVERY_DAYS = 7        # recomputed this often (monthly data changes once
 OUTLOOK_AHEAD_MONTHS = 9      # usual height above the tide table given for this month and the next 8
 WINTER = (11, 12, 1, 2, 3)    # the months El Nino raises the Bay most (Nov-Mar)
 ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
+SCEN_FIRST_YEAR = 1950        # the scenario model uses San Francisco's monthly means from this year on
+SCEN_HIGH = (1982, 1997)      # strong El Nino winters that kept building (the model ran low): the high scenario
+SCEN_LOW = (2015,)            # a strong El Nino winter that peaked early and faded (the model ran high): the low scenario
 ONI_SEASONS = ["DJF", "JFM", "FMA", "MAM", "AMJ", "MJJ", "JJA", "JAS", "ASO", "SON", "OND", "NDJ"]   # centred on Jan..Dec
 
 
@@ -198,6 +201,102 @@ def fit_months(res):
     return a, b, t0, s, dep
 
 
+def _add(y, m, k):
+    n = y * 12 + m - 1 + k
+    return n // 12, n % 12 + 1
+
+
+def _lstsq3(rows):
+    """y = c + a*x + b*z by least squares on [(x, z, y)]: (c, a, b). Plain normal equations (3x3)."""
+    n = len(rows)
+    sx = sum(r[0] for r in rows); sz = sum(r[1] for r in rows); sy = sum(r[2] for r in rows)
+    sxx = sum(r[0] * r[0] for r in rows); szz = sum(r[1] * r[1] for r in rows); sxz = sum(r[0] * r[1] for r in rows)
+    sxy = sum(r[0] * r[2] for r in rows); szy = sum(r[1] * r[2] for r in rows)
+    M = [[n, sx, sz, sy], [sx, sxx, sxz, sxy], [sz, sxz, szz, szy]]
+    for i in range(3):   # Gauss-Jordan
+        p = max(range(i, 3), key=lambda r: abs(M[r][i]))
+        M[i], M[p] = M[p], M[i]
+        if abs(M[i][i]) < 1e-12:
+            raise ValueError("singular")
+        for r in range(3):
+            if r != i:
+                f_ = M[r][i] / M[i][i]
+                M[r] = [x - f_ * y for x, y in zip(M[r], M[i])]
+    return tuple(M[i][3] / M[i][i] for i in range(3))
+
+
+def scenarios(msl, oni, start, dep_start, oni_now, leads=OUTLOOK_AHEAD_MONTHS):
+    """Low / middle / high paths of the sea level departure for the months after `start` (staff, 2026-11-10; after a
+    peer's San Francisco tracker). msl: {(y, m): monthly mean sea level, ft} at San Francisco since SCEN_FIRST_YEAR.
+      middle: for each lead k, a regression fitted to every year: departure k months later = c + a * this month's
+        departure + b * ONI (the season ending this month); start months within a month of `start`'s calendar month.
+      high / low: the middle plus the error the model made, out of sample (that winter left out of the fit), in the
+        SCEN_HIGH winters (average) and the SCEN_LOW winter, from the same calendar month. Kept low <= middle <= high.
+      Then a 3-month centred running mean over the forecast months (the start month stays as observed): the
+        month-to-month bumps carry no skill. Three plausible paths, not probabilities.
+    Returns {"start", "dep_start", "paths": {"YYYY-MM": {"mid", "low", "high"}}, "skill": {k: {...}}, "years"}."""
+    _a, _b, _t0, _s, dep = fit_months(msl)
+    sm = start[1]
+    near = {sm, (sm % 12) + 1, ((sm - 2) % 12) + 1}
+    def oni_end(y, m):
+        return oni.get(_add(y, m, -1))   # ONI seasons are keyed by their centre month
+    raw, skill = {}, {}
+    r1 = max(0.0, lag_corr(dep, 1) or 0.0)   # for the comparison with damped persistence
+    for k in range(1, leads + 1):
+        rows = []
+        for (y, m), v in dep.items():
+            o, tgt = oni_end(y, m), _add(y, m, k)
+            if m in near and o is not None and tgt in dep:
+                rows.append((v, o, dep[tgt], y if m >= 7 else y - 1, (y, m)))
+        if len(rows) < 30:
+            break
+        c, a, b = _lstsq3([(r[0], r[1], r[2]) for r in rows])
+        err, sq, sqd = {}, [], []
+        for w in sorted({r[3] for r in rows}):
+            tr = [(r[0], r[1], r[2]) for r in rows if r[3] != w]
+            cw, aw, bw = _lstsq3(tr)
+            for r in rows:
+                if r[3] == w:
+                    e = r[2] - (cw + aw * r[0] + bw * r[1])
+                    sq.append(e * e); sqd.append((r[2] - r[0] * r1 ** k) ** 2)
+                    if r[4][1] == sm:
+                        err[w] = e
+        mid = c + a * dep_start + b * oni_now
+        hi = [err[w] for w in SCEN_HIGH if w in err]
+        lo = [err[w] for w in SCEN_LOW if w in err]
+        raw[k] = [mid, mid + (min(lo) if lo else 0.0), mid + (sum(hi) / len(hi) if hi else 0.0)]
+        raw[k] = [raw[k][0], min(raw[k][0], raw[k][1]), max(raw[k][0], raw[k][2])]
+        skill[str(k)] = {"n": len(rows), "coef": [round(c, 3), round(a, 3), round(b, 3)],
+                         "rmse_ft": round(math.sqrt(sum(sq) / len(sq)), 3), "rmse_damped_ft": round(math.sqrt(sum(sqd) / len(sqd)), 3),
+                         "err_high_ft": round(sum(hi) / len(hi), 2) if hi else None, "err_low_ft": round(min(lo), 2) if lo else None}
+    ks = sorted(raw)
+    paths = {}
+    for k in ks:   # 3-month centred running mean; lead 0 is the observed start month
+        nb = [raw.get(j) if j > 0 else [dep_start] * 3 for j in (k - 1, k, k + 1)]
+        nb = [x for x in nb if x]
+        y, m = _add(start[0], start[1], k)
+        paths[f"{y:04d}-{m:02d}"] = {n: round(sum(x[i] for x in nb) / len(nb), 3) for i, n in enumerate(("mid", "low", "high"))}
+    return {"start": f"{start[0]:04d}-{start[1]:02d}", "dep_start": round(dep_start, 3), "oni": oni_now,
+            "years": [min(y for y, _ in msl), max(y for y, _ in msl)], "paths": paths, "skill": skill,
+            "high_winters": list(SCEN_HIGH), "low_winters": list(SCEN_LOW),
+            "record_max_dep_ft": round(max(dep.values()), 2)}
+
+
+def monthly_msl(station, first_year, last_date, fetch=get_json):
+    """{(y, m): NOAA monthly mean sea level, ft} from first_year to last_date, in 10-year requests."""
+    out, y = {}, first_year
+    while y <= last_date.year:
+        y2 = min(y + 9, last_date.year)
+        j = fetch(day_url("monthly_mean", station, dt.date(y, 1, 1), dt.date(y2, 12, 31) if y2 < last_date.year else last_date))
+        for r in (j or {}).get("data") or []:
+            try:
+                out[(int(r["year"]), int(r["month"]))] = float(r["MSL"])
+            except (KeyError, TypeError, ValueError):
+                continue
+        y = y2 + 1
+    return out
+
+
 def lag_corr(dep, lag):
     pairs = []
     for (y, m), v in dep.items():
@@ -267,6 +366,24 @@ def outlook(now_local, fetch=get_json, fetch_text=get_text, station=OUTLOOK_STAT
                            "months": list(WINTER)}
     except Exception as e:  # noqa: BLE001 - CPC down: the outlook still has the usual monthly heights
         out["enso_error"] = f"{type(e).__name__}: {e}"[:150]
+        oni, latest = None, None
+    # Scenarios (staff, 2026-11-10): the last complete month's departure in this same frame (its monthly mean minus the
+    # month's mean tide table, minus the usual for that month), carried forward by the 1950-on model
+    try:
+        if not oni or not latest:
+            raise ValueError("no ONI")
+        last_month = _add(now_local.year, now_local.month, -1)
+        cur = monthly_residuals(station, last_month[0], last_month[0], fetch)
+        if last_month not in cur:
+            last_month = _add(*last_month, -1)
+        if last_month not in cur:
+            raise ValueError("no monthly mean for the last two months yet")
+        dep_start = cur[last_month] - (a + b * (_t(*last_month) - t0) + s[last_month[1]])
+        msl = monthly_msl(station, SCEN_FIRST_YEAR, dt.date(*last_month, 28), fetch)
+        out["scenarios"] = scenarios(msl, oni, last_month, dep_start, latest[2])
+    except Exception as e:  # noqa: BLE001 - the outlook stands without them
+        out["scenarios"] = None
+        out["scenarios_error"] = f"{type(e).__name__}: {e}"[:150]
     return out
 
 
