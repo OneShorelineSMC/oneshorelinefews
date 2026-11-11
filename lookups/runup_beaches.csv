@@ -1,0 +1,4 @@
+id,name,lat,lon,slope,wave_factor,flag_ft_navd88,flag_what,basis,checked_by,checked_on
+lindamar,"Linda Mar, Pacifica",37.5945,-122.5030,0.05,1.0,,,"PLACEHOLDER slope 0.05 (a typical value for a California sand beach), wave_factor 1.0 = fully exposed. Replace slope with a surveyed foreshore slope; set flag_ft_navd88 to the height that matters (back of the beach, path or parking lot) from LiDAR or a survey. Staff, 2026-11-11.",,
+esplanade,"Esplanade Beach, Pacifica",37.6590,-122.4950,0.05,1.0,,,"PLACEHOLDER as above; bluff-backed beach with armoring: the formula is for sand beaches and is rough here. Staff, 2026-11-11.",,
+surfers,"Surfer's Beach, El Granada",37.4950,-122.4620,0.05,1.0,,,"PLACEHOLDER as above; partly sheltered by the Pillar Point Harbor breakwater from northwest swell, so wave_factor may need to be below 1 (calibrate against photos and reports). Highway 1 runs behind it. Staff, 2026-11-11.",,

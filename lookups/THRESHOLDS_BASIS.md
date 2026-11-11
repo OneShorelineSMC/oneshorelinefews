@@ -583,6 +583,26 @@ alerts. `WAVES_BIG_FT` (15 ft, provisional, staff to confirm with NWS/DEM) only 
 it never raises an alert level. The USGS/NOAA Total Water Level and Coastal Change forecast (runup at the beach) would be
 the better source, but it covers the Atlantic and Gulf coasts only so far; check again when the Pacific coast is added.
 
+### Water reach at reference beaches (experimental, staff view only, 2026-11-11)
+
+No agency publishes a tide + waves water level forecast for the San Mateo coast (the USGS/NOAA Total Water Level and
+Coastal Change forecast covers the Atlantic and Gulf). `scripts/waves.py` makes a rough one the same way, for the beaches
+in `runup_beaches.csv` (Linda Mar, Esplanade Beach, Surfer's Beach to start):
+
+- **Still water:** NOAA San Francisco 9414290 (the nearest gauge with NAVD88): the NOAA projection while it runs (about 2
+  days), then the tide table plus the last 7 days' average of measured minus table.
+- **Runup:** R2%, the height reached by 2% of waves (Stockdon et al. 2006, eq. 19; the dissipative form when the
+  Iribarren number is below 0.3), from the offshore wave height (times the beach's `wave_factor`), the peak period and
+  the foreshore `slope`. Forecast waves: the NWS forecast grid offshore of each beach (hourly), or the Coastal Waters
+  Forecast's "Wave Detail" swells if the grid can't be read. Hindcast: the Half Moon Bay buoy (46012).
+- **Reach = still water + runup**, ft NAVD88, hourly; each day's peak shown on Coastside Tides with `?preview=1`.
+
+Limits: the slopes are placeholders (0.05) until surveyed, and winter storms change them; the formula is for sand beaches
+(rough at Esplanade's bluff and armor); San Francisco's tide is 15–35 km away; wave direction, refraction and sheltering
+are only in `wave_factor`. For checking, the job keeps each day's peak as estimated the day before (`fc1`) and from the
+buoy and measured tide (`hind`) for 150 days; the real test is photos and reports of where the water reached. Not for the
+public until it has been checked against a winter of big-wave days and the slopes are surveyed.
+
 ## Sign-off checklist for the creek status layer (§8–11)
 
 - [ ] Confirm each assumed rain gauge has a working rain sensor (`open_items`: 41101–41107, 41201, 41200, 41151–41153)

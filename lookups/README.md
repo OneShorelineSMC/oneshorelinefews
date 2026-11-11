@@ -9,6 +9,7 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 | `creek_gauges.csv` | Each creek's stage and rain gauges, mapped to their OneRain sensors; how each stage gauge reports; whether it is tidal | data job | next data run |
 | `gauge_outages.csv` | Creek gauges taken out of service (damaged, being repaired): one row per gauge, `gauge` = its key in `creek_gauges.csv` (e.g. `bel_stage`), `out_since`, a short public `note` (shown on the pages after "Out of service"). While a gauge is listed its readings are not published, so a damaged sensor can't show a false level or set off a false alert; the creek's status comes from rain alone, and the pages, home page and kiosk say "Out of service" with the note. Delete the row when the gauge is fixed. | data job → `creeks.json` → all pages and the kiosk | next data run (about 5 min) |
 | `thresholds.csv` | Flood thresholds (Monitoring / Watch / Warning, ft) for every stage gauge, and rain triggers (in, with minutes and tide level) | data job (also colors the sensor map) | next data run |
+| `runup_beaches.csv` | Experimental (staff view only): reference beaches for the tide + wave runup estimate: location, foreshore slope, wave factor, the height that matters | the data job (`scripts/waves.py`) | next data run (every 30 min) |
 | `tide_stations.csv` | NOAA tide stations: MHHW (ft NAVD88) and the MLLW-to-NAVD88 difference | pages directly, and the data job | pages: within about 10 min |
 | `settings.csv` | Numbers behind the page logic: the rapidly-rising rule, when a gauge counts as offline or data as delayed, when the NOAA forecast is used, when "higher than predicted" is called out, flood reports (`REPORTS_*`) | pages directly (`REPORTS_*` also the data job) | within about 10 min (the kiosk re-reads every 30 min) |
 | `display_text.csv` | Wording: disclaimer, 911 line, SMC Alert note, tide explanations, status words on the creek cards, contact details and links, the Report page and flood report labels (`report_*`, `url_report_form`: blank = reporting not open) | pages directly | within about 10 min (kiosk: 30 min) |
@@ -82,6 +83,8 @@ the color) · `name` (shown; blank = the standard name for the level) · `value`
 this level, e.g. Atherton's road spill. Its line is always drawn on the creek graph, and when the creek reaches a
 level 4 with a public note, the cards give the note as the reason instead of "at its Flood Warning level").
 
+**runup_beaches.csv** — `id` · `name` · `lat`, `lon` (the beach; the job looks for the NWS forecast grid cell with waves just offshore) · `slope` (foreshore slope, rise over run, e.g. 0.05 = 1 in 20; placeholders until surveyed) · `wave_factor` (1 = fully exposed; below 1 for a beach sheltered by a point or breakwater, set by checking against photos) · `flag_ft_navd88` (optional: a height that matters, such as the back of the beach, a path or a parking lot, ft NAVD88; the staff table marks days that reach it) · `flag_what` (what that height is) · `basis` (keep the word PLACEHOLDER until the slope is surveyed; the staff view says so) · `checked_by` · `checked_on`. Staff only; nothing public uses it.
+
 **tide_stations.csv** — `station` (NOAA number) · `name` · `mhhw_navd88_ft` (the "average high tide" line on every
 tide graph and the threshold for "above MHHW") · `mllw_to_navd88_ft` (add to a MLLW height to get NAVD88; used to
 show OneRain's Redwood City tide in NAVD88 on the sensor map) · `used_for` · `source`.
@@ -112,3 +115,27 @@ levels the data job reads from BCDC: `station` (NOAA id) · `return_years` (1, 2
 - Level colors (yellow / orange / red / purple) — part of the design and the color-blind checks.
 - Kiosk display settings (tab rotation, burn-in shift, refresh timing) — top of `ShorelineKiosk.html`.
 - King Tide days and the high tide calendar are worked out from NOAA's Redwood City tide table each time (`tide_season.js`); the flood level is `TIDE_RED_FT_RWC` and the King Tide level (the 1-year tide) is `KING_TIDE_FT_RWC` in `settings.csv`.
+
+## Embedding on another website (staff, 2026-11-11)
+
+Any public page can sit in an iframe on oneshoreline.org. Inside an iframe, the bottom bar (Home, Creeks, Tides, Map,
+About) moves to the top of the page, because a bar fixed to the bottom of a tall iframe is off the screen. Each page also
+sends the website its height, so the iframe can fit the page exactly instead of guessing. Paste both parts as custom
+HTML on the website:
+
+```html
+<iframe id="fews" src="https://oneshorelinesmc.github.io/oneshorelinefews/index.html"
+  title="San Mateo County flood early warning"
+  style="display:block; width:100%; max-width:100%; height:1400px; border:0;"></iframe>
+<script>
+  window.addEventListener("message", function (e) {
+    if (e.origin !== "https://oneshorelinesmc.github.io") return;
+    var h = e.data && e.data.fews_height;
+    if (h > 200 && h < 20000) document.getElementById("fews").style.height = h + "px";
+  });
+</script>
+```
+
+If the website doesn't allow the script, the iframe still works at the fixed height (1400px); only the auto-fit is lost.
+Use a width of 100%, never a fixed number of pixels, or it runs off the side on phones.
+
