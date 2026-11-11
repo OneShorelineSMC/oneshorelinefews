@@ -245,7 +245,12 @@
       st.short = st.when.charAt(0).toUpperCase() + st.when.slice(1) + ": " + fl.toLowerCase() + " " + (bay ? LK.text("tide_flood_where_short") : "in low areas near the " + water);
       st.word = st.level === "advisory" ? "Tidal flooding likely" : "Tidal flooding possible"; st.more = flood.length - 1;
     } else if (ups.length) {
-      st.level = "watch"; st.when = when(ups[0]); st.head = "Higher than usual tide " + st.when + (isFinite(red) ? ". No flooding expected" : "");
+      // below the flood level (staff, 2026-11-10: was ". No flooding expected", a promise the 8.5 ft provisional level can't
+      // make, and it contradicted NWS coastal flood advisories): a plain comparison, or the NWS alert when one is in effect
+      var nwsTide = SV.nwsFor(shoreFor(o.nws || [], water === "Bay" ? "bay" : "coast"), "tide");
+      st.nwsTide = nwsTide; st.hasRed = isFinite(red);
+      st.level = "watch"; st.when = when(ups[0]);
+      st.head = "Higher than usual tide " + st.when + (nwsTide ? ". " + LK.text("tide_head_see_nws") : isFinite(red) ? ". " + LK.text("tide_head_below_red_plain") : "");
       st.word = "Higher than usual"; st.more = ups.length - 1;
     } else { st.head = "No higher-than-usual tides in the next " + days + " days"; st.word = "Normal"; }
     if (ups.length) {   // the numbers: one comparison only (above an average high tide)

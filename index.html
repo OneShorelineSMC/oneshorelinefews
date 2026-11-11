@@ -281,10 +281,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110f"></script>
-<script src="severity.js?v=20261110f"></script>
-<script src="creek_status.js?v=20261110f"></script>
-<script src="hero.js?v=20261110f"></script>
+<script src="lookups.js?v=20261110g"></script>
+<script src="severity.js?v=20261110g"></script>
+<script src="creek_status.js?v=20261110g"></script>
+<script src="hero.js?v=20261110g"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -391,7 +391,7 @@ function tideRow(st, name, href, icon) {
   var lv = st.level || "normal", word = lv === "normal" ? LK.text("home_row_normal") : st.word, det;
   if (st.level === "offline" || !st.word) { lv = "offline"; word = LK.text("home_row_nodata"); det = ""; }
   else if (lv === "normal") det = LK.text("home_row_tide_quiet");
-  else det = cap1(st.when) + (st.flood ? "" : " · " + LK.text("home_row_no_flooding")) + (st.more > 0 ? " · +" + st.more + " more this week" : "");
+  else det = cap1(st.when) + (st.flood ? "" : st.nwsTide ? " · " + LK.text("home_row_see_nws") : st.hasRed ? " · " + LK.text("home_row_no_flooding") : "") + (st.more > 0 ? " · +" + st.more + " more this week" : "");
   return { level: lv, html: rowHTML(href, icon, name, lv, word, det) };
 }
 function creekRow() {
