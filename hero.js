@@ -131,6 +131,25 @@
     return (list || []).filter(function (p) { return SHORE_RX.test(p.event) && onSide(p, side); })
       .sort(function (a, b) { return SV.RANK[SV.nwsLevel(b.event)] - SV.RANK[SV.nwsLevel(a.event)]; });
   }
+  /* ---------- waves (2026-11-10): waves.json on the data branch (scripts/waves.py): NOAA buoys and the NWS Coastal Waters
+     Forecast for the waters off San Mateo County. NOAA's tide heights leave waves out. */
+  var WAVES_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/waves.json";
+  function loadWaves(cb) {
+    fetch(WAVES_URL + "?t=" + Math.floor(Date.now() / 6e5), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (w) { cb(w); }).catch(function () { cb(null); });
+  }
+  function wavesAge(w) { return w && w.generated_utc ? (Date.now() - Date.parse(w.generated_utc.replace(/Z$/, ":00Z"))) / 36e5 : Infinity; }
+  // The forecast period with the biggest seas or swell, if it reaches WAVES_BIG_FT and the file is fresh: { ft, name }
+  function wavesBig(w) {
+    if (!w || !w.cwf || !w.cwf.periods || wavesAge(w) > LK.num("WAVES_STALE_HOURS")) return null;
+    var big = null, lim = LK.num("WAVES_BIG_FT");
+    w.cwf.periods.forEach(function (p) { if (p.max_ft != null && p.max_ft >= lim && (!big || p.max_ft > big.ft)) big = { ft: p.max_ft, name: p.name }; });
+    return big;
+  }
+  function waveWhen(name) {   // "Tonight" -> "tonight", "Wed" -> "Wednesday", "Wed Night" -> "Wednesday night"
+    var D = { Sun: "Sunday", Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday" };
+    return String(name || "").split(" ").map(function (x, i) { return D[x] || (i || /^(Today|Tonight|This)/.test(x) ? x.toLowerCase() : x); }).join(" ");
+  }
   // Small cards, one per area: the NWS products in effect there (or none), the most serious first; the current page's
   // side outlined. Tap a card with an alert: its NWS text opens under the cards (tap again to close). Under them, one line
   // for anything else in effect (with its text folded). s: { nws, nwsFailed, current: "bay"|"coast"|null,
@@ -152,9 +171,11 @@
       if (!ps) { lv = s.nwsFailed ? "offline" : "normal"; head = s.nwsFailed ? "Alerts unavailable" : "Checking…"; sub = s.nwsFailed ? "Retrying" : ""; }
       else if (!ps.length) { lv = "normal"; head = "No alerts"; }
       else { lv = SV.top(ps.map(function (p) { return SV.nwsLevel(p.event); })); head = ps[0].event; sub = nwsUntil(ps[0]) + (ps.length > 1 ? " · +" + (ps.length - 1) + " more" : ""); }
+      var wb = g.id === "coast" ? wavesBig(s.waves) : null;
+      if (wb) sub = (sub ? sub + " · " : "") + LK.text("waves_card_big", { ft: Math.round(wb.ft), when: waveWhen(wb.name) });
       var cur = s.current === g.id, btn = !!(ps && ps.length);
       var inner = '<span class="nsd">' + esc(g.name) + " · NWS</span>" + '<span class="nhd">' + SV.icon(lv) + "<b>" + esc(head) + "</b></span>" +
-        (sub || btn ? '<span class="nsub">' + esc(sub) + (btn ? (sub ? " · " : "") + '<span class="nrd">' + (open === g.id ? "Hide text" : "Read the alert") + "</span>" : "") + "</span>" : "");
+        (sub || btn ? '<span class="nsub">' + (wb && !btn && s.wavesLink !== false ? esc(sub).replace(esc(LK.text("waves_card_big", { ft: Math.round(wb.ft), when: waveWhen(wb.name) })), function (m) { return '<a href="Tides.html?side=coast' + (hasPreview() ? "&preview=1" : "") + '#waves">' + m + " ›</a>"; }) : esc(sub)) + (btn ? (sub ? " · " : "") + '<span class="nrd">' + (open === g.id ? "Hide text" : "Read the alert") + "</span>" : "") + "</span>" : "");
       var cls = 'ncard sv-card sv-' + lv + (cur ? " cur" : "") + (open === g.id ? " open" : "");
       return btn ? '<button type="button" class="' + cls + '" data-area="' + g.id + '" aria-expanded="' + (open === g.id) + '" aria-controls="npanel">' + inner + "</button>"
         : '<div class="' + cls + '"' + (cur ? ' aria-current="true"' : "") + ">" + inner + "</div>";
@@ -372,5 +393,6 @@
   }
 
   window.HERO = { loadNWS: loadNWS, loadBay: loadBay, tideState: tideState, tideCard: tideCard, creeks: creeks, render: render, strip: strip,
-    alertBody: alertBody, nwsWhat: nwsWhat, injectCSS: injectCSS, plan: plan, shoreFor: shoreFor, nwsCards: nwsCards };
+    alertBody: alertBody, nwsWhat: nwsWhat, injectCSS: injectCSS, plan: plan, shoreFor: shoreFor, nwsCards: nwsCards,
+    loadWaves: loadWaves, wavesBig: wavesBig, wavesAge: wavesAge, waveWhen: waveWhen };
 })();

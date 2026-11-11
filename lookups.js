@@ -33,7 +33,7 @@
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
    
-    TIDE_RED_FT_RWC: [8.5, 6, 15], PROJ_BIAS_CORRECT: [1, 0, 1], PROJ_BIAS_MAX_FT: [0.75, 0, 3], PROJ_BIAS_DAYS: [14, 5, 60], TIDE_NEAR_FT: [0.3, 0, 1], TIDE_SCENARIOS_SHOW: [1, 0, 1], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
+    TIDE_RED_FT_RWC: [8.5, 6, 15], PROJ_BIAS_CORRECT: [1, 0, 1], PROJ_BIAS_MAX_FT: [0.75, 0, 3], PROJ_BIAS_DAYS: [14, 5, 60], TIDE_NEAR_FT: [0.3, 0, 1], TIDE_SCENARIOS_SHOW: [1, 0, 1], WAVES_BIG_FT: [15, 8, 40], WAVES_STALE_HOURS: [12, 2, 72], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
     MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1], CREEK_PUBLIC_LEVELS_ONLY: [1, 0, 1],
     // NWS rain forecast on creek cards (scripts/nws_forecast.py); the data job uses FORECAST_EVERY_MIN and FORECAST_KEEP_HOURS too
     FORECAST_PUBLIC: [1, 0, 1], FORECAST_SHOW_IN: [0.25, 0, 5], FORECAST_KEEP_HOURS: [12, 1, 48], FORECAST_EVERY_MIN: [60, 15, 360],
@@ -190,6 +190,15 @@
     tide_head_below_red_plain: "Below the flood level",
     tide_head_see_nws: "See the National Weather Service alert",
     home_row_see_nws: "see the National Weather Service alert",
+    waves_title: "Waves",
+    waves_intro: "The tide heights on this page leave out waves. On the coast, waves can carry water much higher up a beach than the tide alone.",
+    waves_buoy_now: "{name}: waves {ft} ft, {s} seconds apart, from the {dir}.",
+    waves_buoy_trend: "{ago6} 6 hours earlier, {ago24} 24 hours earlier.",
+    waves_fc_head: "National Weather Service marine forecast, waters off San Mateo County",
+    waves_fc_big: "Big waves",
+    waves_offshore_note: "These heights are measured and forecast offshore. Waves breaking at the beach can be larger, and sneaker waves can run far up the sand without warning. Stay off rocks and jetties, and never turn your back on the ocean.",
+    waves_unavailable: "Wave readings and the marine forecast are not available right now.",
+    waves_card_big: "Big waves forecast offshore: up to {ft} ft {when}",
     home_row_no_alerts: "No alerts",
     home_row_creeks_n: "{n} creeks",
     home_row_creeks_others: "{n} other creeks no alerts",

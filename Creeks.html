@@ -342,10 +342,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110g"></script>
-<script src="severity.js?v=20261110g"></script>
-<script src="creek_status.js?v=20261110g"></script>
-<script src="hero.js?v=20261110g"></script>
+<script src="lookups.js?v=20261110h"></script>
+<script src="severity.js?v=20261110h"></script>
+<script src="creek_status.js?v=20261110h"></script>
+<script src="hero.js?v=20261110h"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -445,7 +445,7 @@ function loadAlerts() {
 }
 // The Bay tide bar that used to sit here is gone: the Bay shoreline card covers NWS, and Bay tides has the tide itself
 function renderHero() {
-  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true });
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true, waves: WV });
 }
 
 
@@ -1198,6 +1198,10 @@ setInterval(function () { loadTides(true); }, 6 * 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshAll(); });
 var lastNarrow = window.innerWidth < 520;
 window.addEventListener("resize", function () { var n = window.innerWidth < 520; if (n !== lastNarrow) { lastNarrow = n; render(); } });
+
+var WV = null;   // waves.json (hero.js loadWaves): the Coast card adds "Big waves forecast" when the NWS marine forecast reaches WAVES_BIG_FT
+function loadWavesHero() { HERO.loadWaves(function (w) { if (w) { WV = w; renderHero(); } }); }
+loadWavesHero(); setInterval(loadWavesHero, 15 * 60000);
 </script>
 </body>
 </html>

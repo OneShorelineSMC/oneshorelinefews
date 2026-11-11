@@ -367,6 +367,13 @@
   .tech.hide, #outlp.hide, #biasabout.hide, #nrkey.hide, #outlw.hide { display: none; }   /* staff-only and empty parts (staff, 2026-11-10) */
   #calselx { flex: none; border: 0; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 4px; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  #waves { margin-top: 12px; } #waves h2 { margin: 0 0 4px; } #waves p { margin: 6px 0 0; line-height: 1.45; }
+  #waves .wvnow { font-size: 17px; } #waves .wvnow b { color: var(--ink); }
+  #waves .wvfc { list-style: none; margin: 6px 0 0; padding: 0; font-size: 15px; }
+  #waves .wvfc li { padding: 6px 0; border-top: 1px solid var(--line); } #waves .wvfc .pn { font-weight: 700; }
+  #waves .wvfc .big { display: inline-block; font-size: 13px; font-weight: 700; border-radius: 6px; padding: 0 7px; margin-left: 6px; background: var(--ambbg); color: var(--ink); box-shadow: inset 0 -2px 0 var(--amb); }
+  #waves .wvfc .tx { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
+  #waves .wvn { font-size: 14.5px; } #waves h3 { font-size: 16px; margin: 12px 0 0; }
   .wlist, .flist { font-size: 14px; margin: 6px 0 0; padding: 0; list-style: none; }
   .flist li { padding: 5px 0; border-top: 1px solid var(--line); } .flist b { color: var(--red); } .flist .lv { font-size: 14px; color: var(--muted); }
   .clh { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
@@ -460,6 +467,11 @@
   <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
     <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
   <div id="cards"></div>
+  <!-- Waves (staff, 2026-11-10; Coastside only): NOAA's tide heights leave waves out. The Half Moon Bay buoy and the NWS
+       marine forecast for the waters off San Mateo County, from waves.json (scripts/waves.py). -->
+  <section class="card hide" id="waves" aria-labelledby="wavesh"><h2 id="wavesh" data-text="waves_title">Waves</h2>
+    <p class="wvi" data-text="waves_intro"></p><div id="wvbody"><p class="lbl">Loading…</p></div>
+    <p class="wvn" data-text="waves_offshore_note"></p><p class="lbl" id="wvsrc"></p></section>
   <div style="height:12px"></div>
   <div class="card hide" id="calcard">
     <h2 data-text="tide_cal_title">High tides and King Tides</h2>
@@ -512,10 +524,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110g"></script>
-<script src="tide_season.js?v=20261110g"></script>
-<script src="severity.js?v=20261110g"></script>
-<script src="hero.js?v=20261110g"></script>
+<script src="lookups.js?v=20261110h"></script>
+<script src="tide_season.js?v=20261110h"></script>
+<script src="severity.js?v=20261110h"></script>
+<script src="hero.js?v=20261110h"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -561,11 +573,54 @@ function loadHeroData() {
 }
 function renderHero() {
   if (EMBED) return;
-  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay",
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay", waves: WV,
     creeks: HB.creeks ? HERO.creeks(HB.creeks, D.alerts || []) : null });
 }
 function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
 
+
+/* ---------- Waves (Coastside only, staff 2026-11-10): buoy readings and the NWS marine forecast (waves.json) ---------- */
+var WV = null, WV_FAILED = false;
+function loadWaves() { HERO.loadWaves(function (w) { if (w) { WV = w; WV_FAILED = false; } else if (!WV) WV_FAILED = true; renderHero(); renderWaves(); }); }
+function pacific(iso, o) { return new Date(iso).toLocaleString("en-US", Object.assign({ timeZone: "America/Los_Angeles" }, o)); }
+function isoZ(t) { return String(t).replace(/Z$/, ":00Z").replace(/:00:00Z$/, ":00Z"); }
+function renderWaves() {
+  var box = $("waves"); if (!COAST || !box) return;
+  box.classList.remove("hide");
+  var b = $("wvbody"), w = WV, h = "";
+  if (!w) { b.innerHTML = WV_FAILED ? '<p class="lbl">' + esc(LK.text("waves_unavailable")) + "</p>" : '<p class="lbl">Loading…</p>'; return; }
+  var bu = (w.buoys || []).filter(function (x) { return x.latest; })[0];
+  if (bu) {
+    var L = bu.latest, t0 = Date.parse(isoZ(L.t)), age = Math.max(0, Date.now() - t0);
+    var nm = bu.name.replace(/\s*\(.*\)$/, "");
+    h += '<p class="wvnow">' + esc(LK.text("waves_buoy_now", { name: nm, ft: "\u0001", s: L.s != null ? Math.round(L.s) : "?", dir: L.dir || "?" }))
+      .replace("\u0001", "<b>" + Math.round(L.ft) + "</b>") + "</p>";
+    var at = function (hrs) { var tt = t0 - hrs * 36e5, best = null; (bu.obs || []).forEach(function (o) { var d = Math.abs(Date.parse(isoZ(o.t)) - tt); if (d < 9e5 * 6 && (!best || d < best.d)) best = { d: d, ft: o.ft }; }); return best ? Math.round(best.ft) + " ft" : null; };
+    var a6 = at(6), a24 = at(24);
+    h += '<p class="lbl">Measured ' + esc(pacific(isoZ(L.t), { weekday: "short", hour: "numeric", minute: "2-digit" })) + " (" + esc(agoText(age)) + ")" +
+      (a6 && a24 ? ". " + esc(LK.text("waves_buoy_trend", { ago6: a6, ago24: a24 })) : "") +
+      (age > 3 * 36e5 ? " The buoy has not reported since then." : "") + "</p>";
+  }
+  var c = w.cwf;
+  if (c && c.periods && c.periods.length) {
+    var lim = LK.num("WAVES_BIG_FT");
+    h += "<h3>" + esc(LK.text("waves_fc_head")) + "</h3>" + (c.issued ? '<p class="lbl" style="margin-top:2px">Issued ' + esc(pacific(c.issued, { weekday: "short", hour: "numeric", minute: "2-digit" })) + "</p>" : "") +
+      '<ul class="wvfc">' + c.periods.slice(0, 6).map(function (p) {
+        var big = p.max_ft != null && p.max_ft >= lim;
+        return "<li><span class=\"pn\">" + esc(HERO.waveWhen(p.name).replace(/^./, function (x) { return x.toUpperCase(); })) + "</span>" +
+          (p.max_ft != null ? ": up to " + Math.round(p.max_ft) + " ft" : "") + (big ? '<span class="big">' + esc(LK.text("waves_fc_big")) + "</span>" : "") +
+          '<span class="tx">' + esc(p.text) + "</span></li>";
+      }).join("") + "</ul>";
+  }
+  if (!h) h = '<p class="lbl">' + esc(LK.text("waves_unavailable")) + "</p>";
+  var old = HERO.wavesAge(w);
+  if (old > LK.num("WAVES_STALE_HOURS")) h = '<p class="lbl">Last updated ' + Math.round(old) + " hours ago.</p>" + h;
+  b.innerHTML = h;
+  var bid = bu ? bu.id : "46012";
+  $("wvsrc").innerHTML = 'Sources: <a href="https://www.ndbc.noaa.gov/station_page.php?station=' + bid + '" target="_blank" rel="noopener">NOAA buoy ' + bid + "</a> · " +
+    '<a href="https://forecast.weather.gov/product.php?site=MTR&amp;issuedby=MTR&amp;product=CWF" target="_blank" rel="noopener">NWS Coastal Waters Forecast</a> · ' +
+    '<a href="https://forecast.weather.gov/product.php?site=MTR&amp;issuedby=MTR&amp;product=SRF" target="_blank" rel="noopener">NWS Surf Zone Forecast</a>';
+}
 
 /* ===================== CONFIG ===================== */
 // MHHW, the settings marked (lookups) and the wording come from the lookups/ folder through lookups.js (lookups/README.md)
@@ -1656,7 +1711,7 @@ LK.onChange(function () {   // edited lookups/ files: new MHHW or settings
   S.forEach(function (s) { s.st.mhhw = LK.mhhw(s.st.id); s.st.name = LK.station(s.st.id).name; if (s.pred) { s.wins = findWindows(s.pred, s.st.mhhw); applyOfficialPeaks(s.wins, s.highs); } });
   render(); renderSeason(); if (TRK) seasonStats(TRK);
 });
-function refreshAll() { if (!EMBED) { loadAlerts(); loadHeroData(); } S.forEach(function (s) { loadPredictions(s).then(function () { loadObserved(s); }); }); }
+function refreshAll() { if (!EMBED) { loadAlerts(); loadHeroData(); loadWaves(); } S.forEach(function (s) { loadPredictions(s).then(function () { loadObserved(s); }); }); }
 refreshAll();
 S.forEach(loadModel);
 loadSeasonStats(); setInterval(loadSeasonStats, 60 * 60000);   // the tracker updates hourly
@@ -1672,6 +1727,7 @@ if (TSN) {   // Redwood City tide table (6 months ahead, twice a day) and the NO
 }
 setInterval(renderSeason, 60000);   // rolls over at midnight (Pacific)
 setInterval(function () { if (!EMBED) loadAlerts(); }, 3 * 60000);
+if (COAST) setInterval(loadWaves, 15 * 60000);   // waves.json updates every 30 minutes
 setInterval(refreshTides, 6 * 60000);
 setInterval(function () { S.forEach(loadPredictions); }, 60 * 60000);
 setInterval(render, 60000);   // keep "now" and "Today/Tomorrow" current
