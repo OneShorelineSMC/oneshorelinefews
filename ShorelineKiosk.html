@@ -145,6 +145,8 @@
   .tday .dn { font-size: 13px; font-weight: bold; white-space: nowrap; }
   .tday .dv { font-size: 21px; font-weight: bold; line-height: 1.15; }
   .tday .dv .du { font-size: 12px; font-weight: normal; }
+  .tday .dv .dvl { display: block; font-size: 12px; font-weight: 600; line-height: 1.2; }   /* what the height is measured from (DEM wording, 2026-11-10) */
+  .tday { display: flex; flex-direction: column; } .tday .dn { order: 1; } .tday .dv { order: 2; } .tday .dx { order: 3; } .tday .dt { order: 4; }
   .tday .dt { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
   .tday .dx { font-size: 11.5px; font-weight: bold; margin-top: 2px; line-height: 1.2; min-height: 14px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* one line, so the graph below keeps its height */
@@ -948,7 +950,7 @@ function renderDays(s, now) {
     var mRed = !!(ad != null && !isRed && top.v + ad >= redFor(st));   // possible flood level if the Bay stays high
     var tag = top.src === "fcst" ? ' <span class="fc">projected</span>' : top.src === "measured" ? ' <span class="ms">measured</span>' : "";
     if (top.src === "fcst") fcDays++;
-    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + (mRed ? " mred" : "") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + esc(LK.tideShort(top.v, st.id, 2).replace(/ ft$/, "")) + '<span class="du"> ft</span>' +
+    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + (mRed ? " mred" : "") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + esc(LK.tideShort(top.v, st.id, 2).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + (LK.tideAbove(top.v, st.id) >= 0.05 ? "above" : LK.tideAbove(top.v, st.id) <= -0.05 ? "below" : "at") + " average high tide</span>" +
       '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (isRed ? esc(LK.text("tide_red_day"))
         : mRed ? "⚠ " + esc(LK.text("tide_maybe_day")) + " (≈" + LK.tideShort(top.v + ad, st.id, 2) + ")" : ad != null ? "≈" + LK.tideShort(top.v + ad, st.id, 2) + " estimate" : esc(LK.tideNavd(top.v, 2))) + "</div></div>";
   }

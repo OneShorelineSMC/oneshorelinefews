@@ -191,13 +191,14 @@
   .secrow .sec { margin: 0 2px; } .secrow .rng { margin: 0; }
   /* 7 days: a list on phones, 7 columns on wide screens */
   .days { display: grid; gap: 0; border-top: 1px solid var(--line); }
-  .day { display: grid; grid-template-columns: 4.2em 4.4em minmax(0, 1fr) auto; align-items: baseline; gap: 6px; padding: 6px 4px;
+  .day { display: grid; grid-template-columns: 4.2em 5.4em minmax(0, 1fr) auto; align-items: baseline; gap: 6px; padding: 6px 4px;
     border-bottom: 1px solid var(--line); font-size: 14px; }
   .day .dn { font-weight: 700; color: var(--ink); }
   .day .dv { font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; }
   .day .dv .du { font-size: 14px; font-weight: 400; }
   .day .dt { color: var(--muted); font-size: 14px; line-height: 1.25; white-space: nowrap; }
   .day .dnv { display: block; font-size: 13px; }
+  .day .dvl { display: none; }   /* phones: the list heading says "ft above average high tide"; wide screens show it under each number */
   .day .dv { margin-right: 8px; }   /* "+0.7 ft" clear of the time beside it */   /* the same height in NAVD88, under the time (DEM, 2026-11-10) */
   .day .dt .tag { display: block; }   /* "expected" / "measured" under the time on phones */
   .day .dx { font-size: 14px; text-align: right; color: var(--green); max-width: 7.5em; line-height: 1.2; }
@@ -229,7 +230,10 @@
     .day .dt .tag { display: inline; }
     .hd br.nb { display: none; } .hd .wsep { display: inline; }   /* wide screens: the headline's details on one line */
     .day .dxw { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* "+0.21 ft" (the day's color says above MHHW; still read aloud) */
-    .day { display: block; text-align: center; border-bottom: 0; border-top: 4px solid var(--line); border-right: 1px solid var(--line); padding: 5px 4px; }
+    .day { display: flex; flex-direction: column; align-items: center; text-align: center; border-bottom: 0; border-top: 4px solid var(--line); border-right: 1px solid var(--line); padding: 5px 4px; }
+    /* the height, what it's measured from, then what it means, then the time and NAVD88 (DEM wording, 2026-11-10) */
+    .day .dn { order: 1; } .day .dv { order: 2; margin-right: 0; } .day .dx { order: 3; margin: 2px 0 4px; max-width: none; } .day .dt { order: 4; }
+    .day .dvl { display: block; font-size: 13px; font-weight: 600; line-height: 1.2; white-space: normal; }
     .day:last-child { border-right: 0; }
     .day.over { border-top-color: var(--infob); } .day.red { border-top-color: #c0392b; } .day.maybe { border-top: 4px dashed #c0392b; outline: 0; }
     .day .dv { font-size: 21px; } .day .dx { text-align: center; white-space: normal; } .day .dt { white-space: normal; }
@@ -917,7 +921,7 @@ function render() {
       var est = add != null ? top.v + add : null; if (est != null) ofDays++;
       var val = est != null ? est : top.v, over = val > st.mhhw, maybe = est != null && !isRed && est >= redFor(st);
       var srcSr = top.src === "fcst" ? " (NOAA projection)" : top.src === "measured" ? " (measured)" : est != null ? " (estimate: tide table " + LK.tideRel(top.v, st.id) + " plus " + add.toFixed(1) + " ft)" : " (tide table)";
-      h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (maybe ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + (est != null ? "≈" : "") + esc(LK.tideShort(val, st.id).replace(/ ft$/, "")) + '<span class="du"> ft</span></span>' +
+      h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (maybe ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + (est != null ? "≈" : "") + esc(LK.tideShort(val, st.id).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + (LK.tideAbove(val, st.id) >= 0.05 ? "above" : LK.tideAbove(val, st.id) <= -0.05 ? "below" : "at") + " average high tide</span></span>" +
         '<span class="dt">' + fTime(top.t) + '<span class="dxw">' + esc(srcSr) + '</span><span class="dnv">' + esc(LK.tideNavd(val)) + "</span></span>" +
         '<span class="dx">' + (isRed ? "Flood level" : maybe ? "Possible flood level" : over ? "Higher than usual" : '<span class="nrm">Normal</span>') + "</span></div>";
     }
