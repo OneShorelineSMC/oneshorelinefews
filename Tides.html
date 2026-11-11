@@ -363,6 +363,7 @@
   #calsel { grid-column: 1 / -1; display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.4; color: var(--ink);
     background: var(--soft); border-left: 4px solid var(--fc); border-radius: 6px; padding: 8px 6px 8px 10px; }
   #calsel.hide { display: none; } #calseltx { flex: 1; }
+  .ptbl { border-collapse: collapse; font-size: 13px; margin: 6px 0 10px; } .ptbl th, .ptbl td { padding: 3px 8px; border-bottom: 1px solid var(--line); text-align: right; } .ptbl th:first-child, .ptbl td:first-child { text-align: left; }
   .tech.hide, #outlp.hide, #biasabout.hide, #nrkey.hide, #outlw.hide { display: none; }   /* staff-only and empty parts (staff, 2026-11-10) */
   #calselx { flex: none; border: 0; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 4px; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -847,6 +848,14 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<div class="maybeb"></div>' +
     '<div class="afd" style="display:none"></div>' +
     (i === 0 ? '<div id="outlw" class="hide"><h3 class="clh">Seasonal outlook (after 6 weeks)</h3><p class="outl hide" id="outl"></p></div>' : "") +   // (staff, 2026-10-27)
+    // staff graphs after a peer's San Francisco tracker (staff, 2026-11-10): why each day is high, and each day's high tide with the outlook
+    (i === 0 ? '<h3 class="clh">Why each day is high: tide, how high the ' + esc(SIDE.water) + ' runs, storm push</h3>' +
+      '<p class="lbl" style="margin:0 0 4px">Each day’s highest tide, ft NAVD88. Gray = tide table; blue = how high the ' + esc(SIDE.water) + ' has been running at high tide (the offset; past days use today’s value); ' +
+      'orange = the rest (weather) when it raises the water, a dashed box for the part it takes off. Past days measured; the next 2 days from NOAA’s projection (weather shown only past ±0.25 ft), then the estimate.</p>' +
+      '<div class="gbox" style="height:260px"><canvas id="chParts" role="img" aria-label="Stacked bars: tide table, offset and weather for each day; the same numbers are in the table below."></canvas></div><div id="partsTbl"></div>' +
+      '<h3 class="clh">Each day’s high tide: measured, tide table and the outlook</h3>' +
+      '<p class="lbl" style="margin:0 0 4px">ft NAVD88. Hollow = tide table; filled = measured (since Oct 1); light blue = the middle path ahead, with a line from the low to the high path.</p>' +
+      '<div class="gbox" style="height:300px"><canvas id="chOut" role="img" aria-label="Each day’s highest tide: measured, tide table and the outlook with its range."></canvas></div>' : "") +
     '<h3 class="clh">Times above an average high tide (MHHW)</h3><div class="wl"></div>' +
     '<h3 class="clh">Now and the past 7 days</h3><div class="pw"></div>' +
     '<p class="lbl nlbl"></p></details>';
@@ -1003,6 +1012,100 @@ function render() {
     drawChart(s, i, now, useModel);
   });
   $("updated").textContent = "Updated " + fTime(now) + " " + tzAbbr() + " · all times Pacific · refreshes automatically";
+  if (STAFF) { try { drawParts(S[0], now); drawOutlookChart(S[0], now); } catch (e) { console.log("staff graphs:", e); } }
+}
+
+/* ---------- staff graphs (Tides.html?preview=1; staff, 2026-11-10, after a peer's San Francisco tracker) ---------- */
+var STG = { parts: null, out: null, tracker: null, tLoading: false };
+function refLines(lines) {   // horizontal reference lines with a label, for the staff bar and dot charts
+  return { id: "reflines", afterDatasetsDraw: function (ch) {
+    var c = ch.ctx, y = ch.scales.y, a = ch.chartArea;
+    lines.forEach(function (L) {
+      if (!(L.v > y.min && L.v < y.max)) return;
+      var py = y.getPixelForValue(L.v); c.save(); c.strokeStyle = L.color; c.setLineDash(L.dash || [5, 4]); c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(a.left, py); c.lineTo(a.right, py); c.stroke(); c.setLineDash([]);
+      c.fillStyle = L.color; c.font = "600 12px system-ui, sans-serif"; c.textAlign = "right"; c.fillText(L.label, a.right - 4, py - 4); c.restore();
+    });
+  } };
+}
+function drawParts(s, now) {
+  var el = $("chParts"); if (!el || !window.Chart || !TSN) return;
+  var o = TSN.offset(), seas = o ? o.ft : 0, days = [], R = highResiduals(s, now), byDay = {};
+  R.forEach(function (r) { var d = tsDayKey(r.t); if (!byDay[d] || r.pred > byDay[d].pred) byDay[d] = r; });   // the day's higher high
+  var todayHigh = TSN.dayHighs()[tsToday()];   // today's higher high still ahead: today goes with the forecast days
+  if (todayHigh && todayHigh.t >= now) delete byDay[tsToday()];
+  Object.keys(byDay).sort().slice(-6).forEach(function (d) { var r = byDay[d]; days.push({ d: d, t: r.t, tide: r.pred, seas: seas, wx: r.meas - r.pred - seas, total: r.meas, kind: "measured" }); });
+  var dh = TSN.dayHighs(), ex = TSN.expected(now), od = TSN.offsetDays(now), today = tsToday();
+  Object.keys(dh).filter(function (d) { return d >= today; }).sort().slice(0, 4).forEach(function (d) {
+    var h = dh[d]; if (h.t < now) return;
+    var add = TSN.addAt(h.t, now) || 0, x = ex[d], wx = x ? x.v - (h.v + add) : 0;
+    if (Math.abs(wx) < 0.25) wx = 0;
+    days.push({ d: d, t: h.t, tide: h.v, seas: add, wx: wx, total: h.v + add + wx, kind: x ? "projection" : "estimate" });
+  });
+  if (!days.length) return;
+  var lab = days.map(function (x) { return fmt(x.t, { weekday: "short", month: "short", day: "numeric" }); });
+  var lo = Math.floor(Math.min.apply(null, days.map(function (x) { return x.tide; })) - 1), hi = Math.ceil(Math.max(TSN.red() || 0, Math.max.apply(null, days.map(function (x) { return x.total + 0.3; }))));
+  var ds = [
+    { label: "Tide table", data: days.map(function (x) { return x.tide - lo; }), backgroundColor: css("--tidetbl") || "#cfd6dd", stack: "a" },
+    { label: "Offset", data: days.map(function (x) { return x.seas + Math.min(0, x.wx); }), backgroundColor: days.map(function (x) { return x.kind === "measured" ? "#1e6fd0" : "#7aa8e6"; }), stack: "a" },
+    { label: "Weather lowers", data: days.map(function (x) { return -Math.min(0, x.wx); }), backgroundColor: "rgba(0,0,0,0)", borderColor: css("--muted"), borderWidth: 1.5, borderDash: [4, 3], stack: "a" },
+    { label: "Weather raises", data: days.map(function (x) { return Math.max(0, x.wx); }), backgroundColor: "#e8743b", stack: "a" }];
+  var totals = { id: "totals", afterDatasetsDraw: function (ch) {
+    var c = ch.ctx, y = ch.scales.y, xs = ch.scales.x; c.save(); c.fillStyle = css("--ink"); c.font = "700 13px system-ui, sans-serif"; c.textAlign = "center";
+    days.forEach(function (x, k) { c.fillText((x.kind === "estimate" ? "≈" : "") + x.total.toFixed(1), xs.getPixelForValue(k), y.getPixelForValue(Math.max(x.total, x.tide + x.seas) - lo) - 8); });
+    c.restore(); } };
+  var lines = [{ v: TSN.mhhw() - lo, color: css("--mhhw") || "#888", label: "MHHW " + TSN.mhhw().toFixed(2) + " ft" }];
+  if (isFinite(TSN.red())) lines.push({ v: TSN.red() - lo, color: css("--red"), dash: [10, 3, 2, 3], label: "Flood level " + TSN.red().toFixed(1) + " ft" });
+  if (STG.parts) STG.parts.destroy();
+  STG.parts = new Chart(el, { type: "bar", data: { labels: lab, datasets: ds }, plugins: [totals, refLines(lines)],
+    options: { responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: true, labels: { color: css("--ink"), boxWidth: 14 } }, tooltip: { callbacks: { label: function (it) {
+        var x = days[it.dataIndex], v = it.datasetIndex === 0 ? x.tide : it.datasetIndex === 1 ? x.seas : x.wx;
+        return it.dataset.label + ": " + (it.datasetIndex === 0 ? v.toFixed(2) + " ft NAVD88" : (v >= 0 ? "+" : "") + v.toFixed(2) + " ft"); } } } },
+      scales: { x: { stacked: true, ticks: { color: css("--muted") }, grid: { display: false } },
+        y: { stacked: true, min: 0, max: hi - lo, ticks: { color: css("--muted"), stepSize: 1, callback: function (v) { return (v + lo) + " ft"; } } } } } });
+  $("partsTbl").innerHTML = '<table class="ptbl"><tr><th>Day</th><th>Tide table</th><th>Offset</th><th>Weather</th><th>Total</th><th>From</th></tr>' + days.map(function (x, k) {
+    return "<tr><td>" + esc(lab[k]) + "</td><td>" + x.tide.toFixed(2) + "</td><td>" + sgn(x.seas) + "</td><td>" + (x.wx ? sgn(x.wx) : "0.00") + "</td><td><b>" + (x.kind === "estimate" ? "≈" : "") + x.total.toFixed(2) + "</b></td><td>" + x.kind + "</td></tr>";
+  }).join("") + "</table>";
+}
+function tsDayKey(t) { return new Date(t).toISOString().slice(0, 10); }
+function drawOutlookChart(s, now) {
+  var el = $("chOut"); if (!el || !window.Chart || !TSN) return;
+  if (!STG.tracker && !STG.tLoading) {   // measured daily highs since Oct 1 (the staff Tide Tracker's file)
+    STG.tLoading = true;
+    fetch("https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/tide_tracker.json?t=" + Math.floor(Date.now() / 3.6e6)).then(function (r) { return r.json(); })
+      .then(function (j) { STG.tracker = j; drawOutlookChart(s, now); }).catch(function () { STG.tracker = {}; drawOutlookChart(s, now); });
+  }
+  var st = ((STG.tracker || {}).stations || []).filter(function (x) { return String(x.id) === String(s.st.id); })[0] || { days: {} };
+  var d0 = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()), X = function (d) { return (Date.parse(d + "T12:00:00Z") - d0) / 86400000; };
+  var pred = [], meas = [], mid = [], rng = [], dh = TSN.dayHighs(), today = tsToday();
+  Object.keys(st.days).forEach(function (d) { var v = st.days[d]; if (typeof v.table === "number") pred.push({ x: X(d), y: v.table }); if (typeof v.max === "number" && (v.cover == null || v.cover >= 0.9)) meas.push({ x: X(d), y: v.max }); });
+  Object.keys(dh).forEach(function (d) {
+    var h = dh[d], x = X(d); if (x < -60 || x > 100) return;
+    if (d >= today && !st.days[d]) pred.push({ x: x, y: h.v });
+    if (d >= today && h.t >= now) {
+      var m = TSN.addAt(h.t, now, "mid"), l = TSN.addAt(h.t, now, "low"), hgh = TSN.addAt(h.t, now, "high");
+      if (m != null) { mid.push({ x: x, y: h.v + m }); rng.push({ x: x, y: [h.v + Math.min(l, m), h.v + Math.max(hgh, m)] }); }
+    }
+  });
+  var lines = [{ v: TSN.mhhw(), color: css("--mhhw") || "#888", label: "MHHW " + TSN.mhhw().toFixed(2) + " ft" }];
+  if (isFinite(TSN.red())) lines.push({ v: TSN.red(), color: css("--red"), dash: [10, 3, 2, 3], label: "Flood level " + TSN.red().toFixed(1) + " ft" });
+  var all = pred.concat(meas, mid).map(function (p) { return p.y; }).concat(rng.map(function (p) { return p.y[1]; }));
+  if (!all.length) return;
+  if (STG.out) STG.out.destroy();
+  STG.out = new Chart(el, { data: { datasets: [
+      { type: "bar", label: "Low to high path", data: rng, backgroundColor: "#9bb8dd", barThickness: 2, order: 3 },
+      { type: "scatter", label: "Tide table", data: pred, pointStyle: "circle", pointRadius: 3, backgroundColor: "rgba(0,0,0,0)", borderColor: "#9aa3ad", order: 2 },
+      { type: "scatter", label: "Measured", data: meas, pointRadius: 3.5, backgroundColor: "#1e6fd0", borderColor: "#1e6fd0", order: 1 },
+      { type: "scatter", label: "Middle path", data: mid, pointRadius: 3, backgroundColor: "#7aa8e6", borderColor: "#7aa8e6", order: 1 }] },
+    plugins: [refLines(lines), { id: "nowline", afterDatasetsDraw: function (ch) { var c = ch.ctx, px = ch.scales.x.getPixelForValue(0), a = ch.chartArea; c.save(); c.strokeStyle = css("--muted"); c.setLineDash([3, 3]); c.beginPath(); c.moveTo(px, a.top); c.lineTo(px, a.bottom); c.stroke(); c.restore(); } }],
+    options: { responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { labels: { color: css("--ink"), boxWidth: 12 } }, tooltip: { callbacks: {
+        title: function (it) { return fmt(d0 + it[0].parsed.x * 86400000, { weekday: "short", month: "short", day: "numeric" }); },
+        label: function (it) { var y = it.raw.y; return it.dataset.label + ": " + (Array.isArray(y) ? y[0].toFixed(2) + "–" + y[1].toFixed(2) : y.toFixed(2)) + " ft NAVD88"; } } } },
+      scales: { x: { type: "linear", min: Math.max(-45, Math.min.apply(null, meas.map(function (p) { return p.x; }).concat([0]))), max: 100,
+          ticks: { color: css("--muted"), stepSize: 15, callback: function (v) { return fmt(d0 + v * 86400000, { month: "short", day: "numeric" }); } }, grid: { color: css("--line") } },
+        y: { min: Math.floor(Math.min.apply(null, all)) , max: Math.ceil(Math.max.apply(null, all.concat([isFinite(TSN.red()) ? TSN.red() + 0.2 : 0]))), ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") } } } } });
 }
 
 /* graph: today through the next 7 days; measured, NOAA forecast and predicted; red where above MHHW */

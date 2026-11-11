@@ -27,6 +27,8 @@ described under *Creek data job*.
 ---
 
 
+**Staff tide graphs (Nov 10, 2026).** In "For the technically minded" on `Tides.html?preview=1`: (1) *Why each day is high*: stacked bars for the past 6 days and the next 4 (tide table, the offset, and the weather remainder; NOAA's projection for 2 days, shown only past ±0.25 ft), with a table of the numbers; (2) *Each day's high tide*: measured daily highs since Oct 1 (tide_tracker.json), the tide table, and the middle path ahead with a low-to-high line for about 100 days. After a peer's San Francisco tracker. The headline's ". No flooding expected" is now "Below the flood level", or "See the National Weather Service alert" while an NWS coastal flood product is in effect (display_text.csv).
+
 **Public vs staff detail (Nov 10, 2026).** Tides shows the public a one-line outlook ("Through May, about 7 more days could reach the flood level, and up to 22 if the Bay keeps rising as it has"); the model paragraph, the NOAA-correction sentence, the times above MHHW and the past-7-days tables are in "For the technically minded" on the staff view (`Tides.html?preview=1`). The Creeks trigger checklist is staff-only (`?preview=1`). The kiosk link left the home footer (it's on staff.html).
 
 **Tide scenarios and 14-day offset (Nov 10, 2026).** The offset is now a 14-day high-tide average (`BAY_OFFSET_DAYS` = 14). The seasonal part uses a model fitted to every winter since 1950 at San Francisco, with low / middle / high paths from its misses in 2015–16 and 1982–83 / 1997–98 (`tide_offset.json` `outlook.scenarios`; `TIDE_SCENARIOS_SHOW`). The middle path drives the estimate; the Tides outlook line gives flood-level days in each path and which path the Bay is following now. Details in `lookups/THRESHOLDS_BASIS.md` §4b.
