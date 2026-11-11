@@ -223,6 +223,7 @@
      above the NWS coastal flood product unless the gauge measures the flood level now (severity.js cap). */
   function tideState(o) {
     var D = o.D || {}, now = o.now || nowLocal(), m = o.mhhw, red = o.red == null ? Infinity : o.red, days = o.days || 7;
+    o = Object.assign({}, o, { id: o.id || (o.water === "Bay" ? "9414523" : o.water ? "9413450" : null) });   // for heights above average high tide
     if (!D.pred || !D.pred.length) return { level: "offline", head: "Tide data unavailable right now", word: "No data", tech: [], more: 0 };
     var ser = [], tail = -Infinity;
     (D.obs || []).forEach(function (x) { ser.push({ t: x.t, v: x.v, src: "measured" }); tail = x.t; });
@@ -249,8 +250,8 @@
     } else { st.head = "No higher-than-usual tides in the next " + days + " days"; st.word = "Normal"; }
     if (ups.length) {   // the numbers: one comparison only (above an average high tide)
       var top = ups.reduce(function (x, w) { return !x || w.peak > x.peak ? w : x; }, null);
-      st.tech.push("Peak " + top.peak.toFixed(1) + " ft, " + (top.peak - m).toFixed(1) + " ft above an average high tide");
-      if (isFinite(red)) st.tech.push("flood level " + red.toFixed(1) + " ft");
+      st.tech.push("Peak " + (o.id ? LK.tideFt(top.peak, o.id) : (top.peak - m).toFixed(1) + " ft above an average high tide (" + top.peak.toFixed(1) + " ft NAVD88)"));
+      if (isFinite(red)) st.tech.push("flood level " + (o.id ? LK.tideFt(red, o.id) : (red - m).toFixed(1) + " ft above an average high tide (" + red.toFixed(1) + " ft NAVD88)"));
     }
     if (!isFinite(red)) st.tech.push(LK.text("coast_no_level"));
     return st;

@@ -234,7 +234,8 @@
   }
 
   function clock(ms) { var d = new Date(ms), h = d.getUTCHours(), mi = d.getUTCMinutes(); return (h % 12 || 12) + ":" + String(mi).padStart(2, "0") + (h < 12 ? " AM" : " PM"); }
-  function ft(v) { return v.toFixed(1) + " ft"; }
+  // a tide height in words: feet above (or below) the average high tide here first, then NAVD88 (DEM, 2026-11-10; lookups.js)
+  function ft(v) { return LK.tideFt ? LK.tideFt(v, STATION) : v.toFixed(1) + " ft"; }
   function weatherNote(x) {   // "NOAA projects about 0.4 ft higher than the tide table", or "" when the difference is small
     if (!x || Math.abs(x.diff) < LK.num("TIDE_WEATHER_NOTE_FT")) return "";
     return LK.text(x.diff > 0 ? "tide_weather_higher" : "tide_weather_lower", { diff: Math.abs(x.diff).toFixed(1) });

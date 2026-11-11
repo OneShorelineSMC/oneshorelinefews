@@ -154,18 +154,18 @@
     home_creek_scope_link: "See Bay tides ›",
     gauge_more_onerain: "OneRain has this gauge’s full record, every raw reading, data downloads and the alarm settings. This page shows the last two days, for decisions during a storm.",
     gauge_more_usgs: "USGS has this gauge’s full record, flow as well as level, and data downloads. This page shows the last two days.",
-    tide_day_astro: "Astronomical high tide: the tide table reaches the 1-year tide ({ft} ft)",
+    tide_day_astro: "Astronomical high tide: the tide table reaches the 1-year tide ({ft})",
     tide_day_astro_short: "Astronomical high tide (the tide table reaches the 1-year tide)",
     tide_upcoming_note: "Based on the tide table plus current conditions: NOAA’s projection for the next 2 days, then how high the {water} has been running. Coastal storms after that aren’t included and can push water higher.",
     home_none_some: "No creek alerts at the {n} creeks with working gauges.",
     home_gauge_part_note: "{creek} ({gauge}): one of its creek gauges is out of service; the other still reports.",
-    gloss_mhhw: "Average high tide (MHHW, Mean Higher High Water): the average height of the higher of each day’s two high tides, {mhhw} ft here. A tide above it is higher than usual; it doesn’t necessarily mean flooding.",
-    gloss_flood: "Flood level: {red} ft at Redwood City, OneShoreline’s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks.",
+    gloss_mhhw: "Average high tide (MHHW, Mean Higher High Water): the average height of the higher of each day\u2019s two high tides, {mhhw} ft NAVD88 here. Heights on this page are given in feet above or below it; NAVD88 follows in parentheses. A tide above it is higher than usual; it doesn\u2019t necessarily mean flooding.",
+    gloss_flood: "Flood level: {red} at Redwood City, OneShoreline\u2019s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks.",
     gloss_flood_coast: "Flood level: no coastside flood level has been set yet.",
     gloss_measured: "Measured: what NOAA’s tide gauge has recorded (preliminary data).",
     gloss_table: "Tide table: the normal tide from the moon and sun, worked out years ahead. It doesn’t include storms or ocean conditions.",
-    tide_cal_source_short: "Heights at NOAA’s Redwood City tide gauge (9414523), ft NAVD88. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king} ft.",
-    tide_cal_source_short_coast: "Heights at NOAA’s Monterey tide gauge (9413450), ft NAVD88. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} ft (provisional).",
+    tide_cal_source_short: "Heights at NOAA\u2019s Redwood City tide gauge (9414523), in feet above or below the average high tide there; NAVD88 in parentheses. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king}.",
+    tide_cal_source_short_coast: "Heights at NOAA\u2019s Monterey tide gauge (9413450), in feet above or below the average high tide there; NAVD88 in parentheses. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} (provisional).",
     home_none_count: "No creek alerts. All {n} monitored creeks are normal.",
     home_alerts_one: "1 creek with an alert",
     home_alerts_many: "{n} creeks with alerts",
@@ -208,7 +208,7 @@
     noaa_forecast_note_coast: "NOAA projection: NOAA’s computer model of the West Coast ocean (WCOFS) starts from the tide table and adds what it leaves out: storms, wind, air pressure and ocean conditions such as the higher sea levels of an El Niño winter. It runs about 2 days ahead. It doesn’t include waves, which can push water much farther up a beach. It’s guidance, not an official forecast; follow National Weather Service advisories.",
     king_tide_intro_coast: "Here a “King Tide” is a day when the tide table at Monterey reaches the 1-year tide (provisional): a tide so high the ocean reaches it only about once a year on average. These come when the sun and moon line up, mostly in November, December and January. They’re worked out years ahead, so they don’t include storms, waves or ocean conditions. The colors show how high each day’s highest tide reaches at Monterey.",
     king_tide_what_coast: "Around high tide, expect water higher up beaches and around coastal trails, creek mouths and harbors. Waves can reach farther than usual: stay off rocks and jetties and never turn your back on the ocean.",
-    tide_cal_source_coast: "Heights at NOAA’s Monterey tide gauge (9413450), ft NAVD88: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions but not waves. Yellow = above MHHW ({mhhw} ft), the average high tide: higher than usual. No coastside flood level has been set yet. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} ft (provisional).",
+    tide_cal_source_coast: "Heights at NOAA\u2019s Monterey tide gauge (9413450), in feet above or below the average high tide there (MHHW, {mhhw} ft NAVD88): the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions but not waves. Yellow = above the average high tide: higher than usual. No coastside flood level has been set yet. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} (provisional).",
     tide_afd_none_coast: "National Weather Service forecasters aren’t mentioning high tides, high surf or coastal flooding.",
     king_tide_intro: "Here a “King Tide” is a day when the tide table reaches the 1-year tide at Redwood City: a tide so high the Bay reaches it only about once a year on average. These come when the sun and moon line up, mostly in November, December and January. They’re worked out years ahead, so it doesn’t include storms or ocean conditions: a King Tide on a calm day may only wet low paths, while a storm or an El Niño winter can push an ordinary high tide higher. The colors show how high each day’s highest tide reaches at Redwood City.",
     king_tide_what: "Around high tide, expect water on low shoreline paths, marshes and some low roads and parking lots near the Bay. Never drive or walk through floodwater.",
@@ -222,21 +222,21 @@
     tide_level_amber: "higher than an average high tide",
     tide_level_red: "high enough to flood near the Bay shoreline and in low-lying areas along tidally connected creeks",
     tide_red_what: "Stay away from the shoreline, marshes and low roads near the Bay around high tide. Never drive or walk through floodwater.",
-    tide_red_home: "That’s high enough to flood near the Bay shoreline and in low-lying areas along tidally connected creeks ({ft} ft or more at the Redwood City tide gauge).",
-    tide_below_red_home: "That’s below the {ft} ft flood level (provisional) at the Redwood City tide gauge.",
+    tide_red_home: "That\u2019s high enough to flood near the Bay shoreline and in low-lying areas along tidally connected creeks ({ft} or more at the Redwood City tide gauge).",
+    tide_below_red_home: "That\u2019s below the flood level ({ft}, provisional) at the Redwood City tide gauge.",
     tide_head_info: "Higher than usual tide",
     tide_head_red: "High water",
     tide_head_now: "now, until {time}",
-    tide_head_below_red: "below the {ft} ft flood level (provisional)",
-    tide_head_at_red: "at or above the {ft} ft flood level (provisional)",
-    tide_head_below_red_short: "below the {ft} ft flood level",
-    tide_head_at_red_short: "at or above the {ft} ft flood level",
+    tide_head_below_red: "below the flood level ({ft}; provisional)",
+    tide_head_at_red: "at or above the flood level ({ft}; provisional)",
+    tide_head_below_red_short: "below the flood level ({ft})",
+    tide_head_at_red_short: "at or above the flood level ({ft})",
     mhhw_info: "MHHW (Mean Higher High Water) is the average height of the higher of each day’s two high tides. A tide above MHHW is higher than usual; it doesn’t necessarily mean flooding.",
-    tide_red_key: "Flood level {ft} ft",
+    tide_red_key: "Flood level: {ft}",
     tide_red_day: "At flood level",
-    tide_red_line: "Flood level {ft} ft (provisional)",
-    tide_red_line_creek: "Bay shoreline overtopping {ft} ft (provisional)",
-    tide_king_ref: "King Tide (1-year tide) {ft} ft",
+    tide_red_line: "Flood level, {ft} (provisional)",
+    tide_red_line_creek: "Bay shoreline overtopping, {ft} (provisional)",
+    tide_king_ref: "King Tide (1-year tide), {ft}",
     tide_expected_ft: "NOAA projects {ft}",
     tide_table_ft: "{ft} in the tide table",
     tide_table_word: "tide table",
@@ -248,11 +248,11 @@
     tide_offset_note: "After the NOAA projection ends, the estimate (≈, the gray dotted line) is the tide table plus how much higher the {water} has run at high tide over the past {days} days: {ft} ft on average, easing back toward what is usual for the season over the coming weeks. It isn’t a forecast, and storms can add more.",
     tide_offset_day: "≈ {ft} if the {water} stays high",
     tide_offset_cal: "could reach the flood level: about {ft} if the {water} stays as high as it has been running (an estimate)",
-    tide_offset_cal_key: "Dashed orange ring: possible flood level ({red} ft) if the {water} stays this high",
+    tide_offset_cal_key: "Dashed orange ring: possible flood level ({red}) if the {water} stays this high",
     tide_maybe_head: "Possible flood-level tides {days} if the {water} stays about {off} ft higher than the tide table, its average at high tide over the past month.",
     tide_proj_adjusted: "Over the past {n} days, NOAA\u2019s projection here ran about {ft} ft {dir} than the gauge measured at high tide, so this page {fix} it by that much.",
     tide_proj_skipped: "Over the past {n} days, NOAA\u2019s projection here ran about {ft} ft {dir} than the gauge measured, more than {max} ft off, so this page leaves it out and uses the tide table plus the recent offset.",
-    tide_near_key: "Solid orange ring: close to the flood level (within {ft} ft of {red} ft); not a flooding call",
+    tide_near_key: "Solid orange ring: close to the flood level (within {ft} ft of {red}); not a flooding call",
     tide_near_line: "Close to the flood level (within {ft} ft):",
     tide_near_day: "Close to the flood level: about {ft}",
     tide_steady_start: "If the {water} stays as high as it is now (about {off} ft above the tide table at high tide, not easing), flood-level tides could start {date}{n}.",
@@ -303,14 +303,14 @@
     tide_weather_lower: "NOAA projects about {diff} ft lower than the tide table",
     tide_cal_title: "Coming high tides",
     tide_stats_title: "This season at {gauge}",
-    tide_stats_fold: "Highest so far {ft} ft · {n} days {level}",
+    tide_stats_fold: "Highest so far {ft} \u00b7 {n} days {level}",
     tide_stats_fold_flood: "at the flood level",
     tide_stats_fold_oneyear: "at the 1-year tide",
     tide_stats_since: "Since {from}, the start of the water year, from NOAA’s measured water level.",
     tide_stats_max: "Highest water so far",
-    tide_stats_mhhw: "Days at or above an average high tide ({ft} ft)",
-    tide_stats_flood: "Days at or above the flood level ({ft} ft)",
-    tide_stats_oneyear: "Days at or above the 1-year tide ({ft} ft)",
+    tide_stats_mhhw: "Days at or above an average high tide ({ft})",
+    tide_stats_flood: "Days at or above the flood level ({ft})",
+    tide_stats_oneyear: "Days at or above the 1-year tide ({ft})",
     tide_stats_typical: "typical by this date: {v}",
     tide_stats_running_above: "This past week the {water} ran about {ft} ft above the tide table, from wind, storms and ocean conditions. The calendar’s coming days allow for some of this.",
     tide_stats_running_below: "This past week the {water} ran about {ft} ft below the tide table.",
@@ -319,7 +319,7 @@
     tide_stats_nino: "El Niño conditions this year. In past El Niño winters the {water} has tended to run higher than usual.",
     tide_cal_tap: "Tap any day to see its highest tide and time.",
     tide_cal_day: "highest tide {ft} at {time} (tide table)",
-    tide_cal_source: "Heights at NOAA’s Redwood City tide gauge (9414523), ft NAVD88: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Yellow = above MHHW ({mhhw} ft), the average high tide: higher than usual, not flooding. Orange with “!” = {red} ft or more, OneShoreline’s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king} ft.",
+    tide_cal_source: "Heights at NOAA\u2019s Redwood City tide gauge (9414523), in feet above or below the average high tide there (MHHW, {mhhw} ft NAVD88): the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Yellow = above the average high tide: higher than usual, not flooding. Orange with \u201c!\u201d = {red} or more, OneShoreline\u2019s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king}.",
     more_creeks_title: "More creeks · readings only",
     more_creeks_intro: "Readings from gauges on other San Mateo County creeks. Only Colma, San Bruno, Belmont and Atherton have a flood status here, so these show readings alone. Tap a creek for its graphs.",
     more_creeks_badge: "Readings only",
@@ -512,8 +512,31 @@
   }
   function modelBias(id) { return biasData().then(function (all) { return (all || {})[id] || null; }); }
 
+  /* Tide heights for the public (DEM, 2026-11-10): feet above (or below) the average high tide (MHHW) at that gauge first,
+     NAVD88 after it, smaller. Redwood City 8.5 ft NAVD88 = "1.5 ft above average high tide (8.5 ft NAVD88)".
+     tideRel(v, id[, dec]) plain words; tideFt(v, id[, dec]) words + "(8.5 ft NAVD88)"; tideHTML(v, id[, dec]) the same with
+     the NAVD88 part in <span class="navd">; tideShort(v, id) "+1.5 ft" (graph axes, tight spots). dec: decimals (1). */
+  function relOf(v, id) { var m = L.mhhw(id); return typeof v === "number" && isFinite(v) && typeof m === "number" ? v - m : null; }
+  function tideRel(v, id, dec) {
+    var d = relOf(v, id), n = dec == null ? 1 : dec;
+    if (d == null) return typeof v === "number" ? v.toFixed(n) + " ft NAVD88" : "";
+    var a = Math.abs(d).toFixed(n);
+    return +a === 0 ? "at the average high tide" : a + " ft " + (d > 0 ? "above" : "below") + " average high tide";
+  }
+  function navd(v, dec) { return v.toFixed(dec == null ? 1 : dec) + " ft NAVD88"; }
+  function tideFt(v, id, dec) { return relOf(v, id) == null ? tideRel(v, id, dec) : tideRel(v, id, dec) + " (" + navd(v, dec) + ")"; }
+  function tideHTML(v, id, dec) {
+    var e = function (t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
+    return relOf(v, id) == null ? e(tideRel(v, id, dec)) : e(tideRel(v, id, dec)) + ' <span class="navd" style="font-size:0.85em;font-weight:400">(' + e(navd(v, dec)) + ")</span>";
+  }
+  function tideShort(v, id, dec) {
+    var d = relOf(v, id); if (d == null) return v.toFixed(dec == null ? 1 : dec) + " ft";
+    var a = Math.abs(d).toFixed(dec == null ? 1 : dec);
+    return +a === 0 ? "0 ft" : (d > 0 ? "+" : "\u2212") + a + " ft";
+  }
+
   L = window.LOOKUPS = {
-    fixModel: fixModel, modelBias: modelBias,
+    fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
     problems: [], loaded: false,
     num: function (k) { return k in cur.settings ? cur.settings[k] : NaN; },
     station: function (id) { return cur.tides[id] || { id: id, name: id, mhhw: null }; },
