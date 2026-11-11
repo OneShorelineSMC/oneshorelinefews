@@ -133,17 +133,32 @@
   function ensoAt(ol, t) {   // El Niño / La Niña's usual effect in that month (ft): 0 outside its months or when off
     return ensoOn(ol) && ol.enso.months.indexOf(new Date(t).getUTCMonth() + 1) >= 0 ? ol.enso.slope_ft_per_c * ol.enso.oni : 0;
   }
-  function baseAt(ol, t) {   // what the Bay is expected to run above the tide table then: usual for the month + El Niño
-    var u = usual(ol, t);
-    return u == null ? null : u + ensoAt(ol, t);
+  /* Scenarios (staff, 2026-11-10; tide_offset.py scenarios(), TIDE_SCENARIOS_SHOW): low / middle / high paths of the sea
+     level departure, month by month, from a model fitted to every winter since 1950 at San Francisco; the high and low
+     paths add the model's misses in past strong El Niño winters. When there, the middle path replaces "usual + El Niño". */
+  function scen(ol) {
+    var sc = ol && ol.scenarios;
+    return sc && sc.paths && sc.start && typeof sc.dep_start === "number" && LK.num("TIDE_SCENARIOS_SHOW") === 1 ? sc : null;
+  }
+  function mid15(key) { var p = key.split("-"); return Date.UTC(+p[0], +p[1] - 1, 15); }
+  function pathAt(sc, which, t) {   // the path's departure at time t, interpolated between mid-months (start month = observed)
+    var pts = [[mid15(sc.start), sc.dep_start]].concat(Object.keys(sc.paths).sort().map(function (k) { return [mid15(k), sc.paths[k][which]]; }));
+    if (t <= pts[0][0]) return pts[0][1];
+    for (var i = 1; i < pts.length; i++) if (t <= pts[i][0]) { var f = (t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]); return pts[i - 1][1] + f * (pts[i][1] - pts[i - 1][1]); }
+    return pts[pts.length - 1][1];
+  }
+  function baseAt(ol, t, which) {   // what the Bay is expected to run above the tide table then: usual for the month + El Niño (or the scenario path)
+    var u = usual(ol, t), sc = scen(ol);
+    if (u == null) return null;
+    return sc ? u + pathAt(sc, which || "mid", t) : u + ensoAt(ol, t);
   }
   /* How much to add to the tide table at time t (ms, Pacific wall clock): damped persistence toward the expected level,
      base(t) + (recent offset − base(now)) × r1^(months ahead). Far ahead the recent part fades out by itself (r1 ≈ 0.6:
      about a third after 2 months, 5% after 6). Without a recent offset: base(t); without the outlook: the offset. */
-  function addAt(t, now) {
+  function addAt(t, now, which) {
     now = now || nowLocal();
     var o = offset(), ol = outlookData();
-    var b0 = ol ? baseAt(ol, now) : null, b = ol ? baseAt(ol, t) : null, r1 = ol && typeof ol.r1 === "number" ? Math.max(0, Math.min(0.95, ol.r1)) : null;
+    var b0 = ol ? baseAt(ol, now, which) : null, b = ol ? baseAt(ol, t, which) : null, r1 = ol && typeof ol.r1 === "number" ? Math.max(0, Math.min(0.95, ol.r1)) : null;
     if (!o) return b;
     return b0 != null && b != null && r1 != null ? b + (o.ft - b0) * Math.pow(r1, Math.max(0, t - now) / (30.4 * 86400000)) : o.ft;
   }
@@ -184,7 +199,35 @@
       if (level(v) === 2 && level(h.v) < 2 && (!days.length || days[days.length - 1].date !== d)) days.push({ date: d, t: h.t, v: v, add: add });
     });
     if (!us.length) return null;
-    return { from: iso(from), to: iso(last), usual: Math.min.apply(null, us), usualMax: Math.max.apply(null, us),
+    // the three paths over the whole calendar (from now): how many days reach the flood level in each, and the high
+    // path's first dates (staff, 2026-11-10)
+    var sc = scen(ol), scn = null;
+    if (sc && isFinite(red())) {
+      scn = { low: 0, mid: 0, high: 0, highFirst: [], to: iso(last), start: sc.start, oni: sc.oni, highWinters: sc.high_winters, lowWinters: sc.low_winters, record: sc.record_max_dep_ft, depStart: sc.dep_start };
+      var seen = { low: {}, mid: {}, high: {} }, ex = expected(now), ofsEnd = S.ofs && S.ofs.length ? S.ofs[S.ofs.length - 1].t : -Infinity;
+      S.highs.forEach(function (h) {
+        if (h.t < now) return;
+        var d = iso(h.t);
+        ["low", "mid", "high"].forEach(function (w) {
+          var x = ex[d], v = x && h.t <= ofsEnd ? x.v : h.v + addAt(h.t, now, w);
+          if (v >= red() && !seen[w][d]) { seen[w][d] = 1; scn[w]++; if (w === "high" && scn.highFirst.length < 4) scn.highFirst.push(d); }
+        });
+      });
+    }
+    // which path the Bay is following now: the whole-day offset (like the monthly means the model uses) against each
+    // path's level for today (staff, 2026-11-10; a peer's tracker showed November running at its high scenario)
+    if (scn) {
+      var r = OFF.data && OFF.data.stations ? OFF.data.stations[STATION] : null;
+      if (r && typeof r.offset_ft === "number") {
+        var lv = { low: baseAt(ol, now, "low"), mid: baseAt(ol, now, "mid"), high: baseAt(ol, now, "high") };
+        if (lv.mid != null) {
+          var obs = r.offset_ft, best = "mid";
+          ["low", "high"].forEach(function (w) { if (Math.abs(obs - lv[w]) < Math.abs(obs - lv[best])) best = w; });
+          scn.now = { obs: obs, low: lv.low, mid: lv.mid, high: lv.high, closest: obs > lv.high ? "above" : obs < lv.low ? "below" : best };
+        }
+      }
+    }
+    return { from: iso(from), to: iso(last), usual: Math.min.apply(null, us), usualMax: Math.max.apply(null, us), scen: scn,
       addMin: Math.min.apply(null, as), addMax: Math.max.apply(null, as),
       enso: useEnso ? { oni: en.oni, season: en.oni_season, add: en.slope_ft_per_c * en.oni, phase: en.oni > 0 ? "El Niño" : "La Niña", months: en.months } : null,
       days: days, data: ol };

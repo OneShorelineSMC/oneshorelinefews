@@ -363,6 +363,7 @@
   #calsel { grid-column: 1 / -1; display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.4; color: var(--ink);
     background: var(--soft); border-left: 4px solid var(--fc); border-radius: 6px; padding: 8px 6px 8px 10px; }
   #calsel.hide { display: none; } #calseltx { flex: 1; }
+  .tech.hide, #outlp.hide, #biasabout.hide, #nrkey.hide, #outlw.hide { display: none; }   /* staff-only and empty parts (staff, 2026-11-10) */
   #calselx { flex: none; border: 0; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 4px; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .wlist, .flist { font-size: 14px; margin: 6px 0 0; padding: 0; list-style: none; }
@@ -485,6 +486,7 @@
     <div id="calsel" class="hide"><span id="calseltx"></span><button type="button" id="calselx" aria-label="Close">×</button></div>
     <div id="calsay" class="vh" aria-live="polite"></div>
     <p class="lbl" id="calsrc" style="margin:10px 0 0;line-height:1.4"></p>
+    <p id="outlp" class="hide" style="margin:8px 0 0;line-height:1.45"></p>
     </div>
   </div>
   <!-- One fold of definitions (staff, 2026-10-26): each word once, here; the rest of the page links to it -->
@@ -509,11 +511,12 @@
 </main>
 
 
-<script src="lookups.js?v=20261110d"></script>
-<script src="tide_season.js?v=20261110d"></script>
-<script src="severity.js?v=20261110d"></script>
-<script src="hero.js?v=20261110d"></script>
+<script src="lookups.js?v=20261110f"></script>
+<script src="tide_season.js?v=20261110f"></script>
+<script src="severity.js?v=20261110f"></script>
+<script src="hero.js?v=20261110f"></script>
 <script>
+var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
 function nowLocal() {
@@ -836,9 +839,11 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
     "</div>" +
+    // Staff view only since Nov 10, 2026 (Tides.html?preview=1, linked from staff.html): the public page keeps the plain
+    // flood-date list and a one-line outlook; the model details, the times above MHHW and the past week are for staff.
     // Streamlined for the public (staff, 2026-10-26): the forecasters' notes, "if the Bay stays high", the times above MHHW
     // and the past week go to "For the technically minded", below the calendar and the words (moved there after this is built)
-    '<details class="card explain tech" id="tech' + i + '"><summary>For the technically minded</summary>' +
+    '<details class="card explain tech' + (STAFF ? "" : " hide") + '" id="tech' + i + '"><summary>For the technically minded (staff view)</summary>' +
     '<div class="maybeb"></div>' +
     '<div class="afd" style="display:none"></div>' +
     (i === 0 ? '<div id="outlw" class="hide"><h3 class="clh">Seasonal outlook (after 6 weeks)</h3><p class="outl hide" id="outl"></p></div>' : "") +   // (staff, 2026-10-27)
@@ -867,7 +872,7 @@ function renderBias(s) {
   var el = $("biasabout"); if (!el) return;
   LK.modelBias(s.st.id).then(function (b) {
     var on = LK.num("PROJ_BIAS_CORRECT") === 1 && b && b.n >= 5 && Math.abs(b.ft) >= 0.1, skip = on && Math.abs(b.ft) > LK.num("PROJ_BIAS_MAX_FT");
-    el.classList.toggle("hide", !on);
+    el.classList.toggle("hide", !on || !STAFF);   // the correction is applied either way; the sentence is for staff
     if (on) el.textContent = LK.text(skip ? "tide_proj_skipped" : "tide_proj_adjusted", { n: b.n, ft: Math.abs(b.ft).toFixed(2),
       dir: b.ft > 0 ? "higher" : "lower", fix: b.ft > 0 ? "lowers" : "raises", max: LK.num("PROJ_BIAS_MAX_FT").toFixed(2) });
   });
@@ -987,7 +992,7 @@ function render() {
     var o30 = offOf(s), inch = mc != null ? Math.round(mc * 12) : null;
     q(".pw").innerHTML = (off == null ? "" : "<p><b>" + (Math.abs(off) < OFFSET_NOTE_FT ? "Last " + rec.length + " high tides: about matching the tide table" :
         "Last " + rec.length + " high tides: " + Math.abs(off).toFixed(2) + " ft " + (off > 0 ? "higher" : "lower") + " than the tide table") + "</b> (about the last " + Math.round(rec.length / 2) + " days).</p>") +
-      (o30 ? '<p class="lbl">Over the past ' + o30.days + " days: " + sgn(o30.ft) + " ft on average. The estimates (≈) use this steadier 30-day figure.</p>" : "") +
+      (o30 ? '<p class="lbl">Over the past ' + o30.days + " days: " + sgn(o30.ft) + " ft on average. The estimates (≈) use this steadier " + o30.days + "-day figure.</p>" : "") +
       (inch != null ? '<p class="lbl">How well NOAA’s projection has matched the measured ' + esc(SIDE.water) + ": over the past day, within " +
         (inch < 1 ? "an inch" : inch + " inch" + (inch === 1 ? "" : "es")) + " 9 times out of 10.</p>" : "") +
       (R.length ? "<table><tr><th>High tide</th><th>Tide table</th><th>Measured</th><th>Diff.</th></tr>" + R.slice().reverse().map(function (r) {
@@ -1415,13 +1420,21 @@ function renderCalendar() {
   var nrDays = Object.keys(dh).filter(function (d) { return d >= today && (f0 ? d < f0 : d <= tsAdd(today, 21)) && TSN.level((ex[d] || dh[d]).v) < 2 && !ofReach(d) && nearLevel(d); }).sort().slice(0, 3);
   var nrLine = nrDays.length ? '<li class="near">' + esc(LK.text("tide_near_line", { ft: LK.num("TIDE_NEAR_FT").toFixed(1), red: TSN.red().toFixed(1) })) + " " + nrDays.map(function (d) {
     var n = nearLevel(d);
-    return '<a class="go" href="#cal-' + esc(d) + '" data-go="' + esc(d) + '">' + esc(md(d)) + "</a> " + (n.est ? "≈" : "") + LK.tideHTML(n.v, TSN.station, 2) + (n.src === "NOAA projection" ? " (NOAA projection)" : "");
+    return '<a class="go" href="#cal-' + esc(d) + '" data-go="' + esc(d) + '">' + esc(md(d)) + "</a> " + (n.est ? "≈" : "") + LK.tideHTML(n.v, TSN.station) + (n.src === "NOAA projection" ? " (NOAA projection)" : "");
   }).join(" · ") + "</li>" : "";
   $("flist").innerHTML = isFinite(TSN.red()) ? steady + nrLine + (runs.length ? runs.slice(0, flAll ? 6 : FL_N).map(runLine).join("") +
       (!flAll && runs.length > FL_N ? '<li class="lv"><button type="button" class="flmore">Show ' + (Math.min(runs.length, 6) - FL_N) + " more " + (Math.min(runs.length, 6) - FL_N === 1 ? "date" : "dates") + "</button></li>" : "") +
       (flAll && runs.length > 6 ? '<li class="lv">and ' + (runs.length - 6) + " more in the calendar (red or dashed red)</li>" : "")
     : '<li class="lv">None through ' + esc(tsFmt(Object.keys(dh).sort().pop(), { month: "long" })) + ".</li>") : "";
   $("flist").previousElementSibling.hidden = $("flist").hidden = !isFinite(TSN.red());   // Coastside: no flood level yet
+  // One plain line for everyone (staff, 2026-11-10): flood-level days later this winter; the model details are in the
+  // staff view's "For the technically minded"
+  var op = $("outlp");
+  if (so) {
+    var tot0 = so.scen ? so.scen.mid : so.days.length, mon0 = new Date((so.scen ? so.scen.to : so.to) + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+    op.textContent = LK.text(so.scen && so.scen.high > so.scen.mid ? "tide_outlook_plain_range" : "tide_outlook_plain", { n: tot0, high: so.scen ? so.scen.high : tot0, to: mon0, water: SIDE.water });
+  }
+  op.classList.toggle("hide", !so);
   // Seasonal outlook past the next 6 weeks (tide_season.js seasonOutlook; THRESHOLDS_BASIS.md §4b): a line, not marks on days
   var ot = $("outl");
   $("outlw").classList.toggle("hide", !so);
@@ -1433,16 +1446,25 @@ function renderCalendar() {
     var dl = so.days.slice(0, 6).map(function (x) { return tsDay(x.date); });
     var tot = Math.abs(so.addMax - so.addMin) < 0.05 ? ft2(so.addMin) : ft2(so.addMin) + " to " + ft2(so.addMax);
     ot.innerHTML = "<b>Outlook after " + esc(tsDay(so.from)) + ":</b> high tides about " + esc(tot) + " compared with the tide table (usual for these months " + esc(rng) +
-      (so.enso ? "; " + esc(so.enso.phase) + ", Oceanic Niño Index " + so.enso.oni.toFixed(1) + ", about " + esc(ft2(so.enso.add)) + " more in Nov–Mar" : "") +
+      (so.scen ? "; the middle path of a model fitted to every winter since 1950 at San Francisco: how high the Bay ran last month and the Oceanic Niño Index, " + so.scen.oni.toFixed(1)
+        : so.enso ? "; " + esc(so.enso.phase) + ", Oceanic Niño Index " + so.enso.oni.toFixed(1) + ", about " + esc(ft2(so.enso.add)) + " more in Nov–Mar" : "") +
       "; plus what remains of how high the Bay is running now). At that height, " + (so.days.length ? so.days.length + " day" + (so.days.length > 1 ? "s" : "") + " could reach the flood level: " + esc(dl.join(", ")) + (so.days.length > 6 ? " and " + (so.days.length - 6) + " more" : "")
         : "no day reaches the flood level") + ". An outlook from past years, not a forecast.";
+    // the range of paths (staff, 2026-11-10): days at the flood level through the end of the calendar in each
+    if (so.scen) {
+      var sc = so.scen, mon = function (d) { return new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }); };
+      ot.innerHTML += " " + esc(LK.text("tide_scen_line", { mid: sc.mid, low: sc.low, high: sc.high, to: mon(sc.to),
+        hw: sc.highWinters.map(function (y) { return y + "–" + String(y + 1).slice(2); }).join(" and "), lw: sc.lowWinters.map(function (y) { return y + "–" + String(y + 1).slice(2); }).join(" and ") })) +
+        (sc.highFirst.length && sc.high > sc.mid ? " " + esc(LK.text("tide_scen_high_first", { dates: sc.highFirst.map(function (d) { return tsDay(d); }).join(", ") })) : "");
+      if (sc.now) ot.innerHTML += " " + esc(LK.text("tide_scen_now_" + sc.now.closest, { obs: (sc.now.obs >= 0 ? "+" : "−") + Math.abs(sc.now.obs).toFixed(2), mid: (sc.now.mid >= 0 ? "+" : "−") + Math.abs(sc.now.mid).toFixed(2), high: (sc.now.high >= 0 ? "+" : "−") + Math.abs(sc.now.high).toFixed(2), water: SIDE.water }));
+    }
   }
   $("ofkey").classList.toggle("hide", !anyOf);
   $("astkey").classList.toggle("hide", !anyAst);
   $("astkeyt").textContent = LK.text("tide_day_astro", { ft: TSN.ft(TSN.king()) });
-  $("ofkeyt").textContent = anyOf ? LK.text("tide_offset_cal_key", { red: TSN.ft(TSN.red()), water: SIDE.water }) : "";
+  $("ofkeyt").textContent = anyOf ? LK.text("tide_offset_cal_key", { water: SIDE.water }) : "";
   $("nrkey").classList.toggle("hide", !anyNr);
-  $("nrkeyt").textContent = anyNr ? LK.text("tide_near_key", { ft: LK.num("TIDE_NEAR_FT").toFixed(1), red: TSN.ft(TSN.red()) }) : "";
+  $("nrkeyt").textContent = anyNr ? LK.text("tide_near_key", { ft: LK.num("TIDE_NEAR_FT").toFixed(1) }) : "";
   if (!document.querySelector('.mgrid .d[tabindex="0"]')) { var f0 = document.querySelector(".mgrid .d"); if (f0) f0.tabIndex = 0; }
   $("calsrc").innerHTML = noaaLinks(esc(LK.text(COAST ? "tide_cal_source_short_coast" : "tide_cal_source_short", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()), units: LK.tideUnits(TSN.station) })));
 }
