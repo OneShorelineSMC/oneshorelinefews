@@ -146,9 +146,9 @@
     w.cwf.periods.forEach(function (p) { if (p.max_ft != null && p.max_ft >= lim && (!big || p.max_ft > big.ft)) big = { ft: p.max_ft, name: p.name }; });
     return big;
   }
-  function waveWhen(name) {   // "Tonight" -> "tonight", "Wed" -> "Wednesday", "Wed Night" -> "Wednesday night"
+  function waveWhen(name) {   // "Tonight" -> "tonight", "Wed" -> "Wednesday", "Wed Night" -> "Wednesday night", "Veterans Day" kept
     var D = { Sun: "Sunday", Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday" };
-    return String(name || "").split(" ").map(function (x, i) { return D[x] || (i || /^(Today|Tonight|This)/.test(x) ? x.toLowerCase() : x); }).join(" ");
+    return String(name || "").split(" ").map(function (x, i) { return D[x] || (/^(Night|Afternoon|Morning|Evening|Overnight)$/.test(x) || (!i && /^(Today|Tonight|This|Rest)$/.test(x)) ? x.toLowerCase() : x); }).join(" ");   // holidays ("Veterans Day") kept as NWS writes them
   }
   // Small cards, one per area: the NWS products in effect there (or none), the most serious first; the current page's
   // side outlined. Tap a card with an alert: its NWS text opens under the cards (tap again to close). Under them, one line

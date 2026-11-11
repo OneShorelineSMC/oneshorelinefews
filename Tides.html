@@ -368,12 +368,18 @@
   #calselx { flex: none; border: 0; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; min-width: 32px; min-height: 32px; cursor: pointer; border-radius: 4px; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   #waves { margin-top: 12px; } #waves h2 { margin: 0 0 4px; } #waves p { margin: 6px 0 0; line-height: 1.45; }
-  #waves .wvnow { font-size: 17px; } #waves .wvnow b { color: var(--ink); }
+  #waves .wvnow { font-size: 17px; font-weight: 600; color: var(--ink); }
+  #waves .big { display: inline-block; font-size: 13px; font-weight: 700; border-radius: 6px; padding: 0 7px; margin-left: 4px; background: var(--ambbg); color: var(--ink); box-shadow: inset 0 -2px 0 var(--amb); vertical-align: 2px; }
   #waves .wvfc { list-style: none; margin: 6px 0 0; padding: 0; font-size: 15px; }
   #waves .wvfc li { padding: 6px 0; border-top: 1px solid var(--line); } #waves .wvfc .pn { font-weight: 700; }
   #waves .wvfc .big { display: inline-block; font-size: 13px; font-weight: 700; border-radius: 6px; padding: 0 7px; margin-left: 6px; background: var(--ambbg); color: var(--ink); box-shadow: inset 0 -2px 0 var(--amb); }
   #waves .wvfc .tx { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
   #waves .wvn { font-size: 14.5px; } #waves h3 { font-size: 16px; margin: 12px 0 0; }
+  #waves .wvch { position: relative; height: 190px; margin-top: 8px; } #waves .wvch.hide, #waves .wvkey.hide { display: none; }
+  #waves .wvkey { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+  #waves .wvkey i { display: inline-block; width: 18px; height: 0; border-top: 3px solid #1e6fd0; vertical-align: middle; margin-right: 5px; }
+  #waves .wvkey i.f { border-top: 3px dashed #8a97a6; }
+  #waves .wvd { margin-top: 8px; font-size: 14.5px; } #waves .wvd summary { cursor: pointer; font-weight: 600; color: var(--info); min-height: 32px; display: flex; align-items: center; }
   .wlist, .flist { font-size: 14px; margin: 6px 0 0; padding: 0; list-style: none; }
   .flist li { padding: 5px 0; border-top: 1px solid var(--line); } .flist b { color: var(--red); } .flist .lv { font-size: 14px; color: var(--muted); }
   .clh { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
@@ -470,8 +476,12 @@
   <!-- Waves (staff, 2026-11-10; Coastside only): NOAA's tide heights leave waves out. The Half Moon Bay buoy and the NWS
        marine forecast for the waters off San Mateo County, from waves.json (scripts/waves.py). -->
   <section class="card hide" id="waves" aria-labelledby="wavesh"><h2 id="wavesh" data-text="waves_title">Waves</h2>
-    <p class="wvi" data-text="waves_intro"></p><div id="wvbody"><p class="lbl">Loading…</p></div>
-    <p class="wvn" data-text="waves_offshore_note"></p><p class="lbl" id="wvsrc"></p></section>
+    <p class="wvnow" id="wvsum">Loading…</p>
+    <div class="wvch hide" id="wvchw"><canvas id="chWaves" role="img"></canvas></div>
+    <p class="wvkey hide" id="wvkey"><span><i class="m"></i>Measured at the buoy</span><span><i class="f"></i>NWS forecast</span></p>
+    <p class="wvn" data-text="waves_offshore_note"></p>
+    <details class="wvd"><summary>Forecast details and sources</summary>
+      <p class="wvi" data-text="waves_intro"></p><div id="wvbody"></div><p class="lbl" id="wvsrc"></p></details></section>
   <div style="height:12px"></div>
   <div class="card hide" id="calcard">
     <h2 data-text="tide_cal_title">High tides and King Tides</h2>
@@ -524,10 +534,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110i"></script>
-<script src="tide_season.js?v=20261110i"></script>
-<script src="severity.js?v=20261110i"></script>
-<script src="hero.js?v=20261110i"></script>
+<script src="lookups.js?v=20261111b"></script>
+<script src="tide_season.js?v=20261111b"></script>
+<script src="severity.js?v=20261111b"></script>
+<script src="hero.js?v=20261111b"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -584,38 +594,86 @@ var WV = null, WV_FAILED = false;
 function loadWaves() { HERO.loadWaves(function (w) { if (w) { WV = w; WV_FAILED = false; } else if (!WV) WV_FAILED = true; renderHero(); renderWaves(); }); }
 function pacific(iso, o) { return new Date(iso).toLocaleString("en-US", Object.assign({ timeZone: "America/Los_Angeles" }, o)); }
 function isoZ(t) { return String(t).replace(/Z$/, ":00Z").replace(/:00:00Z$/, ":00Z"); }
+// Pacific clock time as the page's local-as-UTC milliseconds (same clock as nowLocal())
+function toLocalMs(iso) {
+  var p = {}; new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date(iso)).forEach(function (x) { p[x.type] = x.value; });
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+}
+// NWS forecast periods ("Tonight", "Wed", "Wed Night", "Sat") laid end to end from the issue time: day periods end at 6 PM,
+// nights at 6 AM; a weekday with no "Night" period after it (days 3-5) covers the whole day
+function cwfSpans(c) {
+  if (!c || !c.issued || !c.periods) return [];
+  var t = toLocalMs(c.issued), out = [];
+  c.periods.forEach(function (p, i) {
+    var night = /night|overnight/i.test(p.name), h = new Date(t).getUTCHours(), end;
+    if (night) { end = t - (h >= 6 ? (h - 6) : h + 18) * 36e5 + 24 * 36e5; end = end - (new Date(end).getUTCMinutes()) * 6e4; }
+    else {
+      var nx = c.periods[i + 1], whole = i > 0 && !(nx && /night/i.test(nx.name));
+      var base = Date.UTC(new Date(t).getUTCFullYear(), new Date(t).getUTCMonth(), new Date(t).getUTCDate());
+      if (h >= 18) base += 864e5;
+      if (whole) { t = Math.max(t, base); end = base + 864e5; } else end = base + 18 * 36e5;
+    }
+    if (end <= t) end = t + 12 * 36e5;
+    out.push({ a: t, b: end, ft: p.max_ft, name: p.name, text: p.text });
+    t = end;
+  });
+  return out;
+}
 function renderWaves() {
   var box = $("waves"); if (!COAST || !box) return;
   box.classList.remove("hide");
-  var b = $("wvbody"), w = WV, h = "";
-  if (!w) { b.innerHTML = WV_FAILED ? '<p class="lbl">' + esc(LK.text("waves_unavailable")) + "</p>" : '<p class="lbl">Loading…</p>'; return; }
-  var bu = (w.buoys || []).filter(function (x) { return x.latest; })[0];
-  if (bu) {
-    var L = bu.latest, t0 = Date.parse(isoZ(L.t)), age = Math.max(0, Date.now() - t0);
-    var nm = bu.name.replace(/\s*\(.*\)$/, "");
-    h += '<p class="wvnow">' + esc(LK.text("waves_buoy_now", { name: nm, ft: "\u0001", s: L.s != null ? Math.round(L.s) : "?", dir: L.dir || "?" }))
-      .replace("\u0001", "<b>" + Math.round(L.ft) + "</b>") + "</p>";
-    var at = function (hrs) { var tt = t0 - hrs * 36e5, best = null; (bu.obs || []).forEach(function (o) { var d = Math.abs(Date.parse(isoZ(o.t)) - tt); if (d < 9e5 * 6 && (!best || d < best.d)) best = { d: d, ft: o.ft }; }); return best ? Math.round(best.ft) + " ft" : null; };
-    var a6 = at(6), a24 = at(24);
-    h += '<p class="lbl">Measured ' + esc(pacific(isoZ(L.t), { weekday: "short", hour: "numeric", minute: "2-digit" })) + " (" + esc(agoText(age)) + ")" +
-      (a6 && a24 ? ". " + esc(LK.text("waves_buoy_trend", { ago6: a6, ago24: a24 })) : "") +
-      (age > 3 * 36e5 ? " The buoy has not reported since then." : "") + "</p>";
+  var w = WV, sum = $("wvsum");
+  if (!w) { sum.textContent = WV_FAILED ? LK.text("waves_unavailable") : "Loading…"; return; }
+  var now = nowLocal(), lim = LK.num("WAVES_BIG_FT"), H = function (ms) { return (ms - now) / 36e5; };
+  var bu = (w.buoys || []).filter(function (x) { return x.latest; })[0], c = w.cwf;
+  var spans = cwfSpans(c).filter(function (p) { return p.b > now && p.ft != null; });
+  // one sentence: now, and the highest in the forecast
+  var L = bu ? bu.latest : null, tL = L ? toLocalMs(isoZ(L.t)) : null, fresh = L && now - tL < 3 * 36e5;
+  var top = spans.reduce(function (m, p) { return !m || p.ft > m.ft ? p : m; }, null);
+  var parts = [];
+  if (fresh) parts.push(LK.text("waves_sum_now", { ft: Math.round(L.ft) }));
+  if (top) parts.push(LK.text("waves_sum_fc", { ft: Math.round(top.ft), when: HERO.waveWhen(top.name) }));
+  sum.innerHTML = parts.length ? esc(parts.join(" ")) + (top && top.ft >= lim ? ' <span class="big">' + esc(LK.text("waves_fc_big")) + "</span>" : "") : esc(LK.text("waves_unavailable"));
+  // the graph: past 2 days measured, forecast ahead
+  var meas = bu ? (bu.obs || []).map(function (o) { return { x: H(toLocalMs(isoZ(o.t))), y: o.ft }; }).filter(function (p) { return p.x >= -48 && p.x <= 0.5; }).reverse() : [];
+  var fc = []; spans.forEach(function (p, k) { if (k) fc.push({ x: H(p.a), y: null }); fc.push({ x: Math.max(H(p.a), meas.length ? 0 : -48) + (k ? 0.6 : 0), y: p.ft }, { x: H(p.b) - 0.6, y: p.ft }); });   // one flat dash per forecast period
+  var cw = $("chWaves"), show = !!(window.Chart && (meas.length || fc.length));
+  $("wvchw").classList.toggle("hide", !show); $("wvkey").classList.toggle("hide", !show);
+  if (show) {
+    var xmax = Math.min(120, Math.max(24, fc.length ? fc[fc.length - 1].x : 0)), ys = meas.concat(fc).map(function (p) { return p.y; }).filter(function (v) { return v != null; });
+    var ymax = Math.max(lim + 3, Math.ceil((Math.max.apply(null, ys) + 2) / 5) * 5), d0 = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate());
+    var ticks = []; for (var d = d0 - 2 * 864e5 + 12 * 36e5; H(d) <= xmax; d += 864e5) if (H(d) >= -48) ticks.push(H(d));
+    cw.setAttribute("aria-label", sum.textContent);
+    if (D.wvChart) D.wvChart.destroy();
+    D.wvChart = new Chart(cw, { type: "line", data: { datasets: [
+        { label: "Measured at the buoy", data: meas, borderColor: "#1e6fd0", backgroundColor: "#1e6fd0", borderWidth: 3, pointRadius: 0, tension: 0.3 },
+        { label: "NWS forecast", data: fc, borderColor: "#8a97a6", borderDash: [6, 4], borderWidth: 3, pointRadius: 0, spanGaps: false }] },
+      plugins: [refLines([{ v: lim, color: css("--amb") || "#c77700", label: LK.text("waves_fc_big") + " (" + lim + " ft)", left: true }]),
+        { id: "wvnow", afterDatasetsDraw: function (ch) { var g = ch.ctx, px = ch.scales.x.getPixelForValue(0), a = ch.chartArea; g.save(); g.strokeStyle = css("--muted"); g.setLineDash([3, 3]); g.beginPath(); g.moveTo(px, a.top); g.lineTo(px, a.bottom); g.stroke();
+          g.setLineDash([]); g.fillStyle = css("--muted"); g.font = "600 12px system-ui, sans-serif"; g.textAlign = "left"; g.fillText("Now", px + 4, a.top + 12); g.restore(); } }],
+      options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          title: function (it) { return fmt(now + it[0].parsed.x * 36e5, { weekday: "short", hour: "numeric" }); },
+          label: function (it) { return it.dataset.label + ": " + Math.round(it.parsed.y) + " ft"; } } } },
+        scales: { x: { type: "linear", min: -48, max: xmax, afterBuildTicks: function (ax) { ax.ticks = ticks.map(function (v) { return { value: v }; }); },
+            ticks: { color: css("--muted"), font: { size: 13 }, maxRotation: 0, callback: function (v) { return fmt(now + v * 36e5, { weekday: "short" }); } }, grid: { display: false } },
+          y: { min: 0, max: ymax, ticks: { color: css("--muted"), stepSize: 5, callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") } } } } });
   }
-  var c = w.cwf;
+  // the details fold: the buoy reading and each forecast period in NWS's words
+  var h = "";
+  if (L) h += "<p>" + esc(LK.text("waves_buoy_now", { name: bu.name.replace(/\s*\(.*\)$/, ""), ft: Math.round(L.ft), s: L.s != null ? Math.round(L.s) : "?", dir: L.dir || "" })).replace(/,? from the\s*\./, ".") +
+    " Measured " + esc(pacific(isoZ(L.t), { weekday: "short", hour: "numeric", minute: "2-digit" })) + ".</p>";
   if (c && c.periods && c.periods.length) {
-    var lim = LK.num("WAVES_BIG_FT");
     h += "<h3>" + esc(LK.text("waves_fc_head")) + "</h3>" + (c.issued ? '<p class="lbl" style="margin-top:2px">Issued ' + esc(pacific(c.issued, { weekday: "short", hour: "numeric", minute: "2-digit" })) + "</p>" : "") +
-      '<ul class="wvfc">' + c.periods.slice(0, 6).map(function (p) {
-        var big = p.max_ft != null && p.max_ft >= lim;
-        return "<li><span class=\"pn\">" + esc(HERO.waveWhen(p.name).replace(/^./, function (x) { return x.toUpperCase(); })) + "</span>" +
-          (p.max_ft != null ? ": up to " + Math.round(p.max_ft) + " ft" : "") + (big ? '<span class="big">' + esc(LK.text("waves_fc_big")) + "</span>" : "") +
+      '<ul class="wvfc">' + c.periods.slice(0, 8).map(function (p) {
+        return '<li><span class="pn">' + esc(HERO.waveWhen(p.name).replace(/^./, function (x) { return x.toUpperCase(); })) + "</span>" + (p.max_ft != null ? ": up to " + Math.round(p.max_ft) + " ft" : "") +
           '<span class="tx">' + esc(p.text) + "</span></li>";
       }).join("") + "</ul>";
   }
-  if (!h) h = '<p class="lbl">' + esc(LK.text("waves_unavailable")) + "</p>";
   var old = HERO.wavesAge(w);
   if (old > LK.num("WAVES_STALE_HOURS")) h = '<p class="lbl">Last updated ' + Math.round(old) + " hours ago.</p>" + h;
-  b.innerHTML = h;
+  $("wvbody").innerHTML = h;
   var bid = bu ? bu.id : "46012";
   $("wvsrc").innerHTML = 'Sources: <a href="https://www.ndbc.noaa.gov/station_page.php?station=' + bid + '" target="_blank" rel="noopener">NOAA buoy ' + bid + "</a> · " +
     '<a href="https://forecast.weather.gov/product.php?site=MTR&amp;issuedby=MTR&amp;product=CWF" target="_blank" rel="noopener">NWS Coastal Waters Forecast</a> · ' +
@@ -1079,7 +1137,7 @@ function refLines(lines) {   // horizontal reference lines with a label, for the
       if (!(L.v > y.min && L.v < y.max)) return;
       var py = y.getPixelForValue(L.v); c.save(); c.strokeStyle = L.color; c.setLineDash(L.dash || [5, 4]); c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(a.left, py); c.lineTo(a.right, py); c.stroke(); c.setLineDash([]);
-      c.fillStyle = L.color; c.font = "600 12px system-ui, sans-serif"; c.textAlign = "right"; c.fillText(L.label, a.right - 4, py - 4); c.restore();
+      c.fillStyle = L.color; c.font = "600 12px system-ui, sans-serif"; c.textAlign = L.left ? "left" : "right"; c.fillText(L.label, L.left ? a.left + 4 : a.right - 4, py - 4); c.restore();
     });
   } };
 }
