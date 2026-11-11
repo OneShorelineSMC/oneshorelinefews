@@ -543,11 +543,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261110c"></script>
-<script src="tide_season.js?v=20261110c"></script>
-<script src="creek_status.js?v=20261110c"></script>
-<script src="severity.js?v=20261110c"></script>
-<script src="hero.js?v=20261110c"></script>
+<script src="lookups.js?v=20261110d"></script>
+<script src="tide_season.js?v=20261110d"></script>
+<script src="creek_status.js?v=20261110d"></script>
+<script src="severity.js?v=20261110d"></script>
+<script src="hero.js?v=20261110d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -950,9 +950,9 @@ function renderDays(s, now) {
     var mRed = !!(ad != null && !isRed && top.v + ad >= redFor(st));   // possible flood level if the Bay stays high
     var tag = top.src === "fcst" ? ' <span class="fc">projected</span>' : top.src === "measured" ? ' <span class="ms">measured</span>' : "";
     if (top.src === "fcst") fcDays++;
-    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + (mRed ? " mred" : "") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + esc(LK.tideShort(top.v, st.id, 2).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + (LK.tideAbove(top.v, st.id) >= 0.05 ? "above" : LK.tideAbove(top.v, st.id) <= -0.05 ? "below" : "at") + " average high tide</span>" +
+    h += '<div class="tday ' + (isRed ? "red" : over ? "over" : "under") + (mRed ? " mred" : "") + '" data-a="' + a + '"><div class="dn">' + name + '</div><div class="dv">' + esc(LK.tideShort(top.v, st.id, 2).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + esc(LK.tideUnit(top.v, st.id)) + "</span>" +
       '</div><div class="dt">' + fTime(top.t) + tag + '</div><div class="dx">' + (isRed ? esc(LK.text("tide_red_day"))
-        : mRed ? "⚠ " + esc(LK.text("tide_maybe_day")) + " (≈" + LK.tideShort(top.v + ad, st.id, 2) + ")" : ad != null ? "≈" + LK.tideShort(top.v + ad, st.id, 2) + " estimate" : esc(LK.tideNavd(top.v, 2))) + "</div></div>";
+        : mRed ? "⚠ " + esc(LK.text("tide_maybe_day")) + " (≈" + LK.tideShort(top.v + ad, st.id, 2) + ")" : ad != null ? "≈" + LK.tideShort(top.v + ad, st.id, 2) + " estimate" : esc(LK.tideAlt(top.v, st.id, 2))) + "</div></div>";
   }
   el.innerHTML = h;
   $t("tsechead").textContent = cards === 1 ? "Today" : "Next " + cards + " days";
@@ -1434,7 +1434,7 @@ function showPast() {
   }).join("") + "</table>" : "<p>Not enough measurements yet.</p>";
   html += '<div id="dnote">Measured = the highest NOAA reading within 90 minutes of each tide-table high tide (preliminary data). ' +
     "A positive difference means the Bay ran higher than the tide table, usually from storms, wind, runoff or a seasonal rise. " +
-    "Upcoming high tides are likely to run high too while this continues. Heights in feet above (+) or below (−) the average high tide (" + s.st.mhhw.toFixed(2) + " ft NAVD88); NOAA station " + s.st.id + ".</div>";
+    "Upcoming high tides are likely to run high too while this continues. Heights " + esc(LK.tideUnits(s.st.id)) + "; NOAA station " + s.st.id + ".</div>";
   openDetail(s.st.name + " – now and the past " + PAST_DAYS + " days", html);
 }
 $t("tright").addEventListener("click", showLookAhead);
@@ -1466,7 +1466,7 @@ $t("tseason").addEventListener("click", function () {
   var ks = Object.keys(kd).sort().filter(function (d) { return d >= today; });
   if (ks.length) html += "<table><tr><th>" + esc(LK.text("tide_day_king")) + "</th><th>" + esc(LK.text("lbl_tide_table")) + "</th></tr>" + ks.map(function (d) {
     return "<tr><td><b>" + esc(tsDay(d)) + "</b></td><td>" + esc(TSN.ft(kd[d].v)) + " at " + esc(TSN.clock(kd[d].t)) + "</td></tr>"; }).join("") + "</table>";
-  html += '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()) })) + " " + esc(TSN.txt("noaa_forecast_note")) + "</div>";
+  html += '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()), units: LK.tideUnits(TSN.station) })) + " " + esc(TSN.txt("noaa_forecast_note")) + "</div>";
   openDetail(st.cls === "red" ? LK.text("tide_red_chip") : LK.text("tide_day_king"), html);
 });
 
@@ -1527,7 +1527,7 @@ function showCalendar() {
     otx = '<div id="kcout">After ' + esc(tsDay(so.from)) + ": outlook from past years" + (so.enso ? " (" + esc(so.enso.phase) + ")" : "") + ", not a forecast.</div>";
   }
   html += '</div><div id="kcsel" aria-live="polite">Tap a day for its highest tide and time.</div>' + '<div id="kcpre">' + esc(LK.text("tide_upcoming_note", { water: waterWord() })) + "</div>" + otx +
-    '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()) })) + "</div>";
+    '<div id="dnote">' + esc(TSN.txt("tide_cal_source", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()), units: LK.tideUnits(TSN.station) })) + "</div>";
   openDetail(LK.text("tide_cal_title") + " · " + LK.station(TSN.station).name, html);
 }
 $t("tcalb").addEventListener("click", function (e) { e.stopPropagation(); showCalendar(); });
@@ -1636,7 +1636,7 @@ function creekTide(c, now, short) {   // short: leave out the vs-predicted note 
   var ago = null; for (var k = T.obs.length - 1; k >= 0; k--) { if (tl.t - T.obs[k].t >= 30 * 60000) { ago = T.obs[k]; break; } }
   var trend = ago ? (tl.v - ago.v > 0.05 ? "rising" : tl.v - ago.v < -0.05 ? "falling" : "steady") : "";
   var dm = tl.v - T.st.mhhw, pv = predAt(T, tl.t), dp = pv == null ? null : tl.v - pv;
-  return { name: T.st.name, v: tl.v, html: "<b" + (dm >= 0 ? " style='color:" + (tl.v >= redFor(T.st) ? "var(--red)" : "var(--info)") + "'" : "") + ">" + esc(LK.tideRel(tl.v, T.st.id, 2)) + "</b> <span class='m'>(" + tl.v.toFixed(2) + " ft NAVD88)" +
+  return { name: T.st.name, v: tl.v, html: "<b" + (dm >= 0 ? " style='color:" + (tl.v >= redFor(T.st) ? "var(--red)" : "var(--info)") + "'" : "") + ">" + esc(LK.tideRel(tl.v, T.st.id, 2)) + "</b> <span class='m'>(" + esc(LK.tideAlt(tl.v, T.st.id, 2)) + ")" +
     (trend ? ", " + trend : "") + (!short && dp != null && Math.abs(dp) >= OFFSET_NOTE_FT ? " · " + (dp > 0 ? "+" : "−") + Math.abs(dp).toFixed(2) + " vs tide table" : "") + "</span>" };
 }
 // Rain trigger progress, e.g. "4-hr rain 0.30 of 0.42 in + tide 6.10 of 6.32 ft"; null when it is dry and nothing is met

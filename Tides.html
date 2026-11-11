@@ -197,7 +197,7 @@
   .day .dv { font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; }
   .day .dv .du { font-size: 14px; font-weight: 400; }
   .day .dt { color: var(--muted); font-size: 14px; line-height: 1.25; white-space: nowrap; }
-  .day .dnv { display: block; font-size: 13px; }
+  .day .dnv { display: block; font-size: 13px; white-space: normal; line-height: 1.25; }
   .day .dvl { display: none; }   /* phones: the list heading says "ft above average high tide"; wide screens show it under each number */
   .day .dv { margin-right: 8px; }   /* "+0.7 ft" clear of the time beside it */   /* the same height in NAVD88, under the time (DEM, 2026-11-10) */
   .day .dt .tag { display: block; }   /* "expected" / "measured" under the time on phones */
@@ -246,6 +246,13 @@
   .rng button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
   .rng button[aria-pressed="true"]::before { content: "✓ "; }
   .rng button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; position: relative; z-index: 1; }
+  .hsw { display: flex; align-items: center; font-size: 14px; }
+  .hsw .rl { margin-right: 6px; color: var(--muted); }
+  .hsw button { font: inherit; font-weight: 600; min-height: 32px; padding: 4px 12px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); cursor: pointer; }
+  .hsw button:first-of-type { border-radius: 8px 0 0 8px; } .hsw button:last-of-type { border-radius: 0 8px 8px 0; border-left: 0; }
+  .hsw button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+  .hsw button[aria-pressed="true"]::before { content: "✓ "; }
+  .hsw button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; position: relative; z-index: 1; }
   .tcard .gbox { height: 235px; margin-top: 8px; }
   .key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; color: var(--muted); margin-top: 6px; }
   .key i { display: inline-block; width: 16px; height: 0; margin-right: 4px; vertical-align: 3px; }
@@ -491,7 +498,7 @@
     <p id="offabout" class="hide"></p>
     <p id="biasabout" class="hide"></p>
   </details>
-  <p class="lbl always">Heights are in feet above or below the average high tide at the gauge; NAVD88 in parentheses.
+  <p class="lbl always"><span id="hunits">Heights are in feet above or below the average high tide (MHHW) at the gauge; NAVD88 in parentheses.</span>
     <span data-text="disclaimer_short"></span> <a href="Creeks.html#about">Disclaimer</a> · <span data-text="e911"></span></p>
   <div class="note" id="updated">Loading…</div>
 <div class="owner">
@@ -502,10 +509,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110c"></script>
-<script src="tide_season.js?v=20261110c"></script>
-<script src="severity.js?v=20261110c"></script>
-<script src="hero.js?v=20261110c"></script>
+<script src="lookups.js?v=20261110d"></script>
+<script src="tide_season.js?v=20261110d"></script>
+<script src="severity.js?v=20261110d"></script>
+<script src="hero.js?v=20261110d"></script>
 <script>
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
@@ -820,8 +827,11 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<div class="head unknown"><div class="hm">Loading tides…</div></div>' +
     '<div class="nextk" role="button" tabindex="0"></div>' +
     '<div class="nowrow"><div class="nowl"></div></div>' +
-    '<div class="secrow"><div class="sec"><b class="dhead">Next 7 days</b> · <span class="hint">highest tide each day, ft above average high tide</span></div>' +
-    '<div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div></div>' +
+    '<div class="secrow"><div class="sec"><b class="dhead">Next 7 days</b> · <span class="hint">highest tide each day, ft ' + (LK.heightMode() === "navd" ? "NAVD88" : "above average high tide") + '</span></div>' +
+    '<div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div>' +
+    // heights above MHHW (the public) or NAVD88 elevations (technical); remembered in this browser (staff, 2026-11-10)
+    '<div class="hsw" role="group" aria-label="Show tide heights as"><span class="rl" aria-hidden="true">Heights:</span>' +
+    '<button type="button" data-h="mhhw" aria-pressed="' + (LK.heightMode() !== "navd") + '">Above MHHW</button><button type="button" data-h="navd" aria-pressed="' + (LK.heightMode() === "navd") + '">NAVD88</button></div></div>' +
     '<div class="days"></div><p class="estn"></p>' +
     '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
@@ -845,7 +855,7 @@ if (!EMBED && S.length === 1) (function () {
   row.className = "ptitle"; h1.parentNode.insertBefore(row, h1); row.appendChild(h1);
   h1.innerHTML = esc(SIDE.name) + '<span class="pst"> · ' + esc(S[0].st.name) + "</span>";
   row.appendChild(th.querySelector(".side"));
-  $("tech0").querySelector(".nlbl").innerHTML = "NOAA tide gauge " + noaaA(S[0].st.id) + " · heights in feet above or below the average high tide there (" + S[0].st.mhhw.toFixed(2) + " ft NAVD88).";
+  $("tech0").querySelector(".nlbl").innerHTML = "NOAA tide gauge " + noaaA(S[0].st.id) + " · heights " + esc(LK.tideUnits(S[0].st.id)) + ".";
   th.parentNode.removeChild(th);
   // (the gauge's headline stays at the top of its card: a white card with the level's stripe; the page's alert at the top
   // carries the Bay at the flood level and the National Weather Service, staff 2026-10-26)
@@ -921,8 +931,8 @@ function render() {
       var est = add != null ? top.v + add : null; if (est != null) ofDays++;
       var val = est != null ? est : top.v, over = val > st.mhhw, maybe = est != null && !isRed && est >= redFor(st);
       var srcSr = top.src === "fcst" ? " (NOAA projection)" : top.src === "measured" ? " (measured)" : est != null ? " (estimate: tide table " + LK.tideRel(top.v, st.id) + " plus " + add.toFixed(1) + " ft)" : " (tide table)";
-      h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (maybe ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + (est != null ? "≈" : "") + esc(LK.tideShort(val, st.id).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + (LK.tideAbove(val, st.id) >= 0.05 ? "above" : LK.tideAbove(val, st.id) <= -0.05 ? "below" : "at") + " average high tide</span></span>" +
-        '<span class="dt">' + fTime(top.t) + '<span class="dxw">' + esc(srcSr) + '</span><span class="dnv">' + esc(LK.tideNavd(val)) + "</span></span>" +
+      h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (maybe ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + (est != null ? "≈" : "") + esc(LK.tideShort(val, st.id).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + esc(LK.tideUnit(val, st.id)) + "</span></span>" +
+        '<span class="dt">' + fTime(top.t) + '<span class="dxw">' + esc(srcSr) + '</span><span class="dnv">' + esc(LK.tideAlt(val, st.id)) + "</span></span>" +
         '<span class="dx">' + (isRed ? "Flood level" : maybe ? "Possible flood level" : over ? "Higher than usual" : '<span class="nrm">Normal</span>') + "</span></div>";
     }
     q(".days").innerHTML = h;
@@ -940,7 +950,7 @@ function render() {
         nkTxt = LK.text("tide_next_king", { day: tsDay(nx), ft: TSN.ft(kd[nx].v), time: TSN.clock(kd[nx].t) });
     }
     nk.innerHTML = nkTxt ? '<span class="kst">★</span> ' + esc(nkTxt) + " ›" : "";
-    q(".hint").textContent = "highest tide each day, ft above average high tide";
+    q(".hint").textContent = "highest tide each day, ft " + (LK.heightMode() === "navd" ? "NAVD88" : "above average high tide");
     nk.innerHTML = "";   // (no "next King Tide" line: staff, 2026-10-23)
 
     // NWS forecasters on tides (the alert itself is in the banner at the top)
@@ -1083,6 +1093,8 @@ function rangeOf(now) {
     : { x0: dayStart(now), x1: dayStart(now) + DAYS * 86400000, words: "today and the next 6 days" };
 }
 document.addEventListener("click", function (e) {
+  var hb = e.target.closest && e.target.closest(".hsw button");   // heights: above MHHW or NAVD88 (reloads with ?heights=)
+  if (hb) { if (hb.getAttribute("aria-pressed") !== "true") LK.setHeightMode(hb.dataset.h); return; }
   var b = e.target.closest && e.target.closest(".rng button"); if (!b) return;
   var r = +b.dataset.r; if (r === RANGE) return;
   RANGE = r; try { localStorage.setItem("fews_tide_range", String(r)); } catch (x) {}
@@ -1229,8 +1241,8 @@ function seasonStats(trk) {
       level: top ? (top.key === "flood" ? LK.text("tide_stats_fold_flood") : LK.text("tide_stats_fold_oneyear")) : "" })) + "</span></summary>" +
     '<p class="calpre" style="margin:2px 0 0">' + esc2(LK.text("tide_stats_since", { from: tsFmt(trk.wy_start, { month: "long", day: "numeric" }) })) + "</p>" +
     '<div class="sgrid">' +
-    '<div class="stile"><div class="sl">' + esc2(LK.text("tide_stats_max")) + '</div><div class="sv">' + esc2(LK.tideShort(st.days[best].max, st.id, 2)) + " <small>above average high tide</small></div>" +
-      '<div class="st">' + esc2(when) + " · " + esc2(LK.tideNavd(st.days[best].max, 2)) + "</div>" + typTxt(typMax != null ? LK.tideRel(typMax, st.id, 2) : null, "") + "</div>" +
+    '<div class="stile"><div class="sl">' + esc2(LK.text("tide_stats_max")) + '</div><div class="sv">' + esc2(LK.tideShort(st.days[best].max, st.id, 2)) + " <small>" + esc2(LK.tideUnit(st.days[best].max, st.id)) + "</small></div>" +
+      '<div class="st">' + esc2(when) + " · " + esc2(LK.tideAlt(st.days[best].max, st.id, 2)) + "</div>" + typTxt(typMax != null ? LK.tideRel(typMax, st.id, 2) : null, "") + "</div>" +
     (mh ? '<div class="stile"><div class="sl">' + esc2(LK.text("tide_stats_mhhw", { ft: LK.tideNavd(mh.ft, 2) })) + '</div><div class="sv">' + nMh + " <small>" + (nMh === 1 ? "day" : "days") + "</small></div>" + typTxt(typ("mhhw")) + "</div>" : "") +
     (top ? '<div class="stile' + (nTop ? " hi" : "") + '"><div class="sl">' + esc2(LK.text(top.key === "flood" ? "tide_stats_flood" : "tide_stats_oneyear", { ft: LK.tideFt(top.ft, st.id, 2) })) + '</div><div class="sv">' + nTop + " <small>" + (nTop === 1 ? "day" : "days") + "</small></div>" + typTxt(typ(top.key)) + "</div>" : "") +
     "</div>";
@@ -1432,7 +1444,7 @@ function renderCalendar() {
   $("nrkey").classList.toggle("hide", !anyNr);
   $("nrkeyt").textContent = anyNr ? LK.text("tide_near_key", { ft: LK.num("TIDE_NEAR_FT").toFixed(1), red: TSN.ft(TSN.red()) }) : "";
   if (!document.querySelector('.mgrid .d[tabindex="0"]')) { var f0 = document.querySelector(".mgrid .d"); if (f0) f0.tabIndex = 0; }
-  $("calsrc").innerHTML = noaaLinks(esc(LK.text(COAST ? "tide_cal_source_short_coast" : "tide_cal_source_short", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()) })));
+  $("calsrc").innerHTML = noaaLinks(esc(LK.text(COAST ? "tide_cal_source_short_coast" : "tide_cal_source_short", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()), units: LK.tideUnits(TSN.station) })));
 }
 // Keyboard: Enter or Space acts like a tap on anything marked role="button" (calendar days, the King Tide card, the alert bar)
 document.addEventListener("keydown", function (e) {
@@ -1496,7 +1508,8 @@ $("months").addEventListener("keydown", function (e) {
 });
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && selDay) closeDay(true); });
 $("moremon").addEventListener("click", function () { $("months").classList.add("all"); });
-try { if (matchMedia("(min-width: 760px)").matches) $("ckeyd").open = true; } catch (e) {}   // wide screens: the key stays open
+try { if (matchMedia("(min-width: 760px)").matches) $("ckeyd").open = true; } catch (e) {}
+if (LK.heightMode() === "navd") $("hunits").textContent = "Heights are NAVD88 elevations, in feet; height above the average high tide (MHHW) in parentheses.";   // wide screens: the key stays open
 $("months").addEventListener("focusin", function (e) { if (e.target.offsetParent === null) { $("months").classList.add("all"); e.target.focus(); } });
 document.addEventListener("click", function (e) {
   if (e.target.closest && e.target.closest(".nextk") && !EMBED) $("calcard").scrollIntoView({ behavior: "smooth", block: "start" });

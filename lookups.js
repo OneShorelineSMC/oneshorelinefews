@@ -159,13 +159,13 @@
     tide_upcoming_note: "Based on the tide table plus current conditions: NOAA’s projection for the next 2 days, then how high the {water} has been running. Coastal storms after that aren’t included and can push water higher.",
     home_none_some: "No creek alerts at the {n} creeks with working gauges.",
     home_gauge_part_note: "{creek} ({gauge}): one of its creek gauges is out of service; the other still reports.",
-    gloss_mhhw: "Average high tide (MHHW, Mean Higher High Water): the average height of the higher of each day\u2019s two high tides, {mhhw} ft NAVD88 here. Heights on this page are given in feet above or below it; NAVD88 follows in parentheses. A tide above it is higher than usual; it doesn\u2019t necessarily mean flooding.",
+    gloss_mhhw: "Average high tide (MHHW, Mean Higher High Water): the average height of the higher of each day\u2019s two high tides, {mhhw} ft NAVD88 here. A tide above it is higher than usual; it doesn\u2019t necessarily mean flooding.",
     gloss_flood: "Flood level: {red} at Redwood City, OneShoreline\u2019s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks.",
     gloss_flood_coast: "Flood level: no coastside flood level has been set yet.",
     gloss_measured: "Measured: what NOAA’s tide gauge has recorded (preliminary data).",
     gloss_table: "Tide table: the normal tide from the moon and sun, worked out years ahead. It doesn’t include storms or ocean conditions.",
-    tide_cal_source_short: "Heights at NOAA\u2019s Redwood City tide gauge (9414523), in feet above or below the average high tide there; NAVD88 in parentheses. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king}.",
-    tide_cal_source_short_coast: "Heights at NOAA\u2019s Monterey tide gauge (9413450), in feet above or below the average high tide there; NAVD88 in parentheses. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} (provisional).",
+    tide_cal_source_short: "Heights at NOAA\u2019s Redwood City tide gauge (9414523), {units}. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king}.",
+    tide_cal_source_short_coast: "Heights at NOAA\u2019s Monterey tide gauge (9413450), {units}. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} (provisional).",
     home_none_count: "No creek alerts. All {n} monitored creeks are normal.",
     home_alerts_one: "1 creek with an alert",
     home_alerts_many: "{n} creeks with alerts",
@@ -208,7 +208,7 @@
     noaa_forecast_note_coast: "NOAA projection: NOAA’s computer model of the West Coast ocean (WCOFS) starts from the tide table and adds what it leaves out: storms, wind, air pressure and ocean conditions such as the higher sea levels of an El Niño winter. It runs about 2 days ahead. It doesn’t include waves, which can push water much farther up a beach. It’s guidance, not an official forecast; follow National Weather Service advisories.",
     king_tide_intro_coast: "Here a “King Tide” is a day when the tide table at Monterey reaches the 1-year tide (provisional): a tide so high the ocean reaches it only about once a year on average. These come when the sun and moon line up, mostly in November, December and January. They’re worked out years ahead, so they don’t include storms, waves or ocean conditions. The colors show how high each day’s highest tide reaches at Monterey.",
     king_tide_what_coast: "Around high tide, expect water higher up beaches and around coastal trails, creek mouths and harbors. Waves can reach farther than usual: stay off rocks and jetties and never turn your back on the ocean.",
-    tide_cal_source_coast: "Heights at NOAA\u2019s Monterey tide gauge (9413450), in feet above or below the average high tide there (MHHW, {mhhw} ft NAVD88): the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions but not waves. Yellow = above the average high tide: higher than usual. No coastside flood level has been set yet. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} (provisional).",
+    tide_cal_source_coast: "Heights at NOAA\u2019s Monterey tide gauge (9413450), {units}: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions but not waves. Yellow = above the average high tide: higher than usual. No coastside flood level has been set yet. For reference, the 1-year tide here (a tide the ocean reaches about once a year on average) is {king} (provisional).",
     tide_afd_none_coast: "National Weather Service forecasters aren’t mentioning high tides, high surf or coastal flooding.",
     king_tide_intro: "Here a “King Tide” is a day when the tide table reaches the 1-year tide at Redwood City: a tide so high the Bay reaches it only about once a year on average. These come when the sun and moon line up, mostly in November, December and January. They’re worked out years ahead, so it doesn’t include storms or ocean conditions: a King Tide on a calm day may only wet low paths, while a storm or an El Niño winter can push an ordinary high tide higher. The colors show how high each day’s highest tide reaches at Redwood City.",
     king_tide_what: "Around high tide, expect water on low shoreline paths, marshes and some low roads and parking lots near the Bay. Never drive or walk through floodwater.",
@@ -319,7 +319,7 @@
     tide_stats_nino: "El Niño conditions this year. In past El Niño winters the {water} has tended to run higher than usual.",
     tide_cal_tap: "Tap any day to see its highest tide and time.",
     tide_cal_day: "highest tide {ft} at {time} (tide table)",
-    tide_cal_source: "Heights at NOAA\u2019s Redwood City tide gauge (9414523), in feet above or below the average high tide there (MHHW, {mhhw} ft NAVD88): the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Yellow = above the average high tide: higher than usual, not flooding. Orange with \u201c!\u201d = {red} or more, OneShoreline\u2019s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king}.",
+    tide_cal_source: "Heights at NOAA\u2019s Redwood City tide gauge (9414523), {units}: the tide table for each day, and for the next 2 days the NOAA projection, which adds storms and ocean conditions. Yellow = above the average high tide: higher than usual, not flooding. Orange with \u201c!\u201d = {red} or more, OneShoreline\u2019s provisional level for flooding near the Bay shoreline and in low-lying areas along tidally connected creeks. For reference, the 1-year tide here (a tide the Bay reaches about once a year on average; SF Bay Tidal Datums and Extreme Tides Study, 2016) is {king}.",
     more_creeks_title: "More creeks · readings only",
     more_creeks_intro: "Readings from gauges on other San Mateo County creeks. Only Colma, San Bruno, Belmont and Atherton have a flood status here, so these show readings alone. Tap a creek for its graphs.",
     more_creeks_badge: "Readings only",
@@ -512,31 +512,62 @@
   }
   function modelBias(id) { return biasData().then(function (all) { return (all || {})[id] || null; }); }
 
-  /* Tide heights for the public (DEM, 2026-11-10): feet above (or below) the average high tide (MHHW) at that gauge first,
-     NAVD88 after it, smaller. Redwood City 8.5 ft NAVD88 = "1.5 ft above average high tide (8.5 ft NAVD88)".
-     tideRel(v, id[, dec]) plain words; tideFt(v, id[, dec]) words + "(8.5 ft NAVD88)"; tideHTML(v, id[, dec]) the same with
-     the NAVD88 part in <span class="navd">; tideShort(v, id) "+1.5 ft" (graph axes, tight spots). dec: decimals (1). */
+  /* Tide heights (DEM, 2026-11-10). Two ways to show them, chosen by the viewer (Tides page switch; staff, 2026-11-10):
+     "mhhw" (default, the public): feet above or below the average high tide (MHHW) at that gauge first, NAVD88 after;
+       Redwood City 8.5 ft NAVD88 = "1.5 ft above average high tide (8.5 ft NAVD88)".
+     "navd" (technical): the NAVD88 elevation first, MHHW after: "8.5 ft NAVD88 (1.5 ft above average high tide)".
+     Chosen with ?heights=navd or ?heights=mhhw in the link (remembered) or LK.setHeightMode(); kept in this browser only.
+     tideRel(v, id[, dec]) the main figure in words; tideFt(...) main + (other); tideHTML(...) the same with the other in
+     <span class="navd">; tideShort(v, id) "+1.5 ft" or "8.5 ft" (day cards, tight spots); tideAlt(...) the other figure;
+     tideUnit(v, id) what the main figure is measured from ("above average high tide" / "NAVD88");
+     tideUnits(id) the sentence for notes ("in feet above or below the average high tide there (MHHW, 7.02 ft NAVD88)"). */
+  var HMODE = null;
+  function heightMode() {
+    if (HMODE) return HMODE;
+    var q = /[?&]heights=(navd|mhhw)\b/.exec(location.search || "");
+    try { if (q) localStorage.setItem("fews_heights", q[1]); HMODE = q ? q[1] : localStorage.getItem("fews_heights"); } catch (e) { HMODE = q ? q[1] : null; }
+    if (HMODE !== "navd") HMODE = "mhhw";
+    return HMODE;
+  }
+  function setHeightMode(m) {   // remember it and reload with ?heights= so the link can be shared
+    try { localStorage.setItem("fews_heights", m); } catch (e) {}
+    var u = new URL(location.href); u.searchParams.set("heights", m); location.href = u.toString();
+  }
   function relOf(v, id) { var m = L.mhhw(id); return typeof v === "number" && isFinite(v) && typeof m === "number" ? v - m : null; }
-  function tideRel(v, id, dec) {
+  function relWords(v, id, dec) {
     var d = relOf(v, id), n = dec == null ? 1 : dec;
-    if (d == null) return typeof v === "number" ? v.toFixed(n) + " ft NAVD88" : "";
+    if (d == null) return null;
     var a = Math.abs(d).toFixed(n);
     return +a === 0 ? "at the average high tide" : a + " ft " + (d > 0 ? "above" : "below") + " average high tide";
   }
   function navd(v, dec) { return v.toFixed(dec == null ? 1 : dec) + " ft NAVD88"; }
-  function tideFt(v, id, dec) { return relOf(v, id) == null ? tideRel(v, id, dec) : tideRel(v, id, dec) + " (" + navd(v, dec) + ")"; }
+  function tideRel(v, id, dec) { var r = relWords(v, id, dec); return heightMode() === "navd" || r == null ? navd(v, dec) : r; }
+  function tideAlt(v, id, dec) { var r = relWords(v, id, dec); return r == null ? "" : heightMode() === "navd" ? r : navd(v, dec); }
+  function tideFt(v, id, dec) { var o = tideAlt(v, id, dec); return tideRel(v, id, dec) + (o ? " (" + o + ")" : ""); }
   function tideHTML(v, id, dec) {
-    var e = function (t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
-    return relOf(v, id) == null ? e(tideRel(v, id, dec)) : e(tideRel(v, id, dec)) + ' <span class="navd" style="font-size:0.85em;font-weight:400">(' + e(navd(v, dec)) + ")</span>";
+    var e = function (t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }, o = tideAlt(v, id, dec);
+    return e(tideRel(v, id, dec)) + (o ? ' <span class="navd" style="font-size:0.85em;font-weight:400">(' + e(o) + ")</span>" : "");
   }
   function tideShort(v, id, dec) {
-    var d = relOf(v, id); if (d == null) return v.toFixed(dec == null ? 1 : dec) + " ft";
-    var a = Math.abs(d).toFixed(dec == null ? 1 : dec);
+    var d = relOf(v, id), n = dec == null ? 1 : dec;
+    if (d == null || heightMode() === "navd") return v.toFixed(n) + " ft";
+    var a = Math.abs(d).toFixed(n);
     return +a === 0 ? "0 ft" : (d > 0 ? "+" : "\u2212") + a + " ft";
+  }
+  function tideUnit(v, id) {
+    if (heightMode() === "navd") return "NAVD88";
+    var d = relOf(v, id);
+    return (d == null ? "" : d >= 0.05 ? "above" : d <= -0.05 ? "below" : "at") + " average high tide";
+  }
+  function tideUnits(id) {
+    var m = L.mhhw(id), ms = typeof m === "number" ? m.toFixed(2) : "?";
+    return heightMode() === "navd" ? "in feet NAVD88 (the average high tide there, MHHW, is " + ms + " ft)"
+      : "in feet above or below the average high tide there (MHHW, " + ms + " ft NAVD88)";
   }
 
   L = window.LOOKUPS = {
     fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
+    tideAlt: tideAlt, tideUnit: tideUnit, tideUnits: tideUnits, heightMode: heightMode, setHeightMode: setHeightMode,
     problems: [], loaded: false,
     num: function (k) { return k in cur.settings ? cur.settings[k] : NaN; },
     station: function (id) { return cur.tides[id] || { id: id, name: id, mhhw: null }; },

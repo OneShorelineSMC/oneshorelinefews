@@ -342,10 +342,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110c"></script>
-<script src="severity.js?v=20261110c"></script>
-<script src="creek_status.js?v=20261110c"></script>
-<script src="hero.js?v=20261110c"></script>
+<script src="lookups.js?v=20261110d"></script>
+<script src="severity.js?v=20261110d"></script>
+<script src="creek_status.js?v=20261110d"></script>
+<script src="hero.js?v=20261110d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -793,7 +793,7 @@ function staffReadings(c, st, now) {
       var tt = prev ? (tl.v > prev.v + 0.05 ? "↑ rising" : tl.v < prev.v - 0.05 ? "↓ falling" : "→ steady") : "";
       // feet above the average high tide first, NAVD88 after (DEM, 2026-11-10)
       row("<b>Bay tide</b> · " + esc(T.st.name), "<b>" + esc(LK.tideShort(tl.v, T.st.id, 2).replace(/ ft$/, "")) + "</b> ft",
-        (tl.v > m ? '<span class="l1" style="color:var(--info)">' + esc(LK.tideRel(tl.v, T.st.id, 2)) + "</span>" : esc(LK.tideRel(tl.v, T.st.id, 2))) + " (" + tl.v.toFixed(2) + " ft NAVD88)" +
+        (tl.v > m ? '<span class="l1" style="color:var(--info)">' + esc(LK.tideRel(tl.v, T.st.id, 2)) + "</span>" : esc(LK.tideRel(tl.v, T.st.id, 2))) + " (" + esc(LK.tideAlt(tl.v, T.st.id, 2)) + ")" +
           (d0 == null ? "" : '<span class="sm">' + (Math.abs(d0) < 0.05 ? "matches tide table" : Math.abs(d0).toFixed(2) + " ft " + (d0 > 0 ? "above" : "below") + " tide table") + "</span>"),
         tt, esc(fTime(tl.t)) + '<span class="sm">measured</span>');
     } else row("<b>Bay tide</b> · " + esc(T.st.name), "–", T.at ? "No recent measurement" : "Loading…", "", "");
@@ -1158,7 +1158,7 @@ function fillTiles(st, now) {
       for (var k = T.obs.length - 1; k >= 0; k--) { if (tl.t - T.obs[k].t >= 30 * 60000) { prev = T.obs[k]; break; } }
       var arrow = prev ? (tl.v > prev.v + 0.05 ? "↑" : tl.v < prev.v - 0.05 ? "↓" : "→") : "";
       set("tlTide", tl.v > m ? "info" : "", '<span class="tv">' + esc(LK.tideShort(tl.v, T.st.id, 2).replace(/ ft$/, "")) + "<small> ft " + arrow + "</small></span>" +
-        '<span class="tx">' + (tl.v > m ? "<b>" + esc(LK.tideRel(tl.v, T.st.id, 2)) + "</b>" : esc(LK.tideRel(tl.v, T.st.id, 2))) + " (" + tl.v.toFixed(2) + " ft NAVD88)</span>" +
+        '<span class="tx">' + (tl.v > m ? "<b>" + esc(LK.tideRel(tl.v, T.st.id, 2)) + "</b>" : esc(LK.tideRel(tl.v, T.st.id, 2))) + " (" + esc(LK.tideAlt(tl.v, T.st.id, 2)) + ")</span>" +
         (d0 == null ? "" : '<span class="tx">' + (Math.abs(d0) < 0.05 ? "matches tide table" : Math.abs(d0).toFixed(2) + " ft " + (d0 > 0 ? "above" : "below") + " tide table") + "</span>") +
         '<span class="tx">' + esc(ago(tl.t)) + "</span>");
     }
