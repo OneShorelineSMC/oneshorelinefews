@@ -394,6 +394,12 @@ and Monterey (all ft NAVD88).
   the month ends and then kept (the tracker's "Month closeout"). The study levels are for the Bay around 2015; the history
   page's return-level graph shows each gauge's annual highs (raised to today's sea level) against them.
 
+
+**Nov 10, 2026 changes (staff):**
+- **Offset measured at high tide** (`BAY_OFFSET_AT_HIGH_TIDE` = 1): each day's highest measured water minus that day's highest tide-table high tide, averaged over the window, instead of the whole-day average. The estimate adds the offset to high tides, and this fall at Redwood City the high-tide figure ran about 0.1 ft above the whole-day one (Oct 1 to Nov 10: 1.12 vs 1.05 ft on days with a 7.2 ft or higher tide table).
+- **Close to the flood level** (`TIDE_NEAR_FT` = 0.3 ft): coming days whose projection, estimate or tide table comes within 0.3 ft below 8.5 ft get a solid orange ring and a line above the flood-level list. It marks the start of a high-tide stretch, as NWS frames it, without calling flooding.
+- **NOAA projection corrected by its record** (`PROJ_BIAS_CORRECT`, `PROJ_BIAS_MAX_FT` 0.75, `PROJ_BIAS_DAYS` 14): each day's projected highest water (made the evening before) against what was measured. Oct 31 to Nov 9, 2026: Redwood City +0.57 ft, Alameda +0.43, San Francisco +0.37 (projection high), Monterey -0.90 (low, beyond the limit, so the coast page doesn't use the projection).
+- Why our flood-level start date can trail NWS's: on Nov 20, 2026 the Redwood City tide table high is 6.64 ft NAVD88, 1.86 ft below 8.5 ft; the Bay ran at most 1.45 ft above the tide table at high tide this season. NWS's own thresholds and gauges, not our offset, explain most of the gap.
 ## 5. Page logic settings — `settings.csv`
 
 | Setting | Value | Basis | Status | Checked by / on |
