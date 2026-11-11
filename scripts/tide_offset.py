@@ -88,6 +88,29 @@ def daily_means(measured, table):
     return [(d, sum(x) / len(x), len(x)) for d, x in sorted(days.items())]
 
 
+HIGH_WINDOW_MIN = 90      # the measured peak counts within this many minutes of the tide table's high tide
+
+
+def daily_high_excess(measured, table, window_min=HIGH_WINDOW_MIN):
+    """[(date, measured peak minus the tide table's highest high tide that day)] for each day, oldest first (staff,
+    2026-11-10). The page adds the offset to each day's highest tide-table high tide, so this is the offset that matters
+    there; in Oct-Nov 2026 it ran about 0.1 ft above the whole-day average at Redwood City. The peak is the highest
+    measured reading within window_min of the table's high; a day needs most of those readings (6-minute data)."""
+    by_day = {}
+    for t, p in table.items():
+        d = t[:10]
+        if d not in by_day or p > by_day[d][1]:
+            by_day[d] = (t, p)
+    out = []
+    for d, (t, p) in sorted(by_day.items()):
+        t0 = dt.datetime.strptime(t, "%Y-%m-%d %H:%M")
+        near = [measured[k] for k in (
+            (t0 + dt.timedelta(minutes=m)).strftime("%Y-%m-%d %H:%M") for m in range(-window_min, window_min + 1, 6)) if k in measured]
+        if len(near) >= 0.8 * (2 * window_min / 6 + 1):
+            out.append((d, max(near) - p))
+    return out
+
+
 def compute(station, first, last, fetch=get_json):
     """Offset for whole days first..last (dates, Pacific). Raises if NOAA can't be read."""
     begin = dt.datetime.combine(first, dt.time(0, 0))
@@ -100,7 +123,15 @@ def compute(station, first, last, fetch=get_json):
     rows = daily_means(measured, table)
     good = [(d, m) for d, m, n in rows if n >= DAY_COVERAGE * 240]
     out = {"from": first.isoformat(), "to": last.isoformat(), "days": n_days, "days_used": len(good),
-           "daily": [[d, round(m, 3)] for d, m in good], "offset_ft": None, "recent7_ft": None}
+           "daily": [[d, round(m, 3)] for d, m in good], "offset_ft": None, "recent7_ft": None,
+           "daily_high": [], "high_offset_ft": None, "high_recent7_ft": None}
+    hi = [(d, x) for d, x in daily_high_excess(measured, table) if first.isoformat() <= d <= last.isoformat()]
+    out["daily_high"] = [[d, round(x, 3)] for d, x in hi]
+    if len(hi) >= math.ceil(WINDOW_COVERAGE * n_days):
+        out["high_offset_ft"] = round(sum(x for _, x in hi) / len(hi), 2)
+        h7 = [x for d, x in hi if d > (last - dt.timedelta(days=7)).isoformat()]
+        if len(h7) >= 4:
+            out["high_recent7_ft"] = round(sum(h7) / len(h7), 2)
     if len(good) >= math.ceil(WINDOW_COVERAGE * n_days):
         out["offset_ft"] = round(sum(m for _, m in good) / len(good), 2)
         last7 = [m for d, m in good if d > (last - dt.timedelta(days=7)).isoformat()]
@@ -239,6 +270,27 @@ def outlook(now_local, fetch=get_json, fetch_text=get_text, station=OUTLOOK_STAT
     return out
 
 
+def proj_bias(tracker, last, days=14, min_days=5):
+    """{station: {ft, n, from, to}}: how far NOAA's projection of each day's highest water (made the evening before,
+    tide_tracker.json "proj", lead 1 day) ran above what the gauge measured that day ("days" max), on average over the
+    `days` days to `last` (staff, 2026-11-10). Positive = the projection ran high. Days with gaps in the readings are left
+    out; fewer than min_days: no figure. The pages subtract it from the projection (lookups.js fixModel)."""
+    out = {}
+    first = (last - dt.timedelta(days=int(days) - 1)).isoformat()
+    for st in (tracker or {}).get("stations") or []:
+        proj, seen = st.get("proj") or {}, st.get("days") or {}
+        diffs = []
+        for d, p in sorted(proj.items()):
+            m = seen.get(d) or {}
+            if first <= d <= last.isoformat() and p.get("lead_days") == 1 and isinstance(p.get("ft"), (int, float)) \
+                    and isinstance(m.get("max"), (int, float)) and (m.get("cover") or 0) >= 0.9:
+                diffs.append((d, p["ft"] - m["max"]))
+        if len(diffs) >= min_days:
+            out[str(st.get("id"))] = {"ft": round(sum(x for _, x in diffs) / len(diffs), 2), "n": len(diffs),
+                                      "from": diffs[0][0], "to": diffs[-1][0]}
+    return out
+
+
 def _utc(s):
     try:
         return dt.datetime.strptime(s, "%Y-%m-%dT%H:%MZ").replace(tzinfo=dt.timezone.utc)
@@ -246,7 +298,7 @@ def _utc(s):
         return None
 
 
-def update(previous, now_utc, stations, days, fetch=get_json, outlook_fn=None):
+def update(previous, now_utc, stations, days, fetch=get_json, outlook_fn=None, tracker=None, bias_days=14):
     """New tide_offset.json contents from the previous ones. Never raises."""
     local = now_utc.astimezone(TZ)
     last = local.date() - dt.timedelta(days=1)                 # yesterday: the last whole day
@@ -254,7 +306,8 @@ def update(previous, now_utc, stations, days, fetch=get_json, outlook_fn=None):
     stamp = now_utc.strftime("%Y-%m-%dT%H:%MZ")
     old = (previous or {}).get("stations") or {}
     out = {"generated": local.strftime("%Y-%m-%d %H:%M"), "generated_utc": stamp, "window_days": int(days),
-           "method": "average over the window of each day's mean (NOAA measured minus NOAA tide table, 6-minute data)",
+           "method": "average over the window of each day's mean (NOAA measured minus NOAA tide table, 6-minute data); "
+                     "high_offset_ft: the same average of each day's measured peak minus its highest tide-table high tide",
            "stations": {}}
     problems = []
     # the calendar outlook, once a week (kept as it was when NOAA can't be reached)
@@ -272,9 +325,14 @@ def update(previous, now_utc, stations, days, fetch=get_json, outlook_fn=None):
             msg = f"{type(e).__name__}: {e}"[:200]
             problems.append(f"outlook: {msg}")
             out["outlook"] = dict({k: v for k, v in ol.items() if k not in ("attempt_utc", "error")}, attempt_utc=stamp, error=msg)
+    # NOAA's projection against what was measured (from the tide tracker's record), every run
+    if tracker is not None:
+        out["proj_bias"] = proj_bias(tracker, last, bias_days)
+    elif (previous or {}).get("proj_bias"):
+        out["proj_bias"] = previous["proj_bias"]
     for sid, st in stations.items():
         prev = old.get(sid) or {}
-        fresh = prev.get("to") == last.isoformat() and prev.get("days") == int(days) and not prev.get("error")
+        fresh = prev.get("to") == last.isoformat() and prev.get("days") == int(days) and not prev.get("error") and "high_offset_ft" in prev
         tried = _utc(prev.get("attempt_utc"))
         if fresh or (prev.get("error") and tried and now_utc - tried < dt.timedelta(minutes=RETRY_MIN)):
             out["stations"][sid] = prev
@@ -286,7 +344,8 @@ def update(previous, now_utc, stations, days, fetch=get_json, outlook_fn=None):
         except Exception as e:  # noqa: BLE001 - one station's problem never stops the others or the data job
             msg = f"{type(e).__name__}: {e}"[:200]
             problems.append(f"{sid}: {msg}")
-            keep = {k: prev[k] for k in ("from", "to", "days", "days_used", "daily", "offset_ft", "recent7_ft", "computed_utc") if k in prev}
+            keep = {k: prev[k] for k in ("from", "to", "days", "days_used", "daily", "offset_ft", "recent7_ft", "daily_high", "high_offset_ft",
+                                         "high_recent7_ft", "computed_utc") if k in prev}
             out["stations"][sid] = dict(keep, name=st.get("name") or sid, attempt_utc=stamp, error=msg)
     return out, problems
 
@@ -305,7 +364,16 @@ def main(argv):
     if not stations:
         print("no tide stations; tide_offset.json left as it was", file=sys.stderr)
         return 0
-    result, problems = update(previous, dt.datetime.now(dt.timezone.utc), stations, settings["BAY_OFFSET_DAYS"], outlook_fn=outlook)
+    tracker = None   # tide_tracker.json beside this file (the data job writes both to out/): for the projection's record
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(path)), "tide_tracker.json")) as f:
+            tracker = json.load(f)
+    except (OSError, ValueError):
+        pass
+    result, problems = update(previous, dt.datetime.now(dt.timezone.utc), stations, settings["BAY_OFFSET_DAYS"], outlook_fn=outlook,
+                              tracker=tracker, bias_days=settings.get("PROJ_BIAS_DAYS", 14))
+    for sid, b in (result.get("proj_bias") or {}).items():
+        print(f"{sid}: NOAA projection ran {b['ft']:+.2f} ft vs measured over {b['n']} days ({b['from']} to {b['to']})")
     for p in problems:
         print(f"tide offset: {p}", file=sys.stderr)
     ol = result.get("outlook") or {}
@@ -315,7 +383,7 @@ def main(argv):
               f"r2 {ol.get('r2')}; El Nino {en.get('slope_ft_per_c')} ft per C (r {en.get('r')}, n {en.get('n')}), "
               f"ONI {en.get('oni')} ({en.get('oni_season')})" + (f" · last attempt failed: {ol['error']}" if ol.get("error") else ""))
     for sid, r in result["stations"].items():
-        print(f"{sid} {r.get('name')}: offset {r.get('offset_ft')} ft over {r.get('days_used')} of {r.get('days')} days "
+        print(f"{sid} {r.get('name')}: offset {r.get('offset_ft')} ft (at high tide {r.get('high_offset_ft')}) over {r.get('days_used')} of {r.get('days')} days "
               f"({r.get('from')} to {r.get('to')})" + (f" · last attempt failed: {r['error']}" if r.get("error") else ""))
     with open(path, "w") as f:
         json.dump(result, f, separators=(",", ":"))

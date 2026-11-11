@@ -25,7 +25,7 @@ def steps(first, last):
         t += dt.timedelta(minutes=6)
 
 
-def fake(offset_by_day, missing_days=(), storm=None, gap=None):
+def fake(offset_by_day, missing_days=(), storm=None, gap=None, peak=0.0):
     """A NOAA stand-in: tide table = a 12.42-hour cosine; measured = table + that day's offset (+ a storm spike)."""
     calls = []
 
@@ -41,7 +41,7 @@ def fake(offset_by_day, missing_days=(), storm=None, gap=None):
                 d = t.date().isoformat()
                 if d in missing_days or (gap and gap[0] <= t < gap[1]):
                     continue
-                v += offset_by_day.get(d, 0) + (storm[1] if storm and d == storm[0] and 10 <= t.hour < 16 else 0)
+                v += offset_by_day.get(d, 0) + (storm[1] if storm and d == storm[0] and 10 <= t.hour < 16 else 0) + (peak if v > 5.5 else 0)
             rows.append({"t": t.strftime("%Y-%m-%d %H:%M"), "v": f"{v:.3f}"})
         return {"predictions": rows} if q["product"] == "predictions" else {"data": rows}
     fetch.calls = calls
@@ -59,6 +59,15 @@ s = r["stations"]["9414523"]
 check("window is the last 30 whole days, Pacific", s["from"] == "2026-09-21" and s["to"] == "2026-10-20" and s["days"] == 30)
 check("steady +0.4 ft gives +0.40", s["offset_ft"] == 0.4 and s["days_used"] == 30 and not p)
 check("NOAA asked for MLLW, Pacific clock, 6-minute tide table", len(f0.calls) == 2 and all("datum=MLLW" in u and "time_zone=lst_ldt" in u for u in f0.calls) and "interval=6" in f0.calls[1])
+
+check("at high tide: steady +0.4 ft gives +0.40 too, both last-7-days figures", s["high_offset_ft"] == 0.4 and s["high_recent7_ft"] == 0.4 and len(s["daily_high"]) == 30)
+pk = T.update({}, NOW, ST, 30, fake({d: 0.4 for d in days}, peak=0.15))[0]["stations"]["9414523"]
+check("water running higher only around high tide: the high-tide offset shows it, the whole-day one barely", pk["high_offset_ft"] == 0.55 and pk["offset_ft"] < 0.47)
+thinhi = T.update({}, NOW, ST, 30, fake({d: 0.3 for d in days}, missing_days=set(days[:12])))[0]["stations"]["9414523"]
+check("too few days: no high-tide offset either", thinhi["high_offset_ft"] is None)
+old = dict(r["stations"]["9414523"]); [old.pop(k) for k in ("daily_high", "high_offset_ft", "high_recent7_ft")]
+f2 = fake({d: 0.4 for d in days}); T.update({"stations": {"9414523": old}}, NOW, ST, 30, f2)
+check("a file from before the high-tide offset: recomputed the same day", len(f2.calls) == 2)
 
 ramp = {d: 0.1 + 0.01 * i for i, d in enumerate(sorted(days))}
 s = T.update({}, NOW, ST, 30, fake(ramp))[0]["stations"]["9414523"]
@@ -144,6 +153,23 @@ check("outlook: computed once a week, kept in between", len(calls) == 2 and r2o[
 bad = lambda local: (_ for _ in ()).throw(ValueError("NOAA down"))
 r4o, p4 = T.update(r3o, now0 + dt.timedelta(days=16), {"9414523": {"name": "Redwood City"}}, 30, fake({}), outlook_fn=bad)
 check("outlook: NOAA down: last outlook kept with the error", r4o["outlook"]["normal_ft"] == {"2026-10": 0.3} and "NOAA down" in r4o["outlook"]["error"] and any("outlook" in x for x in p4))
+
+# ---- NOAA's projection against what was measured (tide_tracker.json "proj" vs "days")
+trk = {"stations": [{"id": "9414523", "proj": {}, "days": {}}, {"id": "9413450", "proj": {}, "days": {}}]}
+for k in range(12):
+    d = (dt.date(2026, 11, 9) - dt.timedelta(days=k)).isoformat()
+    trk["stations"][0]["proj"][d] = {"ft": 9.0, "lead_days": 1}; trk["stations"][0]["days"][d] = {"max": 8.4, "cover": 1.0}
+    if k < 3:
+        trk["stations"][1]["proj"][d] = {"ft": 6.0, "lead_days": 1}; trk["stations"][1]["days"][d] = {"max": 6.9, "cover": 1.0}
+trk["stations"][0]["proj"]["2026-11-09"]["lead_days"] = 2   # a 2-day-ahead figure doesn't count
+trk["stations"][0]["days"]["2026-11-08"]["cover"] = 0.5      # nor a day with gaps
+pb = T.proj_bias(trk, dt.date(2026, 11, 9), days=14)
+check("projection bias: +0.6 ft over the counted days; lead-2 and gappy days left out", pb["9414523"] == {"ft": 0.6, "n": 10, "from": "2026-10-29", "to": "2026-11-07"})
+check("projection bias: fewer than 5 days, no figure", "9413450" not in pb)
+rb, _ = T.update({}, NOW, ST, 30, fake({d: 0.4 for d in days}), tracker={"stations": []})
+check("projection bias written to tide_offset.json (empty when no record)", rb["proj_bias"] == {})
+rk, _ = T.update({"proj_bias": {"x": 1}}, NOW, ST, 30, fake({d: 0.4 for d in days}))
+check("no tracker file: the last projection bias kept", rk["proj_bias"] == {"x": 1})
 
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)
