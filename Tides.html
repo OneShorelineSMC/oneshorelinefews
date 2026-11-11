@@ -379,6 +379,12 @@
   #waves .wvkey { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); margin-top: 4px; }
   #waves .wvkey i { display: inline-block; width: 18px; height: 0; border-top: 3px solid #1e6fd0; vertical-align: middle; margin-right: 5px; }
   #waves .wvkey i.f { border-top: 3px dashed #8a97a6; }
+  #waves .wvx.hide { display: none; } #waves .wvx { border-top: 1px dashed var(--line); padding-top: 4px; }
+  #waves .wvx .xbtn { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; } #waves .wvx .xbtn button { font: inherit; font-size: 14px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); border-radius: 999px; padding: 3px 11px; min-height: 32px; cursor: pointer; }
+  #waves .wvx .xbtn button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+  #waves .wvx table { border-collapse: collapse; width: 100%; font-size: 13.5px; margin-top: 6px; } #waves .wvx th, #waves .wvx td { text-align: right; padding: 3px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  #waves .wvx th:first-child, #waves .wvx td:first-child { text-align: left; } #waves .wvx td.ov { color: var(--red); font-weight: 700; }
+  #waves .wvx .wvch { height: 210px; } #waves .wvx .tw { overflow-x: auto; }
   #waves .wvd { margin-top: 8px; font-size: 14.5px; } #waves .wvd summary { cursor: pointer; font-weight: 600; color: var(--info); min-height: 32px; display: flex; align-items: center; }
   .wlist, .flist { font-size: 14px; margin: 6px 0 0; padding: 0; list-style: none; }
   .flist li { padding: 5px 0; border-top: 1px solid var(--line); } .flist b { color: var(--red); } .flist .lv { font-size: 14px; color: var(--muted); }
@@ -478,7 +484,9 @@
     <p class="wvkey hide" id="wvkey"><span><i class="m"></i>Measured at the buoy</span><span><i class="f"></i>NWS forecast</span></p>
     <p class="wvn" data-text="waves_offshore_note"></p>
     <details class="wvd"><summary>Forecast details and sources</summary>
-      <p class="wvi" data-text="waves_intro"></p><div id="wvbody"></div><p class="lbl" id="wvsrc"></p></details></section>
+      <p class="wvi" data-text="waves_intro"></p><div id="wvbody"></div><p class="lbl" id="wvsrc"></p></details>
+    <!-- Staff only (?preview=1), experimental, 2026-11-11: tide + wave runup at reference beaches (waves.json runup, scripts/waves.py) -->
+    <details class="wvd wvx hide" id="wvexp"><summary>Experimental (staff view): how far up the beach</summary><div id="wvxbody"></div></details></section>
   <div class="card hide" id="season" role="button" tabindex="0"><span class="chip" id="tschip">KING TIDE</span>
     <span class="st"><b id="tsmain"></b><span id="tssub"></span><span class="src" id="tssrc"></span></span><span class="go">›</span></div>
   <div id="cards"></div>
@@ -534,10 +542,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261111b"></script>
-<script src="tide_season.js?v=20261111b"></script>
-<script src="severity.js?v=20261111b"></script>
-<script src="hero.js?v=20261111b"></script>
+<script src="lookups.js?v=20261111c"></script>
+<script src="tide_season.js?v=20261111c"></script>
+<script src="severity.js?v=20261111c"></script>
+<script src="hero.js?v=20261111c"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -620,6 +628,54 @@ function cwfSpans(c) {
   });
   return out;
 }
+/* Staff view, experimental (2026-11-11): tide + wave runup at reference beaches. Not for the public: the beach slopes are
+   placeholders until surveyed and the formula is rough on bluffs and armored shores. */
+var RU_SEL = null;
+function renderRunup(w) {
+  var box = $("wvexp"), ru = w && w.runup;
+  if (!STAFF || !ru || !ru.beaches || !ru.beaches.length) { box.classList.add("hide"); return; }
+  box.classList.remove("hide");
+  var B = ru.beaches, sel = B.filter(function (b) { return b.id === RU_SEL; })[0] || B[0]; RU_SEL = sel.id;
+  var dname = function (d) { return new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" }); };
+  var tm = function (t) { return pacific(isoZ(t), { hour: "numeric", minute: "2-digit" }); };
+  var h = '<p class="lbl">Rough estimate, not a forecast to share: still water at NOAA San Francisco (9414290) plus wave runup reached by 2% of waves ' +
+    "(Stockdon et al. 2006, the method of the USGS/NOAA Total Water Level forecast, which doesn’t cover this coast). Waves: " + esc(sel.wave_source) +
+    ". Beach slope " + sel.slope + (sel.placeholder ? " (placeholder until surveyed)" : "") + ", wave factor " + sel.wave_factor + ". Heights in ft NAVD88.</p>";
+  h += '<div class="xbtn" role="group" aria-label="Reference beach">' + B.map(function (b) { return '<button type="button" data-b="' + esc(b.id) + '" aria-pressed="' + (b.id === sel.id) + '">' + esc(b.name.split(",")[0]) + "</button>"; }).join("") + "</div>";
+  h += '<div class="wvch"><canvas id="chRunup" role="img" aria-label="Estimated water reach at ' + esc(sel.name) + '"></canvas></div>';
+  h += '<div class="tw"><table><thead><tr><th>Peak</th><th>Water</th><th>+ Runup</th><th>= Reach</th><th>Waves</th></tr></thead><tbody>' +
+    sel.peaks.map(function (p) { var ov = sel.flag_ft != null && p.twl >= sel.flag_ft;
+      return "<tr><td>" + esc(new Date(p.date + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" }) + " " + +p.date.slice(8)) + ", " + esc(tm(p.t).replace(":00", "")) + "</td><td>" + p.tide.toFixed(1) + "</td><td>" + p.runup.toFixed(1) + '</td><td class="' + (ov ? "ov" : "") + '">' + p.twl.toFixed(1) + "</td><td>" + Math.round(p.h_ft) + "′ " + p.s + "s</td></tr>"; }).join("") + "</tbody></table></div>";
+  h += '<p class="lbl">' + (sel.flag_ft != null ? "Red = at or above " + sel.flag_ft.toFixed(1) + " ft (" + esc(sel.flag_what || "the height set for this beach") + ")." : "No height that matters set for this beach yet (flag_ft_navd88 in lookups/runup_beaches.csv).") + "</p>";
+  var hist = (ru.history || {})[sel.id] || {}, days = Object.keys(hist).sort().reverse().filter(function (d) { return hist[d].fc1 != null && hist[d].hind != null; }).slice(0, 14);
+  h += "<h3>Checking it</h3>" + (days.length ? '<div class="tw"><table><thead><tr><th>Day</th><th>Day before</th><th>From buoy</th><th>Miss</th></tr></thead><tbody>' + days.map(function (d) { var x = hist[d], m = x.fc1 - x.hind;
+      return "<tr><td>" + esc(dname(d)) + "</td><td>" + x.fc1.toFixed(1) + "</td><td>" + x.hind.toFixed(1) + "</td><td>" + (m >= 0 ? "+" : "−") + Math.abs(m).toFixed(1) + "</td></tr>"; }).join("") + "</tbody></table></div>" + '<p class="lbl">Day before = the peak estimated the day before; from buoy = the same estimate from the buoy and the measured tide.</p>'
+    : '<p class="lbl">Builds up day by day: each day’s peak as estimated the day before, against the same estimate from the buoy and the measured tide.</p>') +
+    '<p class="lbl">The real check is photos and reports of where the water reached (wrack lines, flooded paths, parking lots) on big-wave days, against these numbers.</p>';
+  if (ru.problems && ru.problems.length) h += '<p class="lbl">Data problems on the last run: ' + esc(ru.problems.join("; ")) + "</p>";
+  $("wvxbody").innerHTML = h;
+  $("wvxbody").querySelectorAll(".xbtn button").forEach(function (b) { b.onclick = function () { RU_SEL = b.getAttribute("data-b"); renderRunup(WV); }; });
+  if (!window.Chart) return;
+  var now = nowLocal(), H = function (t) { return (toLocalMs(isoZ(t)) - now) / 36e5; };
+  var pt = function (k) { return function (r) { return { x: H(r.t), y: r[k] }; }; };
+  var hc = sel.hindcast.map(pt("twl")), fc = sel.forecast.map(pt("twl")), tdc = sel.hindcast.map(pt("tide")).concat(sel.forecast.map(pt("tide")));
+  var ys = hc.concat(fc, tdc).map(function (p) { return p.y; }).concat(sel.flag_ft != null ? [sel.flag_ft] : []);
+  var xmax = Math.max(24, fc.length ? fc[fc.length - 1].x : 0), d0 = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()), ticks = [];
+  for (var d = d0 - 2 * 864e5 + 12 * 36e5; (d - now) / 36e5 <= xmax; d += 864e5) if ((d - now) / 36e5 >= -48) ticks.push((d - now) / 36e5);
+  if (D.ruChart) D.ruChart.destroy();
+  D.ruChart = new Chart($("chRunup"), { type: "line", data: { datasets: [
+      { label: "Reach (from the buoy)", data: hc, borderColor: "#1e6fd0", borderWidth: 2.5, pointRadius: 0 },
+      { label: "Reach (forecast)", data: fc, borderColor: "#1e6fd0", borderDash: [6, 4], borderWidth: 2.5, pointRadius: 0 },
+      { label: "Still water", data: tdc, borderColor: "#9aa3ad", borderWidth: 1.5, pointRadius: 0 }] },
+    plugins: sel.flag_ft != null ? [refLines([{ v: sel.flag_ft, color: css("--red"), label: (sel.flag_what || "Flag") + " " + sel.flag_ft.toFixed(1) + " ft", left: true }])] : [],
+    options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+      plugins: { legend: { labels: { color: css("--ink"), boxWidth: 12, font: { size: 12 } } }, tooltip: { callbacks: {
+        title: function (it) { return fmt(now + it[0].parsed.x * 36e5, { weekday: "short", hour: "numeric" }); },
+        label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(1) + " ft NAVD88"; } } } },
+      scales: { x: { type: "linear", min: -48, max: xmax, afterBuildTicks: function (ax) { ax.ticks = ticks.map(function (v) { return { value: v }; }); },
+          ticks: { color: css("--muted"), maxRotation: 0, callback: function (v) { return fmt(now + v * 36e5, { weekday: "short" }); } }, grid: { display: false } },
+        y: { min: Math.floor(Math.min.apply(null, ys)) - 1, max: Math.ceil(Math.max.apply(null, ys)) + 1, ticks: { color: css("--muted"), callback: function (v) { return v + " ft"; } }, grid: { color: css("--line") } } } } });
+}
 function renderWaves() {
   var box = $("waves"); if (!COAST || !box) return;
   box.classList.remove("hide");
@@ -675,6 +731,7 @@ function renderWaves() {
   if (old > LK.num("WAVES_STALE_HOURS")) h = '<p class="lbl">Last updated ' + Math.round(old) + " hours ago.</p>" + h;
   $("wvbody").innerHTML = h;
   var bid = bu ? bu.id : "46012";
+  renderRunup(w);
   $("wvsrc").innerHTML = 'Sources: <a href="https://www.ndbc.noaa.gov/station_page.php?station=' + bid + '" target="_blank" rel="noopener">NOAA buoy ' + bid + "</a> · " +
     '<a href="https://forecast.weather.gov/product.php?site=MTR&amp;issuedby=MTR&amp;product=CWF" target="_blank" rel="noopener">NWS Coastal Waters Forecast</a> · ' +
     '<a href="https://forecast.weather.gov/product.php?site=MTR&amp;issuedby=MTR&amp;product=SRF" target="_blank" rel="noopener">NWS Surf Zone Forecast</a>';

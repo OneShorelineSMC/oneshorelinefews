@@ -611,4 +611,37 @@
   fill();
   L.ready = load();
   setInterval(load, RELOAD_MIN * 60000);
+
+  /* Inside another website (an iframe on oneshoreline.org, staff 2026-11-11). The bottom bar is fixed to the bottom of
+     the page, which in a tall iframe is far below the screen, so there it moves to the top of the page as an ordinary
+     bar. The page also tells the website its height ({fews_height: px} by postMessage), so the website can size the
+     iframe to fit (the snippet is in lookups/README.md, "Embedding"). ?embed=1 pages keep hiding the bar. */
+  var framed = false;
+  try { framed = window.self !== window.top; } catch (e) { framed = true; }
+  L.framed = framed;
+  if (framed) {
+    document.documentElement.classList.add("framed");
+    var st = document.createElement("style");
+    st.textContent = "html.framed body{padding-bottom:12px!important}" +
+      "html.framed body>nav{position:static!important;border-top:0!important;border-bottom:1px solid var(--line,#ddd)!important;padding-bottom:0!important}";
+    (document.head || document.documentElement).appendChild(st);
+    var moveNav = function () {
+      var nav = document.querySelector("body > nav");
+      if (nav && document.body.firstElementChild !== nav) document.body.insertBefore(nav, document.body.firstElementChild);
+    };
+    var lastH = 0, tell = function () {
+      var b = document.body, cs = getComputedStyle(b);   // the content's height, not the iframe's (scrollHeight is never less than the iframe)
+      var h = Math.ceil(b.getBoundingClientRect().height + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom));
+      if (Math.abs(h - lastH) < 4) return;
+      lastH = h;
+      try { window.parent.postMessage({ fews_height: h, fews_page: location.pathname.split("/").pop() || "index.html" }, "*"); } catch (e) {}
+    };
+    var start = function () {
+      moveNav(); tell();
+      if (window.ResizeObserver) new ResizeObserver(tell).observe(document.body);
+      window.addEventListener("load", tell);
+      setInterval(tell, 2000);
+    };
+    if (document.readyState !== "loading") start(); else document.addEventListener("DOMContentLoaded", start);
+  }
 })();
