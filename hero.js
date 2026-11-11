@@ -67,7 +67,7 @@
       ".tcard2 .lv{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;border-radius:6px;padding:1px 8px 1px 6px;margin:3px 0 1px}.tcard2 .lv .sv-ic{width:15px;height:15px}",
       ".tcard2 .t2{display:block;font-size: 14px;color:var(--muted,#56657a);margin-top:3px}",
       // the shoreline NWS cards (2026-11-08): two small cards side by side, even on a phone
-      ".ncards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ncards.n3{grid-template-columns:repeat(3,minmax(0,1fr))}",
+      ".ncards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ncards.n1{grid-template-columns:1fr}.ncards.n3{grid-template-columns:repeat(3,minmax(0,1fr))}",
       "@media (max-width:520px){.ncards.n3{grid-template-columns:repeat(2,minmax(0,1fr))}.ncards.n3>:last-child{grid-column:1/-1}}",
       "button.ncard{font:inherit;text-align:left;width:100%;cursor:pointer}.ncard .nrd{color:var(--link,var(--info,#0A5587));text-decoration:underline}",
       ".ncard.open{box-shadow:0 0 0 2px var(--link,var(--info,#0A5587))}",
@@ -153,7 +153,8 @@
   // Small cards, one per area: the NWS products in effect there (or none), the most serious first; the current page's
   // side outlined. Tap a card with an alert: its NWS text opens under the cards (tap again to close). Under them, one line
   // for anything else in effect (with its text folded). s: { nws, nwsFailed, current: "bay"|"coast"|null,
-  // inland: true adds a third card, "Creeks and rain" (NWS flood products for the county), creeks (HERO.creeks), creekLink }
+  // inland: true adds a third card, "Creeks and rain" (NWS flood products for the county), creeks (HERO.creeks), creekLink,
+  // only: true shows just the current side's card, waves (waves.json): the Coast card's "Big waves forecast" line }
   function nwsCards(el, s) {
     injectCSS();
     var list = s.nws || [], used = {}, key = function (p) { return p.id || p.event + "|" + p.sent; };
@@ -164,6 +165,9 @@
       if (ps) ps.forEach(function (p) { used[key(p)] = true; });
       return { id: sd[0], name: sd[1], ps: ps };
     });
+    // only (the Tides pages, staff 2026-11-10): just this page's shoreline card; the other shoreline's products aren't
+    // listed under "Also in effect" either (Bayside shows Bay products, Coastside coast products)
+    if (s.only && s.current) groups = groups.filter(function (g) { return g.id === s.current; });
     var open = el._open || null;
     if (open && !groups.some(function (g) { return g.id === open && g.ps && g.ps.length; })) open = null;
     var cards = groups.map(function (g) {

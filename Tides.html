@@ -457,7 +457,7 @@
   <button data-href="Creeks.html#about"><span class="i">ℹ️</span>About</button>
 </nav>
 
-<!-- Top (staff, 2026-11-08): the National Weather Service for each shoreline in two small cards, this page's side outlined;
+<!-- Top (staff, 2026-11-08; 2026-11-10: this page's shoreline only): the National Weather Service card for this page's shoreline;
      then this page's own tide status (the card under the title). Coastside Tides no longer shows the Bay's tide up here. -->
 <div class="heroWrap"><div id="ncards"></div></div>
 
@@ -524,10 +524,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261110h"></script>
-<script src="tide_season.js?v=20261110h"></script>
-<script src="severity.js?v=20261110h"></script>
-<script src="hero.js?v=20261110h"></script>
+<script src="lookups.js?v=20261110i"></script>
+<script src="tide_season.js?v=20261110i"></script>
+<script src="severity.js?v=20261110i"></script>
+<script src="hero.js?v=20261110i"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -573,7 +573,7 @@ function loadHeroData() {
 }
 function renderHero() {
   if (EMBED) return;
-  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay", waves: WV,
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay", only: true, waves: WV,
     creeks: HB.creeks ? HERO.creeks(HB.creeks, D.alerts || []) : null });
 }
 function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
