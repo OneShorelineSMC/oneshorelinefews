@@ -569,7 +569,19 @@ Shown on the staff page `StormTracker.html`; nothing public. Provisional: tune a
 | USGS stream gauges | USGS Water Data API (`api.waterdata.usgs.gov`) and WaterServices (`waterservices.usgs.gov`, retiring late 2026/early 2027) | live: data job; history: `scripts/fetch_usgs.py` (workflow **USGS history pull**) | 15 min |
 | OneRain history (calibration) | OneRain public sensor pages, custom date range | archive repo workflow **OneRain history pull** (`scripts/pull_onerain_history.py`) | on demand |
 | Crystal Springs releases | SFPUC Peninsula Reservoir Wet Weather Operations (sfpuc.gov/PeninsulaReservoirWetWeather) | reference | as published |
+| Waves off the coast | NOAA NDBC buoys 46012 (Half Moon Bay) and 46026 (San Francisco), `ndbc.noaa.gov/data/realtime2/{id}.txt`; NWS Coastal Waters Forecast, office MTR, zone PZZ545 (Point Reyes to Pigeon Point, out 10 nm), api.weather.gov | data job, `scripts/waves.py` → `waves.json` on the `data` branch; Coastside Tides page Waves section; Coast card "Big waves forecast" at `WAVES_BIG_FT` | 30 min |
 | Evacuation orders | Genasys Protect (protect.genasys.com), per San Mateo County DEM | link only (proposed) | live |
+
+### Waves (2026-11-10)
+
+NOAA's tide table and the NOAA projection are still water: they leave waves out, so a 20–40 ft surf event can be under
+way with nothing on the tide pages. `scripts/waves.py` adds two official sources: the Half Moon Bay buoy (measured
+significant wave height, period, direction) and the NWS Coastal Waters Forecast for the waters off San Mateo County
+(each period's text as written, with the largest seas or swell height in it). Both are offshore heights; breakers at the
+beach can be larger. NWS High Surf, Beach Hazards, sneaker wave and rip current products still show on the Coast card as
+alerts. `WAVES_BIG_FT` (15 ft, provisional, staff to confirm with NWS/DEM) only adds a "forecast" line to the Coast card;
+it never raises an alert level. The USGS/NOAA Total Water Level and Coastal Change forecast (runup at the beach) would be
+the better source, but it covers the Atlantic and Gulf coasts only so far; check again when the Pacific coast is added.
 
 ## Sign-off checklist for the creek status layer (§8–11)
 
