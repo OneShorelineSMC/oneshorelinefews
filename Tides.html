@@ -188,7 +188,13 @@
   .nowrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 14px; margin-top: 6px; }
   .nowrow .nowl, .nowrow .mhhwq { margin-top: 0; } .nowrow .mhhwq[open] { flex-basis: 100%; order: 2; }
   .secrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 14px; margin: 8px 0 4px; }
-  .secrow .sec { margin: 0 2px; } .secrow .rng { margin: 0; }
+  .secrow .sec { margin: 0 2px; flex-basis: 100%; } .secrow .rng { margin: 0; }
+  .tgls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; flex-basis: 100%; margin-top: 4px; }
+  .tgls .rl { min-width: 4.4em; margin-right: 6px; }   /* "Graph:" and "Heights:" the same width, so the switches line up when they stack */
+  /* the check mark sits in reserved space, so choosing an option doesn't change the buttons' widths */
+  .rng button, .hsw button { position: relative; padding-left: 24px !important; padding-right: 24px !important; }
+  .rng button::before, .hsw button::before { content: "✓"; position: absolute; left: 8px; opacity: 0; }
+  .rng button[aria-pressed="true"]::before, .hsw button[aria-pressed="true"]::before { content: "✓"; opacity: 1; }
   /* 7 days: a list on phones, 7 columns on wide screens */
   .days { display: grid; gap: 0; border-top: 1px solid var(--line); }
   .day { display: grid; grid-template-columns: 4.2em 5.4em minmax(0, 1fr) auto; align-items: baseline; gap: 6px; padding: 6px 4px;
@@ -244,14 +250,12 @@
   .rng button { font: inherit; font-weight: 600; min-height: 32px; padding: 4px 14px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); cursor: pointer; }
   .rng button:first-of-type { border-radius: 8px 0 0 8px; } .rng button:last-of-type { border-radius: 0 8px 8px 0; border-left: 0; }
   .rng button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
-  .rng button[aria-pressed="true"]::before { content: "✓ "; }
   .rng button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; position: relative; z-index: 1; }
   .hsw { display: flex; align-items: center; font-size: 14px; }
   .hsw .rl { margin-right: 6px; color: var(--muted); }
   .hsw button { font: inherit; font-weight: 600; min-height: 32px; padding: 4px 12px; border: 2px solid var(--ink); background: var(--card); color: var(--ink); cursor: pointer; }
   .hsw button:first-of-type { border-radius: 8px 0 0 8px; } .hsw button:last-of-type { border-radius: 0 8px 8px 0; border-left: 0; }
   .hsw button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
-  .hsw button[aria-pressed="true"]::before { content: "✓ "; }
   .hsw button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; position: relative; z-index: 1; }
   .tcard .gbox { height: 235px; margin-top: 8px; }
   .key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; color: var(--muted); margin-top: 6px; }
@@ -1002,10 +1006,11 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<div class="nextk" role="button" tabindex="0"></div>' +
     '<div class="nowrow"><div class="nowl"></div></div>' +
     '<div class="secrow"><div class="sec"><b class="dhead">Next 7 days</b> · <span class="hint">highest tide each day, ft ' + (LK.heightMode() === "navd" ? "NAVD88" : "above average high tide") + '</span></div>' +
-    '<div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div>' +
-    // heights above MHHW (the public) or NAVD88 elevations (technical); remembered in this browser (staff, 2026-11-10)
+    '<div class="tgls"><div class="rng" role="group" aria-label="Graph time range"><span class="rl" aria-hidden="true">Graph:</span><button type="button" data-r="3" aria-pressed="false">3 days</button><button type="button" data-r="7" aria-pressed="false">7 days</button></div>' +
+    // heights above the average high tide, MHHW (the public), or NAVD88 elevations (technical); remembered in this browser (staff, 2026-11-10)
+    // both switches on a row of their own under the heading, so they stay put when the heading's wording changes (2026-11-11)
     '<div class="hsw" role="group" aria-label="Show tide heights as"><span class="rl" aria-hidden="true">Heights:</span>' +
-    '<button type="button" data-h="mhhw" aria-pressed="' + (LK.heightMode() !== "navd") + '">Above MHHW</button><button type="button" data-h="navd" aria-pressed="' + (LK.heightMode() === "navd") + '">NAVD88</button></div></div>' +
+    '<button type="button" data-h="mhhw" aria-pressed="' + (LK.heightMode() !== "navd") + '">Above average</button><button type="button" data-h="navd" aria-pressed="' + (LK.heightMode() === "navd") + '">NAVD88</button></div></div></div>' +
     '<div class="days"></div><p class="estn"></p>' +
     '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
