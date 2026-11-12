@@ -224,6 +224,7 @@
   .day .nrm { color: var(--muted); font-weight: 400; }
   .estn { margin: 6px 2px 0; font-size: 14px; line-height: 1.4; color: var(--muted); } .estn:empty { display: none; }
   .estn a { color: var(--info); font-weight: 600; white-space: nowrap; }
+  .sfn { margin: 6px 2px 0; font-size: 14px; line-height: 1.4; color: var(--muted); }
   .calpre { margin: 2px 0 8px; font-size: 14px; line-height: 1.45; color: var(--text); }
   .tech h3.clh { margin: 14px 0 4px; } .tech .afd { margin-top: 8px; }
   details.more { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 4px; }
@@ -546,10 +547,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261112b"></script>
-<script src="tide_season.js?v=20261112b"></script>
-<script src="severity.js?v=20261112b"></script>
-<script src="hero.js?v=20261112b"></script>
+<script src="lookups.js?v=20261112c"></script>
+<script src="tide_season.js?v=20261112c"></script>
+<script src="severity.js?v=20261112c"></script>
+<script src="hero.js?v=20261112c"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -1013,6 +1014,8 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<div class="hsw" role="group" aria-label="Show tide heights as"><span class="rl" aria-hidden="true">Heights:</span>' +
     '<button type="button" data-h="mhhw" aria-pressed="' + (LK.heightMode() !== "navd") + '">Above average</button><button type="button" data-h="navd" aria-pressed="' + (LK.heightMode() === "navd") + '">NAVD88</button></div></div></div>' +
     '<div class="days"></div><p class="estn"></p>' +
+    // Bayside only (staff, 2026-11-12): how Redwood City compares with San Francisco and with the rest of the county's Bay shoreline
+    (COAST ? "" : '<p class="sfn">' + esc(LK.text("tide_bay_sf_note")) + " " + esc(LK.text("tide_bay_stretch_note")) + "</p>") +
     '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
     "</div>" +

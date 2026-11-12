@@ -166,20 +166,47 @@ Body: {"ref":"main"}
 Headers: Authorization: Bearer <token> · Accept: application/vnd.github+json · Content-Type: application/json
 ```
 
-- The cron-job.org job uses a **GitHub fine-grained personal access token** with **Resource owner:
-  OneShorelineSMC**, access to **only this repository**, and **Actions: Read and write** only. **The token
-  is set to no expiration date.** If it expires, the kiosk's Creeks tab and the phone page
-  show *"Creek data delayed"* and the map shows *"data delayed"*. To fix it: create a new token
-  (https://github.com/settings/personal-access-tokens/new, same settings) and paste it into the cron-job.org
-  job's `Authorization` header as `Bearer <token>`. If OneShorelineSMC requires approval for tokens, an
-  organization owner approves it under the organization's **Settings → Personal access tokens → Pending
-  requests**.
+- The cron-job.org job uses a **GitHub fine-grained personal access token** that can only start this repository's
+  workflows. When it expires, the data stops updating (see **Renewing the cron-job.org token** below).
 - The map data (`sites.json`) is refreshed by the same job, every third run (about every 15 minutes).
 - Runs appear in the **Actions** tab. A red ✗ means OneRain couldn't be read; the log shows how many readings
   were found for each sensor. If OneRain redesigns its sensor pages, `scripts/fetch_onerain.py` may need updating.
 - GitHub Actions is free for this public repository. If the repo were made private, every-5-minute runs would
   exceed the free monthly allowance.
 - You can always run it by hand: **Actions → Fetch OneRain data → Run workflow**.
+
+### Renewing the cron-job.org token
+
+**Signs it has expired:** "Creek data delayed" on the creek pages and kiosk, "data delayed" on the map, no new
+"Fetch OneRain data" runs in the Actions tab, and "401 Unauthorized" in the cron-job.org job's History. After many
+failures in a row, cron-job.org also switches the job off.
+
+**Before it expires:** GitHub emails the token's owner about a week ahead. The expiry date is listed at
+github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens. Put a reminder on the team
+calendar a week before it.
+
+1. **Make the new token.** Sign in to GitHub as **OneShorelineSMC-admin** (preferred, so it doesn't depend on one
+   person's account) and open https://github.com/settings/personal-access-tokens/new.
+   - Token name: `cron-job.org OneRain trigger`. Expiration: **No expiration** if offered, otherwise the longest
+     allowed (then set the calendar reminder).
+   - Resource owner: **OneShorelineSMC**.
+   - Repository access: **Only select repositories** → `oneshorelinefews`.
+   - Permissions: click **+ Add permissions** → **Repositories**, search **actions**, tick **Actions** (not "Actions
+     variables"), then set it to **Read and write**. "Metadata: Read-only" is added on its own; leave it.
+   - Click **Generate token** and copy it right away (GitHub shows it only once). Don't email or paste it anywhere else.
+2. **Approve it, if asked.** If GitHub says the token is pending, an organization owner approves it at
+   https://github.com/organizations/OneShorelineSMC/settings/personal-access-token-requests. Approved tokens are
+   listed under **Active tokens** on the same page.
+3. **Put it in cron-job.org.** Sign in at https://console.cron-job.org → **Cronjobs** → "OneShorelineFEWS – Fetch
+   OneRain data" → **Edit cronjob** → **Advanced** tab → **Headers**. Replace the value of the `Authorization`
+   header with `Bearer ` and the new token (the word Bearer, one space, the token, no quotes). Leave the `Accept` and
+   `Content-Type` headers alone.
+4. **Turn the job back on.** On the **Common** tab, make sure **Enable job** is on. Click **Save**.
+5. **Check it.** Within 5 minutes the job's **History** shows a new row: success (HTTP 204) means it works; 401 means
+   the header is wrong or still has the old token; 403 means the token is waiting for approval or Actions isn't
+   "Read and write". In GitHub, the **Actions** tab shows a new "Fetch OneRain data" run every 5 minutes.
+6. **Catch up and tidy up.** To refresh the site right away: **Actions → Fetch OneRain data → Run workflow**. Delete
+   the expired token from the token list, and note the new expiry date on the team calendar.
 
 ### Updating a widget
 

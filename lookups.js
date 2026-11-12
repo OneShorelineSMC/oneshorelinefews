@@ -190,6 +190,8 @@
     tide_head_below_red_plain: "Below the flood level",
     tide_head_see_nws: "See the National Weather Service alert",
     home_row_see_nws: "see the National Weather Service alert",
+    tide_bay_sf_note: "San Francisco’s gauge, which agencies and the news often quote, reads about 1 ft lower and peaks about an hour earlier than Redwood City.",
+    tide_bay_stretch_note: "Redwood City fits the mid-county shoreline best. From Brisbane to Burlingame, high tides run a little lower and earlier; toward East Palo Alto, a little higher and later.",
     url_prep: "https://www.oneshoreline.org/flood-preparedness",
     prep_button: "Get ready for flooding",
     prep_alert_line: "How to prepare, and where to get sandbags",
