@@ -373,3 +373,7 @@ waves_unavailable,Wave readings and the marine forecast are not available right 
 waves_card_big,Big waves forecast offshore: up to {ft} ft {when},"Coast card at the top of every page, when a forecast period reaches WAVES_BIG_FT","labeled as a forecast, not an alert (staff, 2026-11-10); staff, 2026-11-10",,
 waves_sum_now,Waves offshore now: about {ft} ft.,"Coastside Tides page, Waves section, the sentence over the graph","{ft} = Half Moon Bay buoy significant wave height, rounded; staff, 2026-11-11",,
 waves_sum_fc,Forecast: up to {ft} ft {when}.,"Coastside Tides page, Waves section, the sentence over the graph","{ft} = the highest seas or swell in the NWS Coastal Waters Forecast; {when} = its period (tonight, Wednesday, ...); staff, 2026-11-11",,
+url_prep,https://www.oneshoreline.org/flood-preparedness,"home page button, the line under alerts on Home, Creeks and Tides, Creeks page About","Must start with https://. OneShoreline's preparedness page; FEWS links to it rather than copying it (staff, 2026-11-11)",,
+prep_button,Get ready for flooding,"home page button, under the SMC Alert button","staff, 2026-11-11",,
+prep_alert_line,"How to prepare, and where to get sandbags","Home, Creeks and Tides pages, under the alerts at the top, only while a flood alert, a creek status or a higher-than-usual tide is in effect","staff, 2026-11-11",,
+prep_about,"OneShoreline's flood preparedness page: six steps to take before winter, sandbag sites, flood insurance, and what to do during and after a flood.",Creeks page About (the About tab),"staff, 2026-11-11",,
