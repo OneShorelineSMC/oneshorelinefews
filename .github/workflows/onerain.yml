@@ -105,9 +105,10 @@ jobs:
 
       - name: Waves off the coast (Coastside Tides page; scripts/waves.py, every 30 minutes)
         # The Half Moon Bay and San Francisco NOAA buoys and the NWS Coastal Waters Forecast for the waters off San Mateo
-        # County. NOAA's tide table leaves waves out. A problem here never stops the creek data; the last values are kept.
+        # County. NOAA's tide table leaves waves out. Also the experimental runup estimate for the staff view (reference beaches in
+        # lookups/runup_beaches.csv). A problem here never stops the creek data; the last values are kept.
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: python scripts/waves.py out/waves.json --min-age 25
 
       - name: Flood reports approved by staff (every 15 minutes)
