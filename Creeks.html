@@ -228,6 +228,7 @@
   /* "In an emergency, call 911." in the logo bar, top right, on every page (staff, 2026-10-26): plain text, not a link */
   .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
   @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  .srcs { font-size: 14px; color: var(--muted); margin: 6px 0 0; padding-left: 18px; line-height: 1.45; } .srcs li { margin: 4px 0; } .srcs b { color: var(--text); }
 </style>
 <link rel="stylesheet" href="nav.css?v=20261108b">
 </head>
@@ -330,10 +331,16 @@
 
     <div class="card">
       <h2>Data sources</h2>
-      <p style="font-size:13.5px;color:var(--muted)">OneShoreline Early Warning System (OneRain) for creek stage and rainfall ·
-        USGS stream gauges for some of the "more creeks" ·
-        NOAA Tides &amp; Currents stations <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9414750" target="_blank" rel="noopener">9414750</a> (Alameda) and <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9414523" target="_blank" rel="noopener">9414523</a> (Redwood City) for tides · National Weather Service for alerts.
-        The tide table does not include storm surge. This page refreshes automatically.</p>
+      <!-- updated 2026-11-12: Monterey, the NOAA projection, waves, the seasonal outlook, evacuation and flood reports -->
+      <ul class="srcs">
+        <li><b>Creeks and rain:</b> OneShoreline Early Warning System (OneRain) gauges; USGS stream gauges for some of the "more creeks".</li>
+        <li><b>Tides:</b> NOAA Tides &amp; Currents gauges <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9414523" target="_blank" rel="noopener">9414523</a> (Redwood City) for the Bay, <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9413450" target="_blank" rel="noopener">9413450</a> (Monterey) for the coast and <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=9414750" target="_blank" rel="noopener">9414750</a> (Alameda) for Colma and San Bruno creeks: the measured tide, the tide table, and NOAA’s projection about 2 days ahead, which adds storms, wind and ocean conditions to the tide table.</li>
+        <li><b>Seasonal outlook:</b> San Francisco’s monthly sea level record (NOAA) and the NOAA Climate Prediction Center’s El Niño index.</li>
+        <li><b>Waves:</b> NOAA buoys <a href="https://www.ndbc.noaa.gov/station_page.php?station=46012" target="_blank" rel="noopener">46012</a> (Half Moon Bay) and <a href="https://www.ndbc.noaa.gov/station_page.php?station=46026" target="_blank" rel="noopener">46026</a> (San Francisco), and the National Weather Service Coastal Waters Forecast.</li>
+        <li><b>Alerts:</b> National Weather Service San Francisco Bay Area. Evacuation zones: Genasys Protect. Emergency alerts: SMC Alert (San Mateo County).</li>
+        <li><b>Flood reports:</b> reports from the public, shown after OneShoreline staff review them.</li>
+      </ul>
+      <p style="font-size:13.5px;color:var(--muted)">The tide table is the tide alone; storm surge and waves are not in it. This page refreshes automatically.</p>
     </div>
   </div>
 <div class="owner">
