@@ -116,15 +116,27 @@ levels the data job reads from BCDC: `station` (NOAA id) · `return_years` (1, 2
 - Kiosk display settings (tab rotation, burn-in shift, refresh timing) — top of `ShorelineKiosk.html`.
 - King Tide days and the high tide calendar are worked out from NOAA's Redwood City tide table each time (`tide_season.js`); the flood level is `TIDE_RED_FT_RWC` and the King Tide level (the 1-year tide) is `KING_TIDE_FT_RWC` in `settings.csv`.
 
-## Embedding on another website (staff, 2026-11-11)
+## Embedding on another website (staff, 2026-11-11; updated 2026-11-12)
 
-Any public page can sit in an iframe on oneshoreline.org. Inside an iframe, the bottom bar (Home, Creeks, Tides, Map,
-About) moves to the top of the page, because a bar fixed to the bottom of a tall iframe is off the screen. Each page also
-sends the website its height, so the iframe can fit the page exactly instead of guessing. Paste both parts as custom
-HTML on the website:
+Any public page can sit in an iframe on oneshoreline.org. Links to other websites open as the whole page, not inside
+the FEWS box. There are two ways to size the box:
+
+**Window (recommended):** the box is about one screen tall and FEWS scrolls inside it, so the menu stays on screen the
+same way it does on the site itself (the bottom bar on phones, the tab strip at the top on computers). No script needed:
 
 ```html
-<iframe id="fews" src="https://oneshorelinesmc.github.io/oneshorelinefews/index.html"
+<iframe src="https://oneshorelinesmc.github.io/oneshorelinefews/index.html"
+  title="San Mateo County flood early warning"
+  style="display:block; width:100%; max-width:100%; height:85vh; min-height:560px; border:0;"></iframe>
+```
+
+`85vh` is 85% of the screen's height; adjust it so the website's own header still shows above the box.
+
+**Fit:** the box grows to the full height of each page, so there is no scrolling inside it, but the menu can't stay on
+screen (it sits at the top of the page). Add `?fit=1` to the address and the script below:
+
+```html
+<iframe id="fews" src="https://oneshorelinesmc.github.io/oneshorelinefews/index.html?fit=1"
   title="San Mateo County flood early warning"
   style="display:block; width:100%; max-width:100%; height:1400px; border:0;"></iframe>
 <script>
@@ -136,6 +148,4 @@ HTML on the website:
 </script>
 ```
 
-If the website doesn't allow the script, the iframe still works at the fixed height (1400px); only the auto-fit is lost.
-Use a width of 100%, never a fixed number of pixels, or it runs off the side on phones.
-
+Either way, use a width of 100%, never a fixed number of pixels, or it runs off the side on phones.
