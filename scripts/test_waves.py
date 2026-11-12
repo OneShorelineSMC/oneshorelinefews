@@ -146,6 +146,13 @@ ru3 = W.runup({}, NOW2, [BEACH], BUOYS, CW2, fetch3)
 check("runup: grid down: the Coastal Waters Forecast swells instead", "Coastal Waters" in ru3["beaches"][0]["wave_source"] and len(ru3["beaches"][0]["forecast"]) > 20)
 ru4 = W.runup({"runup": ru}, NOW2, [BEACH], BUOYS, CW2, lambda u, accept=None: (_ for _ in ()).throw(OSError("offline")))
 check("runup: NOAA down: the last estimate kept, with the problem noted", ru4["beaches"] == ru["beaches"] and ru4["problems"])
+def fetch4(url, accept=None):   # the grid has waves, but only for hours long past
+    if "/gridpoints/MTR/79,100" in url:
+        return json.dumps({"properties": {"waveHeight": {"values": [{"validTime": "2026-10-01T08:00:00+00:00/PT3H", "value": 2.0}]},
+                                          "wavePeriod": {"values": [{"validTime": "2026-10-01T08:00:00+00:00/PT3H", "value": 12}]}}})
+    return fetch2(url, accept)
+ru5 = W.runup({}, NOW2, [BEACH], BUOYS, CW2, fetch4)
+check("runup: grid waves that miss the tide hours: the Coastal Waters Forecast instead, noted", "Coastal Waters" in ru5["beaches"][0]["wave_source"] and ru5["beaches"][0]["forecast"] and ru5["problems"])
 import tempfile
 bp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups", "runup_beaches.csv")
 bs = W.read_beaches(bp)

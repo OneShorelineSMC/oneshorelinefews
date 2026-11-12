@@ -391,6 +391,10 @@ def runup(previous, now, beaches, buoys, cwf, fetch=get):
         if not fw and cw:
             fw, wsrc = cw, "NWS Coastal Waters Forecast (wave detail)"
         fc = twl_series(b, ahead, fw)
+        if not fc and fw and cw:   # the grid cell had waves but none at the hours of the tide forecast (seen at Surfer's Beach, 2026-11-12)
+            out["problems"].append(f"{b['id']}: {wsrc} gave {len(fw)} hours of waves, none matching the tide hours; used the Coastal Waters Forecast")
+            fw, wsrc = cw, "NWS Coastal Waters Forecast (wave detail)"
+            fc = twl_series(b, ahead, fw)
         hc = twl_series(b, past, hind_w)
         fpk, hpk = daily_peaks(fc), daily_peaks(hc)
         hist = {d: dict(v) for d, v in (prev_hist.get(b["id"]) or {}).items() if d >= keep_from}
