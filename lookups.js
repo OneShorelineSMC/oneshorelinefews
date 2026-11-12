@@ -616,19 +616,32 @@
   L.ready = load();
   setInterval(load, RELOAD_MIN * 60000);
 
-  /* Inside another website (an iframe on oneshoreline.org, staff 2026-11-11). The bottom bar is fixed to the bottom of
-     the page, which in a tall iframe is far below the screen, so there it moves to the top of the page as an ordinary
-     bar. The page also tells the website its height ({fews_height: px} by postMessage), so the website can size the
-     iframe to fit (the snippet is in lookups/README.md, "Embedding"). ?embed=1 pages keep hiding the bar. */
+  /* Inside another website (an iframe on oneshoreline.org, staff 2026-11-11; 2026-11-12: the menu stays on screen).
+     Two ways to embed (snippets in lookups/README.md, "Embedding"):
+     - Window (recommended): the iframe is about one screen tall and FEWS scrolls inside it, so the menu works as it does
+       on the site itself: the bottom bar on phones, the tab strip held at the top on computers.
+     - Fit (?fit=1 in the iframe's address, kept while people move between pages): the iframe grows to the page's full
+       height (the page sends {fews_height: px} by postMessage). The website scrolls instead, so the menu can't stay on
+       screen; it sits at the top of the page as an ordinary bar.
+     Either way, links to other websites open as the whole page. ?embed=1 pages keep hiding the bar. */
   var framed = false;
   try { framed = window.self !== window.top; } catch (e) { framed = true; }
   L.framed = framed;
+  var fit = false;
+  if (framed) {
+    try { if (/[?&]fit=1\b/.test(location.search)) sessionStorage.setItem("fews_fit", "1"); fit = sessionStorage.getItem("fews_fit") === "1"; }
+    catch (e) { fit = /[?&]fit=1\b/.test(location.search); }
+  }
+  L.fit = fit;
   if (framed) {
     document.documentElement.classList.add("framed");
-    var st = document.createElement("style");
-    st.textContent = "html.framed body{padding-bottom:12px!important}" +
-      "html.framed body>nav{position:static!important;border-top:0!important;border-bottom:1px solid var(--line,#ddd)!important;padding-bottom:0!important}";
-    (document.head || document.documentElement).appendChild(st);
+    if (fit) {
+      document.documentElement.classList.add("fit");
+      var st = document.createElement("style");
+      st.textContent = "html.fit body{padding-bottom:12px!important}" +
+        "html.fit body>nav{position:static!important;border-top:0!important;border-bottom:1px solid var(--line,#ddd)!important;padding-bottom:0!important}";
+      (document.head || document.documentElement).appendChild(st);
+    }
     var topLinks = function () {   // links to other websites open as the whole page, not inside the FEWS box
       Array.prototype.forEach.call(document.querySelectorAll('a[href^="http"]'), function (a) { if (a.target !== "_blank") a.target = "_top"; });
     };
@@ -644,8 +657,10 @@
       try { window.parent.postMessage({ fews_height: h, fews_page: location.pathname.split("/").pop() || "index.html" }, "*"); } catch (e) {}
     };
     var start = function () {
-      moveNav(); tell(); topLinks();
+      topLinks();
       if (window.MutationObserver) new MutationObserver(topLinks).observe(document.body, { childList: true, subtree: true });
+      if (!fit) return;
+      moveNav(); tell();
       if (window.ResizeObserver) new ResizeObserver(tell).observe(document.body);
       window.addEventListener("load", tell);
       setInterval(tell, 2000);
