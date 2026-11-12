@@ -151,6 +151,7 @@
     font-weight: 700; text-decoration: none; }
   @media (prefers-color-scheme: dark) { .smcbtn { color: #8cc8ff; border-color: #8cc8ff; } }
   .getal .tiny { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+  .getal .prepbtn { margin-top: 12px; }
   .flinks { text-align: center; font-size: 14px; color: var(--muted); margin: 20px 0 0; }
   .more { margin: 10px 0 0; }
   .more > summary { cursor: pointer; text-align: center; font-size: 14px; color: var(--muted); padding: 6px; }
@@ -239,6 +240,8 @@
   <div id="secAlerts" class="getal">
     <a class="smcbtn" href="https://www.smcgov.org/dem/smc-alert" data-href="url_smc_alert" target="_blank" rel="noopener"><span data-text="smc_alert_button">Get emergency alerts: SMC Alert</span> ›</a>
     <p class="tiny" data-text="smc_alert_short">This site shows conditions; it doesn’t send alerts.</p>
+    <!-- OneShoreline's preparedness page (staff, 2026-11-11): linked, not copied, so there is one version to keep up to date -->
+    <a class="smcbtn prepbtn" href="https://www.oneshoreline.org/flood-preparedness" data-href="url_prep"><span data-text="prep_button">Get ready for flooding</span> ›</a>
   </div>
 
   <!-- About, system status, contact and the disclaimer: one tap away -->
@@ -281,10 +284,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261111c"></script>
-<script src="severity.js?v=20261111c"></script>
-<script src="creek_status.js?v=20261111c"></script>
-<script src="hero.js?v=20261111c"></script>
+<script src="lookups.js?v=20261112a"></script>
+<script src="severity.js?v=20261112a"></script>
+<script src="creek_status.js?v=20261112a"></script>
+<script src="hero.js?v=20261112a"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -374,8 +377,12 @@ function nws() {
 }
 var TIDE_STATE = { bay: null, coast: null };
 var CR = null;   // the creeks' line for the card (hero.js creeks)
+// the NWS cards; prepAlso (the preparedness link under them) while a tide is above normal or a creek has a status
+var PREP = false;
+function prepNow() { return [TIDE_STATE.bay, TIDE_STATE.coast].some(function (t) { return t && t.level && t.level !== "normal"; }) || !!(CR && CR.worst); }
+function drawCards() { PREP = prepNow(); HERO.nwsCards($("ncards"), { nws: NWS.list, nwsFailed: NWS.failed, current: null, inland: true, waves: WV, prepAlso: PREP }); }
 function renderHero() {
-  HERO.nwsCards($("ncards"), { nws: NWS.list, nwsFailed: NWS.failed, current: null, inland: true, waves: WV });
+  drawCards();
   renderOrder();
   renderRows();
 }
@@ -426,6 +433,7 @@ function renderRows() {
   rows.forEach(function (r, i) { r.i = i; });
   rows.sort(function (a, b) { return (SV.RANK[b.level] || 0) - (SV.RANK[a.level] || 0) || a.i - b.i; });
   $("rows").innerHTML = rows.map(function (r) { return r.html; }).join("");
+  if (prepNow() !== PREP) drawCards();   // tides and creeks load after the alerts
   // a creek at Be ready or Flooding likely: the evacuation-order button under the alert at the top
   var u = LK.text("url_evacuation");
   $("evacBox").innerHTML = CR && (CR.worst === "likely" || CR.worst === "ready") && /^https:\/\//.test(u) ?

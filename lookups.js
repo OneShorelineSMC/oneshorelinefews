@@ -190,6 +190,10 @@
     tide_head_below_red_plain: "Below the flood level",
     tide_head_see_nws: "See the National Weather Service alert",
     home_row_see_nws: "see the National Weather Service alert",
+    url_prep: "https://www.oneshoreline.org/flood-preparedness",
+    prep_button: "Get ready for flooding",
+    prep_alert_line: "How to prepare, and where to get sandbags",
+    prep_about: "OneShoreline's flood preparedness page: six steps to take before winter, sandbag sites, flood insurance, and what to do during and after a flood.",
     waves_title: "Waves",
     waves_intro: "The tide heights on this page leave out waves. On the coast, waves can carry water much higher up a beach than the tide alone.",
     waves_buoy_now: "{name}: waves {ft} ft, {s} seconds apart, from the {dir}.",
@@ -625,6 +629,9 @@
     st.textContent = "html.framed body{padding-bottom:12px!important}" +
       "html.framed body>nav{position:static!important;border-top:0!important;border-bottom:1px solid var(--line,#ddd)!important;padding-bottom:0!important}";
     (document.head || document.documentElement).appendChild(st);
+    var topLinks = function () {   // links to other websites open as the whole page, not inside the FEWS box
+      Array.prototype.forEach.call(document.querySelectorAll('a[href^="http"]'), function (a) { if (a.target !== "_blank") a.target = "_top"; });
+    };
     var moveNav = function () {
       var nav = document.querySelector("body > nav");
       if (nav && document.body.firstElementChild !== nav) document.body.insertBefore(nav, document.body.firstElementChild);
@@ -637,7 +644,8 @@
       try { window.parent.postMessage({ fews_height: h, fews_page: location.pathname.split("/").pop() || "index.html" }, "*"); } catch (e) {}
     };
     var start = function () {
-      moveNav(); tell();
+      moveNav(); tell(); topLinks();
+      if (window.MutationObserver) new MutationObserver(topLinks).observe(document.body, { childList: true, subtree: true });
       if (window.ResizeObserver) new ResizeObserver(tell).observe(document.body);
       window.addEventListener("load", tell);
       setInterval(tell, 2000);

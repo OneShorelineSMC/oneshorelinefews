@@ -546,10 +546,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261111c"></script>
-<script src="tide_season.js?v=20261111c"></script>
-<script src="severity.js?v=20261111c"></script>
-<script src="hero.js?v=20261111c"></script>
+<script src="lookups.js?v=20261112a"></script>
+<script src="tide_season.js?v=20261112a"></script>
+<script src="severity.js?v=20261112a"></script>
+<script src="hero.js?v=20261112a"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -593,9 +593,10 @@ function loadHeroData() {
   fetch("https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { return r.json(); }).then(function (d) { HB.creeks = d; renderHero(); }).catch(function () {});
 }
+var TIDE_ACTIVE = false;
 function renderHero() {
   if (EMBED) return;
-  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay", only: true, waves: WV,
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay", only: true, waves: WV, prepAlso: TIDE_ACTIVE,
     creeks: HB.creeks ? HERO.creeks(HB.creeks, D.alerts || []) : null });
 }
 function unwrap(t) { return String(t || "").replace(/-\s*\n\s*(?=[a-z])/g, "-").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim(); }
@@ -1073,6 +1074,7 @@ function render() {
     if (!s.pred) { hd.className = "head tcard2 sv-card sv-offline"; hd.innerHTML = '<span class="th">' + esc(s.failed ? "Tide table unavailable — retrying" : "Loading tides…") + "</span>"; }
     else {
       var ts = HERO.tideState({ D: { pred: s.pred, obs: s.obs, ofs: useModel ? s.ofs : null }, mhhw: st.mhhw, red: redFor(st), water: SIDE.water, nws: D.alerts || [], days: DAYS, now: now });
+      if (i === 0) { var was = TIDE_ACTIVE; TIDE_ACTIVE = ts.level !== "normal"; if (was !== TIDE_ACTIVE) renderHero(); }   // the preparedness link under the alerts
       var tc = HERO.tideCard(Object.assign({}, ts, { tech: [], more: 0 }), null);   // numbers: in the day list and graph below
       hd.className = "head " + tc.cls; hd.setAttribute("role", "status"); hd.setAttribute("aria-label", tc.label); hd.innerHTML = tc.html;
     }

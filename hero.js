@@ -77,7 +77,7 @@
       ".ncard .nsd{display:block;font-size: 12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--muted,#56657a)}",
       ".ncard .nhd{display:flex;align-items:center;gap:6px;font-size:14.5px;line-height:1.25;margin-top:2px}.ncard .nhd .sv-ic{width:16px;height:16px;flex:none}",
       ".ncard .nsub{display:block;font-size: 14px;color:var(--muted,#56657a);margin-top:1px}",
-      ".nalso{margin:8px 2px 0;font-size: 14px;color:var(--text,#1a2733)}.nwrap .nwsfull-d{margin-top:6px;font-size: 14px}.nwrap .nwsfull-d summary{cursor:pointer;color:var(--link,var(--info,#0A5587))}",
+      ".nprep{margin:8px 2px 0;font-size:15px;font-weight:600}.nprep a{color:var(--link,var(--info,#0A5587))}.nalso{margin:8px 2px 0;font-size: 14px;color:var(--text,#1a2733)}.nwrap .nwsfull-d{margin-top:6px;font-size: 14px}.nwrap .nwsfull-d summary{cursor:pointer;color:var(--link,var(--info,#0A5587))}",
       ".tcard2 .go2{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:22px;color:var(--muted,#56657a)}"
     ].join("\n");
     document.head.appendChild(s);
@@ -199,6 +199,12 @@
     if (rest.length) h += '<details class="nwsfull-d"' + (wasOpen ? " open" : "") + "><summary>Text of the other alerts (" + rest.length + ')</summary><div class="nwsfull">' + rest.map(function (p) {
       return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + (p.areaDesc ? " · " + esc(p.areaDesc) : "") + "</div>" + alertBody(p) + "</div>";
     }).join("") + "</div></details>";
+    // preparedness (staff, 2026-11-11): a link to OneShoreline's preparedness page while a flood product is in effect on
+    // this page's cards (NWS Coastal Flood / Flood products), or the page says something is happening (s.prepAlso)
+    var shown = [].concat.apply([], groups.map(function (g) { return g.ps || []; })).concat(s.only ? [] : rest);
+    var pu = LK.text("url_prep");
+    if (/^https:\/\//.test(pu) && (s.prepAlso || shown.some(function (p) { return SV.hazardOf(p.event) !== "other"; })))
+      h += '<p class="nprep"><a href="' + esc(pu) + '"' + (LK.framed ? ' target="_top"' : "") + ">" + esc(LK.text("prep_alert_line")) + " ›</a></p>";
     el.classList.add("nwrap"); el.innerHTML = h; el._s = s;
     if (!el._bound) {
       el._bound = true;

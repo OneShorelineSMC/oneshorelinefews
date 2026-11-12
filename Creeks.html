@@ -310,6 +310,8 @@
       <p class="emerg" data-text="e911"></p>
       <a class="btn primary" href="https://www.smcgov.org/dem/smc-alert" data-href="url_smc_alert" target="_blank" rel="noopener">
         <span class="i">🔔</span><span>Get emergency alerts: SMC Alert<small>San Mateo County's free alerts by text, email or phone</small></span></a>
+      <a class="btn" href="https://www.oneshoreline.org/flood-preparedness" data-href="url_prep">
+        <span class="i">🧰</span><span><span data-text="prep_button">Get ready for flooding</span><small data-text="prep_about">OneShoreline's flood preparedness page</small></span></a>
     </div>
 
     <div class="card">
@@ -342,10 +344,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261111c"></script>
-<script src="severity.js?v=20261111c"></script>
-<script src="creek_status.js?v=20261111c"></script>
-<script src="hero.js?v=20261111c"></script>
+<script src="lookups.js?v=20261112a"></script>
+<script src="severity.js?v=20261112a"></script>
+<script src="creek_status.js?v=20261112a"></script>
+<script src="hero.js?v=20261112a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -445,7 +447,8 @@ function loadAlerts() {
 }
 // The Bay tide bar that used to sit here is gone: the Bay shoreline card covers NWS, and Bay tides has the tide itself
 function renderHero() {
-  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true, waves: WV });
+  var crx = D.creek ? HERO.creeks(D.creek, D.alerts || []) : null;
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true, waves: WV, prepAlso: !!(crx && crx.worst) });
 }
 
 
