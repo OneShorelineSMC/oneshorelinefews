@@ -351,10 +351,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261112c"></script>
-<script src="severity.js?v=20261112c"></script>
-<script src="creek_status.js?v=20261112c"></script>
-<script src="hero.js?v=20261112c"></script>
+<script src="lookups.js?v=20261113a"></script>
+<script src="severity.js?v=20261113a"></script>
+<script src="creek_status.js?v=20261113a"></script>
+<script src="hero.js?v=20261113a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -455,7 +455,7 @@ function loadAlerts() {
 // The Bay tide bar that used to sit here is gone: the Bay shoreline card covers NWS, and Bay tides has the tide itself
 function renderHero() {
   var crx = D.creek ? HERO.creeks(D.creek, D.alerts || []) : null;
-  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true, waves: WV, prepAlso: !!(crx && crx.worst) });
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true, waves: WV, prepAlso: !!(crx && crx.worst), localCreek: crx && crx.worst ? crx.headline : null });
 }
 
 

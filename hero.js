@@ -154,7 +154,8 @@
   // side outlined. Tap a card with an alert: its NWS text opens under the cards (tap again to close). Under them, one line
   // for anything else in effect (with its text folded). s: { nws, nwsFailed, current: "bay"|"coast"|null,
   // inland: true adds a third card, "Creeks and rain" (NWS flood products for the county), creeks (HERO.creeks), creekLink,
-  // only: true shows just the current side's card, waves (waves.json): the Coast card's "Big waves forecast" line }
+  // only: true shows just the current side's card, waves (waves.json): the Coast card's "Big waves forecast" line,
+  // localCreek: our creek status headline when a creek has an alert (the Creeks and rain card then isn't a green check) }
   function nwsCards(el, s) {
     injectCSS();
     var list = s.nws || [], used = {}, key = function (p) { return p.id || p.event + "|" + p.sent; };
@@ -173,6 +174,11 @@
     var cards = groups.map(function (g) {
       var ps = g.ps, lv, head, sub = "";
       if (!ps) { lv = s.nwsFailed ? "offline" : "normal"; head = s.nwsFailed ? "Alerts unavailable" : "Checking…"; sub = s.nwsFailed ? "Retrying" : ""; }
+      else if (!ps.length && g.id === "creek" && s.localCreek) {
+        // NWS has no flood product, but our own creek gauges show an alert (staff, 2026-11-13): no green check, which read
+        // as "all clear" right above a creek alert; say NWS has none and point to ours
+        lv = "info"; head = LK.text("creek_card_nws_none"); sub = LK.text("creek_card_local", { status: s.localCreek });
+      }
       else if (!ps.length) { lv = "normal"; head = "No alerts"; }
       else { lv = SV.top(ps.map(function (p) { return SV.nwsLevel(p.event); })); head = ps[0].event; sub = nwsUntil(ps[0]) + (ps.length > 1 ? " · +" + (ps.length - 1) + " more" : ""); }
       var wb = g.id === "coast" ? wavesBig(s.waves) : null;
