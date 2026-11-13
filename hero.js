@@ -418,9 +418,10 @@
     }
     el.classList.toggle("hcompact", compact);
     var d0 = q(".nwsfull-d"), wasOpen = d0 && d0.open;
-    el.className = "hero sv-hero sv-" + P.level + (compact ? " hcompact" : "");
+    var hl = !lead && s.nws == null ? (s.nwsFailed ? "offline" : "info") : P.level;   // NWS unreadable: no green check (2026-11-13)
+    el.className = "hero sv-hero sv-" + hl + (compact ? " hcompact" : "");
     el.setAttribute("role", lead && SV.RANK[P.level] >= SV.RANK.advisory ? "alert" : "status");
-    q(".hic").innerHTML = SV.icon(lead ? P.level : "normal");
+    q(".hic").innerHTML = SV.icon(lead ? P.level : hl);
     q(".hhd").textContent = head;
     if (compact) q(".hhd").insertAdjacentHTML("beforeend", ' <a href="Tides.html' + hasPreview() + '">Tide details ›</a>');
     q(".hsub").textContent = sub; q(".hsub").hidden = !sub;
@@ -430,7 +431,7 @@
   // The kiosk's one-line version: the same lead, level and words, shorter
   function strip(s) {
     var P = plan(s), lead = P.lead;
-    if (!lead) return { level: "normal", text: s.nws == null ? (s.nwsFailed ? "National Weather Service alerts unavailable" : "Checking National Weather Service alerts…") : LK.text("hero_none"),
+    if (!lead) return { level: s.nws == null ? (s.nwsFailed ? "offline" : "info") : "normal", text: s.nws == null ? (s.nwsFailed ? "National Weather Service alerts unavailable" : "Checking National Weather Service alerts…") : LK.text("hero_none"),
       sub: "San Mateo County", others: [] };
     var text, sub;
     if (lead.kind === "tide") { var w = String(s.bay.when || ""); text = LK.text("hero_tide_strip", { when: w.charAt(0).toUpperCase() + w.slice(1) }) + "."; sub = P.tideP.length ? "NWS " + P.tideP[0].event + " " + nwsUntil(P.tideP[0]) : "NOAA projection, Redwood City"; }
