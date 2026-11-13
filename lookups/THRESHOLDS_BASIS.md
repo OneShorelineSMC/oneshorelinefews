@@ -583,6 +583,15 @@ alerts. `WAVES_BIG_FT` (15 ft, provisional, staff to confirm with NWS/DEM) only 
 it never raises an alert level. The USGS/NOAA Total Water Level and Coastal Change forecast (runup at the beach) would be
 the better source, but it covers the Atlantic and Gulf coasts only so far; check again when the Pacific coast is added.
 
+### Coast tide status during NWS surf products (2026-11-13)
+
+On the open coast the waves, not the tide, decide how far the water reaches, so the Coastside tide status never shows a
+green "Normal" alone while NWS has a High Surf Warning or Advisory, a Beach Hazards Statement or a sneaker wave product
+for the San Mateo coast (zone CAZ509). The tide's own numbers are unchanged; the card takes the product's level (a
+statement counts as watch), the headline names the product and its end time, and the Coastside day cards inside it get a
+"High surf" / "Beach hazards" tag. Rip Current Statements alone don't change it (they are about swimming). Our own wave
+forecast (`WAVES_BIG_FT`) never raises the level: only NWS products do.
+
 ### Water reach at reference beaches (experimental, staff view only, 2026-11-11)
 
 No agency publishes a tide + waves water level forecast for the San Mateo coast (the USGS/NOAA Total Water Level and
