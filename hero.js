@@ -32,6 +32,17 @@
     return iso ? "until " + new Date(iso).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" }) : "until further notice";
   }
   function nwsUntil(p) { return untilText(p.ends || p.expires); }
+  // an ISO time (NWS) as Pacific clock time in the page's local-as-UTC milliseconds (the same clock as nowLocal)
+  function isoLocal(iso) {
+    if (!iso) return NaN;
+    var p = {}; new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hourCycle: "h23", year: "numeric",
+      month: "numeric", day: "numeric", hour: "numeric", minute: "numeric" }).formatToParts(new Date(iso))
+      .forEach(function (x) { p[x.type] = +x.value; });
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
+  }
+  // NWS products about waves reaching up the shore (staff, 2026-11-13). Rip current statements alone are about swimming,
+  // so they don't change the tide card.
+  var SURF_RX = /high surf|beach hazard|sneaker/i;
   function getJSON(url, accept) {
     return fetch(url, { cache: "no-store", headers: accept ? { Accept: accept } : {} }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
@@ -296,6 +307,26 @@
       if (isFinite(red)) st.tech.push("flood level " + (o.id ? LK.tideFt(red, o.id) : (red - m).toFixed(1) + " ft above an average high tide (" + red.toFixed(1) + " ft NAVD88)"));
     }
     if (!isFinite(red)) st.tech.push(LK.text("coast_no_level"));
+    // The coast (staff, 2026-11-13): the tide can be normal while NWS warns of high surf, and on the open coast the waves
+    // decide how far the water reaches, so a green "Normal" never stands alone then. The tide's numbers stay as they are;
+    // the card takes the surf product's level and says both. Our own wave forecast never raises the level (only NWS does).
+    if (water !== "Bay" && !flood.length) {
+      var surf = shoreFor(o.nws || [], "coast").filter(function (p) { return SURF_RX.test(p.event); });
+      if (surf.length) {
+        var lvOf = function (p) { var l = SV.nwsLevel(p.event); return l === "info" ? "watch" : l; };   // a Beach Hazards Statement = watch
+        var slv = SV.top(surf.map(lvOf));
+        var sp = surf.filter(function (p) { return lvOf(p) === slv; })[0], tideNormal = st.level === "normal";
+        st.surf = { event: sp.event, until: nwsUntil(sp), level: slv,
+          start: isoLocal(sp.onset || sp.effective || sp.sent) || now, end: isoLocal(sp.ends || sp.expires) || now + 7 * 864e5 };
+        st.tideWord = st.word;
+        st.level = SV.top([st.level, slv]);
+        st.head = tideNormal ? LK.text("tide_head_surf", { event: sp.event, until: st.surf.until })
+          : st.head.replace(/\.\s*$/, "") + ". " + LK.text("tide_head_surf_also", { event: sp.event, until: st.surf.until });
+        var sw = LK.text(/high surf/i.test(sp.event) ? "tide_word_surf" : "tide_word_beach"); st.surf.word = sw;
+        st.word = tideNormal ? sw : st.word + ", " + sw.toLowerCase();
+        st.short = sp.event + " " + st.surf.until + " · tide " + (tideNormal ? "normal" : st.tideWord.toLowerCase());   // kiosk: one line
+      }
+    }
     return st;
   }
   function tideCard(st, name) {

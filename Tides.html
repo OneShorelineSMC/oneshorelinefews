@@ -224,6 +224,7 @@
   .day .nrm { color: var(--muted); font-weight: 400; }
   .estn { margin: 6px 2px 0; font-size: 14px; line-height: 1.4; color: var(--muted); } .estn:empty { display: none; }
   .estn a { color: var(--info); font-weight: 600; white-space: nowrap; }
+  .dsurf { display: block; margin-top: 3px; font-size: 13px; font-weight: 700; }
   .sfn { margin: 6px 2px 0; font-size: 14px; line-height: 1.4; color: var(--muted); }
   .calpre { margin: 2px 0 8px; font-size: 14px; line-height: 1.45; color: var(--text); }
   .tech h3.clh { margin: 14px 0 4px; } .tech .afd { margin-top: 8px; }
@@ -547,10 +548,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261113a"></script>
-<script src="tide_season.js?v=20261113a"></script>
-<script src="severity.js?v=20261113a"></script>
-<script src="hero.js?v=20261113a"></script>
+<script src="lookups.js?v=20261113b"></script>
+<script src="tide_season.js?v=20261113b"></script>
+<script src="severity.js?v=20261113b"></script>
+<script src="hero.js?v=20261113b"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -594,7 +595,7 @@ function loadHeroData() {
   fetch("https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { return r.json(); }).then(function (d) { HB.creeks = d; renderHero(); }).catch(function () {});
 }
-var TIDE_ACTIVE = false;
+var TIDE_ACTIVE = false, SURF = null;   // SURF: the NWS surf product on the coast (hero.js tideState .surf)
 function renderHero() {
   if (EMBED) return;
   HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: COAST ? "coast" : "bay", only: true, waves: WV, prepAlso: TIDE_ACTIVE,
@@ -1077,6 +1078,7 @@ function render() {
     if (!s.pred) { hd.className = "head tcard2 sv-card sv-offline"; hd.innerHTML = '<span class="th">' + esc(s.failed ? "Tide table unavailable — retrying" : "Loading tides…") + "</span>"; }
     else {
       var ts = HERO.tideState({ D: { pred: s.pred, obs: s.obs, ofs: useModel ? s.ofs : null }, mhhw: st.mhhw, red: redFor(st), water: SIDE.water, nws: D.alerts || [], days: DAYS, now: now });
+      if (i === 0) SURF = ts.surf || null;
       if (i === 0) { var was = TIDE_ACTIVE; TIDE_ACTIVE = ts.level !== "normal"; if (was !== TIDE_ACTIVE) renderHero(); }   // the preparedness link under the alerts
       var tc = HERO.tideCard(Object.assign({}, ts, { tech: [], more: 0 }), null);   // numbers: in the day list and graph below
       hd.className = "head " + tc.cls; hd.setAttribute("role", "status"); hd.setAttribute("aria-label", tc.label); hd.innerHTML = tc.html;
@@ -1127,7 +1129,9 @@ function render() {
       var srcSr = top.src === "fcst" ? " (NOAA projection)" : top.src === "measured" ? " (measured)" : est != null ? " (estimate: tide table " + LK.tideRel(top.v, st.id) + " plus " + add.toFixed(1) + " ft)" : " (tide table)";
       h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (maybe ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + (est != null ? "≈" : "") + esc(LK.tideShort(val, st.id).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + esc(LK.tideUnit(val, st.id)) + "</span></span>" +
         '<span class="dt">' + fTime(top.t) + '<span class="dxw">' + esc(srcSr) + '</span><span class="dnv">' + esc(LK.tideAlt(val, st.id)) + "</span></span>" +
-        '<span class="dx">' + (isRed ? "Flood level" : maybe ? "Possible flood level" : over ? "Higher than usual" : '<span class="nrm">Normal</span>') + "</span></div>";
+        '<span class="dx">' + (isRed ? "Flood level" : maybe ? "Possible flood level" : over ? "Higher than usual" : '<span class="nrm">Normal</span>') +
+        // Coastside: a tag on each day inside an NWS surf product (staff, 2026-11-13)
+        (COAST && SURF && a0 < SURF.end && a0 + 864e5 > SURF.start ? '<span class="dsurf sv-ink sv-' + SURF.level + '">' + esc(SURF.word) + "</span>" : "") + "</span></div>";
     }
     q(".days").innerHTML = h;
     var en = q(".estn"), o0 = TSN && TSN.station === st.id ? TSN.offset() : null;
