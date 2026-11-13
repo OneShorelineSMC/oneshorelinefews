@@ -102,7 +102,7 @@
     brief_level: "Creek level",
     brief_more_gauges: "+{n} more gauges",
     rain_none_card: "None recorded",
-    quiet_title: "All monitored creeks",
+    quiet_title: "Creeks with flood levels",
     quiet_some: "Creeks with no alerts ({n})",
     city_coverage: "Streets and low areas elsewhere in {city} can flood too.",
     city_all: "Show all monitored creeks",
