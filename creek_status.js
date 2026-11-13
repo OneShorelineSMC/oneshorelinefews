@@ -44,6 +44,24 @@
   }
   function winLabel(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
 
+  /* A creek whose creek gauge is out of service can still raise an alert from its rain triggers (Belmont: OneRain's
+     30-minute rain and 4-hour rain + high tide). Say so, with the rain gauge's last 24 hours, so "out of service" doesn't
+     read as "nothing is watched" (staff, 2026-11-13). Empty when the rain gauge isn't reporting either. */
+  function stillWatching(data, c) {
+    var trg = (c.rain_triggers || []).filter(function (t) { return t.gauge; });
+    if (!trg.length) return "";
+    var e = (data.sensors || {})[trg[0].gauge] || {}, pts = e.points || [];
+    if (!pts.length || !data.generated) return "";
+    var now = parse(data.generated), last = parse(pts[pts.length - 1][0]);
+    if (now - last > 26 * 36e5) return "";
+    var tot = pts.reduce(function (a, p) { return parse(p[0]) > now - 864e5 ? a + (+p[1] || 0) : a; }, 0);
+    var g = (c.rain || []).filter(function (r) { return r.key === trg[0].gauge; })[0] || {};
+    var list = trg.map(function (t) {
+      return T(t.high_tide ? "still_rule_tide" : "still_rule", { label: (t.label || "").replace(/\s*\+\s*high tide/i, "").toLowerCase(), inches: (+t.value).toFixed(2) });
+    });
+    return T("still_watching", { gauge: g.label || "the creek", rain: tot < 0.005 ? "0" : tot.toFixed(2), rules: list.join(", or ") });
+  }
+
   /* One creek's status as shown: the data job's answer, or Data delayed when the data file is old */
   function view(data, c) {
     var st = c.status || {}, key = st.key || "none";
@@ -57,6 +75,7 @@
     rs = rs.filter(function (r) { return !(oos && r.code === "why_gauge_offline"); });
     rs.sort(function (a, b) { return (/^why_trigger/.test(b.code) ? 1 : 0) - (/^why_trigger/.test(a.code) ? 1 : 0); });
     var reasons = rs.map(reason).filter(Boolean);
+    if (oos && key === "offline") { var sw = stillWatching(data, c); if (sw) reasons.push(sw); }
     if (late && st.key && st.key !== "none") reasons.unshift(T("verdict_" + st.key) + " at " + clock(data.generated) + ", the last update.");
     // "Since 1:40 PM · before that: Stay alert" (the data job keeps when each status started)
     var since = key !== "delayed" && key !== "none" && st.since ? T("since_line", { time: clock(st.since) }) +
@@ -183,7 +202,7 @@
   function briefCard(data, c, v, opts) {
     var st = v.st, r = st.rain || {}, gs = c.stages || [];
     var lvl = gs.length ? levelWords(gs[0], data.sensors[gs[0].key]) + (gs.length > 1 ? ' <span class="cs-dim">· ' + esc(T("brief_more_gauges", { n: gs.length - 1 })) + "</span>" : "") : "";
-    var det = v.key === "offline" ? esc(v.reasons[0] || "") : lvl + (r.level || r.now ? " · " + chip(r.level, r.now, true) : "");
+    var det = v.key === "offline" ? esc(v.reasons.slice(0, 2).join(" ")) : lvl + (r.level || r.now ? " · " + chip(r.level, r.now, true) : "");
     var inner = '<span class="cs-rowt"><span class="cs-rown"><b>' + esc(c.name) + '</b><span class="cs-verdict cs-v-' + v.key + '">' + icon(v.key) + esc(v.word) + "</span></span>" +
       (det ? '<span class="cs-rowd">' + det + "</span>" : "") + (c.preview_only ? '<span class="cs-rowd cs-dim">' + esc(T("method_review_short")) + "</span>" : "") + "</span>";
     var lab = c.name + ": " + v.word;
@@ -458,7 +477,8 @@
       if (all) unknown++; else known++;
       down.forEach(function (d) {
         var tail = d.out && d.note ? " " + d.note : "";
-        if (all) notes.push(T(d.out ? "home_gauge_out_note" : "home_gauge_silent_note", { creek: r.c.name }) + tail);
+        if (all) notes.push(T(d.out ? "home_gauge_out_note" : "home_gauge_silent_note", { creek: r.c.name }) + tail +
+          (d.out && r.k === "offline" ? (function (x) { return x ? " " + x : ""; })(stillWatching(data, r.c)) : ""));
         else notes.push(T("home_gauge_part_note", { creek: r.c.name, gauge: d.g.label || "" }) + tail);
       });
     });
@@ -793,6 +813,6 @@
     return data;
   }
 
-  window.CREEK_STATUS = { prepare: prepare, levelsOnly: levelsOnly, chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
+  window.CREEK_STATUS = { stillWatching: stillWatching, prepare: prepare, levelsOnly: levelsOnly, chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
   Object.defineProperty(window.CREEK_STATUS, "preview", { get: shown });   // true when the status layer shows on this page
 })();
