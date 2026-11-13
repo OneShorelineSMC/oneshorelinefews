@@ -377,3 +377,5 @@ url_prep,https://www.oneshoreline.org/flood-preparedness,"home page button, the 
 prep_button,Get ready for flooding,"home page button, under the SMC Alert button","staff, 2026-11-11",,
 prep_alert_line,"How to prepare, and where to get sandbags","Home, Creeks and Tides pages, under the alerts at the top, only while a flood alert, a creek status or a higher-than-usual tide is in effect","staff, 2026-11-11",,
 prep_about,"OneShoreline's flood preparedness page: six steps to take before winter, sandbag sites, flood insurance, and what to do during and after a flood.",Creeks page About (the About tab),"staff, 2026-11-11",,
+creek_card_nws_none,No NWS flood alerts,"Creeks and rain card at the top of Home and Creeks, when NWS has no flood product but a OneShoreline creek gauge has an alert","Replaces the green “No alerts” then, which read as all clear above a creek alert (staff, 2026-11-13)",,
+creek_card_local,Our creek gauges: {status},"same card, the line under it","{status} = the creek summary, e.g. “1 creek with an alert” (staff, 2026-11-13)",,
