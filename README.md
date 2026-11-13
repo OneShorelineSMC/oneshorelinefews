@@ -1,258 +1,151 @@
-# OneShoreline Early Warning – web widgets and kiosk
+# lookups/ — the settings staff check and update
 
-Code for OneShoreline's San Francisco Bay and creek monitoring displays:
+Everything the FEWS pages show that someone at OneShoreline should check, sign off on, or update lives in this
+folder as a plain table (CSV). You don't need to touch any page code to change these.
 
-- **Widgets for the OneRain (Contrail) dashboard**: NWS alerts, tide forecasts, and tides above MHHW
-- **A Raspberry Pi kiosk** for the office and EOC: one screen with Bayside and Coastside tides, creeks, a sensor map and NWS alerts
-- **A creek page for phones**: stage, rainfall, tide and NWS alerts for Colma, San Bruno, Belmont and Atherton, with contact info
-- **Bayside and Coastside tides pages for phones** (Redwood City; Monterey with `?side=coast` or `CoastsideTides.html`), which also work as a single dashboard widget
-- **A sensor map** of every public OneRain site (phone and desktop page, plus a Map tab on the kiosk)
-- **A scheduled data job** that collects OneRain readings for the kiosk, phone page and map
+| File | What's in it | Read by | When a change shows up |
+|---|---|---|---|
+| `creeks.csv` | The four dashboard creeks: names, intro and note text, which NOAA tide station, which rain totals (minutes) to show, an optional running-rain graph (none since Oct 22; Belmont's 4-hour graph was dropped) | data job → `creeks.json` → kiosk, home page, Creeks page | next data run (about 5 min) |
+| `creek_gauges.csv` | Each creek's stage and rain gauges, mapped to their OneRain sensors; how each stage gauge reports; whether it is tidal | data job | next data run |
+| `gauge_outages.csv` | Creek gauges taken out of service (damaged, being repaired): one row per gauge, `gauge` = its key in `creek_gauges.csv` (e.g. `bel_stage`), `out_since`, a short public `note` (shown on the pages after "Out of service"). While a gauge is listed its readings are not published, so a damaged sensor can't show a false level or set off a false alert; the creek's status comes from rain alone, and the pages, home page and kiosk say "Out of service" with the note. Delete the row when the gauge is fixed. | data job → `creeks.json` → all pages and the kiosk | next data run (about 5 min) |
+| `thresholds.csv` | Flood thresholds (Monitoring / Watch / Warning, ft) for every stage gauge, and rain triggers (in, with minutes and tide level) | data job (also colors the sensor map) | next data run |
+| `runup_beaches.csv` | Experimental (staff view only): reference beaches for the tide + wave runup estimate: location, foreshore slope, wave factor, the height that matters | the data job (`scripts/waves.py`) | next data run (every 30 min) |
+| `tide_stations.csv` | NOAA tide stations: MHHW (ft NAVD88) and the MLLW-to-NAVD88 difference | pages directly, and the data job | pages: within about 10 min |
+| `settings.csv` | Numbers behind the page logic: the rapidly-rising rule, when a gauge counts as offline or data as delayed, when the NOAA forecast is used, when "higher than predicted" is called out, flood reports (`REPORTS_*`) | pages directly (`REPORTS_*` also the data job) | within about 10 min (the kiosk re-reads every 30 min) |
+| `display_text.csv` | Wording: disclaimer, 911 line, SMC Alert note, tide explanations, status words on the creek cards, contact details and links, the Report page and flood report labels (`report_*`, `url_report_form`: blank = reporting not open) | pages directly | within about 10 min (kiosk: 30 min) |
+| `rain_frequency.csv` | Rain depths (in) for the 1-, 2- and 5-year storms at each rain gauge and duration (15 min – 48 hr), from NOAA Atlas 14, with the level they set (1 Heavy · 2 Very heavy · 3 Severe) and 10/25/100-year values for reference | data job (creek status layer, staff preview) | next data run |
+| `creek_facts.csv` | Each creek's cities and communities, where it drains, and a short description, for the fact sheets | fact sheets only | next fact-sheet rebuild |
+| `gauge_facts.csv` | Each creek gauge's record, reporting pattern, history and known issues, for the fact sheets | fact sheets only | next fact-sheet rebuild |
+| `rising_fast_results.csv` | Rising-fast results per gauge, written by `scripts/evaluate_rising_fast.py` (don't edit by hand) | fact sheets only | when the evaluation is rerun |
+| `onerain_dashboard_thresholds.csv` | OneRain's own thresholds on each sensor (creek height and rain), read from saved OneRain pages (reference; FEWS doesn't use them), with a NOAA Atlas 14 or USGS-record comparison | fact sheets only | when OneRain settings change |
+| `onerain_alarm_rules.csv` | OneRain's alarm rules (what sends a text alert, and whether each rule is on), read from OneRain's admin rule list (reference; the 2026 Update sends no texts) | fact sheets only | when OneRain's rules change |
+| `factsheets/` | **One fact sheet per creek, generated** from the tables above by `scripts/build_creek_factsheets.py` (the **Rebuild creek fact sheets** Action reruns it whenever a table changes). Don't edit these pages; edit the tables. | — | automatic |
+| `proposed/` | Drafts for the creek status layer: 10 more creeks and their gauges. See `proposed/README.md` | **not read** | — |
 
-Everything is plain HTML/JavaScript served by GitHub Pages from this repo
-(`github.com/OneShorelineSMC/oneshorelinefews`) at:
+Where each number came from, and who has signed off, is in **[THRESHOLDS_BASIS.md](THRESHOLDS_BASIS.md)**.
+The "rapidly rising" rule and each gauge's setting are explained in **[RISING_FAST_BASIS.md](RISING_FAST_BASIS.md)**.
 
-```
-https://oneshorelinesmc.github.io/oneshorelinefews/<file name>
-```
+## Editing
 
-`fews.oneshoreline.org` currently redirects to this address. Moving the site to that custom domain is planned for
-later; when it happens, add a `CNAME` file and update the addresses in this README and `KIOSK_SETUP.md`. The home page
-(`https://oneshorelinesmc.github.io/oneshorelinefews/`) is `index.html`, which links to the public pages.
+1. In GitHub, open the file and click the pencil (edit), or download it, edit it in Excel and upload it back to this
+   folder with "Add files via upload". If you use Excel, save as **CSV UTF-8 (Comma delimited)**.
+2. Don't rename or reorder the columns, and don't change the `key`, `creek` or `gauge` codes in the first columns
+   (pages look rows up by them). Add rows freely in `thresholds.csv`.
+3. Fill in `checked_by` and `checked_on` (e.g. `SS`, `2026-10-14`) when you check a row. The pages ignore these
+   columns; they are your sign-off record.
+4. Commit. Check the result on the pages after the times above.
 
-The pages get live data straight from public sources (NOAA, National Weather Service, and OneRain's public
-sensor pages). There are no servers to run and no accounts or API keys involved, except the one GitHub token
-described under *Creek data job*.
+In `display_text.csv`, write plain text. It is always shown as text (HTML tags show up literally). `{station}`
+and `{mhhw}` in `mhhw_definition_home` are filled in automatically. Links (`url_...`) must start with `https://`.
 
----
+## If something is wrong in a file
 
+Nothing goes blank:
 
-**Staff tide graphs (Nov 10, 2026).** In "For the technically minded" on `Tides.html?preview=1`: (1) *Why each day is high*: stacked bars for the past 6 days and the next 4 (tide table, the offset, and the weather remainder; NOAA's projection for 2 days, shown only past ±0.25 ft), with a table of the numbers; (2) *Each day's high tide*: measured daily highs since Oct 1 (tide_tracker.json), the tide table, and the middle path ahead with a low-to-high line for about 100 days. After a peer's San Francisco tracker. The headline's ". No flooding expected" is now "Below the flood level", or "See the National Weather Service alert" while an NWS coastal flood product is in effect (display_text.csv).
+- **creeks.csv, creek_gauges.csv, thresholds.csv, tide_stations.csv (data job):** the job keeps using the last
+  good settings, keeps publishing creek readings, and the run shows as **failed** in the repo's **Actions** tab with
+  the file, row and problem ("thresholds.csv row 5: level must be 1-4 and value a positive number"). GitHub can
+  email about failed runs (it goes to whoever last edited the workflow's schedule, per their notification settings).
+- **settings.csv, tide_stations.csv, display_text.csv (pages):** a bad value keeps its built-in value. The home
+  page's System status card shows a **Settings files** line listing the problem, and the kiosk's bottom bar shows
+  "⚠ Settings file problem".
 
-**Public vs staff detail (Nov 10, 2026).** Tides shows the public a one-line outlook ("Through May, about 7 more days could reach the flood level, and up to 22 if the Bay keeps rising as it has"); the model paragraph, the NOAA-correction sentence, the times above MHHW and the past-7-days tables are in "For the technically minded" on the staff view (`Tides.html?preview=1`). The Creeks trigger checklist is staff-only (`?preview=1`). The kiosk link left the home footer (it's on staff.html).
+The built-in values are in `lookups.js` (top of the repo). They are only a fallback; the CSV files are what to edit.
 
-**Tide scenarios and 14-day offset (Nov 10, 2026).** The offset is now a 14-day high-tide average (`BAY_OFFSET_DAYS` = 14). The seasonal part uses a model fitted to every winter since 1950 at San Francisco, with low / middle / high paths from its misses in 2015–16 and 1982–83 / 1997–98 (`tide_offset.json` `outlook.scenarios`; `TIDE_SCENARIOS_SHOW`). The middle path drives the estimate; the Tides outlook line gives flood-level days in each path and which path the Bay is following now. Details in `lookups/THRESHOLDS_BASIS.md` §4b.
+## Columns
 
-**Tide heights above average high tide (Nov 10, 2026, for DEM).** Public tide heights lead with feet above (or below) the average high tide (MHHW) at that gauge, with NAVD88 after in smaller text: Redwood City's 8.5 ft flood level reads "1.5 ft above average high tide (8.5 ft NAVD88)". Formatters in `lookups.js` (`tideRel`, `tideFt`, `tideHTML`, `tideShort`) using MHHW from `lookups/tide_stations.csv`; tide graph axes are labeled from the average high tide (0, +4 ft, −4 ft). Thresholds in settings.csv stay in NAVD88. Staff pages (Shoreline, Tide Tracker) still show NAVD88. A **Heights** switch on the Tides page (Above MHHW | NAVD88) flips every tide figure to NAVD88 first, MHHW second; it's remembered in that browser and also set by `?heights=navd` or `?heights=mhhw` in any page link (Tides, kiosk, Creeks). Tide graphs stay in NAVD88 with an MHHW line either way.
+**creeks.csv** — `creek` code (used in links, e.g. `Creeks.html#belmont`) · `order` on the creek buttons ·
+`name` · `short_name` (buttons) · `tide_station` (NOAA number, must be in `tide_stations.csv`) · `rain_windows_min`
+(rain totals shown, in minutes, separated by spaces: `15 30 60 180 1440`) · `running_rain_gauge` /
+`running_rain_min` / `running_rain_label` (optional running-total graph; its line is that gauge's rain trigger for
+the same minutes) · `intro` (sentence under the creek name) · `note` (what the level colors mean) · `preview_only`
+(`yes` = staff preview only: the creek appears only on pages opened with `?preview=1`, never on the public pages;
+`tide_station` may be blank for these).
 
-**Tide estimates (Nov 10, 2026).** The offset added to the tide table is now measured at high tide (`BAY_OFFSET_AT_HIGH_TIDE`; `tide_offset.json` `high_offset_ft`). Days within `TIDE_NEAR_FT` (0.3 ft) of the flood level get a solid orange ring and a "Close to the flood level" line on Tides. NOAA's 2-day projection is corrected by its recent record at each gauge (`PROJ_BIAS_*`; `tide_offset.json` `proj_bias`, computed from `tide_tracker.json`; applied in `lookups.js` `fixModel` on every page that downloads it). Details in `lookups/THRESHOLDS_BASIS.md` §4.
+**creek_gauges.csv** — `creek` · `gauge` code (used in `thresholds.csv`; don't change it once data exists) ·
+`type` (`stage` or `rain`) · `label` (short name on the pages) · `site_name` (stage: full OneRain site name) ·
+`where` (rain: e.g. "upper watershed") · `onerain_number` · `site_id`, `site`, `device_id`, `device` (from the
+sensor's OneRain page address: Sites › site › sensor) · `reports` (stage: `on change` if OneRain only stores a
+reading when the level changes, `interval` if on a schedule; sets how long a silence means "offline") · `tidal`
+(stage: `yes` if the level rises and falls with the tide; such gauges count as "rapidly rising" only after rain) ·
+`rise_ft` (stage: how much the level must rise in an hour to count as "rapidly rising" at this gauge, in ft from
+0.05 to 10; `off` = not used here; blank = `RISE_FT` in settings.csv; basis in `RISING_FAST_BASIS.md`) ·
+`note` (shown with the gauge's thresholds) · `role` (optional; rain: blank or `primary` = shown on the pages,
+`supporting` = a hillside gauge that only counts toward the creek's rain level in the creek status layer; OneRain
+`onerain_number` can be letters and digits, e.g. `PUL`) · `source` (blank/`onerain`, or `usgs` for a USGS stream
+gauge: then fill `usgs_site` with the USGS number and leave the OneRain columns blank; its gage height is read from USGS).
 
-**Phone readability (Nov 10, 2026).** Public pages (home, Creeks, Tides, sensor map, gauge pages, flood reports) have a 14 px floor for text people read (13 px for small labels and badges, 12 px for the bottom-bar labels; graph labels 13 px). Tides on phones shows one calendar month at a time with about 48 px day cells, the calendar key folded under "What the colors mean", and the next 3 flood-level dates with "Show more dates". Creek cards give the reason that sets the status first and leave out repeats (the 911 line is in every page header and the red banner). Readings-only creeks show one rain line and a real "Graphs" link. Gauge pages hide the rain table and graph when there's been no rain. Sensor-map markers tap as 24 px. Checked at 390 and 320 px wide, light and dark, with axe.
+**thresholds.csv** — `creek` · `gauge` · `gauge_name` (for people; not used) · `type` (`stage` or `rain`) ·
+`minutes` (rain only) · `level` (1 Flood Monitoring, 2 Flood Watch, 3 Flood Warning, 4 above Flood Warning; sets
+the color) · `name` (shown; blank = the standard name for the level) · `value` (ft for stage, in for rain) ·
+`tide_at_least_navd88` (rain + tide triggers: tide at the creek's station at or above this, ft NAVD88) · `source`
+· `notes` (shown with the threshold) · `public_note` (optional, stage levels: what happens on the ground at
+this level, e.g. Atherton's road spill. Its line is always drawn on the creek graph, and when the creek reaches a
+level 4 with a public note, the cards give the note as the reason instead of "at its Flood Warning level").
 
-**Public creek status: flood levels only (Nov 8, 2026).** With `CREEK_PUBLIC_LEVELS_ONLY` = 1 (`lookups/settings.csv`), public pages color only Colma, San Bruno, Belmont and Atherton, from their OneRain flood levels and Belmont's rain trigger. Rain ratings (Heavy / Very heavy / Intense) and "rising fast" don't change a public status or show on public pages, and the other seven creeks show readings only (Creeks page, kiosk, gauge pages). `creek_status.js` `prepare()` does this in the browser as creeks.json loads; the data job is unchanged. The staff view (`?preview=1`) keeps the full status. Gauge pages now have a **Readings** card: the readings behind the graphs as a table and a CSV download. 0 = everyone sees the full status again.
+**runup_beaches.csv** — `id` · `name` · `lat`, `lon` (the beach; the job looks for the NWS forecast grid cell with waves just offshore) · `slope` (foreshore slope, rise over run, e.g. 0.05 = 1 in 20; placeholders until surveyed) · `wave_factor` (1 = fully exposed; below 1 for a beach sheltered by a point or breakwater, set by checking against photos) · `flag_ft_navd88` (optional: a height that matters, such as the back of the beach, a path or a parking lot, ft NAVD88; the staff table marks days that reach it) · `flag_what` (what that height is) · `basis` (keep the word PLACEHOLDER until the slope is surveyed; the staff view says so) · `checked_by` · `checked_on`. Staff only; nothing public uses it.
 
-**Creek status layer: public since Oct 16** (`STATUS_PUBLIC` = 1 in `lookups/settings.csv`; 0 puts it back to staff-only). It shows on the home page, the Creeks page and the kiosk. `?preview=1` is now the staff view (staff badge and the staff table). Creeks other than the four dashboard creeks are tagged "Methodology under review" (`method_review`).
-## Files
+**tide_stations.csv** — `station` (NOAA number) · `name` · `mhhw_navd88_ft` (the "average high tide" line on every
+tide graph and the threshold for "above MHHW") · `mllw_to_navd88_ft` (add to a MLLW height to get NAVD88; used to
+show OneRain's Redwood City tide in NAVD88 on the sensor map) · `used_for` · `source`.
 
-### Home page
+**settings.csv** — `key` · `value` · `unit` · `used_on` · `what_it_does`. Each value has an allowed range (in
+`lookups.js`); a value outside it is ignored and reported.
 
-| File | Purpose |
-|------|---------|
-| `index.html` | **Simpler first screen (Nov 2, 2026):** the alert at the top (National Weather Service, "checked" time when nothing is active), then **Right now**: one row each for Bay tides, Coast tides and Creeks (a status word and one detail line, worst first, tap for the page), the evacuation-order button when a creek is at Be ready or Flooding likely, the SMC Alert button, and footer links; system status, contact and the disclaimer are folded at the bottom. The detailed tide cards and creek board are still built (hidden) for their numbers. Wording `home_row_*`, `smc_alert_button`, `smc_alert_short`, `hero_none_checked`. Earlier: landing page at `https://oneshorelinesmc.github.io/oneshorelinefews/`, top to bottom: compact title bar; "In an emergency, call 911"; active **NWS alerts for San Mateo County shown in full** (What/Where/When/Impacts and what to do; more than 3 are listed with a tap to open); **four creek status cards** (Colma, San Bruno, Belmont, Atherton) with the same status as the creek page tiles (Normal, Monitoring/Watch/Warning, Rain trigger, Offline, Data delayed), each gauge's stage (creek level) and accumulated rain over that creek's own windows (the ones on its OneRain dashboard and in its triggers: Atherton 30 min/1 hr/24 hr, Belmont 30 min/1 hr/4 hr/24 hr, Colma 1 hr/6 hr/24 hr, San Bruno 15 min/30 min/1 hr/3 hr/24 hr because it is very flashy; a window whose rain trigger amount is reached is shown in red), the status color around the whole card, tap for that creek; **Rapidly rising** cards; a **Bay tides** card in plain but precise language (same rule as the Tides page and kiosk): when tides will be higher than an average high tide this week, in rounded times ("today about 1–3:30 PM and tomorrow about 1:15–4 PM"), how far above an average high tide at the highest, whether the Bay is running above the tide tables right now (storms, onshore wind, heavy runoff and El Niño conditions can all do that), and a small-print line defining "average high tide" as MHHW at the Redwood City gauge (7.02 ft NAVD88); tap for the Tides page; a link to the sensor map; SMC Alert sign-up with a note that this site does not send alerts and SMC Alert is not set off by these readings; **System status** (creek data, creek gauges reporting, monitoring network); OneRain link; contact, disclaimer. **Rapidly rising (provisional rule, in the CONFIG block at the top of the script):** a gauge rose at least 0.5 ft in the last hour (`RISE_FT`, `RISE_MINUTES`), its newest reading is under 90 min old and the creek data is current; tidal gauges (`tidal = yes` in `creek_gauges.csv`: San Bruno at First Avenue and Colma at Orange Memorial Park) count only after 0.10 in of rain in the last 3 hours in that watershed. The card says when the next flood level would be reached at that rate, if within 3 hours. | **Tides** (Oct 16): two short boxes, Bayside (Redwood City, with the measured tide) and Coastside (Monterey: tide table and NOAA projection only), each one line plus peak, flood level (Bayside), ★ King Tide in the coming week and "running above the tide table" (Bayside); tap for the Tides page. **Oct 17:** the **National Weather Service bar** from the Creeks page sits under the 911 line (green "No active National Weather Service alerts", or the top alert's name in its color with "details" to open the full text of every alert), then a creek's "call 911" banner (when flooding is likely), then the creeks ("No alerts at OneShoreline's creek gauges right now"), tides and the rest; "NWS" is spelled out on every public page and the kiosk. |
-| `img/` | OneShoreline logo and icons used by the pages: `oneshoreline-logo.png` (color, for light backgrounds), `oneshoreline-logo-white.png` (white and green, for the blue title bars and dark mode), `oneshoreline-mark.png` / `oneshoreline-mark-white.png` (the round mark alone), and the browser-tab and home-screen icons (`icon-32.png`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`). Keep the folder name and file names; the pages link to them. |
+**tide_tracker_levels.csv** — extra levels the staff tide tracker (TideTracker.html) counts days and hours at, besides
+MHHW and NOAA's derived minor flooding level, which come from NOAA's datums: `station` (NOAA id) · `key` (`oneyear`,
+`flood`, or any short name) · `level_ft` (ft NAVD88) · `label` · `source`. Changes show within the hour.
 
-**Brand colors.** Title bars and buttons use OneShoreline Blue `#0A5587`; headings use Dark Navy `#003B5C`.
-OneShoreline Green `#3AAE2A` appears in the logo only (it's too light for white text). The flood-status colors
-(green Normal, yellow Monitoring, orange Watch, red Warning, purple Above Warning) are kept separate from the brand
-colors on purpose, so status always reads the same way.
+**extreme_tides.csv** (optional) — staff values for the tide tracker's return periods, used instead of the 2016 study's
+levels the data job reads from BCDC: `station` (NOAA id) · `return_years` (1, 2, 5, 10, 25, 50, 100, 500) · `level_ft` (ft NAVD88) ·
+`source`.
 
-### Dashboard widgets (used in OneRain)
+**display_text.csv** — `key` · `text` · `shown_on` · `notes`.
 
-Each one is added to the OneRain dashboard as an iFrame/web-page widget pointing at its GitHub Pages URL.
+**rain_frequency.csv** — `onerain_number` (rain gauge) · `gauge` (its code in `creek_gauges.csv`, if it's already live) ·
+`site_name` · `minutes` (duration) · `ari_years` (the storm: 1-, 2-, 5-, 10-, 25-, 100-year) · `aep_pct` (chance in any year)
+· `level` (1 Heavy, 2 Very heavy, 3 Severe; blank = reference only; **edit this column to change the cutoffs**) · `name` ·
+`value_in` · `lat` / `lon` (where NOAA's estimate is for) · `source` · `notes`. Regenerate the depths with the
+**Atlas 14 pull** workflow (`scripts/fetch_atlas14.py`) rather than editing them by hand.
 
-| File | What it shows |
-|------|---------------|
-| `NWSAlertsSanMateo.html` | Active NWS watches, warnings and advisories for San Mateo County, with a color-coded status banner (red = warning, amber = watch/advisory, green = none), the full alert text formatted into What / Where / When / Impacts, links to the official NWS page, and an SMC Alert sign-up link. |
-| `RWC_MHHWWindows.html` | Redwood City: a plain-language summary and table of the days and times high tides are **predicted** above MHHW over the next 7 days, plus the **measured** water level now (rising/falling, and how far above or below the prediction) and the highest predicted tide of the week. |
-| `Alameda_MHHWWindows.html` | Same as above for Alameda. |
-| `RWC_graph.html` | Redwood City graph: the past 48 hours of measured water level over the predicted tide, then the next 7 days of predictions. Tides above MHHW are shaded red, with a "Now" line. Works on phones. |
-| `Alameda_graph.html` | Same as above for Alameda. |
-| `Tides.html?embed=1` | *Optional all-in-one.* Redwood City in one widget (measured vs predicted, next time above MHHW, 48-hour + 7-day graph, table of times above MHHW), without the phone page's header and bottom bar. Can replace the four MHHW/graph widgets above with one. |
+## Not in these files (still in page code)
 
-### Raspberry Pi kiosk
+- Sentence structure of the computed lines (e.g. "Tides higher than an average high tide: today about 1–3:30 PM"),
+  page headings and button names.
+- Level colors (yellow / orange / red / purple) — part of the design and the color-blind checks.
+- Kiosk display settings (tab rotation, burn-in shift, refresh timing) — top of `ShorelineKiosk.html`.
+- King Tide days and the high tide calendar are worked out from NOAA's Redwood City tide table each time (`tide_season.js`); the flood level is `TIDE_RED_FT_RWC` and the King Tide level (the 1-year tide) is `KING_TIDE_FT_RWC` in `settings.csv`.
 
-| File | Purpose |
-|------|---------|
-| `ShorelineKiosk.html` | The kiosk page, laid out at 800×480 for a 7" touchscreen and scaled sharply to fit any screen (e.g. 1024×600). Tabs: **Bayside Tides** and **Coastside Tides** (Redwood City and Monterey: a graph of the last 24 hours and the next 48 with a card over each day in view and a one-line "Later" for the rest of the week; the headline still looks 7 days ahead, using NOAA's model forecast (wind, pressure and river flow included) for about the first 2 days and the astronomical prediction after that, how measured high tides compared with predictions over the past 7 days, NWS coastal flood alerts or forecast-discussion notes about tides, and a **King Tides** line around the County's King Tide windows), **Creeks** (an All creeks summary card for each creek, then per creek: each gauge's stage with flood thresholds, rainfall, and the Bay tide, all on one timeline), **Map** (every public OneRain site, colored by status; tap one for its readings), **About** (contact info and QR codes), and **Disclaimer**. An NWS alert bar stays on top of every tab, and a creek alert strip appears when any creek reaches Flood Monitoring / Watch / Warning level. To protect the screen from burn-in, the whole picture moves by 2 pixels every 10 minutes (too small to notice); KIOSK_SETUP.md also explains how to switch the screen off after hours. |
-| `KIOSK_SETUP.md` | Step-by-step Raspberry Pi setup, kiosk options, and all settings. |
+## Embedding on another website (staff, 2026-11-11; updated 2026-11-12)
 
-### Phone page
+Any public page can sit in an iframe on oneshoreline.org. Links to other websites open as the whole page, not inside
+the FEWS box. There are two ways to size the box:
 
-| File | Purpose |
-|------|---------|
-| `Creeks.html` | Creek page designed for phones, at `https://oneshorelinesmc.github.io/oneshorelinefews/Creeks.html`. Opens on **All creeks**: a card per creek with its status, each gauge's level, rain and tide (tap a card for that creek). Four tiles at the top, one per creek, each showing that creek's current status (Normal, Monitoring, Watch, Warning, Rain trigger, Offline); tap one to switch (`#colma`, `#sanbruno`, `#belmont`, `#atherton` at the end of the URL opens one). **Creeks** tab: NWS alert banner (tap for full text), each stage gauge with its level and thresholds (or "Gauge may be offline" with the last report), rainfall, Belmont's rain triggers, the Bay tide measured vs predicted, and rain / stage / tide graphs on one timeline (the tide graph also shows NOAA's model forecast, `ofs_water_level`, for about the next 12 hours when it is available). The bottom bar (Home · Creeks · Tides · Map · About) is on this page, the tides page and the sensor map; tapping Creeks while viewing a creek returns to All creeks. **About** tab: what the page shows, "In an emergency, call 911", SMC Alert sign-up, contact buttons, and the disclaimer. **More creeks · readings only** (under the four creeks, while `MORE_CREEKS_PUBLIC` = 1): the creeks marked `preview_only` in `lookups/creeks.csv` (San Francisquito, San Mateo, Green Hills, Pilarcitos, San Gregorio, Pescadero) with each gauge's level, trend and rain, and their own graphs (`#pilarcitos` etc.), but no status or colors until their flood levels are approved. Follows the phone's dark mode, refreshes automatically, and can be saved to the home screen. **Oct 17:** a **Find your city** picker at the top (cities from `lookups/creek_facts.csv`; opens by itself when any creek has an alert; remembers the choice; link straight to a city with `Creeks.html?city=san-carlos`; never says a city is safe, only which creeks OneShoreline measures in or near it); a **static map** at the bottom of each creek's page (`img/creekmaps/<creek>.svg`, tap to open the sensor map on that creek). |
-| `Tides.html` | Bayside Tides page for phones (Redwood City); with `?side=coast` it is **Coastside Tides** (NOAA Monterey 9413450: no red level yet, King Tide = `KING_TIDE_FT_MRY` 6.87 ft NAVD88 provisional, NWS surf and beach alerts), with a Bayside | Coastside switch at the top. `CoastsideTides.html` is a short address that opens it. Bayside: at `https://oneshorelinesmc.github.io/oneshorelinefews/Tides.html`, laid out like the kiosk Bay Tides tab: one sentence first, the week next, details behind taps. Redwood City only (NOAA 9414523, ft NAVD88; Alameda dropped Oct 13). **Headline** (status color around the box): "Tides above MHHW: Today 12:55–3:25 PM (7.64 ft) · Tomorrow …" or "No tides above MHHW in the next 7 days", then "Now 6.69 ft rising · +0.45 ft vs predicted". **Next 7 days**: each day's highest tide (a list on phones, 7 columns over the graph on wide screens), labeled measured / fcst / predicted. Heights come from one series: measured for what has happened, then NOAA's model forecast (`ofs_water_level`, about 2 days), then the astronomical prediction, so the headline and list agree. **Graph**: today through 7 days, measured, NOAA forecast and predicted, heights on the left, a "Now" tag, MHHW in the legend. **NWS forecasters on tides**: tide sentences from the NWS Bay Area forecast discussion (tap for all and the issue time); the NWS alert banner is at the top. **Behind taps**: times above MHHW with each peak's source; now and the past 7 days (running higher/lower than predicted, model accuracy, high-tide table). Then the **King Tides** card (only around King Tide windows) and the **King Tide season calendar**. Without the model, it falls back to predictions. Add `?embed=1` for a dashboard widget version (no title bar, alert banner, bottom bar or calendar). **This season box** (Oct 31): between the flood-level list and the calendar, the water year so far at Redwood City (Monterey on Coastside) from the tide tracker's `tide_tracker.json`: highest water, days at or above an average high tide and at the flood level (Coastside: the 1-year tide), each against the typical count by the same date over the last 19 years; how far above the tide table the water ran last week; when the year's highest tides usually come; and an El Niño line when NOAA's index is +0.5 or more. Hidden if the tracker's data can't be read. Wording `tide_stats_*` in `display_text.csv`. |
-| `CoastsideTides.html` | Opens `Tides.html?side=coast` (keeps `?embed=1`). |
-| `Shoreline.html` | **Shoreline** tab (bottom bar, after Tides). **Oct 22:** low points are the shoreline stretches BCDC's Adapting to Rising Tides *shoreline overtopping* layer shows overtopped at 12, 24 and 36 in, from `data/shoreline_overtopping.geojson` (a GIS export) via `scripts/build_shoreline_lowpoints.py`; drawn as lines with a dot. Earlier: low spots along the county's Bay shoreline from BCDC's Adapting to Rising Tides maps, on an interactive map and in a list, with whether the coming tides at Redwood City could reach each one (NOAA projection for 2 days, then the tide table, and the tide table plus the recent offset). Reads `lookups/shoreline_hotspots.csv`, or the draft in `lookups/proposed/` (shown as Draft), and `data/shoreline_hotspots_candidates.geojson`; both come from `scripts/build_shoreline_hotspots.py`. **Oct 21:** marsh, mudflats and ponds are taken out of the spots (SFEI Baylands Habitat Map 2020), and each spot lists its buildings and streets (San Mateo County GIS) and any critical facilities and transportation (BCDC RSAP), from `scripts/shoreline_exposure.py`; spots with buildings or streets are drawn solid and counted in the headline, open land faint; `data/shoreline_exposure.geojson` and `data/shoreline_baylands.geojson` add them to the map. Wording `shore_*` in `display_text.csv`. Basis: `lookups/THRESHOLDS_BASIS.md` §4c. **Nov 3:** now also the staff **Shoreline and creek outlets** tool: a city picker (remembered on the device; `?city=Name` opens straight to one, and *Copy a link to this city* gives that address) filters the list and zooms the map to the city's low spots and creek outlets; NOAA's Bay model (SFBOFS) from `outlet_tides.json` (data branch, `scripts/outlet_tides.py`) adds outlet markers and NOAA gauges to the map, a places panel beside the map (low spots or creek outlets in the city, one row each, closest to coming over first, "Only with buildings or streets" on by default; select a row and the map zooms to it and the graph shows it, select a place on the map and its row is marked), a 48-hour line under each low spot (highest water and margin to where it comes over), the outlets table, a graph for the selected outlet or spot, and the model's datum notes. If `outlet_tides.json` can't be read, the page shows the low spots as before. |
-| `SiteMap.html` | Map of every public OneRain site, for phones and computers, at `https://oneshorelinesmc.github.io/oneshorelinefews/SiteMap.html`. Markers are colored by status (reporting, Flood Monitoring / Watch / Warning level, not reporting); square markers are rain-only gauges. Tap a site for its latest readings, how long ago they came in, a 24-hour graph, and a link to the full data on OneRain. **List** shows all sites grouped by status; **Rain 24 h** labels each site with its 24-hour rain total. `#site=41102` at the end of the URL opens that site (use the site number OneRain shows in parentheses). **Flood reports** (staff preview, or everyone once `REPORTS_PUBLIC` = 1) shows flood reports approved by staff: type, depth, date, a staff-written summary and an approximate location; photos only if staff approved them. | **Rain switch** (Oct 16): Off · 1 h · 3 h · 6 h · 24 h labels the rain gauges with that window's total (starts on 1 h on a first visit while it's raining; remembers the viewer's choice); a gauge's card shows all four. `rain1`, `rain3`, `rain6`, `rain24` come from `scripts/fetch_sites.py`. **Oct 17:** a gauge's panel links first to its creek's page ("Colma Creek conditions ›"; a hillside rain gauge: "Counts toward Colma Creek ›"), with OneRain as a smaller second link; `SiteMap.html#creek=colma` opens zoomed to a creek; a **Watersheds** switch (USGS subwatersheds, `data/watersheds.geojson`; phone map only, not the kiosk). **Oct 31:** the same header and alert at the top as the other pages (hero.js: National Weather Service, the Bay tide at the flood level, the creeks), headline only with a Details link to the home page; the site count and update time moved to the end of the legend row; the red tide bar (`tide_banner.js`) is no longer loaded here. |
-| `Gauge.html` | **Gauge page** (Oct 31), `Gauge.html?site=<OneRain number>` (or `?site=USGS%20<id>` for a USGS creek gauge), linked from the sensor map's site panel and from each gauge name on a creek page. Two views: **storm** (storm total since the rain began, rolling 15 min to 48 hr totals with how rare each is from NOAA Atlas 14 in `lookups/rain_frequency.csv`, rain per hour with a running total, creek level against its flood levels with rising fast, the NWS rain forecast) and **normal** (is it reporting, which creeks it feeds and their status, level and rain graphs). The view is picked automatically (NWS flood or rain products, creek alerts, or rain at the gauges: `STORM_RAIN_3H_IN`, `STORM_RAIN_24H_IN`), or set by staff (`STORM_MODE` 0 automatic / 1 storm / 2 normal); viewers can switch on the page. Storm total: back to the last dry spell of `STORM_DRY_HOURS`. Creek gauges use creeks.json (48 hours); other sites sites.json (24 hours). Long history, raw readings, downloads and alarms stay on OneRain or USGS (link at the bottom; wording `gauge_more_*`). |
-| `CommunityFloodReports.html` | **Report flooding** page (staff preview until `REPORTS_PUBLIC` = 1): 911 warning, what happens to a report, public-records notice, and the ArcGIS Survey123 form (link in `display_text.csv` → `url_report_form`) in a sandboxed frame. Setup, staff review and abuse defenses: `COMMUNITY_FLOOD_REPORTS_SETUP.md`. |
+**Window (recommended):** the box is about one screen tall and FEWS scrolls inside it, so the menu stays on screen the
+same way it does on the site itself (the bottom bar on phones, the tab strip at the top on computers). No script needed:
 
-### Staff pages
-
-Linked from `staff.html` (bookmark it; not linked from the public pages, but not secret). Each has the public pages' bottom bar with a **Staff tools** tab. Marked BETA.
-
-| File | Purpose |
-|------|---------|
-| `staff.html` | Staff tools: links to the beta pages below, the staff views of the public pages (`?preview=1`), the draft lists, thresholds and the Actions tab. |
-| `OutletTides.html` | Forwards old bookmarks to `Shoreline.html?preview=1#outlets` (keeps `?city=`). **Nov 3:** the Bay model at creek outlets and low points moved into the Shoreline page. |
-| `TideTracker.html` | **Tide tracker**: the water year so far (from Oct 1) at Redwood City, Alameda, San Francisco and Monterey against the tide table, MHHW, the 1-year tide, the flood level and NOAA's minor flooding level (`lookups/tide_tracker_levels.csv`): scoreboard, pace against the record, month closeouts (how rare each month's high water was, from the 2016 study), monthly table with skew surge and the average non-tidal residual, high water days, NWS coastal flood products. Today is held back until its peak has passed. From `tide_tracker.json` (data branch). |
-| `StormTracker.html` | **Storm tracker** (Oct 31): each storm at each creek this water year (rain at the creek's gauges, the largest 15 min to 24 hr amounts and how rare each was against NOAA Atlas 14, the creek's peak, hours at each flood level, lag from the heaviest rain, highest status, gauges that went quiet), storms in progress, and a season table per creek. Tap a storm for its rain and creek level graph. From `storm_tracker.json` (data branch). Rules: `lookups/THRESHOLDS_BASIS.md` §12. |
-| `TideHistory.html` | **Tide gauge history** (from the tracker): each gauge's NOAA record by water year: highest water and average daily high with trends (whole record and since 2000, the baseline of California's 2024 sea level rise guidance) and optional El Niño / La Niña shading, highest days, days at or above each level, when the year's high water comes, how often a year reaches each level, return periods against the 2016 study (this year as an open symbol), and, folded at the bottom, El Niño years, gauge comparison, years with data and the data check. From `tide_tracker_history.json` (data branch). |
-
-### Creek data job
-
-| File | Purpose |
-|------|---------|
-| `data/tide_days_lookup_2026-27.json` | San Mateo County Emergency Management's "Tide days of concern, Oct 2026 – Apr 2027". **No longer used** (replaced by `tide_season.js`, Oct 2026); can be deleted. |
-| `lookups/` | **Everything staff check and update, as plain tables** (see `lookups/README.md`): `creeks.csv` (creek names, intro/note text, tide station, rain totals shown), `creek_gauges.csv` (each creek's stage and rain gauges mapped to their OneRain sensors, how each reports, which are tidal), `thresholds.csv` (all flood thresholds and rain triggers), `tide_stations.csv` (MHHW and MLLW-to-NAVD88 per NOAA station), `settings.csv` (rapidly-rising rule, offline/delayed timing, NOAA forecast rules, "higher than predicted" call-outs) and `display_text.csv` (disclaimer, 911 and SMC Alert wording, tide explanations, creek status words, contact details and links). `lookups/THRESHOLDS_BASIS.md` records where each value came from and who signed off. Each row has `checked_by` / `checked_on` columns. If a file has a mistake, nothing goes blank: the data job keeps the last good settings and marks its run failed in the Actions tab with the row, and the pages keep built-in values and flag it (home page System status; kiosk bottom bar). |
-| `tide_season.js` | High tides at Redwood City (`TIDE_SEASON`) and Monterey (`TIDE_SEASON_COAST`) for the **King Tide** line (kiosk), the Tides page card and its **High tides and King Tides** calendar. Reads NOAA's tide table at Redwood City (9414523, ft NAVD88) for this month and the next 6, and NOAA's model (`ofs_water_level`) for the height expected with the weather about 2 days ahead, so nothing needs a yearly update. Colors come from the water height: blue above MHHW (7.02 ft) = higher than usual, for information (MHHW is a tidal reference, not a flood level), red at `TIDE_RED_FT_RWC` (8.5 ft, provisional) = high enough to flood near the Bay shoreline and in low-lying areas along tidally connected creeks (`tide_flood_where` in `display_text.csv`; the kiosk uses the shorter `tide_flood_where_short`); the same levels color the Tides page and kiosk day cards and graph and the home page tide box. "King Tide" is only a label (★): a day whose tide-table high tide reaches the 1-year tide, `KING_TIDE_FT_RWC` (8.3 ft NAVD88, SF Bay Tidal Datums and Extreme Tides Study, 2016), drawn on the Tides page graph as a purple dashed line when a King Tide day is in view; these fall mostly in November, December and January. The line shows a coming red day first, otherwise the next King Tide within 7 days. Wording: `tide_*` and `king_tide_*` in `display_text.csv`. |
-| (all pages) | The shared scripts (`lookups.js`, `tide_season.js`, `creek_status.js`, `severity.js`, `hero.js`, `tide_banner.js`) are loaded as `name.js?v=20261102a` by `index.html`, `Creeks.html`, `Tides.html`, `SiteMap.html`, `Shoreline.html`, `CommunityFloodReports.html`, `ShorelineKiosk.html` and `Gauge.html`. **When one of them changes, change the `?v=` in every page that loads it**, or phones keep the old copy for a while and new labels show up blank. |
-| `lookups.js` | Shared by every page: reads `settings.csv`, `tide_stations.csv` and `display_text.csv` (re-read every 30 min), checks each value, and fills in the marked text on the page. Holds the built-in fallback values. |
-| `scripts/creek_config.py` | Reads and checks `lookups/creeks.csv`, `creek_gauges.csv`, `thresholds.csv` and `tide_stations.csv` for the data job. Nothing to edit here for normal changes. |
-| `scripts/fetch_onerain.py` | Reads the last 50 hours of every creek gauge in `lookups/creek_gauges.csv` from OneRain's **public** sensor pages (OneRain's data export requires a login; the public pages don't). Each point is `[Pacific time, value, UTC time]` (the sensor's `latest` reading too, since Oct 17, 2026), plus USGS qualifier codes (`P`, `A`, `P e`, `P Eqp` …) as a fourth element for USGS gauges, so the repeated 1 AM hour when daylight saving ends is unambiguous; pages use only the first two. Also writes `creeks_7day.json` (the same points for 7 days, built up run by run) and `generated_utc`. The data archive (`OneShorelineSMC/fews-data-archive`) reads these: **never rename a sensor key or reuse one for a different gauge.** Checks: `python scripts/test_point_times.py`. |
-| `scripts/creek_signals.py` | Creek status layer (staff preview): rain levels against NOAA Atlas 14 (`lookups/rain_frequency.csv`), creek-level trends and one status per creek, with the NOAA tide read by the data job. Written into `creeks.json`; changes are logged to `status_log.csv` on the data branch. Checks: `python scripts/test_creek_signals.py`. |
-| `creek_status.js` | Creek status layer, **public since Oct 16** (`STATUS_PUBLIC` = 1 in `settings.csv`; 0 puts it back to staff preview only). The card on the home page and Creeks page ends with a line saying what creek alerts cover (creeks rising with rain) and what they don't (high-tide flooding along tidally connected creeks), with a link to the Tides page (`home_creek_scope` in `display_text.csv`, Oct 31). Before Oct 16, staff preview only (including the new creeks marked `preview_only` in `lookups/creeks.csv`, some read from USGS stream gauges): add `?preview=1` to the address of the home page, `Creeks.html` or the kiosk to see each creek's status (Flooding likely / Be ready / Stay alert / Offline / No alerts) with its reason and "What to do", the threshold band, rain level and trend, a summary with the evacuation button, and (Creeks page) a staff table of everything behind each status. Without `?preview=1` the pages are unchanged. Wording from `lookups/display_text.csv`. |
-| `scripts/fetch_sites.py` | Reads every **public** site from OneRain's Sites list: its location, each sensor's latest reading, and the last 24 hours for the small graphs and rain totals. Battery/voltage/signal sensors are left out, and sites with no other sensors (e.g. radio repeaters) don't appear. Alert levels for the map come from `lookups/thresholds.csv`; OneRain's Redwood City tide is shown in NAVD88 using `lookups/tide_stations.csv`. Each site also lists the creeks it belongs to (`creeks`: id, name, role stage / rain / support, from `lookups/creek_gauges.csv`) for the map's links. |
-| `.github/workflows/onerain.yml` | GitHub Action that runs both scripts and publishes the results to the **`data`** branch as `creeks.json` (every run, about every 5 minutes; also copied to `sanbruno.json`, its old name) and `sites.json` (about every 15 minutes), replacing them each time (so it doesn't add commits to `main`). |
-| `scripts/tide_offset.py` | **Recent offset after the NOAA projection** (once a day): how much higher than the tide table the water has run on average over the last `BAY_OFFSET_DAYS` (30) days at Redwood City, Alameda and Monterey (each day's mean of NOAA measured minus tide table, then the average). Publishes `tide_offset.json` on the data branch; the Tides page and kiosk add it to the tide table after the projection ends (gray dotted line). Basis: `lookups/THRESHOLDS_BASIS.md` §4b. Checks: `python scripts/test_tide_offset.py`. |
-| `scripts/build_shoreline_hotspots.py` | **Shoreline spots draft** (run by hand: Actions > Build shoreline hotspots): reads BCDC's Adapting to Rising Tides overtopping layers at 12, 24 and 36 in above MHHW and writes a draft list of San Mateo County Bay shoreline spots to `lookups/proposed/shoreline_hotspots.csv` (plus `data/shoreline_hotspots_candidates.geojson`) for staff review. The **Shoreline** tab (`Shoreline.html`) maps them and says, in plain words, which ones the coming tides could reach (NOAA projection for 2 days, then the tide table, and the tide table plus the recent offset); it says Draft until staff save a reviewed copy as `lookups/shoreline_hotspots.csv`. Basis: `lookups/THRESHOLDS_BASIS.md` §4c. Checks: `python scripts/test_shoreline_hotspots.py`. |
-| `scripts/fetch_community_flood_reports.py` | **Flood reports** (every 15 minutes, once set up): reads the staff-approved view in ArcGIS Online and publishes `community_flood_reports.json` and `community_flood_reports/*.jpg` to the data branch. Only reports approved by an account in `REPORTS_STAFF_EDITORS`, with the location rounded and photos stripped of metadata. Checks: `python scripts/test_community_flood_reports.py`. See `COMMUNITY_FLOOD_REPORTS_SETUP.md`. |
-| `scripts/fetch_atlas14.py`, `.github/workflows/atlas14.yml` | **Atlas 14 pull** (run by hand from the Actions tab): NOAA Atlas 14 rain frequency tables for every FEWS site, the source of `lookups/rain_frequency.csv`. The result is a download; nothing is committed. |
-| `scripts/fetch_usgs.py`, `.github/workflows/usgs_history.yml` | **USGS history pull** (run by hand): 15-minute stage/flow since 2007 for the nine USGS gauges in the proposed creeks, one parallel job per site, for calibrating the rapidly-rising rule. The result is a download (`out/` is not committed). |
-| `scripts/tide_tracker.py` | **Tide tracker** (hourly, in the data job): writes `tide_tracker.json` (this water year from NOAA's 6-minute water level and tide table at the four gauges, ENSO from NOAA CPC's Oceanic Niño Index, the 2016 SF Bay Tidal Datums and Extreme Tides Study's still water levels from BCDC's `FEMA_AECOM_tidaldatums2016` layer, fields `SWEL_1`…`SWEL_500`, read monthly; `lookups/extreme_tides.csv` overrides them) and `tide_tracker_history.json` (each day's highest water back to 1974 at Redwood City, 1939 at Alameda and 1898 at San Francisco, newest first, at most 20 NOAA requests a run). Older years with no NAVD88 high/lows are asked for on the gauge's own datum (MLLW) and then as hourly heights, shifted to NAVD88 by NOAA's published MLLW–NAVD88 difference, and marked with their source. Tests: `scripts/test_tide_tracker.py`. |
-| `scripts/storm_tracker.py` | **Storm tracker** (every data run, after `fetch_onerain.py`; no downloads): reads the fresh `creeks.json` and keeps `storm_tracker.json`: an hourly record of the last 10 days per gauge, day totals for the water year, storms in progress (redone each run) and closed storms (kept as they are). Storm rules and settings (`STORM_DRY_HOURS`, `STORM_MIN_IN`, `STORM_WET_IN`, `STORM_RESPONSE_HOURS`): `lookups/THRESHOLDS_BASIS.md` §12, which is also the format for filling in earlier seasons from the OneRain archive. Tests: `scripts/test_storm_tracker.py`. |
-| `scripts/outlet_tides.py` | **Bay model at creek outlets** (in the data job): reads the SFBOFS model over HTTP byte ranges, takes the nearest wet model point with a real tide range, and adjusts it to NAVD88 by the model's offset at nearby NOAA gauges. Writes `outlet_tides.json`. Tests: `scripts/test_outlet_tides.py`. |
-| `.github/workflows/tests.yml` | **Tests** (Oct 17, 2026): runs on every change to `scripts/`, `lookups/*.csv` or `index.html`, and by hand from the Actions tab. Checks the lookup tables load, the creek signal and status rules (`test_creek_signals.py`), UTC times on readings and `latest` (`test_point_times.py`), community flood reports, and that the home page and the data job agree on rising fast (`test_rise_parity.py`, Node.js). A failure is a red X on the commit; the site and data are not affected. |
-| `scripts/build_creek_maps.py`, `.github/workflows/creek_maps.yml` | **Creek maps** (Oct 17, 2026; run by hand from the Actions tab, and when `creeks.csv`, `creek_gauges.csv` or the script change): draws `img/creekmaps/<creek>.svg` for the bottom of each creek page (creek line from the USGS National Hydrography Dataset, the creek's watershed from San Mateo County's creek-level watershed layer (the C/CAG Flows to Bay map's `Watersheds_Public_View` service; the polygon the creek level gauge sits in), or failing that the area draining to the gauge from the USGS NLDI service, or OneShoreline's own polygons in `data/creek_watersheds.geojson` (one per creek with a `creek` property; these win when present), with USGS HUC-12 only as a last resort, the creek's gauges labeled as on the Creeks page, main highways from the US Census, north arrow, scale bar, legend; light and dark) and `data/watersheds.geojson` for the sensor map's Watersheds switch. Commits only if something changed. Creek names as NHD spells them are in `NHD_NAMES` in the script; a creek NHD doesn't know gets a map without its line. `scripts/test_creek_maps.py` checks the drawing with made-up shapes. |
-
-The kiosk, the phone page and the home page read `https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json`;
-the map and the kiosk's Map tab read `.../data/sites.json`.
-
----
-
-## Stations, sensors and thresholds
-
-(Current values; `lookups/thresholds.csv` is the source.)
-
-| What | Source | ID | Notes |
-|------|--------|----|-------|
-| Redwood City tide gauge | NOAA | 9414523 | MHHW = 7.02 ft NAVD88 |
-| Alameda tide gauge | NOAA | 9414750 | MHHW = 6.37 ft NAVD88 |
-| Colma Creek at Orange Memorial Park – stage / rain | OneRain | 41101 | Monitoring 3.40 · Watch 5.00 · Warning 6.75 ft · tide: Alameda |
-| San Bruno Creek at First Avenue – stage / rain | OneRain | 41102 | Monitoring 2.40 · Watch 3.60 · Warning 4.80 ft · tide: Alameda |
-| San Bruno Mountain – rain | OneRain | 41200 | Upper San Bruno Creek watershed |
-| Belmont Creek at Old County Rd – stage / rain | OneRain | 41104 | Monitoring 2.25 · Watch 3.25 · Warning 4.00 ft · flooding likely if 30-min rain > 0.20 in, or 4-hr rain > 0.42 in with high tide · tide: Redwood City |
-| Atherton Channel at Alameda de las Pulgas – stage | OneRain | 41107 | Monitoring 3.18 · Watch 4.60 · Warning 5.65 · Roadway Flooded 10.40 ft · tide: Redwood City |
-| Atherton Channel upstream of CalTrain – stage / rain | OneRain | 41106 | Monitoring 2.80 · Watch 4.10 · Warning 5.50 ft (probe 0.37 ft above channel bottom) |
-| NWS alerts | api.weather.gov | San Mateo County (FIPS 006081) | |
-| All other OneRain sites (map) | OneRain | every site on the public Sites list | Alert colors for the creek gauges above (from `lookups/thresholds.csv`) |
-
-All water levels are in feet, NAVD88. Tide predictions come from NOAA and do **not** include storm surge,
-wind or runoff; the measured water level shows those effects.
-
----
-
-## Keeping it running
-
-### Creek data job (every 5 minutes)
-
-GitHub's built-in scheduler doesn't reliably start this job, so it is triggered every 5 minutes by
-**cron-job.org** (job name: *OneShoreline – Fetch OneRain data*), which calls GitHub's "run workflow" API:
-
-```
-POST https://api.github.com/repos/OneShorelineSMC/oneshorelinefews/actions/workflows/onerain.yml/dispatches
-Body: {"ref":"main"}
-Headers: Authorization: Bearer <token> · Accept: application/vnd.github+json · Content-Type: application/json
+```html
+<iframe src="https://oneshorelinesmc.github.io/oneshorelinefews/index.html"
+  title="San Mateo County flood early warning"
+  style="display:block; width:100%; max-width:100%; height:85vh; min-height:560px; border:0;"></iframe>
 ```
 
-- The cron-job.org job uses a **GitHub fine-grained personal access token** that can only start this repository's
-  workflows. When it expires, the data stops updating (see **Renewing the cron-job.org token** below).
-- The map data (`sites.json`) is refreshed by the same job, every third run (about every 15 minutes).
-- Runs appear in the **Actions** tab. A red ✗ means OneRain couldn't be read; the log shows how many readings
-  were found for each sensor. If OneRain redesigns its sensor pages, `scripts/fetch_onerain.py` may need updating.
-- GitHub Actions is free for this public repository. If the repo were made private, every-5-minute runs would
-  exceed the free monthly allowance.
-- You can always run it by hand: **Actions → Fetch OneRain data → Run workflow**.
+`85vh` is 85% of the screen's height; adjust it so the website's own header still shows above the box.
 
-### Renewing the cron-job.org token
+**Fit:** the box grows to the full height of each page, so there is no scrolling inside it, but the menu can't stay on
+screen (it sits at the top of the page). Add `?fit=1` to the address and the script below:
 
-**Signs it has expired:** "Creek data delayed" on the creek pages and kiosk, "data delayed" on the map, no new
-"Fetch OneRain data" runs in the Actions tab, and "401 Unauthorized" in the cron-job.org job's History. After many
-failures in a row, cron-job.org also switches the job off.
+```html
+<iframe id="fews" src="https://oneshorelinesmc.github.io/oneshorelinefews/index.html?fit=1"
+  title="San Mateo County flood early warning"
+  style="display:block; width:100%; max-width:100%; height:1400px; border:0;"></iframe>
+<script>
+  window.addEventListener("message", function (e) {
+    if (e.origin !== "https://oneshorelinesmc.github.io") return;
+    var h = e.data && e.data.fews_height;
+    if (h > 200 && h < 20000) document.getElementById("fews").style.height = h + "px";
+  });
+</script>
+```
 
-**Before it expires:** GitHub emails the token's owner about a week ahead. The expiry date is listed at
-github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens. Put a reminder on the team
-calendar a week before it.
-
-1. **Make the new token.** Sign in to GitHub as **OneShorelineSMC-admin** (preferred, so it doesn't depend on one
-   person's account) and open https://github.com/settings/personal-access-tokens/new.
-   - Token name: `cron-job.org OneRain trigger`. Expiration: **No expiration** if offered, otherwise the longest
-     allowed (then set the calendar reminder).
-   - Resource owner: **OneShorelineSMC**.
-   - Repository access: **Only select repositories** → `oneshorelinefews`.
-   - Permissions: click **+ Add permissions** → **Repositories**, search **actions**, tick **Actions** (not "Actions
-     variables"), then set it to **Read and write**. "Metadata: Read-only" is added on its own; leave it.
-   - Click **Generate token** and copy it right away (GitHub shows it only once). Don't email or paste it anywhere else.
-2. **Approve it, if asked.** If GitHub says the token is pending, an organization owner approves it at
-   https://github.com/organizations/OneShorelineSMC/settings/personal-access-token-requests. Approved tokens are
-   listed under **Active tokens** on the same page.
-3. **Put it in cron-job.org.** Sign in at https://console.cron-job.org → **Cronjobs** → "OneShorelineFEWS – Fetch
-   OneRain data" → **Edit cronjob** → **Advanced** tab → **Headers**. Replace the value of the `Authorization`
-   header with `Bearer ` and the new token (the word Bearer, one space, the token, no quotes). Leave the `Accept` and
-   `Content-Type` headers alone.
-4. **Turn the job back on.** On the **Common** tab, make sure **Enable job** is on. Click **Save**.
-5. **Check it.** Within 5 minutes the job's **History** shows a new row: success (HTTP 204) means it works; 401 means
-   the header is wrong or still has the old token; 403 means the token is waiting for approval or Actions isn't
-   "Read and write". In GitHub, the **Actions** tab shows a new "Fetch OneRain data" run every 5 minutes.
-6. **Catch up and tidy up.** To refresh the site right away: **Actions → Fetch OneRain data → Run workflow**. Delete
-   the expired token from the token list, and note the new expiry date on the team calendar.
-
-### Updating a widget
-
-1. Edit the file on GitHub (pencil icon) and commit.
-2. GitHub Pages updates within a minute or two.
-3. In OneRain, add or bump a version number at the end of the widget URL (`?v=2`, `?v=3`, …) so browsers
-   don't show a cached copy.
-
-The Pi kiosk picks up changes at its daily 3 AM reload, or immediately if the Pi is rebooted. The phone page
-picks up changes the next time someone opens it (a pull-down refresh may be needed if it was already open).
-
----
-
-## Times
-
-Every time on every page is Pacific time as on local clocks: PDT in summer, PST in winter (America/Los_Angeles),
-whatever time zone the viewer's device is set to. NOAA data is requested in local time (`time_zone=lst_ldt`),
-OneRain readings are converted to America/Los_Angeles by the data job, and NWS times are converted before display.
-The kiosk clock and the "Updated" lines show the current zone (e.g. "12:45 PM PDT").
-
-## Data sources
-
-- **NOAA CO-OPS Tides & Currents API**: tide predictions, measured water levels, and the San Francisco Bay Operational Forecast System's water-level forecast at Redwood City (`ofs_water_level`), all in ft NAVD88
-  (`api.tidesandcurrents.noaa.gov`)
-- **National Weather Service API**: active alerts and the San Francisco Bay Area forecast discussion (kiosk
-  Tides tab) (`api.weather.gov`); official alert pages on
-  `forecast.weather.gov`
-- **OneShoreline Early Warning System (OneRain Contrail)**: creek stage, rainfall and all map sites
-  (`oneshorelineearlywarning.onerain.com`)
-- **NOAA Tides & Currents**: Redwood City tide table and model water level for the King Tide line and calendar (`tide_season.js`)
-- **OpenStreetMap**: map background (`tile.openstreetmap.org`, © OpenStreetMap contributors)
-- **Libraries** (loaded from CDNs, each locked with a Subresource Integrity hash so a changed file is refused):
-  Chart.js 4.5.1 (cdnjs), Leaflet 1.9.4 (jsDelivr), qrcodejs 1.0.0 (cdnjs, kiosk About tab). To upgrade one,
-  update both the URL and its `integrity` hash in every page that loads it.
-
-## Contact
-
-OneShoreline (San Mateo County Flood and Sea Level Rise Resiliency District) ·
-1700 S. El Camino Real, Suite 502, San Mateo, CA 94402 · (650) 844-8310 · info@oneshoreline.org ·
-[oneshoreline.org](https://www.oneshoreline.org)
-
-## License
-
-GPL-3.0 – see `LICENSE`.
-
-| `tide_season.js` (Nov 8) | `offsetDays(now, true)` holds the offset as it is now (the larger of the 30-day and 7-day averages) instead of easing it. The Tides page uses it for one line above *Tides that could reach the flood level*: “If the Bay stays as high as it is now …, flood-level tides could start {date}, N days earlier than the estimate” (`tide_steady_start`), shown only when that is earlier. NWS and NOAA reason from current conditions, so their start dates can come a day or two before the easing estimate. |
-| `nav.css` | **Nov 8:** on screens 760 px and wider, the page bar is a tab strip under the header (sticky at the top; the current page underlined). Phones keep the bottom bar unchanged. Every page puts its `<nav>` right after `</header>` in the source (fixed to the bottom on phones; on the Map page a flex item with `order: 99`). |
-
-| `hero.js` (Nov 8) | **Shoreline NWS cards:** `HERO.nwsCards(el, {nws, current})` shows two small cards, Bay shoreline (NWS zone CAZ508) and Coast (CAZ509), each with the coastal flood, high surf, storm surge, tsunami, beach hazards or rip current products in effect there, from each alert's own zone list. The Tides page shows them at the top (this page's side outlined), then anything else in effect, then its own side's tide status; Coastside Tides no longer shows the Bay tide at the top. `tideState` now caps each side's tide status only by its own side's NWS products. **Later Nov 8:** a card with an alert is a button; tapping it opens that alert's NWS text under the cards (tap again to close). `inland: true` adds a third card, *Creeks and rain* (NWS flood products for the county). The home page now opens with the three cards (Bay shoreline, Coast, Creeks and rain), then *Right now*; its single alert card (HERO.render) is no longer used there. |
+Either way, use a width of 100%, never a fixed number of pixels, or it runs off the side on phones.
