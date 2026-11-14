@@ -147,7 +147,8 @@
         <li><b>Tide:</b> the creek's NOAA tide gauge (Colma, San Bruno, San Mateo and Green Hills: Alameda; Belmont, Atherton and San Francisquito: Redwood City;
           the coast creeks: Monterey), read hourly: the measured water on each hour and the tide table. "vs the tide table" is the storm push (wind, low pressure,
           the ocean running high); "vs the average high tide" is against MHHW. Hours at each tide level use the levels on the Tide Tracker page. The record
-          holds 10 days of tide, so storms before this was added (Nov 14, 2026) have no tide.</li>
+          holds 10 days of tide. When this was added (Nov 14, 2026), the first NOAA read went back 5 days, so storms from about Nov 9 on have
+          their tide (marked "added after the storm closed"); earlier storms have none.</li>
         <li><b>Gaps:</b> a gauge that went quiet during a storm is named; its rain may be missing. Rain gauges under-catch in wind.</li>
         <li><b>Earlier seasons:</b> the history from the OneRain archive can be added later with the same rules (THRESHOLDS_BASIS.md §12).</li>
       </ul>
@@ -278,6 +279,7 @@ function show(k, quiet) {
     '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
     "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(s.total) + " in</b> in " + s.hours + " hours " + chip(s.rain_level) + "</p>" + lvt +
     (s.tide ? "<p style='margin:8px 0 0'><b>Tide</b>: " + tideLine(s.tide, true) + "." +
+      (s.tide.added_later ? ' <span class="sm">(Added after the storm closed.)</span>' : "") +
       (s.tide.push_max != null ? ' <span class="sm">The water ran up to ' + sgn(s.tide.push_max) + " ft vs the tide table during the storm (average " + sgn(s.tide.push_mean) + " ft).</span>" : "") +
       (s.tide.creek_vs_tide_hours != null ? ' <span class="sm">The creek peaked ' + (Math.abs(s.tide.creek_vs_tide_hours) < 0.5 ? "at the high tide" : Math.abs(s.tide.creek_vs_tide_hours) + " hr " + (s.tide.creek_vs_tide_hours > 0 ? "after" : "before") + " the nearest high tide") +
         (s.tide.tide_at_creek_peak != null ? " (tide then " + ft2(s.tide.tide_at_creek_peak) + " ft)" : "") + ".</span>" : "") + "</p>" +
