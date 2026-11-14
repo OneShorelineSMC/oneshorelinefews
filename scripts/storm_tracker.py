@@ -158,9 +158,11 @@ def update_tides(out, stations, now, fetch=None, every=TIDE_EVERY_MIN, log=print
     problems = []
     for st in sorted(stations):
         try:
-            back = dt.timedelta(hours=8) if (out["ledger"].get("tide:" + st) or {}).get("h") else dt.timedelta(days=3)
+            # the first read goes back 5 days, so storms that closed just before the tide was added get theirs too
+            first = not (out["ledger"].get("tide:" + st) or {}).get("h")
+            back = dt.timedelta(days=5) if first else dt.timedelta(hours=8)
             meas = TT.noaa("water_level", st, now - back, now, fetch)
-            pred = TT.noaa("predictions", st, now - dt.timedelta(days=3), now + dt.timedelta(days=2), fetch, interval="h")
+            pred = TT.noaa("predictions", st, now - (dt.timedelta(days=5) if first else dt.timedelta(days=1)), now + dt.timedelta(days=2), fetch, interval="h")
         except Exception as e:  # noqa: BLE001 - NOAA down or the station out: keep what we have
             problems.append("tide %s: %s" % (st, str(e)[:120]))
             continue
@@ -478,6 +480,24 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
     keep = {"%s|%s" % (s["creek"], s["start"]) for s in opened}
     out["track"] = {k: v for k, v in track.items() if k in keep}
     out["open"] = opened
+    # storms closed before the tide was recorded: add their tide once, when the hourly tide record covers them (the first
+    # NOAA read goes back 5 days). Only the "tide" field is added; the rest of a closed storm stays as it was.
+    byid = {c["id"]: c for c in creeks}
+    for st in out["storms"]:
+        c = byid.get(st["creek"])
+        if (st.get("tide") or {}).get("peak") is not None or not c:
+            continue
+        stn = tide_station(c)
+        have = hours_of(out["ledger"], "tide:" + stn)
+        s0 = parse_t(st["start"])
+        if not have or min(have) > s0:
+            continue
+        lp = next((x for x in st.get("levels") or [] if x.get("peak") is not None), None)
+        r_end = parse_t(st["end"]) + dt.timedelta(hours=S["STORM_RESPONSE_HOURS"])
+        td = storm_tide(c, s0, r_end, out["ledger"], tlev, parse_t(lp["peak_at"]) if lp else None)
+        if td.get("peak") is not None:
+            td["added_later"] = True
+        st["tide"] = td
     out["storms"].sort(key=lambda s: (s["start"], s["creek"]))
     out["summary"] = [season_summary(c, out["days"], out["storms"] + opened, wy0) for c in creeks]
     out["creeks"] = [{"id": c["id"], "name": c["name"], "short": c.get("short"), "preview_only": bool(c.get("preview_only")),

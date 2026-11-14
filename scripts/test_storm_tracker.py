@@ -188,5 +188,15 @@ st_nd = T.run(snapshot(T0 + dt.timedelta(hours=20)), {}, T0 + dt.timedelta(hours
               fetch=lambda u: (_ for _ in ()).throw(OSError("NOAA down")))
 check("NOAA down: storms still built, the problem noted, no tide numbers", st_nd["open"] and st_nd["open"][0]["tide"]["peak"] is None and st_nd["tide_problems"])
 
+# storms closed before the tide was recorded get it once the record covers them (added_later)
+st0 = {}
+for k in range(0, 81):
+    now = T0 + dt.timedelta(minutes=30 * k)
+    st0 = T.run(snapshot(now), copy.deepcopy(st0), now, S, FREQ, tides=False)
+check("before the tide: a closed storm without tide", st0["storms"] and (st0["storms"][0].get("tide") or {}).get("peak") is None)
+t1 = T0 + dt.timedelta(hours=40, minutes=30)
+st1 = T.run(snapshot(t1), copy.deepcopy(st0), t1, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
+check("first tide run: the closed storm gets its tide, marked as added later", st1["storms"][0]["tide"]["peak"] == 7.3 and st1["storms"][0]["tide"]["added_later"])
+
 print("storm_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
