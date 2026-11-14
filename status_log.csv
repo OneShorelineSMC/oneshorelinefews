@@ -1,0 +1,96 @@
+time,creek,from,to,level,rain_level,trend,reasons
+2026-10-14 14:25:15,colma,,none,0,0,steady,
+2026-10-14 14:25:15,sanbruno,,offline,0,0,,
+2026-10-14 14:25:15,belmont,,none,0,0,steady,
+2026-10-14 14:25:15,atherton,,none,0,0,steady,
+2026-10-14 14:55:13,sanfrancisquito,,none,0,0,steady,
+2026-10-14 14:55:13,sanmateo,,none,0,0,steady,
+2026-10-14 14:55:13,greenhills,,none,0,0,steady,
+2026-10-14 14:55:13,pilarcitos,,none,0,0,steady,
+2026-10-14 14:55:13,sangregorio,,none,0,0,steady,
+2026-10-14 14:55:13,pescadero,,none,0,0,steady,
+2026-10-16 05:00:22,colma,none,offline,0,0,,
+2026-10-16 06:20:16,colma,offline,none,0,0,steady,
+2026-10-20 14:05:15,sanbruno,offline,none,0,0,steady,
+2026-10-21 10:55:16,butano,,none,0,0,steady,
+2026-10-22 13:40:20,belmont,none,offline,0,0,,why_out_of_service
+2026-10-23 15:15:15,sangregorio,none,offline,0,0,,
+2026-10-23 16:25:13,sangregorio,offline,none,0,0,steady,
+2026-10-23 19:15:15,sangregorio,none,offline,0,0,,
+2026-10-23 21:35:13,sangregorio,offline,none,0,0,steady,
+2026-10-25 10:20:16,greenhills,none,offline,0,0,,
+2026-10-25 11:20:16,greenhills,offline,none,0,0,steady,
+2026-10-27 10:15:21,colma,none,offline,0,0,,
+2026-10-27 10:15:21,sanbruno,none,offline,0,0,,
+2026-10-27 10:15:21,atherton,none,offline,0,0,,
+2026-10-27 10:15:21,greenhills,none,offline,0,0,,
+2026-10-27 10:20:18,colma,offline,none,0,0,steady,
+2026-10-27 10:20:18,sanbruno,offline,none,0,0,steady,
+2026-10-27 10:20:18,atherton,offline,none,0,0,steady,
+2026-10-27 10:20:18,greenhills,offline,none,0,0,steady,
+2026-10-27 13:20:18,greenhills,none,offline,0,0,,
+2026-10-27 14:20:19,greenhills,offline,none,0,0,steady,
+2026-10-31 11:20:16,greenhills,none,offline,0,0,,
+2026-10-31 13:20:17,greenhills,offline,none,0,0,steady,
+2026-10-31 23:05:17,sanbruno,none,offline,0,0,,
+2026-11-01 00:40:17,sanbruno,offline,none,0,0,rising,
+2026-11-01 01:00:22,greenhills,none,ready,0,0,fast,why_rising_fast
+2026-11-01 01:15:16,greenhills,ready,none,0,0,rising,
+2026-11-01 01:25:15,pilarcitos,none,alert,0,0,fast,why_rising_fast
+2026-11-01 02:05:13,atherton,none,alert,0,0,fast,why_rising_fast
+2026-11-01 02:15:16,pilarcitos,alert,none,0,0,steady,
+2026-11-01 02:40:16,atherton,alert,none,0,0,falling,
+2026-11-04 18:20:15,greenhills,none,offline,0,0,,
+2026-11-04 19:20:13,greenhills,offline,none,0,0,steady,
+2026-11-05 18:15:15,sangregorio,none,offline,0,0,,
+2026-11-05 18:25:13,sangregorio,offline,none,0,0,steady,
+2026-11-06 00:15:15,sangregorio,none,offline,0,0,,
+2026-11-06 07:25:13,sangregorio,offline,none,0,0,steady,
+2026-11-06 12:15:15,sangregorio,none,offline,0,0,,
+2026-11-06 14:25:13,sangregorio,offline,none,0,0,steady,
+2026-11-06 19:00:19,colma,none,offline,0,0,,
+2026-11-06 21:25:12,colma,offline,none,0,0,steady,
+2026-11-10 09:50:16,sanbruno,none,offline,0,0,,
+2026-11-10 09:50:16,atherton,none,offline,0,0,,
+2026-11-10 09:50:16,greenhills,none,offline,0,0,,
+2026-11-10 09:55:14,colma,none,offline,0,0,,
+2026-11-10 12:15:16,colma,offline,none,0,0,steady,
+2026-11-10 12:15:16,sanbruno,offline,none,0,0,steady,
+2026-11-10 12:15:16,atherton,offline,none,0,0,steady,
+2026-11-10 12:15:16,greenhills,offline,none,0,0,steady,
+2026-11-10 19:00:22,colma,none,offline,0,0,,
+2026-11-10 20:25:12,colma,offline,none,0,0,steady,
+2026-11-13 02:40:16,colma,none,alert,0,0,fast,why_rising_fast tide_rising_line
+2026-11-13 02:40:16,greenhills,none,ready,0,0,fast,why_rising_fast
+2026-11-13 02:50:16,colma,alert,none,0,0,rising,
+2026-11-13 03:15:18,greenhills,ready,none,0,0,steady,
+2026-11-13 03:15:18,pilarcitos,none,alert,0,0,fast,why_rising_fast
+2026-11-13 04:15:15,pilarcitos,alert,none,0,0,falling,
+2026-11-13 08:40:16,colma,none,alert,0,0,fast,why_rising_fast
+2026-11-13 09:00:20,colma,alert,none,0,0,falling,
+2026-11-13 09:05:15,greenhills,none,ready,0,0,fast,why_rising_fast
+2026-11-13 09:10:15,sanbruno,none,alert,0,0,fast,why_rising_fast
+2026-11-13 09:20:16,colma,none,alert,0,0,fast,why_rising_fast
+2026-11-13 09:25:14,colma,alert,none,0,0,falling,
+2026-11-13 09:39:14,greenhills,ready,none,0,0,steady,
+2026-11-13 09:45:28,greenhills,none,ready,0,0,fast,why_rising_fast
+2026-11-13 10:10:15,greenhills,ready,none,0,0,steady,
+2026-11-13 10:30:23,colma,none,alert,0,0,fast,why_rising_fast tide_rising_line
+2026-11-13 10:55:15,colma,alert,none,0,0,rising,
+2026-11-13 11:30:21,sanbruno,alert,none,0,0,falling,
+2026-11-13 11:30:21,atherton,none,alert,0,0,fast,why_rising_fast
+2026-11-13 11:45:17,colma,none,alert,1,0,fast,why_monitoring tide_rising_line
+2026-11-13 11:45:17,sanbruno,none,alert,1,0,rising,why_monitoring tide_rising_line
+2026-11-13 12:15:15,colma,alert,none,0,0,falling,
+2026-11-13 12:25:14,atherton,alert,none,0,0,falling,
+2026-11-13 12:30:19,sanbruno,alert,ready,2,2,fast,why_watch why_rain tide_rising_line
+2026-11-13 12:35:14,belmont,offline,likely,0,0,,why_out_of_service why_trigger_tide why_gauge_offline
+2026-11-13 13:15:16,pilarcitos,none,alert,0,0,fast,why_rising_fast
+2026-11-13 13:35:15,sanbruno,ready,alert,1,2,falling,why_monitoring why_rain
+2026-11-13 14:15:17,pilarcitos,alert,none,0,0,rising,
+2026-11-13 14:25:14,belmont,likely,offline,0,0,,why_out_of_service
+2026-11-13 16:10:16,sanbruno,alert,none,0,1,falling,why_stale
+2026-11-13 19:30:18,sanbruno,none,alert,0,1,fast,why_rising_fast why_rain
+2026-11-13 20:15:18,sanbruno,alert,none,0,1,falling,why_stale
+2026-11-14 01:10:15,sanbruno,none,alert,0,1,steady,why_rain why_stale tide_rising_line
+2026-11-14 02:35:14,sanbruno,alert,none,0,0,steady,
