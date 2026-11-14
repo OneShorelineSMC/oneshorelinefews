@@ -559,7 +559,9 @@ water on each hour and the tide table. Per storm: the highest water and when, th
 push: wind, low pressure, the ocean running high), the largest and average push, height above MHHW, hours at or above
 each Tide Tracker level (MHHW, the 1-year tide, the flood level, NOAA minor flooding), and the creek's peak against the
 nearest high tide (+ = after). The season table counts storms with the water above MHHW. NOAA is read at most every 55
-minutes; if it can't be read the storm is still recorded, without tide. Storms closed before this was added have none.
+minutes; if it can't be read the storm is still recorded, without tide. The first read goes back 5 days, and a closed
+storm without tide numbers gets them (marked `added_later`) once the record covers it, so the Nov 13, 2026 storms have
+theirs; storms before about Nov 9, 2026 have none.
 
 ## Data sources
 
