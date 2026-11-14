@@ -63,7 +63,7 @@ def snapshot(now):
     last15 = sum(p[1] for p in pts if T.parse_t(p[0]) > now - dt.timedelta(minutes=15))
     last30 = sum(p[1] for p in pts if T.parse_t(p[0]) > now - dt.timedelta(minutes=30))
     status = "likely" if level_at(round(i)) >= 5.0 else "ready" if level_at(round(i)) >= 3.4 else "none"
-    c = {"id": "colma", "name": "Colma Creek", "short": "Colma", "status": {"key": status},
+    c = {"id": "colma", "name": "Colma Creek", "short": "Colma", "status": {"key": status}, "tide": "9414750",
          "rain": [{"key": "col_rain", "label": "Orange Memorial Park", "number": "41101"}],
          "rain_support": [{"key": "col_rain_41200", "label": "San Bruno Mountain", "number": "41200"}],
          "stages": [{"key": "col_stage", "label": "Orange Memorial Park", "number": "41101", "tidal": True,
@@ -78,11 +78,36 @@ def snapshot(now):
     return {"generated": now.strftime("%Y-%m-%d %H:%M:%S"), "creeks": [c], "sensors": sens}
 
 
+# NOAA (fake): the tide table at Alameda peaks at 6.5 ft NAVD88 at 16:00 on Nov 3; the measured water runs 0.8 ft above it
+import math, urllib.parse   # noqa: E401,E402
+TT_LEVELS = {"stations": [{"id": "9414750", "levels": [{"key": "mhhw", "ft": 6.37, "label": "MHHW (average high tide)"},
+                                                       {"key": "minor", "ft": 8.27, "label": "NOAA minor flooding (derived)"}]}]}
+NOAA_CALLS = []
+
+
+def tide_pred(t):
+    h = (t - T0).total_seconds() / 3600
+    return round(3.0 + 3.5 * math.cos(2 * math.pi * (h - 16) / 12.42), 3)
+
+
+def fake_noaa(url):
+    q = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
+    NOAA_CALLS.append(q["product"])
+    b, e = dt.datetime.strptime(q["begin_date"], "%Y%m%d %H:%M"), dt.datetime.strptime(q["end_date"], "%Y%m%d %H:%M")
+    step = dt.timedelta(hours=1) if q["product"] == "predictions" else dt.timedelta(minutes=6)
+    rows, t = [], b.replace(minute=0)
+    while t <= e:
+        v = tide_pred(t) + (0.8 if q["product"] == "water_level" else 0)
+        rows.append({"t": t.strftime("%Y-%m-%d %H:%M"), "v": "%.3f" % v})
+        t += step
+    return {"predictions": rows} if q["product"] == "predictions" else {"data": rows}
+
+
 state, seen_open = {}, []
 for hr in range(0, 100):
     for mm in (0, 30):
         now = T0 + dt.timedelta(hours=hr, minutes=mm)
-        state = T.run(snapshot(now), copy.deepcopy(state), now, S, FREQ)
+        state = T.run(snapshot(now), copy.deepcopy(state), now, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
         if state["open"]:
             seen_open.append((hr, state["open"][0]["total"]))
         if hr == 40 and mm == 0:
@@ -142,10 +167,26 @@ check("an hour with no reports in a later download is dry", L["g"]["h"] == {})
 ny = dt.datetime(2027, 10, 1, 1, 0)
 snap = snapshot(T0 + dt.timedelta(hours=99))
 snap["generated"] = ny.strftime("%Y-%m-%d %H:%M:%S")
-nx = T.run(snap, copy.deepcopy(state), ny, S, FREQ)
+nx = T.run(snap, copy.deepcopy(state), ny, S, FREQ, tides=False)
 check("new water year: WY2028, last season kept under previous, storms cleared",
       nx["water_year"] == "WY2028" and nx["previous"]["water_year"] == "WY2027" and len(nx["previous"]["storms"]) == 2 and nx["storms"] == [])
 check("record start date set", state["since"] == "2026-11-01" or state["since"] <= "2026-11-03")
+
+# the tide during storm 1 (Alameda, the creek's tide gauge)
+td = st["tide"]
+check("tide: the creek's own gauge (Alameda), highest water 7.3 ft NAVD88 at 16:00", td["station"] == "9414750" and td["peak"] == 7.3 and td["peak_at"] == "2026-11-03 16:00")
+check("tide: the table then 6.5 ft; the water 0.8 ft above it (the storm push)", td["table_at_peak"] == 6.5 and td["push_at_peak"] == 0.8 and abs(td["push_max"] - 0.8) < 0.02)
+check("tide: 0.93 ft above the average high tide; hours above it counted, none at NOAA minor flooding",
+      td["above_mhhw"] == 0.93 and [l["hours"] for l in td["levels"] if l["key"] == "mhhw"][0] >= 1 and [l["hours"] for l in td["levels"] if l["key"] == "minor"][0] == 0)
+check("tide: the creek peaked 1 hour after the high tide", td["creek_vs_tide_hours"] == 1.0)
+check("tide: hourly series (measured, table) kept for the graph", len(td["series"]) > 20 and td["series"][0][2] is not None)
+check("tide: NOAA read at most about hourly (not every 30-minute run)", NOAA_CALLS.count("water_level") <= 105)
+check("season: storms with the water above the average high tide counted", sm["tide_above_mhhw"] >= 1 and sm["tide_peak"] == 7.3)
+cst = dict(snapshot(T0 + dt.timedelta(hours=20))["creeks"][0]); cst.pop("tide")
+check("a coast creek with no tide gauge uses Monterey", T.tide_station(cst) == "9413450")
+st_nd = T.run(snapshot(T0 + dt.timedelta(hours=20)), {}, T0 + dt.timedelta(hours=20), S, FREQ,
+              fetch=lambda u: (_ for _ in ()).throw(OSError("NOAA down")))
+check("NOAA down: storms still built, the problem noted, no tide numbers", st_nd["open"] and st_nd["open"][0]["tide"]["peak"] is None and st_nd["tide_problems"])
 
 print("storm_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)

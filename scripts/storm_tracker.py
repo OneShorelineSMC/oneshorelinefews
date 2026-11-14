@@ -24,10 +24,17 @@ at that gauge (lookups/rain_frequency.csv: level 1-3 = Heavy / Very heavy / Inte
 For each level gauge: peak and when, hours at or above each flood level, rising fast seen, and the lag from the
 heaviest hour of rain to the peak. For the creek: its highest status during the storm, and gauges that went quiet.
 
+The tide (staff, 2026-11-14): each creek's NOAA tide gauge (creeks.json "tide"; the coast creeks, which have none, use
+Monterey 9413450) is read hourly into the same record, measured ("tide:<id>", the 6-minute reading on each hour) and
+the tide table ("tidepred:<id>"), at most every TIDE_EVERY_MIN minutes. Each storm then gets the Bay or ocean during
+it: the highest water and when, the tide table then, how far the water ran above the table (the storm push), hours above
+the average high tide (MHHW) and above the gauge's flood levels (from tide_tracker.json), and how far the creek's peak
+was from the day's high tide. Rain and a high tide together are what floods the tidal creeks.
+
 Settings (lookups/settings.csv; the same ranges as lookups.js): STORM_DRY_HOURS, STORM_MIN_IN, STORM_WET_IN,
 STORM_RESPONSE_HOURS. Basis: lookups/THRESHOLDS_BASIS.md §12.
 
-Usage: python storm_tracker.py CREEKS.json STORM_TRACKER.json
+Usage: python storm_tracker.py CREEKS.json STORM_TRACKER.json [--tide-tracker TIDE_TRACKER.json] [--no-tides]
 """
 
 import csv
@@ -38,6 +45,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from creek_signals import load_rain_frequency, storm_years   # noqa: E402
+import tide_tracker as TT   # noqa: E402   (NOAA requests)
 
 LOOKUPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups")
 SETTINGS = {"STORM_DRY_HOURS": [6, 1, 48], "STORM_MIN_IN": [0.1, 0.01, 2], "STORM_WET_IN": [0.01, 0.01, 0.2],
@@ -47,6 +55,9 @@ PEAK_HOURS = [1, 3, 6, 12, 24]          # peak rain windows read from the hourly
 SUB_HOURLY = ["15", "30"]               # and from the data job's rolling totals (minutes)
 STATUS_RANK = {"none": 0, "alert": 1, "ready": 2, "likely": 3}   # offline / delayed don't count
 HFMT = "%Y-%m-%d %H:00"
+TIDE_EVERY_MIN = 55                     # NOAA tide read at most this often (the record is hourly)
+COAST_TIDE = "9413450"                  # Monterey: the coast creeks have no tide gauge of their own
+TIDE_NAMES = {"9414523": "Redwood City", "9414750": "Alameda", "9414290": "San Francisco", "9413450": "Monterey"}
 
 
 def load_settings(path=os.path.join(LOOKUPS, "settings.csv")):
@@ -132,6 +143,91 @@ def hours_of(ledger, key):
     return {parse_t(k): v for k, v in (ledger.get(key) or {}).get("h", {}).items()}
 
 
+# --------------------------------------------------------------------------------------------- the tide
+def tide_station(c):
+    return str(c.get("tide") or COAST_TIDE)
+
+
+def update_tides(out, stations, now, fetch=None, every=TIDE_EVERY_MIN, log=print):
+    """Adds NOAA's measured water (highest in each hour) and the tide table (hourly) at each station to the hourly
+    record, at most every `every` minutes. A station NOAA can't serve is skipped; the record keeps what it had."""
+    last = out.get("tide_fetched")
+    if last and now - parse_t(last) < dt.timedelta(minutes=every):
+        return []
+    fetch = fetch or TT.get_json
+    problems = []
+    for st in sorted(stations):
+        try:
+            back = dt.timedelta(hours=8) if (out["ledger"].get("tide:" + st) or {}).get("h") else dt.timedelta(days=3)
+            meas = TT.noaa("water_level", st, now - back, now, fetch)
+            pred = TT.noaa("predictions", st, now - dt.timedelta(days=3), now + dt.timedelta(days=2), fetch, interval="h")
+        except Exception as e:  # noqa: BLE001 - NOAA down or the station out: keep what we have
+            problems.append("tide %s: %s" % (st, str(e)[:120]))
+            continue
+        m = out["ledger"].setdefault("tide:" + st, {"kind": "tide", "h": {}})
+        for t, v, _ in meas:   # the reading on the hour, to compare with the tide table's hourly values
+            if t[14:16] == "00":
+                m["h"][t[:13] + ":00"] = round(v, 2)
+        pr = out["ledger"].setdefault("tidepred:" + st, {"kind": "tidepred", "h": {}})
+        for t, v, _ in pred:
+            if t[14:16] == "00":
+                pr["h"][t[:13] + ":00"] = round(v, 2)
+    out["tide_fetched"] = now.strftime("%Y-%m-%d %H:%M")
+    for p in problems:
+        log("  " + p)
+    return problems
+
+
+def tide_levels(tide_tracker):
+    """{station: [{"key", "ft", "label"}]} from tide_tracker.json (MHHW, NOAA minor flooding, 1-year, flood level)."""
+    out = {}
+    for s in (tide_tracker or {}).get("stations") or []:
+        out[str(s.get("id"))] = [{"key": l.get("key"), "ft": l.get("ft"), "label": l.get("label")} for l in s.get("levels") or []
+                                 if l.get("ft") is not None]
+    if not out:   # no tide tracker yet: MHHW from lookups/tide_stations.csv
+        try:
+            with open(os.path.join(LOOKUPS, "tide_stations.csv"), newline="", encoding="utf-8-sig") as f:
+                for r in csv.DictReader(f):
+                    try:
+                        out[r["station"].strip()] = [{"key": "mhhw", "ft": float(r["mhhw_navd88_ft"]), "label": "MHHW (average high tide)"}]
+                    except (KeyError, ValueError):
+                        pass
+        except OSError:
+            pass
+    return out
+
+
+def storm_tide(c, start, resp_end, ledger, levels, creek_peak=None):
+    """The tide during a storm, from the storm's start to the end of the creek's response."""
+    stn = tide_station(c)
+    meas = {h: v for h, v in hours_of(ledger, "tide:" + stn).items() if start - dt.timedelta(hours=6) <= h <= resp_end}
+    pred = {h: v for h, v in hours_of(ledger, "tidepred:" + stn).items() if start - dt.timedelta(hours=6) <= h <= resp_end}
+    inside = {h: v for h, v in meas.items() if start <= h <= resp_end}
+    out = {"station": stn, "name": TIDE_NAMES.get(stn, stn), "coast": stn == COAST_TIDE, "peak": None}
+    lv = levels.get(stn) or []
+    out["levels"] = [{"key": l["key"], "label": l["label"], "ft": l["ft"], "hours": sum(1 for v in inside.values() if v >= l["ft"])} for l in lv]
+    if not inside:
+        return out
+    ph = max(inside, key=lambda h: (inside[h], -h.timestamp()))
+    push = {h: round(v - pred[h], 2) for h, v in inside.items() if h in pred}
+    out.update({"peak": inside[ph], "peak_at": hkey(ph), "table_at_peak": pred.get(ph),
+                "push_at_peak": push.get(ph), "push_max": max(push.values()) if push else None,
+                "push_mean": round(sum(push.values()) / len(push), 2) if push else None,
+                "hours": len(inside)})
+    mh = next((l["ft"] for l in lv if l["key"] == "mhhw"), None)
+    if mh is not None:
+        out["above_mhhw"] = round(inside[ph] - mh, 2)
+    # the creek's peak against the nearest tide peak (the highest hour within 6 hours of it): + = after the tide
+    if creek_peak is not None:
+        near = {h: v for h, v in meas.items() if abs((h - creek_peak).total_seconds()) <= 6 * 3600}
+        if near:
+            th = max(near, key=lambda h: (near[h], -h.timestamp()))
+            out["creek_vs_tide_hours"] = round((creek_peak - th).total_seconds() / 3600, 1)
+            out["tide_at_creek_peak"] = meas.get(creek_peak)
+    out["series"] = [[hkey(h), meas.get(h), pred.get(h)] for h in sorted(set(meas) | set(pred))]
+    return out
+
+
 # --------------------------------------------------------------------------------------------- storms
 def find_storms(rain_series, S):
     """[(first wet hour, last wet hour)] from the creek's rain gauges' hourly rain."""
@@ -168,7 +264,7 @@ def rate(freq, minutes, depth):
     return {"level": level, "years": storm_years(by, depth) if by and depth > 0 else None}
 
 
-def build_storm(c, start, end, ledger, S, freq, now, track):
+def build_storm(c, start, end, ledger, S, freq, now, track, tlevels=None):
     rain_g, stage_g = creek_gauges(c)
     resp_end = min(end + dt.timedelta(hours=S["STORM_RESPONSE_HOURS"]), now.replace(minute=0, second=0))
     st = {"creek": c["id"], "name": c["name"], "start": hkey(start), "end": hkey(end),
@@ -222,6 +318,9 @@ def build_storm(c, start, end, ledger, S, freq, now, track):
                              "start_value": s.get(start), "peak": inside[ph], "peak_at": hkey(ph), "reached": reached, "thresholds": lv,
                              "lag_hours": round(lag, 1) if lag is not None else None,
                              "series": [[hkey(h), v] for h, v in sorted(s.items())]})
+    # the tide during the storm, and the creek's peak against it (the first level gauge with a peak)
+    lp = next((x for x in st["levels"] if x.get("peak") is not None), None)
+    st["tide"] = storm_tide(c, start, resp_end, ledger, tlevels or {}, parse_t(lp["peak_at"]) if lp else None)
     main = [r for r in st["rain"] if not r["support"]] or st["rain"]
     st["total"] = max([r["total"] for r in main] or [0])
     tops = [r["rarest"]["level"] for r in st["rain"] if r["rarest"]]
@@ -235,7 +334,12 @@ def season_summary(c, days, storms, wy0):
     rain_g, stage_g = creek_gauges(c)
     mine = [s for s in storms if s["creek"] == c["id"]]
     out = {"creek": c["id"], "name": c["name"], "storms": len(mine), "rain": [], "levels": [], "status_days": {},
-           "watch": sum(1 for s in mine if s.get("reached", 0) >= 2), "warning": sum(1 for s in mine if s.get("reached", 0) >= 3)}
+           "watch": sum(1 for s in mine if s.get("reached", 0) >= 2), "warning": sum(1 for s in mine if s.get("reached", 0) >= 3),
+           # storms with the Bay (or ocean) above the average high tide, and the highest water in any storm
+           "tide_station": tide_station(c),
+           "tide_above_mhhw": sum(1 for s in mine if ((s.get("tide") or {}).get("above_mhhw") or -1) > 0),
+           "tide_peak": max([(s.get("tide") or {}).get("peak") for s in mine if (s.get("tide") or {}).get("peak") is not None] or [None],
+                            key=lambda v: -1e9 if v is None else v)}
     for g in rain_g:
         d = days.get("rain", {}).get(g["key"], {})
         rep = days.get("report", {}).get(g["key"], {})
@@ -282,7 +386,9 @@ def update_days(days, ledger, creeks, sensors, now):
     first = (now - dt.timedelta(days=KEEP_DAYS - 1)).strftime("%Y-%m-%d")   # the oldest record day may be partial
     for key, by_day in covered.items():
         kind = ledger[key]["kind"]
-        tgt = days.setdefault("rain" if kind == "rain" else "level", {}).setdefault(key, {})
+        if kind == "tidepred":
+            continue
+        tgt = days.setdefault("rain" if kind == "rain" else "tide" if kind == "tide" else "level", {}).setdefault(key, {})
         for d, vals in by_day.items():
             if d >= first:
                 tgt[d] = round(sum(vals), 2) if kind == "rain" else max(vals)
@@ -301,7 +407,7 @@ def update_days(days, ledger, creeks, sensors, now):
     return days
 
 
-def run(creeks_json, previous, now, S=None, freq=None):
+def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=None, tides=True):
     S = S or load_settings()
     if freq is None:
         freq, _ = load_rain_frequency()
@@ -313,7 +419,8 @@ def run(creeks_json, previous, now, S=None, freq=None):
            "storms": prev.get("storms", []), "track": prev.get("track", {}), "previous": prev.get("previous"),
            # the first day this record covers (creeks.json reaches back about two days when it starts); the archive's
            # history can fill in earlier days later in the same format
-           "since": prev.get("since") or max(wy0, (now - dt.timedelta(hours=48)).date()).isoformat()}
+           "since": prev.get("since") or max(wy0, (now - dt.timedelta(hours=48)).date()).isoformat(),
+           "tide_fetched": prev.get("tide_fetched")}
     if prev.get("water_year") and prev["water_year"] != out["water_year"]:   # a new water year: last season is kept as "previous"
         out["previous"] = {"water_year": prev["water_year"], "summary": prev.get("summary"), "storms": prev.get("storms", [])}
         out["days"], out["storms"] = {}, [s for s in prev.get("storms", []) if s["end"] >= hkey(dt.datetime.combine(wy0, dt.time()))]
@@ -321,6 +428,9 @@ def run(creeks_json, previous, now, S=None, freq=None):
     sensors = creeks_json.get("sensors") or {}
     creeks = (creeks_json.get("creeks") or []) + (creeks_json.get("creeks_preview") or [])
     merge_ledger(out["ledger"], sensors, now)
+    if tides:
+        out["tide_problems"] = update_tides(out, {tide_station(c) for c in creeks}, now, fetch) or prev.get("tide_problems") or []
+    tlev = tide_levels(tide_tracker)
     update_days(out["days"], out["ledger"], creeks, sensors, now)
     done = {(s["creek"], s["start"]) for s in out["storms"]}
     track, opened = out["track"], []
@@ -356,7 +466,7 @@ def run(creeks_json, previous, now, S=None, freq=None):
                 if k in STATUS_RANK:
                     tk["status_rank"] = max(tk.get("status_rank", 0), STATUS_RANK[k])
             tk["start"], tk["end"] = hkey(start), hkey(end)
-            st = build_storm(c, start, end, out["ledger"], S, freq, now, tk)
+            st = build_storm(c, start, end, out["ledger"], S, freq, now, tk, tlev)
             if now - end >= hold:   # closed: written once, kept as it is
                 st["closed"] = now.strftime("%Y-%m-%d %H:%M")
                 out["storms"].append(st)
@@ -376,7 +486,7 @@ def run(creeks_json, previous, now, S=None, freq=None):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    args = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith("--") and sys.argv[i - 1] != "--tide-tracker"]
     creeks_path, out_path = args[0], args[1]
     with open(creeks_path) as f:
         cj = json.load(f)
@@ -387,13 +497,22 @@ def main():
         previous = {}
     gen = cj.get("generated")
     now = parse_t(gen) if gen else dt.datetime.now()
-    out = run(cj, previous, now)
+    tt = None
+    if "--tide-tracker" in sys.argv:
+        try:
+            with open(sys.argv[sys.argv.index("--tide-tracker") + 1]) as f:
+                tt = json.load(f)
+        except (OSError, ValueError, IndexError):
+            tt = None
+    out = run(cj, previous, now, tide_tracker=tt, tides="--no-tides" not in sys.argv)
     with open(out_path, "w") as f:
         json.dump(out, f, separators=(",", ":"))
     print("Storm tracker %s: %d storms closed, %d open; %d gauges in the hourly record" %
           (out["water_year"], len(out["storms"]), len(out["open"]), len(out["ledger"])))
     for s in out["open"]:
-        print("  open: %s from %s, %.2f in so far" % (s["name"], s["start"], s["total"]))
+        t = s.get("tide") or {}
+        print("  open: %s from %s, %.2f in so far; %s highest water %s ft NAVD88%s" % (s["name"], s["start"], s["total"], t.get("name"),
+              t.get("peak"), "" if t.get("push_max") is None else ", up to %+.2f ft above the tide table" % t["push_max"]))
 
 
 if __name__ == "__main__":
