@@ -553,6 +553,14 @@ Shown on the staff page `StormTracker.html`; nothing public. Provisional: tune a
   storm, with `rain[].peaks`, `levels[]`, `series`), and day totals for `days.rain` / `days.level`; the live job keeps any
   storm already in the list.
 
+**Tide during each storm (2026-11-14).** Each storm also records the tide at the creek's NOAA gauge (`creeks.csv` tide
+station; the coast creeks, which have none, use Monterey 9413450), read hourly by the storm tracker itself: the measured
+water on each hour and the tide table. Per storm: the highest water and when, the table then, the difference (the storm
+push: wind, low pressure, the ocean running high), the largest and average push, height above MHHW, hours at or above
+each Tide Tracker level (MHHW, the 1-year tide, the flood level, NOAA minor flooding), and the creek's peak against the
+nearest high tide (+ = after). The season table counts storms with the water above MHHW. NOAA is read at most every 55
+minutes; if it can't be read the storm is still recorded, without tide. Storms closed before this was added have none.
+
 ## Data sources
 
 | Data | Source | How the pages get it | Refresh |
