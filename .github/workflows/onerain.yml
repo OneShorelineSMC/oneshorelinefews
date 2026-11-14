@@ -70,11 +70,12 @@ jobs:
         run: python scripts/fetch_onerain.py out/creeks.json
 
       - name: Storm tracker (staff page; scripts/storm_tracker.py)
-        # Each rain event at each creek (rain, how rare, the creek's response) and a season summary per creek, kept in
-        # storm_tracker.json from the fresh creeks.json. No downloads. A problem here never stops the creek data.
+        # Each rain event at each creek (rain, how rare, the creek's response, and the tide at the creek's NOAA gauge) and a
+        # season summary per creek, kept in storm_tracker.json from the fresh creeks.json. NOAA's tide is read at most hourly
+        # (3 gauges). A problem here never stops the creek data.
         continue-on-error: true
-        timeout-minutes: 2
-        run: python scripts/storm_tracker.py out/creeks.json out/storm_tracker.json
+        timeout-minutes: 3
+        run: python scripts/storm_tracker.py out/creeks.json out/storm_tracker.json --tide-tracker out/tide_tracker.json
 
       - name: Download all sites for the map (every 15 minutes)
         # A problem here never stops the creek data from being published.
