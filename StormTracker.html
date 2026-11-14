@@ -189,7 +189,7 @@ function tideAt(s, at) {
 function tideText(t) {
   if (!t || t.peak == null) return "<p class='note'><b>Tide</b>: no readings" + (t && t.name ? " at " + esc(t.name) : "") + ".</p>";
   var w = "<p style='margin:8px 0 0'><b>Tide</b> (" + esc(t.name) + (t.coast ? ", ocean" : "") + "): highest <b>" + ft2(t.peak) + " ft</b> NAVD88 " + esc(when(t.peak_at));
-  if (t.above_mhhw != null) w += ", " + Math.abs(t.above_mhhw).toFixed(2) + " ft " + (t.above_mhhw >= 0 ? "above" : "below") + " the average high tide";
+  if (t.push_at_peak != null) w += ", " + Math.abs(t.push_at_peak).toFixed(2) + " ft " + (t.push_at_peak >= 0 ? "above" : "below") + " the tide table";
   w += ".";
   if (t.push_max != null) w += " The water ran up to " + sgn(t.push_max) + " ft vs the tide table (average " + sgn(t.push_mean) + " ft).";
   if (t.creek_vs_tide_hours != null) w += " The creek peaked " + (Math.abs(t.creek_vs_tide_hours) < 0.5 ? "at the high tide" :
