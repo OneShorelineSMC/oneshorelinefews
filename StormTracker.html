@@ -185,6 +185,18 @@ function tideAt(s, at) {
   var t = s.tide, row = t && (t.series || []).filter(function (p) { return p[0] === at; })[0];
   return row && row[1] != null ? " " + esc(t.name) + " tide then <b>" + ft2(row[1]) + " ft NAVD88</b>." : "";
 }
+// the storm's tide paragraph: the highest water, against the average high tide; the storm push; the creek against the high tide
+function tideText(t) {
+  if (!t || t.peak == null) return "<p class='note'><b>Tide</b>: no readings" + (t && t.name ? " at " + esc(t.name) : "") + ".</p>";
+  var w = "<p style='margin:8px 0 0'><b>Tide</b> (" + esc(t.name) + (t.coast ? ", ocean" : "") + "): highest <b>" + ft2(t.peak) + " ft</b> NAVD88 " + esc(when(t.peak_at));
+  if (t.above_mhhw != null) w += ", " + Math.abs(t.above_mhhw).toFixed(2) + " ft " + (t.above_mhhw >= 0 ? "above" : "below") + " the average high tide";
+  w += ".";
+  if (t.push_max != null) w += " The water ran up to " + sgn(t.push_max) + " ft vs the tide table (average " + sgn(t.push_mean) + " ft).";
+  if (t.creek_vs_tide_hours != null) w += " The creek peaked " + (Math.abs(t.creek_vs_tide_hours) < 0.5 ? "at the high tide" :
+    Math.abs(t.creek_vs_tide_hours) + " hr " + (t.creek_vs_tide_hours > 0 ? "after" : "before") + " the nearest high tide") + ".";
+  if (t.added_later) w += ' <span class="sm">(Added after the storm closed.)</span>';
+  return w + "</p>";
+}
 function tideLine(t, long) {
   if (!t || t.peak == null) return t && t.name ? '<span class="empty">' + esc(t.name) + " tide: no readings</span>" : '<span class="empty">no tide readings</span>';
   var w = esc(t.name) + (t.coast ? " (ocean)" : "") + ": highest <b>" + ft2(t.peak) + " ft</b>" + (long ? " NAVD88 " + esc(when(t.peak_at)) : "");
@@ -274,21 +286,19 @@ function show(k, quiet) {
   var tbl = "<table><thead><tr><th>Rain gauge</th><th class='n'>Total</th>" + peaks.map(function (m) { return "<th class='n'>" + mins(+m) + "</th>"; }).join("") + "</tr></thead><tbody>" +
     s.rain.map(function (r) { return "<tr><td><b>" + esc(r.label) + "</b>" + (r.support ? '<span class="sm">supporting gauge</span>' : "") + "</td><td class='n'><b>" + inch(r.total) + "</b></td>" +
       peaks.map(function (m) { var p = r.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) + (p.rate && p.rate.level ? '<span class="sm"><span class="chip l' + p.rate.level + '">' + WORD[p.rate.level] + "</span></span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+  // the creek: peak, when (against the heaviest rain), the tide at that hour, hours at each flood level (simplified 2026-11-14)
   var lvt = (s.levels || []).map(function (l) {
     if (l.peak == null) return "<p class='note'><b>" + esc(l.label) + ":</b> no readings during the storm.</p>";
-    return "<p style='margin:8px 0 0'><b>" + esc(l.label) + "</b>: " + (l.start_value != null ? l.start_value.toFixed(2) + " ft at the start, " : "") + "peak <b>" + l.peak.toFixed(2) + " ft</b> " + esc(when(l.peak_at)) +
-      (l.lag_hours != null ? ", " + l.lag_hours + " hr after the heaviest rain" : "") + "." + tideAt(s, l.peak_at) + "</p>" +
-      (l.thresholds.length ? '<p class="note" style="margin-top:2px">' + l.thresholds.map(function (t) { return esc(t.name) + " " + t.value + " ft: <b>" + t.hours + " hr</b>"; }).join(" · ") + "</p>" : "");
+    var lag = l.lag_hours == null ? "" : l.lag_hours === 0 ? ", at the heaviest rain" : ", " + Math.abs(l.lag_hours) + " hr " + (l.lag_hours > 0 ? "after" : "before") + " the heaviest rain";
+    return "<p style='margin:8px 0 0'><b>" + esc(l.label) + "</b>: peak <b>" + l.peak.toFixed(2) + " ft</b> " + esc(when(l.peak_at)) + lag +
+      (l.start_value != null ? " (from " + l.start_value.toFixed(2) + " ft)" : "") + "." + tideAt(s, l.peak_at) + "</p>" +
+      (l.thresholds.length ? '<p class="note" style="margin-top:2px">Hours at ' + l.thresholds.map(function (t) {
+        return esc(String(t.name).replace(/^Flood /, "")) + " (" + t.value + " ft) <b>" + t.hours + "</b>"; }).join(" · ") + "</p>" : "");
   }).join("");
   d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? ' <span class="chip live">in progress</span>' : "") + "</h2>" +
     '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
     "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(s.total) + " in</b> in " + s.hours + " hours " + chip(s.rain_level) + "</p>" + lvt +
-    (s.tide ? "<p style='margin:8px 0 0'><b>Tide</b>: " + tideLine(s.tide, true) + "." +
-      (s.tide.added_later ? ' <span class="sm">(Added after the storm closed.)</span>' : "") +
-      (s.tide.push_max != null ? ' <span class="sm">The water ran up to ' + sgn(s.tide.push_max) + " ft vs the tide table during the storm (average " + sgn(s.tide.push_mean) + " ft).</span>" : "") +
-      (s.tide.creek_vs_tide_hours != null ? ' <span class="sm">The creek peaked ' + (Math.abs(s.tide.creek_vs_tide_hours) < 0.5 ? "at the high tide" : Math.abs(s.tide.creek_vs_tide_hours) + " hr " + (s.tide.creek_vs_tide_hours > 0 ? "after" : "before") + " the nearest high tide") +
-        ".</span>" : "") + "</p>" +
-      ((s.tide.levels || []).length ? '<p class="note" style="margin-top:2px">' + s.tide.levels.map(function (l) { return esc(l.label) + " " + ft2(l.ft) + " ft: <b>" + l.hours + " hr</b>"; }).join(" · ") + "</p>" : "") : "") +
+    (s.tide ? tideText(s.tide) : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
     (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing.</p>" : "") + "</div></div>" +
     '<h3>Largest rain in each window</h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
