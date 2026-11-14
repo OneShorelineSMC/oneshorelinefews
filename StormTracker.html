@@ -180,6 +180,11 @@ function reached(l) { return l ? '<span class="chip l' + l + '">' + LEVEL[l] + "
 function ft2(v) { return v == null ? "–" : v.toFixed(2); }
 function sgn(v) { return v == null ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2); }
 var TIDE_NAMES = { "9414523": "Redwood City", "9414750": "Alameda", "9414290": "San Francisco", "9413450": "Monterey" };
+// the tide at the creek's peak hour (the measured water on that hour at the creek's NOAA gauge)
+function tideAt(s, at) {
+  var t = s.tide, row = t && (t.series || []).filter(function (p) { return p[0] === at; })[0];
+  return row && row[1] != null ? " " + esc(t.name) + " tide then <b>" + ft2(row[1]) + " ft NAVD88</b>." : "";
+}
 function tideLine(t, long) {
   if (!t || t.peak == null) return t && t.name ? '<span class="empty">' + esc(t.name) + " tide: no readings</span>" : '<span class="empty">no tide readings</span>';
   var w = esc(t.name) + (t.coast ? " (ocean)" : "") + ": highest <b>" + ft2(t.peak) + " ft</b>" + (long ? " NAVD88 " + esc(when(t.peak_at)) : "");
@@ -272,7 +277,7 @@ function show(k, quiet) {
   var lvt = (s.levels || []).map(function (l) {
     if (l.peak == null) return "<p class='note'><b>" + esc(l.label) + ":</b> no readings during the storm.</p>";
     return "<p style='margin:8px 0 0'><b>" + esc(l.label) + "</b>: " + (l.start_value != null ? l.start_value.toFixed(2) + " ft at the start, " : "") + "peak <b>" + l.peak.toFixed(2) + " ft</b> " + esc(when(l.peak_at)) +
-      (l.lag_hours != null ? ", " + l.lag_hours + " hr after the heaviest rain" : "") + "." + (l.tidal ? ' <span class="sm">Tidal gauge: the peak can be the tide.</span>' : "") + "</p>" +
+      (l.lag_hours != null ? ", " + l.lag_hours + " hr after the heaviest rain" : "") + "." + tideAt(s, l.peak_at) + "</p>" +
       (l.thresholds.length ? '<p class="note" style="margin-top:2px">' + l.thresholds.map(function (t) { return esc(t.name) + " " + t.value + " ft: <b>" + t.hours + " hr</b>"; }).join(" · ") + "</p>" : "");
   }).join("");
   d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? ' <span class="chip live">in progress</span>' : "") + "</h2>" +
@@ -282,7 +287,7 @@ function show(k, quiet) {
       (s.tide.added_later ? ' <span class="sm">(Added after the storm closed.)</span>' : "") +
       (s.tide.push_max != null ? ' <span class="sm">The water ran up to ' + sgn(s.tide.push_max) + " ft vs the tide table during the storm (average " + sgn(s.tide.push_mean) + " ft).</span>" : "") +
       (s.tide.creek_vs_tide_hours != null ? ' <span class="sm">The creek peaked ' + (Math.abs(s.tide.creek_vs_tide_hours) < 0.5 ? "at the high tide" : Math.abs(s.tide.creek_vs_tide_hours) + " hr " + (s.tide.creek_vs_tide_hours > 0 ? "after" : "before") + " the nearest high tide") +
-        (s.tide.tide_at_creek_peak != null ? " (tide then " + ft2(s.tide.tide_at_creek_peak) + " ft)" : "") + ".</span>" : "") + "</p>" +
+        ".</span>" : "") + "</p>" +
       ((s.tide.levels || []).length ? '<p class="note" style="margin-top:2px">' + s.tide.levels.map(function (l) { return esc(l.label) + " " + ft2(l.ft) + " ft: <b>" + l.hours + " hr</b>"; }).join(" · ") + "</p>" : "") : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
     (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing.</p>" : "") + "</div></div>" +
@@ -295,21 +300,20 @@ function draw(s) {
   if (charts.s) charts.s.destroy();
   var t0 = pt(s.start), H = function (t) { return (pt(t) - t0) / 36e5; }, sets = [], cols = [css("--rain"), css("--rain2")];
   s.rain.forEach(function (r, i) { sets.push({ type: "bar", label: r.label + " rain", data: (r.series || []).map(function (p) { return { x: H(p[0]) + 0.5, y: p[1] }; }),
-    backgroundColor: cols[i % 2], yAxisID: "y", barPercentage: 1, categoryPercentage: 1, grouped: false }); });
+    backgroundColor: cols[i % 2], yAxisID: "y", barPercentage: 1, categoryPercentage: 1, grouped: false, order: 3 }); });
   var lc = [css("--ink"), css("--muted")], dash = [[3, 3], [7, 4], [12, 4]], lvcol = [css("--lv1"), css("--lv2"), css("--lv3")];
   var xs = [0], peakY = 0;
   (s.levels || []).forEach(function (l, i) {
     if (!l.series || !l.series.length) return;
-    sets.push({ type: "line", label: l.label + " level", data: l.series.map(function (p) { return { x: H(p[0]), y: p[1] }; }), borderColor: lc[i % 2], borderWidth: 2.2, pointRadius: 0, yAxisID: "y2" });
+    sets.push({ type: "line", label: l.label + " level", data: l.series.map(function (p) { return { x: H(p[0]), y: p[1] }; }), borderColor: lc[i % 2], borderWidth: 2.2, pointRadius: 0, yAxisID: "y2", order: 0 });   // drawn on top (lowest order)
     xs.push(H(l.series[0][0]), H(l.series[l.series.length - 1][0])); peakY = Math.max(peakY, l.peak || 0);
     (l.thresholds || []).forEach(function (t) { if (t.value > peakY + 2.5 && t.level > 1) return;
-      sets.push({ type: "line", label: t.name + " " + t.value + " ft", data: [{ x: -6, y: t.value }, { x: 1e3, y: t.value }], borderColor: lvcol[(t.level || 1) - 1], borderWidth: 1.5, borderDash: dash[(t.level || 1) - 1], pointRadius: 0, yAxisID: "y2", thr: true }); });
+      sets.push({ type: "line", label: t.name + " " + t.value + " ft", data: [{ x: -6, y: t.value }, { x: 1e3, y: t.value }], borderColor: lvcol[(t.level || 1) - 1], borderWidth: 1.5, borderDash: dash[(t.level || 1) - 1], pointRadius: 0, yAxisID: "y2", thr: true, order: 1 }); });
   });
   var hasTide = !!(s.tide && s.tide.series && s.tide.series.length), tc = css("--tide");
   if (hasTide) {
-    sets.push({ type: "line", label: s.tide.name + " tide, measured", data: s.tide.series.filter(function (p) { return p[1] != null; }).map(function (p) { return { x: H(p[0]), y: p[1] }; }), borderColor: tc, borderWidth: 2, pointRadius: 0, yAxisID: "y3" });
+    sets.push({ type: "line", label: s.tide.name + " tide", data: s.tide.series.filter(function (p) { return p[1] != null; }).map(function (p) { return { x: H(p[0]), y: p[1] }; }), borderColor: tc, borderWidth: 2, pointRadius: 0, yAxisID: "y3", order: 2 });
     xs.push(H(s.tide.series[0][0]), H(s.tide.series[s.tide.series.length - 1][0]));   // the tide over the storm and the creek's response window
-    sets.push({ type: "line", label: s.tide.name + " tide table", data: s.tide.series.filter(function (p) { return p[2] != null; }).map(function (p) { return { x: H(p[0]), y: p[2] }; }), borderColor: tc, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, yAxisID: "y3" });
   }
   (s.rain || []).forEach(function (r) { (r.series || []).forEach(function (p) { xs.push(H(p[0]) + 1); }); });
   var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
