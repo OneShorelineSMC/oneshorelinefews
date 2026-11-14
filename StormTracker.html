@@ -72,6 +72,10 @@
   .key i { display: inline-block; width: 16px; vertical-align: middle; margin-right: 5px; }
   .empty { color: var(--muted); }
   .nw { white-space: nowrap; }
+  .rcl { list-style: none; margin: 6px 0 0; padding: 0; }
+  .rcl li { padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .rcl li:first-child { border-top: 0; }
+  .chip.kf { background: var(--c3bg); color: var(--lv3); } .chip.ks { background: var(--c2bg); color: var(--lv2); } .chip.kr { color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
   .lvc + .lvc { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
   nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }
@@ -112,6 +116,11 @@
     <div class="opens" id="opens"></div>
   </div>
 
+  <div class="card" id="roadCard" hidden>
+    <h2>State highway closures from storms <span class="sm" style="display:inline;font-weight:400">Caltrans · San Mateo County</span></h2>
+    <div id="roads"></div>
+  </div>
+
   <div class="card">
     <h2>The season so far, by creek</h2>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Season by creek (scrolls sideways)"><table id="season"></table></div>
@@ -149,6 +158,12 @@
           the ocean running high); "vs the average high tide" is against MHHW. Hours at each tide level use the levels on the Tide Tracker page. The record
           holds 10 days of tide. When this was added (Nov 14, 2026), the first NOAA read went back 5 days, so storms from about Nov 9 on have
           their tide (marked "added after the storm closed"); earlier storms have none.</li>
+        <li><b>Road closures:</b> state highway closures in San Mateo County from flooding, slides, washouts, downed trees and storm damage, from Caltrans
+          (<code>scripts/road_closures.py</code>, <code>road_closures.json</code> on the data branch, read every 10 minutes): the Lane Closure System for District 4
+          and the Emergency Road Closures layer. A closure counts once Caltrans logs it as started and ends when Caltrans logs it as lifted, or when it leaves the
+          feed (then at the last time it was seen, within 10 minutes). A storm lists the closures that were open at any time from its start to 12 hours after its rain ended,
+          anywhere in the county, not only near that creek. State highways only (101, 280, 380, 1, 35, 82, 84, 92 and their ramps); county and city roads aren't in these feeds.
+          Repairs are often planned days after a storm, so they're marked apart. Started Nov 14, 2026.</li>
         <li><b>Gaps:</b> a gauge that went quiet during a storm is named; its rain may be missing. Rain gauges under-catch in wind.</li>
         <li><b>Earlier seasons:</b> the history from the OneRain archive can be added later with the same rules (THRESHOLDS_BASIS.md §12).</li>
       </ul>
@@ -160,6 +175,8 @@
 <script>
 "use strict";
 var DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/storm_tracker.json";
+var ROADS_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/road_closures.json";
+var RC = null, KIND = { flood: ["kf", "Flooding"], storm: ["ks", "Storm"], repair: ["kr", "Repair"] };
 var $ = function (id) { return document.getElementById(id); };
 var J = null, SEL = null, charts = {};
 var WORD = ["", "Heavy", "Very heavy", "Intense"], STATUS = { none: "No alerts", alert: "Stay alert", ready: "Be ready", likely: "Flooding likely" };
@@ -203,6 +220,40 @@ function tideLine(t, long) {
   if (t.above_mhhw != null) w += ", " + sgn(t.above_mhhw) + " ft vs the average high tide";
   if (t.push_at_peak != null) w += ", " + sgn(t.push_at_peak) + " ft vs the tide table";
   return w;
+}
+// ---- Caltrans road closures (road_closures.json)
+function hrs(a, b) { var h = (pt(b) - pt(a)) / 36e5; return h < 1 ? Math.round(h * 60) + " min" : h < 48 ? Math.round(h) + " hr" : Math.round(h / 24) + " days"; }
+function roadItem(c) {
+  var k = KIND[c.kind] || KIND.storm, end = c.active ? null : c.ended;
+  return "<li><b>" + esc(c.route) + (c.dir && c.dir !== "N/A" ? " " + esc(c.dir) : "") + "</b>" + (c.facility && c.facility !== "Mainline" ? " · " + esc(c.facility) : "") +
+    (c.where ? " · " + esc(c.where) : "") + (c.place ? " (" + esc(c.place) + ")" : "") + ' <span class="chip ' + k[0] + '">' + k[1] + "</span>" +
+    '<span class="sm">' + esc(c.what) + (c.closure ? " · " + esc(c.closure) + " closure" : "") + (c.lanes ? ", " + esc(c.lanes) + " lanes" : "") +
+    " · closed " + esc(when(c.started)) + (end ? ", reopened " + esc(when(end)) + " (" + hrs(c.started, end) + ")" + (c.gone ? "*" : "") :
+      ' · <b style="color:var(--lv3)">still closed</b>' + (c.est_end ? ", expected to reopen " + esc(when(c.est_end)) : "")) + "</span>" +
+    (c.detour ? '<span class="sm">Detour: ' + esc(c.detour) + "</span>" : "") + "</li>";
+}
+function closuresFor(s) {
+  if (!RC || !RC.log) return [];
+  var resp = ((J && J.rules) || {}).STORM_RESPONSE_HOURS || 12, a = pt(s.start), b = pt(s.end) + resp * 36e5, nowMs = pt(RC.generated);
+  return RC.log.filter(function (c) { var c0 = pt(c.started), c1 = c.active ? nowMs : pt(c.ended || c.last_seen); return c0 != null && c0 <= b && (c1 == null || c1 >= a); });
+}
+function renderRoads() {
+  if (!RC) return;
+  $("roadCard").hidden = false;
+  var log = (RC.log || []).slice().reverse(), act = log.filter(function (c) { return c.active; }), past = log.filter(function (c) { return !c.active; });
+  var src = RC.sources || {}, bad = Object.keys(src).filter(function (k) { return !src[k].ok; }).map(function (k) { return k === "lcs" ? "Lane Closure System" : "Emergency Road Closures"; });
+  var fl = log.filter(function (c) { return c.kind === "flood"; }).length;
+  $("roads").innerHTML = "<p style='margin:0'><b>Closed now:</b> " + (act.length ? act.length + "</p><ul class='rcl'>" + act.map(roadItem).join("") + "</ul>" : "none from storms on San Mateo County state highways.</p>") +
+    (past.length ? "<details style='margin-top:8px'><summary style='cursor:pointer;font-weight:600;color:var(--ink)'>This season: " + log.length + " closure" + (log.length === 1 ? "" : "s") +
+      " since " + esc(day(RC.water_year_start || "")) + " (" + fl + " from flooding)</summary><ul class='rcl'>" + past.map(roadItem).join("") + "</ul></details>" :
+      "<p class='note'>No storm closures logged yet this season.</p>") +
+    "<p class='note'>Checked " + esc(when(RC.generated)) + ". State highways only; county and city roads aren't in Caltrans' feeds. " +
+      (past.some(function (c) { return c.gone; }) ? "* reopened when it left Caltrans' feed (within 10 minutes). " : "") + "</p>" +
+    (bad.length ? "<div class='warn'>Couldn't read Caltrans' " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
+}
+function loadRoads() {
+  fetch(ROADS_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (j) { RC = j; renderRoads(); if (J) { list(); if (SEL && find(SEL)) show(SEL, true); } }).catch(function () {});
 }
 function creekName(id) { var c = (J.creeks || []).filter(function (x) { return x.id === id; })[0]; return c ? c.name : id; }
 
@@ -274,8 +325,13 @@ function list() {
         "<td class='n'>" + (lv && lv.lag_hours != null ? lv.lag_hours : "–") + "</td>" +
         "<td class='n'>" + (s.tide && s.tide.peak != null ? ft2(s.tide.peak) + '<span class="sm">' + (s.tide.above_mhhw != null ? sgn(s.tide.above_mhhw) + " vs avg high" : "") +
           (s.tide.push_at_peak != null ? " · " + sgn(s.tide.push_at_peak) + " vs table" : "") + "</span>" : "–") + "</td><td>" + esc(STATUS[s.status] || "–") +
-        (s.quiet && s.quiet.length ? '<span class="sm">⚠ quiet: ' + esc(s.quiet.join(", ")) + "</span>" : "") + "</td></tr>";
+        (s.quiet && s.quiet.length ? '<span class="sm">⚠ quiet: ' + esc(s.quiet.join(", ")) + "</span>" : "") + roadMark(s) + "</td></tr>";
     }).join("") : '<tr><td colspan="10" class="empty">No storms yet this season' + (fc ? " at this creek" : "") + ".</td></tr>") + "</tbody>";
+}
+function roadMark(s) {
+  var cs = closuresFor(s); if (!cs.length) return "";
+  var f = cs.filter(function (c) { return c.kind === "flood"; }).length;
+  return '<span class="sm">🚧 ' + cs.length + " highway closure" + (cs.length === 1 ? "" : "s") + (f ? " (" + f + " flooding)" : "") + "</span>";
 }
 function find(k) { var p = k.split("|"); return allStorms().filter(function (s) { return s.creek === p[1] && s.start === p[2] && (p[0] === "o") === !!s.live; })[0]; }
 function show(k, quiet) {
@@ -301,6 +357,8 @@ function show(k, quiet) {
     (s.tide ? tideText(s.tide) : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
     (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing.</p>" : "") + "</div></div>" +
+    (RC ? (function (cs) { return "<h3>State highway closures during the storm <span class='sm' style='display:inline;font-weight:400'>Caltrans, anywhere in San Mateo County</span></h3>" +
+      (cs.length ? "<ul class='rcl'>" + cs.map(roadItem).join("") + "</ul>" : RC.log_started && pt(s.end) + 12 * 36e5 < pt(RC.log_started) ? "<p class='note'>Before the closure log started (" + esc(day(RC.log_started)) + ").</p>" : "<p class='note'>None logged.</p>"); })(closuresFor(s)) : "") +
     '<h3>Largest rain in each window</h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
   draw(s);
   if (!quiet) d.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -349,7 +407,8 @@ function load() {
     .catch(function () { $("meta").textContent = "The storm tracker's data isn't on the data branch yet (it starts with the next data job run after upload), or couldn't be read."; });
 }
 load();
-setInterval(load, 5 * 60000);
+loadRoads();
+setInterval(function () { load(); loadRoads(); }, 5 * 60000);
 </script>
 </body>
 </html>
