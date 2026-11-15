@@ -41,6 +41,10 @@ jobs:
     steps:
       - name: Get the script
         uses: actions/checkout@v5
+        with:
+          # Don't leave the job's GitHub token in .git/config, where any later step's script could read it. The data
+          # branch is read anonymously (the repo is public) and pushed with the token given only in the publish step.
+          persist-credentials: false
 
       - name: Get the previous data (kept if a download fails)
         run: |
