@@ -81,7 +81,7 @@ jobs:
 
       - name: Road closures from storms (Storm Tracker; scripts/road_closures.py, every 10 minutes)
         # San Mateo County state highway closures from flooding, slides, washouts and other storm damage, from the Caltrans
-        # Lane Closure System (District 4) and the Caltrans Emergency Road Closures layer, and cities' closure posts
+        # Lane Closure System (District 4), and cities' closure posts
         # (lookups/city_feeds.csv). No key needed; about 4 small requests per run. A problem here never stops the
         # creek data; the last log is kept.
         continue-on-error: true
