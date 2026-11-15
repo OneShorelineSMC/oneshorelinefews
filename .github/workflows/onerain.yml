@@ -6,7 +6,7 @@
 #   status_log.csv - creek status changes (creek status layer, staff review), newest last
 #   tide_tracker.json + tide_tracker_history.json - the water year at four NOAA tide gauges against the tide table and history (TideTracker.html)
 #   storm_tracker.json - each rain event at each creek and a season summary per creek (StormTracker.html)
-#   road_closures.json - Caltrans state highway closures from flooding and storms in San Mateo County, logged for the water year (StormTracker.html)
+#   road_closures.json - road closures from flooding and storms in San Mateo County (Caltrans and city posts), logged for the water year (StormTracker.html)
 #   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
@@ -79,10 +79,11 @@ jobs:
         timeout-minutes: 3
         run: python scripts/storm_tracker.py out/creeks.json out/storm_tracker.json --tide-tracker out/tide_tracker.json
 
-      - name: Caltrans road closures from storms (Storm Tracker; scripts/road_closures.py, every 10 minutes)
+      - name: Road closures from storms (Storm Tracker; scripts/road_closures.py, every 10 minutes)
         # San Mateo County state highway closures from flooding, slides, washouts and other storm damage, from the Caltrans
-        # Lane Closure System (District 4) and the Caltrans Emergency Road Closures layer. No key needed. A problem here
-        # never stops the creek data; the last log is kept.
+        # Lane Closure System (District 4) and the Caltrans Emergency Road Closures layer, and cities' closure posts
+        # (lookups/city_feeds.csv). No key needed; about 4 small requests per run. A problem here never stops the
+        # creek data; the last log is kept.
         continue-on-error: true
         timeout-minutes: 2
         run: python scripts/road_closures.py out/road_closures.json --min-age 9
