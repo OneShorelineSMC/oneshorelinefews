@@ -70,7 +70,7 @@ def fetch(url):
     if "/FeatureServer/0/query?" in url:
         return json.dumps(ERC)
     raise OSError("unexpected " + url)
-r = R.update({}, NOW, fetch)
+r = R.update({}, NOW, fetch, erc=[""])
 erc = [c for c in r["log"] if c["id"].startswith("erc:")]
 check("ERC: service read from the ArcGIS item (layer 0), fields found by name", r["sources"]["erc"]["service"].endswith("FeatureServer/0") and r["sources"]["erc"]["fields"]["county"] == "County"
       and r["sources"]["erc"]["fields"]["start"] == "ClosureDate" and r["sources"]["erc"]["fields"]["end"] == "EstOpenDate")
@@ -85,7 +85,7 @@ fetched.clear()
 def fetch2(url):
     fetched.append(url)
     return json.dumps(ERC2) if "/query?" in url else fetch(url)
-r2 = R.update(r, LATER, fetch2)
+r2 = R.update(r, LATER, fetch2, erc=[""])
 g = [c for c in r2["log"] if c["id"] == "erc:11"][0]
 check("merge: a closure that leaves the feed is ended at its last sighting", not g["active"] and g["ended"] == "2026-11-13 14:00" and g["gone"])
 a1b = [c for c in r2["log"] if c["id"] == "lcs:A1-1"][0]
@@ -93,13 +93,13 @@ check("merge: an open one keeps its first sighting, last seen moves on", a1b["ac
 check("ERC: the service address cached (no second item read)", not any("sharing/rest" in u for u in fetched))
 
 # Caltrans down: everything kept, problem noted
-r3 = R.update(r2, LATER + dt.timedelta(minutes=10), lambda u: (_ for _ in ()).throw(OSError("offline")))
+r3 = R.update(r2, LATER + dt.timedelta(minutes=10), lambda u: (_ for _ in ()).throw(OSError("offline")), erc=[""])
 check("update: Caltrans down: log kept as is, both problems noted, nothing ended", [c.get("active") for c in r3["log"]] == [c.get("active") for c in r2["log"]]
       and len(r3["problems"]) == 2 and not r3["sources"]["lcs"]["ok"])
 
 # water year pruning
 old = {"id": "lcs:old", "source": "Caltrans Lane Closure System", "started": "2026-09-20 10:00", "ended": "2026-09-21 10:00", "active": False}
-r4 = R.update({"log": [old] + r2["log"], "sources": r2["sources"]}, LATER, fetch2)
+r4 = R.update({"log": [old] + r2["log"], "sources": r2["sources"]}, LATER, fetch2, erc=[""])
 check("prune: closures that ended before Oct 1 dropped", not any(c["id"] == "lcs:old" for c in r4["log"]) and r4["water_year_start"] == "2026-10-01 00:00")
 
 # no county field: the San Mateo box decides
@@ -127,7 +127,7 @@ check("where: 101 at Holly St is Pulgas Creek (no monitored creek), Bayside", c3
 c4 = R.locate({"pts": [[37.515, -122.37], [37.4635, -122.4305]]})
 check("where: Hwy 92 from Skyline to Half Moon Bay spans both sides and both creeks", c4["side"] == "both" and c4["creeks"] == ["sanmateo", "pilarcitos"])
 check("where: out at sea (beyond 2 km of any watershed) has no place", loc(37.5, -122.7)["side"] is None)
-r5 = R.update({}, NOW, fetch)
+r5 = R.update({}, NOW, fetch, erc=[""])
 check("update: every logged closure placed, and the creeks' sides published", all("side" in c for c in r5["log"]) and r5["creek_side"]["pescadero"] == "coast")
 a1 = [c for c in r5["log"] if c["id"] == "lcs:A1-1"][0]
 check("LCS: begin and end points kept for placing", a1["pts"] == [[37.5, -122.26]])
@@ -172,6 +172,10 @@ try:
     check("ERC: no way found: the reasons in the error", False)
 except ValueError as e:
     check("ERC: no way found: the reasons in the error", "Hub Page" in str(e) and "hub: no url" in str(e))
+
+r8 = R.update({}, NOW, fetch)
+check("Emergency Road Closures off (the dataset is gone): not read, no problem shown", "erc" not in r8["sources"] and not any("Emergency" in p for p in r8["problems"])
+      and not any("sharing/rest" in u for u in fetched[-3:]))
 
 print("\n" + ("All passed" if not fails else f"{len(fails)} failed"))
 sys.exit(1 if fails else 0)

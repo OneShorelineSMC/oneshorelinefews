@@ -7,7 +7,7 @@ Two public Caltrans sources, no key needed:
      Kept: closures in San Mateo County whose type of work is storm-related (STORM_RX), once they have started
      (code 1097) and not cancelled (code 1022). Ended when Caltrans logs code 1098 or the closure leaves the feed.
      https://cwwp2.dot.ca.gov/documentation/lcs/lcs.htm
-  2. Caltrans Emergency Road Closures (Division of Maintenance GIS layer, updated as the HQ Communication Center logs
+  2. OFF since 2026-11-14 (the dataset no longer exists; ERC_SERVICES): Caltrans Emergency Road Closures (Division of Maintenance GIS layer, updated as the HQ Communication Center logs
      closures from slides, flooding, washouts, adverse weather and so on). The layer's address is read from its ArcGIS
      item (ERC_ITEM) and its fields are found by name, since Caltrans doesn't publish them; the fields found are kept in
      road_closures.json ("sources") so they can be checked. Kept: San Mateo County (county field, or else inside
@@ -56,6 +56,10 @@ PAC = ZoneInfo("America/Los_Angeles")
 LCS_URL = "https://cwwp2.dot.ca.gov/data/d4/lcs/lcsStatusD04.json"
 ERC_ITEM = "https://www.arcgis.com/sharing/rest/content/items/c933349c56f640edba968f208063eee0?f=json"
 ERC_HUB = "https://hub.arcgis.com/api/v3/datasets/c933349c56f640edba968f208063eee0_0"
+# OFF (2026-11-14): the Emergency Road Closures dataset no longer exists (its ArcGIS item and the California open data
+# page both say so). To turn it back on, put the layer's address here (ending in FeatureServer/0 or MapServer/0), or
+# "" to look it up from ERC_ITEM. The Lane Closure System carries emergency closures for District 4 meanwhile.
+ERC_SERVICES = []
 COUNTY = "San Mateo"
 SMC_BBOX = (-122.53, 37.10, -122.08, 37.71)   # lon/lat box around San Mateo County (only when a record has no county)
 FLOOD_RX = re.compile(r"flood|overflow|high water|standing water|water (?:over|on) (?:the )?road", re.I)
@@ -479,7 +483,7 @@ def prune(log, now):
     return log[-MAX_LOG:]
 
 
-def update(previous, now, fetch=get, feeds=None):
+def update(previous, now, fetch=get, feeds=None, erc=None):
     prev_src = (previous or {}).get("sources") or {}
     log = [dict(c) for c in (previous or {}).get("log") or []]
     sources, problems = {}, []
@@ -490,16 +494,17 @@ def update(previous, now, fetch=get, feeds=None):
     except Exception as e:  # noqa: BLE001
         problems.append(f"Lane Closure System: {type(e).__name__}: {e}"[:200])
         sources["lcs"] = dict(prev_src.get("lcs") or {"url": LCS_URL}, ok=False)
-    try:
-        svc = erc_service(fetch, (prev_src.get("erc") or {}).get("service"))
-        q = svc + "/query?" + urllib.parse.urlencode({"where": "1=1", "outFields": "*", "outSR": "4326", "returnGeometry": "true", "f": "json"})
-        cur, fm, smc = erc_closures(fetch(q), now)
-        merge(log, cur, "Caltrans Emergency Road Closures", now)
-        sources["erc"] = {"ok": True, "service": svc, "checked": local(now), "fields": fm, "san_mateo_records": smc, "storm_now": len(cur)}
-    except Exception as e:  # noqa: BLE001
-        problems.append(f"Emergency Road Closures: {type(e).__name__}: {e}"[:400])
-        sources["erc"] = dict(prev_src.get("erc") or {}, ok=False)
-        sources["erc"]["error"] = f"{type(e).__name__}: {e}"[:400]
+    for i, svc0 in enumerate(ERC_SERVICES if erc is None else erc):
+        try:
+            svc = erc_service(fetch, svc0 or (prev_src.get("erc") or {}).get("service"))
+            q = svc + "/query?" + urllib.parse.urlencode({"where": "1=1", "outFields": "*", "outSR": "4326", "returnGeometry": "true", "f": "json"})
+            cur, fm, smc = erc_closures(fetch(q), now)
+            merge(log, cur, "Caltrans Emergency Road Closures", now)
+            sources["erc"] = {"ok": True, "service": svc, "checked": local(now), "fields": fm, "san_mateo_records": smc, "storm_now": len(cur)}
+        except Exception as e:  # noqa: BLE001
+            problems.append(f"Emergency Road Closures: {type(e).__name__}: {e}"[:400])
+            sources["erc"] = dict(prev_src.get("erc") or {}, ok=False)
+            sources["erc"]["error"] = f"{type(e).__name__}: {e}"[:400]
     for i, fd in enumerate(read_feeds() if feeds is None else feeds):
         key = f"city:{fd['city']}:{i + 1}"
         try:
