@@ -163,7 +163,7 @@
           their tide (marked "added after the storm closed"); earlier storms have none.</li>
         <li><b>Road closures:</b> state highway closures in San Mateo County from flooding, slides, washouts, downed trees and storm damage, from Caltrans
           (<code>scripts/road_closures.py</code>, <code>road_closures.json</code> on the data branch, read every 10 minutes): the Lane Closure System for District 4
-          and the Emergency Road Closures layer. A closure counts once Caltrans logs it as started and ends when Caltrans logs it as lifted, or when it leaves the
+          (the Emergency Road Closures layer was used too until Caltrans removed it, Nov 2026). A closure counts once Caltrans logs it as started and ends when Caltrans logs it as lifted, or when it leaves the
           feed (then at the last time it was seen, within 10 minutes). A storm lists the closures that were open at any time from its start to 12 hours after its rain ended,
           sorted by where: in that creek's watershed, elsewhere on the same side (Bayside or Coastside), and the other side (folded away).
           Where comes from the closure's points (Caltrans gives coordinates) and San Mateo County's watershed map (<code>data/watersheds.geojson</code>);
@@ -285,7 +285,8 @@ function renderRoads() {
   var log = (RC.log || []).slice().reverse(), act = log.filter(function (c) { return c.active; }), past = log.filter(function (c) { return !c.active; });
   var day1 = pt(RC.generated) - 864e5, posts = log.filter(function (c) { return c.notice && pt(c.started) >= day1; });
   var nc = log.filter(function (c) { return !c.notice; }).length, np = log.length - nc;
-  var src = RC.sources || {}, bad = Object.keys(src).filter(function (k) { return !src[k].ok; }).map(function (k) { return k === "lcs" ? "Lane Closure System" : "Emergency Road Closures"; });
+  var src = RC.sources || {}, bad = Object.keys(src).filter(function (k) { return !src[k].ok; }).map(function (k) { return k === "lcs" ? "Caltrans' Lane Closure System" : k === "erc" ? "Caltrans' Emergency Road Closures" : k.split(":")[1] + "'s website feed"; })
+    .filter(function (v, i, a) { return a.indexOf(v) === i; });
   var fl = log.filter(function (c) { return c.kind === "flood" && !c.notice; }).length;
   $("roads").innerHTML = "<p style='margin:0'><b>Closed now:</b> " + (act.length ? act.length + "</p><ul class='rcl'>" + act.map(roadItem).join("") + "</ul>" : "none from storms on San Mateo County state highways.</p>") +
     (posts.length ? "<p style='margin:8px 0 0'><b>City posts in the last 24 hours:</b></p><ul class='rcl'>" + posts.map(roadItem).join("") + "</ul>" : "") +
@@ -294,7 +295,7 @@ function renderRoads() {
       "<p class='note'>No storm closures logged yet this season.</p>") +
     "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno so far). " +
       (past.some(function (c) { return c.gone; }) ? "* reopened when it left Caltrans' feed (within 10 minutes). " : "") + "</p>" +
-    (bad.length ? "<div class='warn'>Couldn't read Caltrans' " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
+    (bad.length ? "<div class='warn'>Couldn't read " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
 }
 function loadRoads() {
   fetch(ROADS_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
