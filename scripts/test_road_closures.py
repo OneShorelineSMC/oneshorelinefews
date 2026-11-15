@@ -177,5 +177,34 @@ r8 = R.update({}, NOW, fetch)
 check("Emergency Road Closures off (the dataset is gone): not read, no problem shown", "erc" not in r8["sources"] and not any("Emergency" in p for p in r8["problems"])
       and not any("sharing/rest" in u for u in fetched[-3:]))
 
+# security: hostile input
+EVIL = """<?xml version="1.0"?><!DOCTYPE r [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><rss><channel><item><title>&b; road closed flooding</title></item></channel></rss>"""
+try:
+    R.feed_items(EVIL)
+    check("security: a feed with entity declarations refused", False)
+except ValueError:
+    check("security: a feed with entity declarations refused", True)
+BAD = RSS.replace("https://www.sanbruno.ca.gov/CivicAlerts.aspx?AID=901", "javascript:alert(1)")
+check("security: a javascript: link dropped", R.city_notices(BAD, FEED, NOW)[0]["link"] == "")
+OFF = RSS.replace("https://www.sanbruno.ca.gov/CivicAlerts.aspx?AID=901", "https://evil.example/login")
+check("security: a link to another site dropped", R.city_notices(OFF, FEED, NOW)[0]["link"] == "")
+check("security: a link on the city's own site kept (with or without www)", R.same_site("https://sanbruno.ca.gov/x", FEED["url"]))
+LONG = RSS.replace("Crystal Springs Ave closed", "Crystal Springs Ave closed " + "x" * 5000)
+r9 = R.update({}, NOW, lambda u: LONG if "sanbruno" in u else fetch(u), feeds=[FEED])
+n9 = [c for c in r9["log"] if c.get("notice")][0]
+check("security: very long text cut to 300 characters", len(n9["where"]) <= 300)
+c10 = R.clip({"lat": "37.5<script>", "lon": 1e9, "pts": [["x", 1], [37.5, -122.3], [999, 0]]})
+check("security: coordinates kept only as plain numbers in range", c10["lat"] is None and c10["lon"] is None and c10["pts"] == [[37.5, -122.3]])
+import tempfile
+with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as tf:
+    tf.write('city,url,creeks,side\nA,http://insecure.example/rss,a,bay\nB,https://ok.example/rss,"ok <b>x</b>",sideways\n')
+fs = R.read_feeds(tf.name)
+check("security: city_feeds.csv: http feeds refused; odd creek ids and sides dropped", [f["city"] for f in fs] == ["B"] and fs[0]["creeks"] == ["ok"] and fs[0]["side"] is None)
+try:
+    R.get("file:///etc/passwd")
+    check("security: only https addresses fetched", False)
+except ValueError:
+    check("security: only https addresses fetched", True)
+
 print("\n" + ("All passed" if not fails else f"{len(fails)} failed"))
 sys.exit(1 if fails else 0)

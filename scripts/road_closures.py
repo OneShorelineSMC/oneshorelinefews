@@ -91,9 +91,41 @@ KEEP_DAYS_AFTER_END = 400   # the water year is pruned separately; this is a bac
 MAX_LOG = 600
 
 
+MAX_BYTES = 40_000_000   # the District 4 LCS file is a few MB; anything far bigger is refused, not read
+MAX_TEXT = 300           # longest text kept from any source (titles, locations, post text)
+
+
 def get(url, timeout=40):
+    """GET over https only, at most MAX_BYTES."""
+    if not url.lower().startswith("https://"):
+        raise ValueError("only https addresses are read")
     with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=timeout) as r:
-        return r.read().decode("utf-8", "replace")
+        data = r.read(MAX_BYTES + 1)
+    if len(data) > MAX_BYTES:
+        raise ValueError(f"response over {MAX_BYTES // 1_000_000} MB, not read")
+    return data.decode("utf-8", "replace")
+
+
+def clip(c):
+    """Every text field cut to MAX_TEXT and coordinates kept only as plain numbers, whatever a source sends."""
+    for k, v in list(c.items()):
+        if isinstance(v, str) and len(v) > MAX_TEXT:
+            c[k] = v[:MAX_TEXT - 1] + "…"
+    for k in ("lat", "lon"):
+        try:
+            c[k] = round(float(c[k]), 6) if c.get(k) not in (None, "") and abs(float(c[k])) <= 180 else None
+        except (TypeError, ValueError):
+            c[k] = None
+    pts = []
+    for p in c.get("pts") or []:
+        try:
+            la, lo = float(p[0]), float(p[1])
+            if abs(la) <= 90 and abs(lo) <= 180:
+                pts.append([round(la, 6), round(lo, 6)])
+        except (TypeError, ValueError, IndexError):
+            pass
+    c["pts"] = pts[:30]
+    return c
 
 
 def local(t):
@@ -385,9 +417,12 @@ def read_feeds(path=None):
     if not os.path.exists(path):
         return []
     with open(path, newline="", encoding="utf-8-sig") as f:
-        return [{"city": r["city"].strip(), "url": r["url"].strip(), "creeks": (r.get("creeks") or "").split(),
+        rows = [{"city": r["city"].strip(), "url": r["url"].strip(), "creeks": (r.get("creeks") or "").split(),
                  "side": (r.get("side") or "").strip() or None}
                 for r in csv.DictReader(f) if (r.get("city") or "").strip() and (r.get("url") or "").strip() and not r["city"].startswith("#")]
+    # only https feeds; creeks are plain ids; side is bay or coast (anything else is dropped, not passed to the page)
+    return [dict(r, creeks=[k for k in r["creeks"] if re.fullmatch(r"[a-z0-9_]{1,30}", k)], side=r["side"] if r["side"] in ("bay", "coast") else None)
+            for r in rows if r["url"].lower().startswith("https://")]
 
 
 def plain(t):
@@ -396,6 +431,8 @@ def plain(t):
 
 def feed_items(text):
     """RSS 2.0 or Atom -> [{title, link, text, at (UTC datetime or None)}]."""
+    if re.search(r"<!DOCTYPE|<!ENTITY", text[:5000] if isinstance(text, str) else "", re.I):
+        raise ValueError("feed has a DOCTYPE or ENTITY declaration; refused (entity expansion attacks)")
     root = ET.fromstring(text.encode("utf-8") if isinstance(text, str) else text)
     tag = lambda e: e.tag.split("}")[-1]
     out = []
@@ -426,6 +463,13 @@ def feed_items(text):
     return out
 
 
+def same_site(link, feed_url):
+    """A post's link is kept only if it's https on the feed's own site (so a tampered feed can't point staff elsewhere)."""
+    a, b = urllib.parse.urlsplit(link or ""), urllib.parse.urlsplit(feed_url)
+    host = lambda h: (h or "").lower().removeprefix("www.")
+    return a.scheme == "https" and bool(a.hostname) and host(a.hostname) == host(b.hostname)
+
+
 def city_notices(text, feed, now):
     out = []
     for it in feed_items(text):
@@ -433,12 +477,15 @@ def city_notices(text, feed, now):
         if not (CLOSE_RX.search(blob) and CITY_STORM_RX.search(blob)) or NOT_STORM_RX.search(it["title"]) and not STRONG_RX.search(blob):
             continue
         at = it["at"] or now
+        if at > now + dt.timedelta(days=1):
+            at = now            # a post dated in the future is logged when it was read
+        link = it["link"] if same_site(it["link"], feed["url"]) else ""
         snippet = it["text"][:240] + ("…" if len(it["text"]) > 240 else "")
         out.append({
             "id": "city:" + hashlib.sha1(f"{feed['city']}|{it['link'] or it['title']}".encode()).hexdigest()[:14],
             "source": "City of " + feed["city"], "notice": True,
             "route": "", "dir": "", "facility": "", "closure": "", "lanes": "", "place": feed["city"],
-            "where": it["title"], "what": snippet, "link": it["link"], "kind": "flood" if FLOOD_RX.search(blob) else "storm",
+            "where": it["title"], "what": snippet, "link": link, "kind": "flood" if FLOOD_RX.search(blob) else "storm",
             "started": local(at), "ended": local(at), "est_end": None, "lat": None, "lon": None, "pts": [],
             "creeks": feed["creeks"], "side": feed["side"], "watersheds": [],
         })
@@ -451,6 +498,7 @@ def merge(log, current, source, now):
     by = {c["id"]: c for c in log}
     seen = set()
     for c in current:
+        clip(c)
         seen.add(c["id"])
         old = by.get(c["id"])
         if old:
