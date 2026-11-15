@@ -55,6 +55,7 @@ UA = "OneShoreline-FEWS/1.0 (https://github.com/OneShorelineSMC/oneshorelinefews
 PAC = ZoneInfo("America/Los_Angeles")
 LCS_URL = "https://cwwp2.dot.ca.gov/data/d4/lcs/lcsStatusD04.json"
 ERC_ITEM = "https://www.arcgis.com/sharing/rest/content/items/c933349c56f640edba968f208063eee0?f=json"
+ERC_HUB = "https://hub.arcgis.com/api/v3/datasets/c933349c56f640edba968f208063eee0_0"
 COUNTY = "San Mateo"
 SMC_BBOX = (-122.53, 37.10, -122.08, 37.71)   # lon/lat box around San Mateo County (only when a record has no county)
 FLOOD_RX = re.compile(r"flood|overflow|high water|standing water|water (?:over|on) (?:the )?road", re.I)
@@ -250,13 +251,38 @@ def lcs_closures(text, now):
 
 # ---- 2. Caltrans Emergency Road Closures (ArcGIS layer)
 def erc_service(fetch, cached=None):
-    """The layer's query address, from its ArcGIS item (cached in the JSON after the first read)."""
+    """The layer's query address (cached in the JSON after the first read). From the ArcGIS item's url; for an item
+    without one (a web map, or one the item API won't describe), from the web map's first layer or from ArcGIS Hub's
+    record of the dataset (ERC_HUB). The reasons each way failed are kept in the error."""
     if cached:
         return cached
-    item = json.loads(fetch(ERC_ITEM))
-    url = (item.get("url") or "").rstrip("/")
+    why = []
+    try:
+        item = json.loads(fetch(ERC_ITEM))
+        if item.get("error"):
+            why.append(f"item: {item['error'].get('code')} {item['error'].get('message', '')}".strip())
+        url = (item.get("url") or "").rstrip("/")
+        if not url and item.get("type") == "Web Map":
+            data = json.loads(fetch(ERC_ITEM.replace("?f=json", "/data?f=json")))
+            url = next((l.get("url") for l in data.get("operationalLayers") or [] if l.get("url")), "")
+        if not url and not item.get("error"):
+            why.append(f"item: type {item.get('type')!r}, no url")
+    except Exception as e:  # noqa: BLE001
+        url, _ = "", why.append(f"item: {type(e).__name__}: {e}")
     if not url:
-        raise ValueError("ArcGIS item has no service url")
+        try:
+            hub = json.loads(fetch(ERC_HUB))
+            a = (hub.get("data") or {}).get("attributes") or {}
+            url = (a.get("url") or "").rstrip("/")
+            if url and a.get("layer") and isinstance(a["layer"], dict) and "id" in a["layer"] and not re.search(r"/\d+$", url):
+                url += f"/{a['layer']['id']}"
+            if not url:
+                why.append("hub: no url")
+        except Exception as e:  # noqa: BLE001
+            why.append(f"hub: {type(e).__name__}: {e}")
+    if not url:
+        raise ValueError("no service url (" + "; ".join(why) + ")")
+    url = url.rstrip("/")
     if not re.search(r"/\d+$", url):
         url += "/0"
     return url
@@ -471,10 +497,9 @@ def update(previous, now, fetch=get, feeds=None):
         merge(log, cur, "Caltrans Emergency Road Closures", now)
         sources["erc"] = {"ok": True, "service": svc, "checked": local(now), "fields": fm, "san_mateo_records": smc, "storm_now": len(cur)}
     except Exception as e:  # noqa: BLE001
-        problems.append(f"Emergency Road Closures: {type(e).__name__}: {e}"[:200])
+        problems.append(f"Emergency Road Closures: {type(e).__name__}: {e}"[:400])
         sources["erc"] = dict(prev_src.get("erc") or {}, ok=False)
-        if "service" in sources["erc"] and "item" in str(e).lower():
-            sources["erc"].pop("service")
+        sources["erc"]["error"] = f"{type(e).__name__}: {e}"[:400]
     for i, fd in enumerate(read_feeds() if feeds is None else feeds):
         key = f"city:{fd['city']}:{i + 1}"
         try:

@@ -160,5 +160,18 @@ r7 = R.update({}, NOW, lambda u: (_ for _ in ()).throw(OSError("down")) if "sanb
 check("update: a city feed down is a problem, Caltrans still read", any("San Bruno" in p for p in r7["problems"]) and r7["sources"]["lcs"]["ok"])
 check("city_feeds.csv: San Bruno's two CivicPlus feeds", [f["city"] for f in R.read_feeds(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups", "city_feeds.csv"))] == ["San Bruno", "San Bruno"])
 
+# finding the Emergency Road Closures layer when the item has no url
+HUB = {"data": {"attributes": {"url": "https://services.example.com/arcgis/rest/services/ERC/FeatureServer", "layer": {"id": 2}}}}
+svc = R.erc_service(lambda u: json.dumps({"error": {"code": 403, "message": "You do not have permissions"}}) if "sharing" in u else json.dumps(HUB))
+check("ERC: item refused: ArcGIS Hub's record of the dataset gives the layer", svc == "https://services.example.com/arcgis/rest/services/ERC/FeatureServer/2")
+WM = {"type": "Web Map"}
+svc2 = R.erc_service(lambda u: json.dumps({"operationalLayers": [{"url": "https://s.example/MapServer/3"}]}) if "/data?" in u else json.dumps(WM) if "sharing" in u else "{}")
+check("ERC: a web map item: its first layer", svc2 == "https://s.example/MapServer/3")
+try:
+    R.erc_service(lambda u: json.dumps({"type": "Hub Page"}) if "sharing" in u else "{}")
+    check("ERC: no way found: the reasons in the error", False)
+except ValueError as e:
+    check("ERC: no way found: the reasons in the error", "Hub Page" in str(e) and "hub: no url" in str(e))
+
 print("\n" + ("All passed" if not fails else f"{len(fails)} failed"))
 sys.exit(1 if fails else 0)
