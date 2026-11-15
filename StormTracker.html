@@ -148,7 +148,10 @@
           The storm tracker keeps its own hourly record of the last 10 days and day totals for the season (<code>scripts/storm_tracker.py</code>,
           <code>storm_tracker.json</code> on the data branch).</li>
         <li><b>How rare:</b> the storm's largest amount over 15 min, 30 min and 1, 3, 6, 12 and 24 hours, against NOAA Atlas 14 at that gauge
-          (<code>lookups/rain_frequency.csv</code>): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, with a rough size in years.
+          (<code>lookups/rain_frequency.csv</code>): Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year, with a rough size in years
+          and its AEP (annual exceedance probability, the chance of that much rain in that window in any one year): AEP = 1 − e<sup>−1/years</sup>,
+          since Atlas 14's partial-duration years count every storm, not only each year's largest (1-year ≈ 63%, 2-year ≈ 39%, 5-year ≈ 18%, 10-year ≈ 10%, 100-year ≈ 1%).
+          Below the 1-year storm, the AEP is more than 63%.
           15 and 30 minutes are sampled from the data job's rolling totals while the storm is going.</li>
         <li><b>Creek response:</b> highest hourly reading from the storm's start to the end of the response window; hours at or above each flood level
           are hours whose highest reading reached it. Lag: from the hour with the most rain at the creek's own gauge to the creek's peak.
@@ -193,8 +196,29 @@ function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign(
 function when(s) { var t = pt(s); return t == null ? "–" : fmt(t, { weekday: "short", month: "short", day: "numeric" }) + ", " + fmt(t, { hour: "numeric" }); }
 function day(s) { var t = pt(s + (s.length === 10 ? " 00:00" : "")); return fmt(t, { month: "short", day: "numeric" }); }
 function inch(v) { return v == null ? "–" : v.toFixed(2); }
+// storm size in years (Atlas 14 partial-duration) and its annual exceedance probability
+function yr(y) { return (y < 10 ? y.toFixed(1).replace(/\.0$/, "") : Math.round(y)) + "-year"; }
+function aep(y) { var p = 100 * (1 - Math.exp(-1 / y)); return (p >= 10 ? Math.round(p) : p >= 1 ? p.toFixed(1).replace(/\.0$/, "") : p.toFixed(2)) + "%"; }
 function chip(l, yrs) { return l == null ? '<span class="empty">no Atlas 14</span>' : '<span class="chip l' + l + '">' + (l ? WORD[l] : "below Heavy") + "</span>" +
-  (l && yrs ? '<span class="sm">about a ' + (yrs < 10 ? yrs.toFixed(1).replace(/\.0$/, "") : Math.round(yrs)) + "-year storm</span>" : ""); }
+  (l && yrs ? '<span class="sm">about a ' + yr(yrs) + " storm · " + aep(yrs) + " AEP</span>" : ""); }
+// one line on how rare the rain was: the rarest window, then the 1-hour and 24-hour at the same gauge
+function rareText(s) {
+  var gs = (s.rain || []).filter(function (r) { return !r.support && r.peaks && Object.keys(r.peaks).some(function (m) { return r.peaks[m].rate; }); });
+  if (!gs.length) return "";
+  var g = gs.slice().sort(function (a, b) { return ((b.rarest || {}).years || 0) - ((a.rarest || {}).years || 0); })[0];
+  var part = function (m, word) { var p = g.peaks[m]; if (!p || !p.rate || !(p.in > 0)) return "";
+    return word + " " + inch(p.in) + " in (" + (p.rate.years ? yr(p.rate.years) + ", " + aep(p.rate.years) + " AEP" : "below 1-year, AEP over 63%") + ")"; };
+  if (!g.rarest || !g.rarest.years) {
+    return "<p class='note'><b>How rare:</b> every rain window at " + esc(g.label) + " was below the 1-year storm (AEP over 63%)" +
+      (g.peaks["60"] && g.peaks["60"].in > 0 ? "; heaviest hour " + inch(g.peaks["60"].in) + " in" : "") + ".</p>";
+  }
+  var r = g.rarest, p = g.peaks[String(r.minutes)], more = [];
+  if (String(r.minutes) !== "60") more.push(part("60", "heaviest hour"));
+  if (String(r.minutes) !== "1440") more.push(part("1440", "24-hour total"));
+  more = more.filter(Boolean);
+  return "<p class='note'><b>How rare:</b> " + inch(p.in) + " in over " + mins(r.minutes) + " at " + esc(g.label) + ", about a <b>" + yr(r.years) +
+    " storm (" + aep(r.years) + " AEP)</b>" + (more.length ? "; " + more.join("; ") : "") + ".</p>";
+}
 function mins(m) { return m < 60 ? m + " min" : m / 60 + " hr"; }
 function reached(l) { return l ? '<span class="chip l' + l + '">' + LEVEL[l] + "</span>" : '<span class="empty">below Flood Monitoring</span>'; }
 // the tide during a storm (storm_tracker.py storm_tide): the highest water at the creek's NOAA gauge and how far above the
@@ -358,7 +382,7 @@ function roadMark(s) {
 function roadsDetail(s) {
   var g = closuresFor(s), sd = SIDE[g.side] || "the county", nm = esc(s.name);
   var none = RC.log_started && pt(s.end) + 12 * 36e5 < pt(RC.log_started) ? "Before the closure log started (" + esc(day(RC.log_started)) + ")." : "None logged.";
-  return "<h3>State highway closures during the storm <span class='sm' style='display:inline;font-weight:400'>Caltrans</span></h3>" +
+  return "<h3>Road closures during the storm <span class='sm' style='display:inline;font-weight:400'>Caltrans and city posts</span></h3>" +
     "<p class='note' style='margin-top:0'><b>In the " + nm + " watershed:</b> " + (g.here.length ? "</p><ul class='rcl'>" + g.here.map(roadItem).join("") + "</ul>" : none + "</p>") +
     "<p class='note'><b>Elsewhere " + (g.side ? "on the " + sd : "in the county") + ":</b> " + (g.near.length ? "</p><ul class='rcl'>" + g.near.map(roadItem).join("") + "</ul>" : (g.here.length ? "none." : none) + "</p>") +
     (g.far.length ? "<details><summary class='note' style='cursor:pointer'>On the " + (g.side === "bay" ? "Coastside" : "Bayside") + ": " + g.far.length + "</summary><ul class='rcl'>" + g.far.map(roadItem).join("") + "</ul></details>" : "");
@@ -371,7 +395,8 @@ function show(k, quiet) {
   var peaks = ["15", "30", "60", "180", "360", "720", "1440"];
   var tbl = "<table><thead><tr><th>Rain gauge</th><th class='n'>Total</th>" + peaks.map(function (m) { return "<th class='n'>" + mins(+m) + "</th>"; }).join("") + "</tr></thead><tbody>" +
     s.rain.map(function (r) { return "<tr><td><b>" + esc(r.label) + "</b>" + (r.support ? '<span class="sm">supporting gauge</span>' : "") + "</td><td class='n'><b>" + inch(r.total) + "</b></td>" +
-      peaks.map(function (m) { var p = r.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) + (p.rate && p.rate.level ? '<span class="sm"><span class="chip l' + p.rate.level + '">' + WORD[p.rate.level] + "</span></span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+      peaks.map(function (m) { var p = r.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) + (p.rate && p.rate.level ? '<span class="sm"><span class="chip l' + p.rate.level + '">' + WORD[p.rate.level] + "</span></span>" : "") +
+        (p.rate && p.rate.years ? '<span class="sm">' + yr(p.rate.years) + " · " + aep(p.rate.years) + "</span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
   // the creek: peak, when (against the heaviest rain), the tide at that hour, hours at each flood level (simplified 2026-11-14)
   var lvt = (s.levels || []).map(function (l) {
     if (l.peak == null) return "<p class='note'><b>" + esc(l.label) + ":</b> no readings during the storm.</p>";
@@ -383,12 +408,12 @@ function show(k, quiet) {
   }).join("");
   d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? ' <span class="chip live">in progress</span>' : "") + "</h2>" +
     '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
-    "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(s.total) + " in</b> in " + s.hours + " hours " + chip(s.rain_level) + "</p>" + lvt +
+    "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(s.total) + " in</b> in " + s.hours + " hours " + chip(s.rain_level) + "</p>" + rareText(s) + lvt +
     (s.tide ? tideText(s.tide) : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
     (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing.</p>" : "") + "</div></div>" +
     (RC ? roadsDetail(s) : "") +
-    '<h3>Largest rain in each window</h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
+    '<h3>Largest rain in each window <span class="sm" style="display:inline;font-weight:400">with storm size and AEP (Atlas 14)</span></h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
   draw(s);
   if (!quiet) d.scrollIntoView({ behavior: "smooth", block: "start" });
 }
