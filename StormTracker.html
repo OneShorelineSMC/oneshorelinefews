@@ -254,7 +254,7 @@ function tideLine(t, long) {
 function hrs(a, b) { var h = (pt(b) - pt(a)) / 36e5; return h < 1 ? Math.round(h * 60) + " min" : h < 48 ? Math.round(h) + " hr" : Math.round(h / 24) + " days"; }
 function roadItem(c) {
   var k = KIND[c.kind] || KIND.storm, end = c.active ? null : c.ended;
-  if (c.notice) return "<li><b>" + esc(c.source) + "</b> · " + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">' + esc(c.where) + "</a>" : esc(c.where)) +
+  if (c.notice) return "<li><b>" + esc(c.source) + "</b> · " + (/^https:\/\/[^\/\s"'<>]+\//i.test(c.link || "") ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">' + esc(c.where) + "</a>" : esc(c.where)) +
     ' <span class="chip ' + k[0] + '">' + k[1] + "</span>" + '<span class="sm">Posted ' + esc(when(c.started)) + (c.what ? " · " + esc(c.what) : "") + "</span>" +
     '<span class="sm">City post (no reopening time) · ' + esc(SIDE[c.side] || "") + "</span></li>";
   return "<li><b>" + esc(c.route) + (c.dir && c.dir !== "N/A" ? " " + esc(c.dir) : "") + "</b>" + (c.facility && c.facility !== "Mainline" ? " · " + esc(c.facility) : "") +
