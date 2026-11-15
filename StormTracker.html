@@ -117,7 +117,7 @@
   </div>
 
   <div class="card" id="roadCard" hidden>
-    <h2>State highway closures from storms <span class="sm" style="display:inline;font-weight:400">Caltrans · San Mateo County</span></h2>
+    <h2>Road closures from storms <span class="sm" style="display:inline;font-weight:400">Caltrans and city posts · San Mateo County</span></h2>
     <div id="roads"></div>
   </div>
 
@@ -162,8 +162,13 @@
           (<code>scripts/road_closures.py</code>, <code>road_closures.json</code> on the data branch, read every 10 minutes): the Lane Closure System for District 4
           and the Emergency Road Closures layer. A closure counts once Caltrans logs it as started and ends when Caltrans logs it as lifted, or when it leaves the
           feed (then at the last time it was seen, within 10 minutes). A storm lists the closures that were open at any time from its start to 12 hours after its rain ended,
-          anywhere in the county, not only near that creek. State highways only (101, 280, 380, 1, 35, 82, 84, 92 and their ramps); county and city roads aren't in these feeds.
+          sorted by where: in that creek's watershed, elsewhere on the same side (Bayside or Coastside), and the other side (folded away).
+          Where comes from the closure's points (Caltrans gives coordinates) and San Mateo County's watershed map (<code>data/watersheds.geojson</code>);
+          a closure on a road that crosses the hills, like Hwy 92 from Skyline to Half Moon Bay, can count on both sides. State highways only (101, 280, 380, 1, 35, 82, 84, 92 and their ramps); county and city roads aren't in these feeds.
           Repairs are often planned days after a storm, so they're marked apart. Started Nov 14, 2026.</li>
+        <li><b>City posts:</b> cities' own posts about street closures from flooding or storm damage, read from their website feeds every 10 minutes
+          (<code>lookups/city_feeds.csv</code>; San Bruno's News Flash and Alert Center so far). A post shows at the time it was posted, with a link, and
+          counts for the city's creeks and side; posts rarely say when a street reopened. South San Francisco's site has no feed yet, and SMC Alert has no public feed.</li>
         <li><b>Gaps:</b> a gauge that went quiet during a storm is named; its rain may be missing. Rain gauges under-catch in wind.</li>
         <li><b>Earlier seasons:</b> the history from the OneRain archive can be added later with the same rules (THRESHOLDS_BASIS.md §12).</li>
       </ul>
@@ -176,7 +181,7 @@
 "use strict";
 var DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/storm_tracker.json";
 var ROADS_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/road_closures.json";
-var RC = null, KIND = { flood: ["kf", "Flooding"], storm: ["ks", "Storm"], repair: ["kr", "Repair"] };
+var RC = null, KIND = { flood: ["kf", "Flooding"], storm: ["ks", "Storm"], repair: ["kr", "Repair"] }, SIDE = { bay: "Bayside", coast: "Coastside", both: "Bayside and Coastside" };
 var $ = function (id) { return document.getElementById(id); };
 var J = null, SEL = null, charts = {};
 var WORD = ["", "Heavy", "Very heavy", "Intense"], STATUS = { none: "No alerts", alert: "Stay alert", ready: "Be ready", likely: "Flooding likely" };
@@ -225,29 +230,45 @@ function tideLine(t, long) {
 function hrs(a, b) { var h = (pt(b) - pt(a)) / 36e5; return h < 1 ? Math.round(h * 60) + " min" : h < 48 ? Math.round(h) + " hr" : Math.round(h / 24) + " days"; }
 function roadItem(c) {
   var k = KIND[c.kind] || KIND.storm, end = c.active ? null : c.ended;
+  if (c.notice) return "<li><b>" + esc(c.source) + "</b> · " + (c.link ? '<a href="' + esc(c.link) + '" target="_blank" rel="noopener">' + esc(c.where) + "</a>" : esc(c.where)) +
+    ' <span class="chip ' + k[0] + '">' + k[1] + "</span>" + '<span class="sm">Posted ' + esc(when(c.started)) + (c.what ? " · " + esc(c.what) : "") + "</span>" +
+    '<span class="sm">City post (no reopening time) · ' + esc(SIDE[c.side] || "") + "</span></li>";
   return "<li><b>" + esc(c.route) + (c.dir && c.dir !== "N/A" ? " " + esc(c.dir) : "") + "</b>" + (c.facility && c.facility !== "Mainline" ? " · " + esc(c.facility) : "") +
     (c.where ? " · " + esc(c.where) : "") + (c.place ? " (" + esc(c.place) + ")" : "") + ' <span class="chip ' + k[0] + '">' + k[1] + "</span>" +
     '<span class="sm">' + esc(c.what) + (c.closure ? " · " + esc(c.closure) + " closure" : "") + (c.lanes ? ", " + esc(c.lanes) + " lanes" : "") +
     " · closed " + esc(when(c.started)) + (end ? ", reopened " + esc(when(end)) + " (" + hrs(c.started, end) + ")" + (c.gone ? "*" : "") :
       ' · <b style="color:var(--lv3)">still closed</b>' + (c.est_end ? ", expected to reopen " + esc(when(c.est_end)) : "")) + "</span>" +
-    (c.detour ? '<span class="sm">Detour: ' + esc(c.detour) + "</span>" : "") + "</li>";
+    (c.detour ? '<span class="sm">Detour: ' + esc(c.detour) + "</span>" : "") +
+    '<span class="sm">' + (c.watersheds && c.watersheds.length ? esc(c.watersheds.join(", ")) + " watershed" + (c.watersheds.length > 1 ? "s" : "") + " · " + esc(SIDE[c.side] || "") : "Location not given") + "</span></li>";
 }
+// a storm's closures: in its creek's watershed (here), elsewhere on the same side (near), on the other side (far)
 function closuresFor(s) {
-  if (!RC || !RC.log) return [];
+  var g = { here: [], near: [], far: [], side: (RC && RC.creek_side || {})[s.creek] };
+  if (!RC || !RC.log) return g;
   var resp = ((J && J.rules) || {}).STORM_RESPONSE_HOURS || 12, a = pt(s.start), b = pt(s.end) + resp * 36e5, nowMs = pt(RC.generated);
-  return RC.log.filter(function (c) { var c0 = pt(c.started), c1 = c.active ? nowMs : pt(c.ended || c.last_seen); return c0 != null && c0 <= b && (c1 == null || c1 >= a); });
+  RC.log.forEach(function (c) {
+    var c0 = pt(c.started), c1 = c.active ? nowMs : pt(c.ended || c.last_seen);
+    if (c0 == null || c0 > b || (c1 != null && c1 < a)) return;
+    if ((c.creeks || []).indexOf(s.creek) >= 0) g.here.push(c);
+    else if (!g.side || !c.side || c.side === g.side || c.side === "both") g.near.push(c);
+    else g.far.push(c);
+  });
+  return g;
 }
 function renderRoads() {
   if (!RC) return;
   $("roadCard").hidden = false;
   var log = (RC.log || []).slice().reverse(), act = log.filter(function (c) { return c.active; }), past = log.filter(function (c) { return !c.active; });
+  var day1 = pt(RC.generated) - 864e5, posts = log.filter(function (c) { return c.notice && pt(c.started) >= day1; });
+  var nc = log.filter(function (c) { return !c.notice; }).length, np = log.length - nc;
   var src = RC.sources || {}, bad = Object.keys(src).filter(function (k) { return !src[k].ok; }).map(function (k) { return k === "lcs" ? "Lane Closure System" : "Emergency Road Closures"; });
-  var fl = log.filter(function (c) { return c.kind === "flood"; }).length;
+  var fl = log.filter(function (c) { return c.kind === "flood" && !c.notice; }).length;
   $("roads").innerHTML = "<p style='margin:0'><b>Closed now:</b> " + (act.length ? act.length + "</p><ul class='rcl'>" + act.map(roadItem).join("") + "</ul>" : "none from storms on San Mateo County state highways.</p>") +
-    (past.length ? "<details style='margin-top:8px'><summary style='cursor:pointer;font-weight:600;color:var(--ink)'>This season: " + log.length + " closure" + (log.length === 1 ? "" : "s") +
-      " since " + esc(day(RC.water_year_start || "")) + " (" + fl + " from flooding)</summary><ul class='rcl'>" + past.map(roadItem).join("") + "</ul></details>" :
+    (posts.length ? "<p style='margin:8px 0 0'><b>City posts in the last 24 hours:</b></p><ul class='rcl'>" + posts.map(roadItem).join("") + "</ul>" : "") +
+    (past.length ? "<details style='margin-top:8px'><summary style='cursor:pointer;font-weight:600;color:var(--ink)'>This season: " + nc + " highway closure" + (nc === 1 ? "" : "s") +
+      " since " + esc(day(RC.water_year_start || "")) + " (" + fl + " from flooding)" + (np ? " and " + np + " city post" + (np === 1 ? "" : "s") : "") + "</summary><ul class='rcl'>" + past.map(roadItem).join("") + "</ul></details>" :
       "<p class='note'>No storm closures logged yet this season.</p>") +
-    "<p class='note'>Checked " + esc(when(RC.generated)) + ". State highways only; county and city roads aren't in Caltrans' feeds. " +
+    "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno so far). " +
       (past.some(function (c) { return c.gone; }) ? "* reopened when it left Caltrans' feed (within 10 minutes). " : "") + "</p>" +
     (bad.length ? "<div class='warn'>Couldn't read Caltrans' " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
 }
@@ -329,9 +350,18 @@ function list() {
     }).join("") : '<tr><td colspan="10" class="empty">No storms yet this season' + (fc ? " at this creek" : "") + ".</td></tr>") + "</tbody>";
 }
 function roadMark(s) {
-  var cs = closuresFor(s); if (!cs.length) return "";
-  var f = cs.filter(function (c) { return c.kind === "flood"; }).length;
-  return '<span class="sm">🚧 ' + cs.length + " highway closure" + (cs.length === 1 ? "" : "s") + (f ? " (" + f + " flooding)" : "") + "</span>";
+  var g = closuresFor(s), n = g.here.length + g.near.length; if (!n) return "";
+  var f = g.here.concat(g.near).filter(function (c) { return c.kind === "flood"; }).length;
+  return '<span class="sm">🚧 ' + (g.here.length ? g.here.length + " in this watershed" + (g.near.length ? ", " : "") : "") +
+    (g.near.length ? g.near.length + (g.here.length ? " more " : " ") + (SIDE[g.side] || "elsewhere") : "") + (f ? " (" + f + " flooding)" : "") + "</span>";
+}
+function roadsDetail(s) {
+  var g = closuresFor(s), sd = SIDE[g.side] || "the county", nm = esc(s.name);
+  var none = RC.log_started && pt(s.end) + 12 * 36e5 < pt(RC.log_started) ? "Before the closure log started (" + esc(day(RC.log_started)) + ")." : "None logged.";
+  return "<h3>State highway closures during the storm <span class='sm' style='display:inline;font-weight:400'>Caltrans</span></h3>" +
+    "<p class='note' style='margin-top:0'><b>In the " + nm + " watershed:</b> " + (g.here.length ? "</p><ul class='rcl'>" + g.here.map(roadItem).join("") + "</ul>" : none + "</p>") +
+    "<p class='note'><b>Elsewhere " + (g.side ? "on the " + sd : "in the county") + ":</b> " + (g.near.length ? "</p><ul class='rcl'>" + g.near.map(roadItem).join("") + "</ul>" : (g.here.length ? "none." : none) + "</p>") +
+    (g.far.length ? "<details><summary class='note' style='cursor:pointer'>On the " + (g.side === "bay" ? "Coastside" : "Bayside") + ": " + g.far.length + "</summary><ul class='rcl'>" + g.far.map(roadItem).join("") + "</ul></details>" : "");
 }
 function find(k) { var p = k.split("|"); return allStorms().filter(function (s) { return s.creek === p[1] && s.start === p[2] && (p[0] === "o") === !!s.live; })[0]; }
 function show(k, quiet) {
@@ -357,8 +387,7 @@ function show(k, quiet) {
     (s.tide ? tideText(s.tide) : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
     (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing.</p>" : "") + "</div></div>" +
-    (RC ? (function (cs) { return "<h3>State highway closures during the storm <span class='sm' style='display:inline;font-weight:400'>Caltrans, anywhere in San Mateo County</span></h3>" +
-      (cs.length ? "<ul class='rcl'>" + cs.map(roadItem).join("") + "</ul>" : RC.log_started && pt(s.end) + 12 * 36e5 < pt(RC.log_started) ? "<p class='note'>Before the closure log started (" + esc(day(RC.log_started)) + ").</p>" : "<p class='note'>None logged.</p>"); })(closuresFor(s)) : "") +
+    (RC ? roadsDetail(s) : "") +
     '<h3>Largest rain in each window</h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
   draw(s);
   if (!quiet) d.scrollIntoView({ behavior: "smooth", block: "start" });
