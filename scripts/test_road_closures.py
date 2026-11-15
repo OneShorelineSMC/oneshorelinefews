@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import road_closures as R  # noqa: E402
+R.CITY_FEEDS = "/nonexistent/city_feeds.csv"   # the Caltrans tests run without city feeds
 
 fails = []
 
@@ -116,6 +117,48 @@ try:
     check("ArcGIS error body raises", False)
 except ValueError:
     check("ArcGIS error body raises", True)
+
+# where: watersheds, creeks, side (the County watershed file in data/)
+loc = lambda lat, lon: R.locate({"lat": lat, "lon": lon})
+c1, c2, c3 = loc(37.4635, -122.4305), loc(37.66, -122.39), loc(37.5045, -122.2545)
+check("where: Hwy 92 in Half Moon Bay is Pilarcitos Creek, Coastside", c1["creeks"] == ["pilarcitos"] and c1["side"] == "coast")
+check("where: 101 in South San Francisco is Colma Creek, Bayside", c2["creeks"] == ["colma"] and c2["side"] == "bay")
+check("where: 101 at Holly St is Pulgas Creek (no monitored creek), Bayside", c3["watersheds"] == ["Pulgas Creek"] and c3["creeks"] == [] and c3["side"] == "bay")
+c4 = R.locate({"pts": [[37.515, -122.37], [37.4635, -122.4305]]})
+check("where: Hwy 92 from Skyline to Half Moon Bay spans both sides and both creeks", c4["side"] == "both" and c4["creeks"] == ["sanmateo", "pilarcitos"])
+check("where: out at sea (beyond 2 km of any watershed) has no place", loc(37.5, -122.7)["side"] is None)
+r5 = R.update({}, NOW, fetch)
+check("update: every logged closure placed, and the creeks' sides published", all("side" in c for c in r5["log"]) and r5["creek_side"]["pescadero"] == "coast")
+a1 = [c for c in r5["log"] if c["id"] == "lcs:A1-1"][0]
+check("LCS: begin and end points kept for placing", a1["pts"] == [[37.5, -122.26]])
+
+# city notices (RSS from a CivicPlus site)
+RSS = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>City of San Bruno - News Flash</title>
+<item><title>Crystal Springs Ave closed at El Camino Real due to flooding</title><link>https://www.sanbruno.ca.gov/CivicAlerts.aspx?AID=901</link>
+<description>&lt;p&gt;Crystal Springs Avenue is closed between El Camino Real and Elm Ave due to &lt;b&gt;flooding&lt;/b&gt;. Please avoid the area.&lt;/p&gt;</description>
+<pubDate>Fri, 13 Nov 2026 19:05:00 GMT</pubDate></item>
+<item><title>Free sandbags at the Corporation Yard</title><link>https://www.sanbruno.ca.gov/CivicAlerts.aspx?AID=900</link>
+<description>Sandbags are available ahead of the storm.</description><pubDate>Thu, 12 Nov 2026 17:00:00 GMT</pubDate></item>
+<item><title>Library closed for Veterans Day</title><link>https://www.sanbruno.ca.gov/CivicAlerts.aspx?AID=899</link>
+<description>All city offices closed.</description><pubDate>Wed, 11 Nov 2026 17:00:00 GMT</pubDate></item>
+</channel></rss>"""
+FEED = {"city": "San Bruno", "url": "https://www.sanbruno.ca.gov/RSSFeed.aspx?ModID=1&CID=All-newsflash.xml", "creeks": ["sanbruno"], "side": "bay"}
+ns = R.city_notices(RSS, FEED, NOW)
+check("city: only the post about a closure from flooding (not sandbags, not a holiday closure)", len(ns) == 1 and ns[0]["kind"] == "flood")
+n0 = ns[0]
+check("city: posted time in Pacific, link and plain text kept, placed by the city's row", n0["started"] == "2026-11-13 11:05" and n0["link"].endswith("AID=901")
+      and "<" not in n0["what"] and n0["creeks"] == ["sanbruno"] and n0["side"] == "bay" and n0["notice"])
+r6 = R.update({}, NOW, lambda u: RSS if "sanbruno" in u else fetch(u), feeds=[FEED])
+c6 = [c for c in r6["log"] if c.get("notice")]
+check("update: the notice logged (not active), its place kept (not re-placed by watershed), source ok",
+      len(c6) == 1 and not c6[0]["active"] and c6[0]["creeks"] == ["sanbruno"] and r6["sources"]["city:San Bruno:1"]["ok"])
+ATOM = """<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Road closed: storm damage on Skyline</title><link href="https://x.example/1"/>
+<updated>2026-11-13T20:00:00Z</updated><summary>Tree down after the storm.</summary></entry></feed>"""
+na = R.city_notices(ATOM, FEED, NOW)
+check("city: Atom feeds too", len(na) == 1 and na[0]["started"] == "2026-11-13 12:00" and na[0]["kind"] == "storm")
+r7 = R.update({}, NOW, lambda u: (_ for _ in ()).throw(OSError("down")) if "sanbruno" in u else fetch(u), feeds=[FEED])
+check("update: a city feed down is a problem, Caltrans still read", any("San Bruno" in p for p in r7["problems"]) and r7["sources"]["lcs"]["ok"])
+check("city_feeds.csv: San Bruno's two CivicPlus feeds", [f["city"] for f in R.read_feeds(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups", "city_feeds.csv"))] == ["San Bruno", "San Bruno"])
 
 print("\n" + ("All passed" if not fails else f"{len(fails)} failed"))
 sys.exit(1 if fails else 0)
