@@ -284,10 +284,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261116b"></script>
-<script src="severity.js?v=20261116b"></script>
-<script src="creek_status.js?v=20261116b"></script>
-<script src="hero.js?v=20261116b"></script>
+<script src="lookups.js?v=20261116c"></script>
+<script src="severity.js?v=20261116c"></script>
+<script src="creek_status.js?v=20261116c"></script>
+<script src="hero.js?v=20261116c"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -457,10 +457,12 @@ function rainRow() {
     .sort(function (a, b) { return ((b.z.years || 0) - (a.z.years || 0)) || (b.z.in / b.z.one_year_in - a.z.in / a.z.one_year_in); })[0];
   var yrs = function (y) { return (y < 10 ? y.toFixed(1).replace(/\.0$/, "") : Math.round(y)) + "-year"; };
   var aep = function (y) { var p = 100 * (1 - Math.exp(-1 / y)); return (p >= 10 ? Math.round(p) : p.toFixed(1).replace(/\.0$/, "")) + "%"; };
-  var sizeText = !sz ? "" : sz.z.years ? LK.text("home_rain_size", { hours: sz.z.hours, inches: amt(sz.z.in), size: yrs(sz.z.years), aep: aep(sz.z.years), gauge: sz.z.gauge || "", creek: sz.c.name })
-    : LK.text("home_rain_size_below", { hours: sz.z.hours, inches: amt(sz.z.in), one: amt(sz.z.one_year_in), gauge: sz.z.gauge || "", creek: sz.c.name });
+  // only when the forecast reaches a 1-year storm (staff, 2026-11-16): below that, nothing; "a common storm" read as reassurance,
+  // and 6-hour forecast blocks can hide a heavy hour (Nov 13: an 8.8-year 3 hours at First Avenue)
+  var sizeText = sz && sz.z.years ? LK.text("home_rain_size", { hours: sz.z.hours, inches: amt(sz.z.in), size: yrs(sz.z.years), aep: aep(sz.z.years), gauge: sz.z.gauge || "", creek: sz.c.name }) : "";
   var iss = fs.map(function (f) { return f.issued; }).filter(Boolean).sort().pop();
-  var src = LK.text("home_rain_source", { time: iss ? pac(Date.parse(iss), { weekday: "short", hour: "numeric", minute: "2-digit" }) : "" });
+  var src = LK.text("home_rain_source", { time: iss ? pac(Date.parse(iss), { weekday: "short", hour: "numeric", minute: "2-digit" }) : "" }) +
+    (sizeText ? LK.text("home_rain_source_atlas") : "");
   var show = hi >= LK.num("FORECAST_SHOW_IN"), word, det;
   if (show) {
     word = LK.text("home_rain_amount", { d3: amt(lo) === amt(hi) ? amt(hi) : amt(lo) + "–" + amt(hi) });
