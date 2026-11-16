@@ -45,6 +45,9 @@
   .meta, .note { font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
   .warn { background: var(--warnbg); color: var(--warnink); border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; }
   .warn:empty { display: none; }
+  .pickbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 10px; }
+  .pickbar label { font-weight: 700; color: var(--ink); font-size: 16px; }
+  .pickbar select { font: inherit; font-size: 16px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); min-width: 200px; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 0 8px; font-size: 14px; }
   select { font: inherit; font-size: 14px; padding: 4px 6px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); min-height: 32px; }
   .tablewrap { overflow-x: auto; }
@@ -103,6 +106,8 @@
 </nav>
 <main>
   <div class="card">
+    <div class="pickbar"><label for="fCreek">Creek</label><select id="fCreek"><option value="">All creeks</option></select>
+      <span class="sm" style="display:inline">Shows that creek's storms in progress, season totals and storm list</span></div>
     <p style="margin:0">Each storm at each creek this water year (from Oct 1): how much rain fell at the creek's gauges and how rare it was
       (NOAA Atlas 14 at each gauge), how the creek responded (its peak, hours at each flood level, the lag from the heaviest rain to the peak), and the tide during the storm
       at the creek's NOAA tide gauge (the highest water, how far above the tide table and the average high tide, and the creek's peak against the high tide).
@@ -122,7 +127,8 @@
   </div>
 
   <div class="card">
-    <h2>The season so far, by creek</h2>
+    <h2>Season totals by creek <span class="sm" style="display:inline;font-weight:400" id="seasonSince">since Oct 1</span></h2>
+    <p class="note" style="margin-top:0">All storms this water year added up for each creek: total rain, the biggest storm, the highest creek level and the hours spent at each flood level, the highest tide during storms, and the days each status was reached.</p>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Season by creek (scrolls sideways)"><table id="season"></table></div>
     <p class="note">Rain: the creek's own gauge(s), from the first day this record covers. Highest creek level: the highest hourly reading on any
       day this season (a tidal gauge's can be a high tide); hours at each flood level are added up over the season's storms. Status days: days the creek's status reached that level at least once. Reporting: share of data runs (about every 5 minutes)
@@ -131,7 +137,6 @@
 
   <div class="card">
     <h2>Storms</h2>
-    <div class="bar"><label>Creek <select id="fCreek"><option value="">All creeks</option></select></label></div>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Storm list (scrolls sideways)"><table id="list"></table></div>
     <p class="note">Tap a storm for its graphs. A storm starts and ends with at least <span class="rule" data-r="STORM_DRY_HOURS">6</span> dry hours at all of
       the creek's rain gauges and counts with at least <span class="rule" data-r="STORM_MIN_IN">0.10</span> in at one of them; the creek's response is read until
@@ -311,7 +316,7 @@ function render() {
   $("warn").textContent = J.since && J.wy_start && J.since > J.wy_start ? "This record started " + day(J.since) + ", so the season totals don't include rain before then. " +
     "Earlier storms can be added from the OneRain history." : "";
   // storms in progress
-  var op = J.open || [];
+  var fc = $("fCreek").value, op = (J.open || []).filter(function (s) { return !fc || s.creek === fc; });
   $("openCard").hidden = !op.length;
   $("opens").innerHTML = op.map(function (s) {
     var lv = (s.levels || []).filter(function (x) { return x.peak != null; })[0];
@@ -322,7 +327,8 @@ function render() {
       '<button type="button" class="sm" style="all:unset;cursor:pointer;color:var(--link);text-decoration:underline" data-k="o|' + esc(s.creek + "|" + s.start) + '">Graphs ›</button></div>';
   }).join("");
   // season by creek
-  var rows = (J.summary || []).map(function (c) {
+  if (J.wy_start) $("seasonSince").textContent = "since " + day(J.wy_start);
+  var rows = (J.summary || []).filter(function (c) { return !fc || c.creek === fc; }).map(function (c) {
     var own = c.rain.filter(function (x) { return !x.support; }), rain = own.length ? own : c.rain;
     var rep = c.rain.concat(c.levels).map(function (x) { return x.reporting; }).filter(function (x) { return x != null; });
     var sd = c.status_days || {};
@@ -350,7 +356,11 @@ function render() {
     "<th class='n'>Days Flooding likely / Be ready / Stay alert</th><th class='n'>Reporting<span class='sm'>lowest gauge</span></th></tr></thead><tbody>" + rows + "</tbody>";
   // creek filter
   var f = $("fCreek");
-  if (f.options.length < 2) (J.creeks || []).forEach(function (c) { var o = document.createElement("option"); o.value = c.id; o.textContent = c.name; f.appendChild(o); });
+  if (f.options.length < 2) {
+    (J.creeks || []).forEach(function (c) { var o = document.createElement("option"); o.value = c.id; o.textContent = c.name; f.appendChild(o); });
+    var want = (location.hash.match(/creek=([a-z0-9_]+)/) || [])[1];   // StormTracker.html#creek=sanbruno opens on that creek
+    if (want && (J.creeks || []).some(function (c) { return c.id === want; })) { f.value = want; return render(); }
+  }
   list();
 }
 function allStorms() {
@@ -455,7 +465,10 @@ function draw(s) {
 document.addEventListener("click", function (e) {
   var el = e.target.closest("[data-k]"); if (el) show(el.dataset.k);
 });
-$("fCreek").addEventListener("change", list);
+$("fCreek").addEventListener("change", function () {
+  try { history.replaceState(null, "", $("fCreek").value ? "#creek=" + $("fCreek").value : location.pathname + location.search); } catch (e) {}
+  render();
+});
 function load() {
   fetch(DATA_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (j) { J = j; render(); if (SEL && find(SEL)) show(SEL, true); })
