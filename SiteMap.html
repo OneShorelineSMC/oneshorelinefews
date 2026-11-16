@@ -50,13 +50,6 @@
   #legend span { white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
   #legend .upd { margin-left: auto; }
   .hsubt { font-size: 13px; opacity: .92; line-height: 1.3; }
-  /* The alert at the top, as on the other pages (hero.js): National Weather Service, the Bay tide at the flood level, the
-     creeks. Headline only here, so the map keeps its room; the details are on the home page (staff, 2026-10-31). */
-  .heroWrap { flex: none; padding: 8px 10px 0; background: var(--bg); }
-  .heroWrap .hero { margin: 0; padding: 8px 14px; border-radius: 10px; }
-  .heroWrap .hero .hmore { display: none; }
-  .heroWrap .hero .hhd { font-size: 16px; }
-  .heroWrap .hero .hsub a { font-weight: 600; white-space: nowrap; }
   .ld { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); display: inline-block; }
   .ld.sq { border-radius: 2px; }
 
@@ -182,7 +175,6 @@
   <a href="SiteMap.html" class="on" aria-current="page"><span class="i">🗺️</span>Map</a>
   <a href="Creeks.html#about"><span class="i">ℹ️</span>About</a>
 </nav>
-<div class="heroWrap"><section id="hero" class="hero sv-hero sv-normal"><div class="hh"><span class="hic"></span><div><h2 class="hhd">Checking National Weather Service alerts…</h2><p class="hsub src">San Mateo County</p></div></div><div class="hmore"></div></section></div>
 <div id="legend">
   <span><i class="ld" style="background:var(--ok)"></i>Reporting</span>
   <span><i class="ld" style="background:var(--l1)"></i>Monitoring</span>
@@ -200,7 +192,7 @@
     <div class="rwin" id="rainWin" role="group" aria-label="Rain totals on the map">
       <span class="rwl" aria-hidden="true">Rain</span><button data-w="0" aria-pressed="true">Off</button><button data-w="0.25" aria-pressed="false" aria-label="15 minutes">15m</button><button data-w="0.5" aria-pressed="false" aria-label="30 minutes">30m</button><button data-w="1" aria-pressed="false" aria-label="1 hour">1 h</button><button data-w="3" aria-pressed="false" aria-label="3 hours">3 h</button><button data-w="6" aria-pressed="false" aria-label="6 hours">6 h</button><button data-w="24" aria-pressed="false" aria-label="24 hours">24 h</button></div>
     <button id="rpBtn" title="Show flood reports reviewed by OneShoreline staff" hidden>Flood reports</button>
-    <button id="allBtn" title="Zoom to all sites">All sites</button>
+    <button id="allBtn" title="Close the open site and zoom out to every site">Reset view</button>
     <button id="wsBtn" aria-pressed="false" title="Show watershed boundaries" hidden>Watersheds</button>
   </div>
   <div id="list"></div>
@@ -210,10 +202,6 @@
 
 
 <script src="lookups.js?v=20261116c"></script>
-<script src="tide_season.js?v=20261116c"></script>
-<script src="severity.js?v=20261116c"></script>
-<script src="creek_status.js?v=20261116c"></script>
-<script src="hero.js?v=20261116c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Published every 15 minutes by the GitHub Action (.github/workflows/onerain.yml, scripts/fetch_sites.py)
@@ -552,9 +540,12 @@ document.getElementById("wsBtn").addEventListener("click", function () {
     setTimeout(function () { msg.style.display = "none"; }, 4000);
   });
 });
+// "Reset view" (was "All sites", which looked broken: the map already starts zoomed to every site): closes the open site or
+// flood report and zooms out to every site (staff, 2026-11-16)
 document.getElementById("allBtn").addEventListener("click", function () {
   if (!DATA) return;
-  map.fitBounds(DATA.sites.map(function (s) { return [s.lat, s.lon]; }), { padding: [24, 24] });
+  if (selected || selectedReport) closeSite();
+  map.flyToBounds(DATA.sites.map(function (s) { return [s.lat, s.lon]; }), { padding: [24, 24], duration: 0.6 });
 });
 map.on("click", function () { if (selected || selectedReport) closeSite(); });
 
@@ -678,28 +669,6 @@ loadReports();
 LK.onChange(function () { applyLookups(); if (REPORTS === null) loadReports(); if (DATA) draw(); });   // edited lookups/ files
 setInterval(function () { load(); loadReports(); }, REFRESH_MIN * 60000);
 
-/* ---------- the alert at the top: National Weather Service, the Bay tide at the flood level, the creeks (hero.js) ---------- */
-var HB = { nws: null, failed: false, D: null, creek: null };
-function renderHero() {
-  if (!window.HERO) return;
-  var bay = HB.D ? HERO.tideState({ D: HB.D, mhhw: LK.mhhw("9414523"), red: LK.num("TIDE_RED_FT_RWC"), water: "Bay", nws: HB.nws || [] }) : null;
-  var el = document.getElementById("hero");
-  HERO.render(el, { nws: HB.nws, nwsFailed: HB.failed, bay: bay, creeks: HB.creek ? HERO.creeks(HB.creek, HB.nws || []) : null, creekLink: false });
-  // the details (what, when, what to do) are on the home page
-  var more = el.querySelector(".hmore"), sub = el.querySelector(".hsub");
-  if (more && more.textContent.trim() && sub) {
-    sub.hidden = false;
-    sub.insertAdjacentHTML("beforeend", (sub.textContent ? " · " : "") + '<a href="index.html' + (/[?&]preview=1\b/.test(location.search) ? "?preview=1" : "") + '">Details ›</a>');
-  }
-}
-function loadHero() {
-  if (!window.HERO) return;
-  HERO.loadNWS(function (list, failed) { if (list) { HB.nws = list; HB.failed = false; } else if (!HB.nws) HB.failed = true; renderHero(); });
-  HERO.loadBay(function (bd) { HB.D = bd; renderHero(); });
-  fetch("https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json?t=" + Date.now(), { cache: "no-store" })
-    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) { HB.creek = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; renderHero(); }).catch(function () {});
-}
-loadHero(); setInterval(loadHero, 5 * 60000);
 document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
 setInterval(function () { if (DATA) draw(); }, 60000);   // keep "x min ago" current
 </script>
