@@ -284,10 +284,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261116a"></script>
-<script src="severity.js?v=20261116a"></script>
-<script src="creek_status.js?v=20261116a"></script>
-<script src="hero.js?v=20261116a"></script>
+<script src="lookups.js?v=20261116b"></script>
+<script src="severity.js?v=20261116b"></script>
+<script src="creek_status.js?v=20261116b"></script>
+<script src="hero.js?v=20261116b"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -437,7 +437,7 @@ function rowHTML(href, icon, name, lv, word, det) {
     (det ? "<small>" + esc(det) + "</small>" : "") + '</span><span class="go2" aria-hidden="true">›</span></a>';
 }
 /* The NWS rain forecast for the creek watersheds (staff, 2026-11-16: on the home page, not only under a creek's rain
-   graphs). One row after the status rows, never sorted among them: a forecast, not a status, and it changes no status.
+   graphs). Inches spelled out; the source named; how big a storm it would be "if the forecast holds" (2026-11-16). One row after the status rows, never sorted among them: a forecast, not a status, and it changes no status.
    The 3-day range across the creeks, the most in the next 24 hours, and the heaviest 6-hour period. Shown while
    FORECAST_PUBLIC = 1 (staff view always), in blue (info) when at least FORECAST_SHOW_IN in is expected in 3 days. */
 function rainRow() {
@@ -451,15 +451,25 @@ function rainRow() {
   var pk = fs.filter(function (f) { return f.peak_in && f.peak_start; }).sort(function (a, b) { return b.peak_in - a.peak_in; })[0];
   var amt = function (x) { return x < 0.005 ? "0" : x < 0.1 ? x.toFixed(2) : x.toFixed(1); };
   var pac = function (ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "America/Los_Angeles" }, o)); };
+  // how big a storm the forecast would be (nws_forecast.py "size": Atlas 14 at each creek's main rain gauge); the rarest creek
+  var sz = (C.data.creeks || []).concat(C.data.creeks_preview || []).filter(function (c) { return c.forecast && c.forecast.size && fs.indexOf(c.forecast) >= 0; })
+    .map(function (c) { return { c: c, z: c.forecast.size }; })
+    .sort(function (a, b) { return ((b.z.years || 0) - (a.z.years || 0)) || (b.z.in / b.z.one_year_in - a.z.in / a.z.one_year_in); })[0];
+  var yrs = function (y) { return (y < 10 ? y.toFixed(1).replace(/\.0$/, "") : Math.round(y)) + "-year"; };
+  var aep = function (y) { var p = 100 * (1 - Math.exp(-1 / y)); return (p >= 10 ? Math.round(p) : p.toFixed(1).replace(/\.0$/, "")) + "%"; };
+  var sizeText = !sz ? "" : sz.z.years ? LK.text("home_rain_size", { hours: sz.z.hours, inches: amt(sz.z.in), size: yrs(sz.z.years), aep: aep(sz.z.years), gauge: sz.z.gauge || "", creek: sz.c.name })
+    : LK.text("home_rain_size_below", { hours: sz.z.hours, inches: amt(sz.z.in), one: amt(sz.z.one_year_in), gauge: sz.z.gauge || "", creek: sz.c.name });
+  var iss = fs.map(function (f) { return f.issued; }).filter(Boolean).sort().pop();
+  var src = LK.text("home_rain_source", { time: iss ? pac(Date.parse(iss), { weekday: "short", hour: "numeric", minute: "2-digit" }) : "" });
   var show = hi >= LK.num("FORECAST_SHOW_IN"), word, det;
   if (show) {
     word = LK.text("home_rain_amount", { d3: amt(lo) === amt(hi) ? amt(hi) : amt(lo) + "–" + amt(hi) });
     det = [pk ? LK.text("home_rain_peak", { start: pac(Date.parse(pk.peak_start), { weekday: "short", hour: "numeric" }),
                 end: pac(Date.parse(pk.peak_start) + pk.peak_hours * 3600000, { hour: "numeric" }), inches: amt(pk.peak_in) }) : "",
-           LK.text("home_rain_24", { d1: amt(d1) }), LK.text("home_rain_note")].filter(Boolean).join(" · ");
+           LK.text("home_rain_24", { d1: amt(d1) }), sizeText, src].filter(Boolean).join(" · ");
   } else {
     word = LK.text("home_rain_none");
-    det = LK.text("home_rain_none_det", { d3: amt(hi) }) + " · " + LK.text("home_rain_note");
+    det = LK.text("home_rain_none_det", { d3: amt(hi) }) + " · " + src;
   }
   if (fs.some(function (f) { return f.error; })) det += " · " + LK.text("home_rain_stale");
   return { level: show ? "info" : "normal", html: rowHTML("Creeks.html" + PV_Q, ICONS.rain, LK.text("home_row_rain"), show ? "info" : "normal", word, det) };
@@ -468,7 +478,8 @@ function renderRows() {
   var rows = [tideRow(TIDE_STATE.bay, LK.text("home_row_bay"), "Tides.html", ICONS.wave), tideRow(TIDE_STATE.coast, LK.text("home_row_coast"), "Tides.html?side=coast", ICONS.coast), creekRow()];
   rows.forEach(function (r, i) { r.i = i; });
   rows.sort(function (a, b) { return (SV.RANK[b.level] || 0) - (SV.RANK[a.level] || 0) || a.i - b.i; });
-  var rr = rainRow();
+  var rr = null;
+  try { rr = rainRow(); } catch (e) { rr = null; }   // a forecast problem never stops the status rows
   if (rr) rows.push(rr);
   $("rows").innerHTML = rows.map(function (r) { return r.html; }).join("");
   if (prepNow() !== PREP || localNow() !== LOCAL) drawCards();   // tides and creeks load after the alerts
