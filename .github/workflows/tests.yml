@@ -73,5 +73,9 @@ jobs:
         run: python scripts/test_tide_tracker.py
       - name: Storm tracker
         run: python scripts/test_storm_tracker.py
+      - name: Waves and runup
+        run: python scripts/test_waves.py
+      - name: Road closures (Caltrans, city posts) and their security checks
+        run: python scripts/test_road_closures.py
       - name: Home page severity scale, section order and colors
         run: node scripts/test_home.js
