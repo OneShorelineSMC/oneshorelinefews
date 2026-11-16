@@ -45,7 +45,13 @@
   .meta, .note { font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
   .warn { background: var(--warnbg); color: var(--warnink); border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; }
   .warn:empty { display: none; }
-  .pickbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 10px; }
+  .pickbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  #pickCard { position: sticky; z-index: 5; padding-top: 10px; padding-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  main > .card { scroll-margin-top: 130px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .stat { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+  .stat .lvc + .lvc { margin-top: 4px; }
   .pickbar label { font-weight: 700; color: var(--ink); font-size: 16px; }
   .pickbar select { font: inherit; font-size: 16px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); min-width: 200px; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 0 0 8px; font-size: 14px; }
@@ -105,9 +111,14 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 <main>
-  <div class="card">
+  <div class="card" id="pickCard">
     <div class="pickbar"><label for="fCreek">Creek</label><select id="fCreek"><option value="">All creeks</option></select>
-      <span class="sm" style="display:inline">Shows that creek's storms in progress, season totals and storm list</span></div>
+      <span class="sm" style="display:inline" id="pickHint">Pick a creek to see its season, its storms and its latest storm's graphs together</span></div>
+  </div>
+
+  <div class="card" id="creekCard" hidden></div>
+
+  <div class="card" id="introCard">
     <p style="margin:0">Each storm at each creek this water year (from Oct 1): how much rain fell at the creek's gauges and how rare it was
       (NOAA Atlas 14 at each gauge), how the creek responded (its peak, hours at each flood level, the lag from the heaviest rain to the peak), and the tide during the storm
       at the creek's NOAA tide gauge (the highest water, how far above the tide table and the average high tide, and the creek's peak against the high tide).
@@ -126,17 +137,19 @@
     <div id="roads"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="seasonCard">
     <h2>Season totals by creek <span class="sm" style="display:inline;font-weight:400" id="seasonSince">since Oct 1</span></h2>
     <p class="note" style="margin-top:0">All storms this water year added up for each creek: total rain, the biggest storm, the highest creek level and the hours spent at each flood level, the highest tide during storms, and the days each status was reached.</p>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Season by creek (scrolls sideways)"><table id="season"></table></div>
-    <p class="note">Rain: the creek's own gauge(s), from the first day this record covers. Highest creek level: the highest hourly reading on any
+    <p class="note">Rain: the creek's own gauge(s), from the first day this record covers; the main gauge first (the rain gauge at the creek level gauge, like First Avenue
+      for San Bruno Creek), which a storm's rain, how rare and the biggest storm use. Highest creek level: the highest hourly reading on any
       day this season (a tidal gauge's can be a high tide); hours at each flood level are added up over the season's storms. Status days: days the creek's status reached that level at least once. Reporting: share of data runs (about every 5 minutes)
       when the gauge had reported recently.</p>
   </div>
 
-  <div class="card">
-    <h2>Storms</h2>
+  <div class="card" id="stormsCard">
+    <h2 id="stormsTitle">Storms</h2>
+    <div class="bar"><label style="cursor:pointer"><input type="checkbox" id="fHeavy"> Only storms at Heavy or above</label><span class="sm" style="display:inline" id="heavyNote"></span></div>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Storm list (scrolls sideways)"><table id="list"></table></div>
     <p class="note">Tap a storm for its graphs. A storm starts and ends with at least <span class="rule" data-r="STORM_DRY_HOURS">6</span> dry hours at all of
       the creek's rain gauges and counts with at least <span class="rule" data-r="STORM_MIN_IN">0.10</span> in at one of them; the creek's response is read until
@@ -206,11 +219,27 @@ function yr(y) { return (y < 10 ? y.toFixed(1).replace(/\.0$/, "") : Math.round(
 function aep(y) { var p = 100 * (1 - Math.exp(-1 / y)); return (p >= 10 ? Math.round(p) : p >= 1 ? p.toFixed(1).replace(/\.0$/, "") : p.toFixed(2)) + "%"; }
 function chip(l, yrs) { return l == null ? '<span class="empty">no Atlas 14</span>' : '<span class="chip l' + l + '">' + (l ? WORD[l] : "below Heavy") + "</span>" +
   (l && yrs ? '<span class="sm">about a ' + yr(yrs) + " storm · " + aep(yrs) + " AEP</span>" : ""); }
+// the creek's main rain gauge (staff, 2026-11-16): the creek's own rain gauge at its creek level gauge (San Bruno Creek: First
+// Avenue, not San Bruno Mountain), else its first own gauge. A storm's rain, how rare and the season's biggest storm use it;
+// the tables still list every gauge.
+function mainGauge(rains, levels) {
+  var own = (rains || []).filter(function (r) { return !r.support; }); if (!own.length) own = rains || [];
+  var lv = levels || [];
+  return own.filter(function (r) { return lv.some(function (l) { return (r.number && l.number && String(r.number) === String(l.number)) || (r.label && r.label === l.label); }); })[0] || own[0];
+}
+function mainOf(s) { return mainGauge(s.rain, s.levels); }
+function sTotal(s) { var m = mainOf(s); return m ? m.total : s.total; }
+function sLevel(s) {
+  var m = mainOf(s); if (!m) return s.rain_level;
+  if (m.rarest) return m.rarest.level;
+  return m.peaks && Object.keys(m.peaks).some(function (k) { return m.peaks[k].rate; }) ? 0 : null;
+}
+function sAt(s) { var own = (s.rain || []).filter(function (r) { return !r.support; }), m = mainOf(s); return m && own.length > 1 ? " at " + esc(m.label) : ""; }
 // one line on how rare the rain was: the rarest window, then the 1-hour and 24-hour at the same gauge
 function rareText(s) {
   var gs = (s.rain || []).filter(function (r) { return !r.support && r.peaks && Object.keys(r.peaks).some(function (m) { return r.peaks[m].rate; }); });
   if (!gs.length) return "";
-  var g = gs.slice().sort(function (a, b) { return ((b.rarest || {}).years || 0) - ((a.rarest || {}).years || 0); })[0];
+  var m = mainOf(s), g = gs.indexOf(m) >= 0 ? m : gs.slice().sort(function (a, b) { return ((b.rarest || {}).years || 0) - ((a.rarest || {}).years || 0); })[0];
   var part = function (m, word) { var p = g.peaks[m]; if (!p || !p.rate || !(p.in > 0)) return "";
     return word + " " + inch(p.in) + " in (" + (p.rate.years ? yr(p.rate.years) + ", " + aep(p.rate.years) + " AEP" : "below 1-year, AEP over 63%") + ")"; };
   if (!g.rarest || !g.rarest.years) {
@@ -321,7 +350,7 @@ function render() {
   $("opens").innerHTML = op.map(function (s) {
     var lv = (s.levels || []).filter(function (x) { return x.peak != null; })[0];
     return '<div class="ocard"><b>' + esc(s.name) + '</b><span class="sm">since ' + esc(when(s.start)) + "</span>" +
-      '<div><b class="big">' + inch(s.total) + "</b> in so far " + chip(s.rain_level) + "</div>" +
+      '<div><b class="big">' + inch(sTotal(s)) + "</b> in so far" + sAt(s) + " " + chip(sLevel(s)) + "</div>" +
       (lv ? '<div class="sm">Creek level peak so far ' + lv.peak.toFixed(2) + " ft (" + esc(when(lv.peak_at)) + ")" + (lv.reached ? " · " + LEVEL[lv.reached] : "") + "</div>" : "") +
       (s.tide ? '<div class="sm">' + tideLine(s.tide) + "</div>" : "") +
       '<button type="button" class="sm" style="all:unset;cursor:pointer;color:var(--link);text-decoration:underline" data-k="o|' + esc(s.creek + "|" + s.start) + '">Graphs ›</button></div>';
@@ -329,27 +358,11 @@ function render() {
   // season by creek
   if (J.wy_start) $("seasonSince").textContent = "since " + day(J.wy_start);
   var rows = (J.summary || []).filter(function (c) { return !fc || c.creek === fc; }).map(function (c) {
-    var own = c.rain.filter(function (x) { return !x.support; }), rain = own.length ? own : c.rain;
-    var rep = c.rain.concat(c.levels).map(function (x) { return x.reporting; }).filter(function (x) { return x != null; });
-    var sd = c.status_days || {};
-    var pre = (J.creeks || []).filter(function (x) { return x.id === c.creek; })[0];
-    return "<tr><td><b>" + esc(c.name) + "</b>" + (pre && pre.preview_only ? '<span class="sm">readings only</span>' : "") + "</td>" +
-      '<td class="n">' + rain.map(function (x) { return inch(x.total) + (rain.length > 1 ? '<span class="sm">' + esc(x.label) + "</span>" : ""); }).join("") + "</td>" +
-      '<td class="n">' + c.storms + "</td>" +
-      "<td>" + (c.biggest ? esc(day(c.biggest.start)) + " · " + inch(c.biggest.total) + " in " + chip(c.biggest.rain_level) : '<span class="empty">–</span>') + "</td>" +
-      // creek level: the season's highest reading at each gauge and the flood level it reached; hours at each level in storms
-      "<td>" + (c.levels.length ? c.levels.map(function (l) {
-        return '<div class="lvc">' + (l.max != null ? '<span class="nw"><b>' + l.max.toFixed(2) + " ft</b> " + esc(day(l.max_day)) + "</span> " +
-          (l.thresholds && l.thresholds.length ? (l.max_reached ? '<span class="chip l' + l.max_reached + '">' + LEVEL[l.max_reached] + "</span>" : '<span class="sm">below Monitoring</span>') : '<span class="sm">no flood levels set</span>') : '<span class="empty">no readings</span>') +
-          (c.levels.length > 1 ? '<span class="sm">' + esc(l.label) + (l.tidal ? " · tidal" : "") + "</span>" : l.tidal ? '<span class="sm">tidal gauge</span>' : "") + "</div>"; }).join("") : '<span class="empty">no creek level gauge</span>') + "</td>" +
-      '<td class="n">' + (c.levels.length ? c.levels.map(function (l) {
-        var t = l.thresholds || [], by = {}; t.forEach(function (x) { if (x.level >= 1 && x.level <= 3) by[x.level] = x.storm_hours; });
-        return '<div class="lvc">' + (t.length ? [1, 2, 3].map(function (k) { return by[k] == null ? "–" : by[k]; }).join(" / ") : "–") + "</div>"; }).join("") : "–") + "</td>" +
-      "<td>" + (c.tide_peak != null ? '<span class="nw"><b>' + ft2(c.tide_peak) + " ft</b></span>" : '<span class="empty">–</span>') +
-        '<span class="sm">' + (c.tide_above_mhhw || 0) + " storm" + (c.tide_above_mhhw === 1 ? "" : "s") + " above the average high tide · " + esc(TIDE_NAMES[c.tide_station] || c.tide_station || "") + "</span></td>" +
-      '<td class="n">' + (sd.likely || 0) + " / " + (sd.ready || 0) + " / " + (sd.alert || 0) + "</td>" +
-      '<td class="n">' + (rep.length ? Math.round(100 * Math.min.apply(null, rep)) + "%" : "–") + "</td></tr>";
+    var x = seasonCells(c);
+    return "<tr><td>" + x.name + "</td><td class='n'>" + x.rain + "</td><td class='n'>" + x.storms + "</td><td>" + x.biggest + "</td><td>" + x.level +
+      "</td><td class='n'>" + x.hours + "</td><td>" + x.tide + "</td><td class='n'>" + x.days + "</td><td class='n'>" + x.rep + "</td></tr>";
   }).join("");
+  creekCard(fc);
   $("season").innerHTML = "<thead><tr><th>Creek</th><th class='n'>Rain<span class='sm'>in</span></th><th class='n'>Storms</th><th>Biggest storm</th><th>Highest creek level<span class='sm'>ft, day, flood level reached</span></th>" +
     "<th class='n'>Hours at Monitoring / Watch / Warning<span class='sm'>during storms</span></th>" +
     "<th>Tide in storms<span class='sm'>highest water, ft NAVD88</span></th>" +
@@ -359,24 +372,81 @@ function render() {
   if (f.options.length < 2) {
     (J.creeks || []).forEach(function (c) { var o = document.createElement("option"); o.value = c.id; o.textContent = c.name; f.appendChild(o); });
     var want = (location.hash.match(/creek=([a-z0-9_]+)/) || [])[1];   // StormTracker.html#creek=sanbruno opens on that creek
-    if (want && (J.creeks || []).some(function (c) { return c.id === want; })) { f.value = want; return render(); }
+    if (want && (J.creeks || []).some(function (c) { return c.id === want; })) { f.value = want; render(); if (!SEL) latestOf(want); return; }
   }
   list();
+}
+// one creek's season, as table cells (Season totals) or tiles (the creek card)
+function seasonCells(c) {
+  var own = c.rain.filter(function (x) { return !x.support; }), rain = own.length ? own : c.rain, mg = mainGauge(c.rain, c.levels);
+  rain = [mg].concat(rain.filter(function (x) { return x !== mg; })).filter(Boolean);
+  var mine = allStorms().filter(function (s) { return s.creek === c.creek; });
+  var big = mine.length ? mine.slice().sort(function (a, b) { return ((sLevel(b) || 0) - (sLevel(a) || 0)) || (sTotal(b) - sTotal(a)); })[0] : null;
+  var rep = c.rain.concat(c.levels).map(function (x) { return x.reporting; }).filter(function (x) { return x != null; });
+  var sd = c.status_days || {};
+  var pre = (J.creeks || []).filter(function (x) { return x.id === c.creek; })[0];
+  return {
+    name: "<b>" + esc(c.name) + "</b>" + (pre && pre.preview_only ? '<span class="sm">readings only</span>' : ""),
+    rain: rain.map(function (x, i) { return (i ? '<span class="sm" style="margin-top:4px">' + inch(x.total) + " in · " + esc(x.label) + "</span>" : inch(x.total) + (rain.length > 1 ? '<span class="sm">' + esc(x.label) + "</span>" : "")); }).join(""),
+    storms: String(c.storms),
+    biggest: big ? esc(day(big.start)) + " · " + inch(sTotal(big)) + " in " + chip(sLevel(big), mainOf(big) && mainOf(big).rarest && mainOf(big).rarest.years) : '<span class="empty">–</span>',
+    level: c.levels.length ? c.levels.map(function (l) {
+      return '<div class="lvc">' + (l.max != null ? '<span class="nw"><b>' + l.max.toFixed(2) + " ft</b> " + esc(day(l.max_day)) + "</span> " +
+        (l.thresholds && l.thresholds.length ? (l.max_reached ? '<span class="chip l' + l.max_reached + '">' + LEVEL[l.max_reached] + "</span>" : '<span class="sm">below Monitoring</span>') : '<span class="sm">no flood levels set</span>') : '<span class="empty">no readings</span>') +
+        (c.levels.length > 1 ? '<span class="sm">' + esc(l.label) + (l.tidal ? " · tidal" : "") + "</span>" : l.tidal ? '<span class="sm">tidal gauge</span>' : "") + "</div>"; }).join("") : '<span class="empty">no creek level gauge</span>',
+    hours: c.levels.length ? c.levels.map(function (l) {
+      var t = l.thresholds || [], by = {}; t.forEach(function (x) { if (x.level >= 1 && x.level <= 3) by[x.level] = x.storm_hours; });
+      return '<div class="lvc">' + (t.length ? [1, 2, 3].map(function (k) { return by[k] == null ? "–" : by[k]; }).join(" / ") : "–") + "</div>"; }).join("") : "–",
+    tide: (c.tide_peak != null ? '<span class="nw"><b>' + ft2(c.tide_peak) + " ft</b></span>" : '<span class="empty">–</span>') +
+      '<span class="sm">' + (c.tide_above_mhhw || 0) + " storm" + (c.tide_above_mhhw === 1 ? "" : "s") + " above the average high tide · " + esc(TIDE_NAMES[c.tide_station] || c.tide_station || "") + "</span>",
+    days: (sd.likely || 0) + " / " + (sd.ready || 0) + " / " + (sd.alert || 0),
+    rep: rep.length ? Math.round(100 * Math.min.apply(null, rep)) + "%" : "–"
+  };
+}
+// the chosen creek: its season as tiles at the top; the page reordered so its storms and latest storm come next
+function creekCard(fc) {
+  var cc = $("creekCard"), c = fc && (J.summary || []).filter(function (x) { return x.creek === fc; })[0];
+  var order = fc ? ["pickCard", "creekCard", "stormsCard", "detail", "openCard", "roadCard", "introCard", "seasonCard"]
+                 : ["pickCard", "introCard", "openCard", "roadCard", "seasonCard", "stormsCard", "detail"];
+  var main = $("pickCard").parentNode;
+  order.forEach(function (id) { main.insertBefore($(id), null); });
+  var rest = [].slice.call(main.children).filter(function (el) { return order.indexOf(el.id) < 0; });
+  rest.forEach(function (el) { main.appendChild(el); });   // How this works and anything else stay at the end
+  $("seasonCard").hidden = !!fc;
+  $("stormsTitle").textContent = fc && c ? c.name + ": storms this season" : "Storms";
+  if (!fc || !c) { cc.hidden = true; cc.innerHTML = ""; return; }
+  var x = seasonCells(c), n = (J.open || []).filter(function (s) { return s.creek === fc; }).length;
+  var tile = function (k, v) { return '<div class="stat"><div class="k">' + k + "</div>" + v + "</div>"; };
+  cc.hidden = false;
+  cc.innerHTML = "<h2>" + esc(c.name) + ' <span class="sm" style="display:inline;font-weight:400">season since ' + esc(day(J.wy_start || "")) + "</span></h2>" +
+    '<div class="stats">' +
+    tile("Rain", x.rain) +
+    tile("Storms", '<b class="big">' + x.storms + "</b>" + (n ? '<span class="sm">' + n + " in progress</span>" : "")) +
+    tile("Biggest storm", x.biggest) +
+    tile("Highest creek level", x.level) +
+    tile("Hours at Monitoring / Watch / Warning", x.hours + '<span class="sm">during storms</span>') +
+    tile("Tide in storms", x.tide) +
+    tile("Status days", x.days + '<span class="sm">Flooding likely / Be ready / Stay alert</span>') +
+    tile("Reporting", x.rep + '<span class="sm">lowest gauge</span>') +
+    "</div>";
 }
 function allStorms() {
   return (J.open || []).map(function (s) { return Object.assign({ live: true }, s); }).concat((J.storms || []).slice().reverse());
 }
 function list() {
-  var fc = $("fCreek").value, ss = allStorms().filter(function (s) { return !fc || s.creek === fc; });
+  var fc = $("fCreek").value, all = allStorms().filter(function (s) { return !fc || s.creek === fc; });
+  // "Only storms at Heavy or above": hides storms whose main gauge stayed below Heavy (storms in progress always show)
+  var hv = $("fHeavy").checked, ss = all.filter(function (s) { return !hv || s.live || (sLevel(s) || 0) >= 1; });
+  $("heavyNote").textContent = hv && all.length > ss.length ? (all.length - ss.length) + " below Heavy hidden" : "";
   $("list").innerHTML = "<thead><tr><th>Start</th><th>Creek</th><th class='n'>Hours</th><th class='n'>Rain<span class='sm'>in</span></th><th>How rare<span class='sm'>rarest window</span></th>" +
     "<th class='n'>Creek peak<span class='sm'>ft</span></th><th>Reached</th><th class='n'>Lag<span class='sm'>hr</span></th>" +
     "<th class='n'>Tide<span class='sm'>highest, ft NAVD88</span></th><th>Status</th></tr></thead><tbody>" +
     (ss.length ? ss.map(function (s) {
       var k = (s.live ? "o|" : "c|") + s.creek + "|" + s.start, lv = (s.levels || []).filter(function (x) { return x.peak != null; })[0];
-      var rr = (s.rain || []).filter(function (x) { return x.rarest; }).sort(function (a, b) { return b.rarest.level - a.rarest.level; })[0];
+      var mg = mainOf(s), rr = mg && mg.rarest ? mg : null;
       return '<tr class="pick' + (SEL === k ? " on" : "") + '" data-k="' + esc(k) + '"><td><button type="button">' + esc(when(s.start)) + "</button>" + (s.live ? ' <span class="chip live">in progress</span>' : "") + "</td>" +
-        "<td>" + esc(s.name) + "</td><td class='n'>" + s.hours + "</td><td class='n'>" + inch(s.total) + "</td>" +
-        "<td>" + chip(s.rain_level, rr && rr.rarest.years) + (rr ? '<span class="sm">' + mins(rr.rarest.minutes) + " at " + esc(rr.label) + "</span>" : "") + "</td>" +
+        "<td>" + esc(s.name) + "</td><td class='n'>" + s.hours + "</td><td class='n'>" + inch(sTotal(s)) + (sAt(s) ? '<span class="sm">' + esc(mg.label) + "</span>" : "") + "</td>" +
+        "<td>" + chip(sLevel(s), rr && rr.rarest.years) + (rr ? '<span class="sm">' + mins(rr.rarest.minutes) + " at " + esc(rr.label) + "</span>" : "") + "</td>" +
         "<td class='n'>" + (lv ? lv.peak.toFixed(2) : "–") + "</td><td>" + reached(s.reached) + (s.rising_fast ? '<span class="sm">rising fast</span>' : "") + "</td>" +
         "<td class='n'>" + (lv && lv.lag_hours != null ? lv.lag_hours : "–") + "</td>" +
         "<td class='n'>" + (s.tide && s.tide.peak != null ? ft2(s.tide.peak) + '<span class="sm">' + (s.tide.above_mhhw != null ? sgn(s.tide.above_mhhw) + " vs avg high" : "") +
@@ -397,6 +467,10 @@ function roadsDetail(s) {
     "<p class='note' style='margin-top:0'><b>In the " + nm + " watershed:</b> " + (g.here.length ? "</p><ul class='rcl'>" + g.here.map(roadItem).join("") + "</ul>" : none + "</p>") +
     "<p class='note'><b>Elsewhere " + (g.side ? "on the " + sd : "in the county") + ":</b> " + (g.near.length ? "</p><ul class='rcl'>" + g.near.map(roadItem).join("") + "</ul>" : (g.here.length ? "none." : none) + "</p>") +
     (g.far.length ? "<details><summary class='note' style='cursor:pointer'>On the " + (g.side === "bay" ? "Coastside" : "Bayside") + ": " + g.far.length + "</summary><ul class='rcl'>" + g.far.map(roadItem).join("") + "</ul></details>" : "");
+}
+function latestOf(fc) {   // open the creek's newest storm (in progress first)
+  var s = allStorms().filter(function (x) { return x.creek === fc; })[0];
+  if (s) show((s.live ? "o|" : "c|") + s.creek + "|" + s.start, true);
 }
 function find(k) { var p = k.split("|"); return allStorms().filter(function (s) { return s.creek === p[1] && s.start === p[2] && (p[0] === "o") === !!s.live; })[0]; }
 function show(k, quiet) {
@@ -419,7 +493,7 @@ function show(k, quiet) {
   }).join("");
   d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? ' <span class="chip live">in progress</span>' : "") + "</h2>" +
     '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
-    "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(s.total) + " in</b> in " + s.hours + " hours " + chip(s.rain_level) + "</p>" + rareText(s) + lvt +
+    "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(sTotal(s)) + " in</b>" + sAt(s) + " in " + s.hours + " hours " + chip(sLevel(s)) + "</p>" + rareText(s) + lvt +
     (s.tide ? tideText(s.tide) : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
     (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing.</p>" : "") + "</div></div>" +
@@ -465,9 +539,15 @@ function draw(s) {
 document.addEventListener("click", function (e) {
   var el = e.target.closest("[data-k]"); if (el) show(el.dataset.k);
 });
+try { $("fHeavy").checked = localStorage.getItem("st_heavy") === "1"; } catch (e) {}
+$("fHeavy").addEventListener("change", function () { try { localStorage.setItem("st_heavy", this.checked ? "1" : "0"); } catch (e) {} list(); });
+function stickTop() { var n = document.querySelector("body > nav"); $("pickCard").style.top = (n && getComputedStyle(n).position === "sticky" ? n.offsetHeight : 0) + "px"; }
+stickTop(); window.addEventListener("resize", stickTop);
 $("fCreek").addEventListener("change", function () {
-  try { history.replaceState(null, "", $("fCreek").value ? "#creek=" + $("fCreek").value : location.pathname + location.search); } catch (e) {}
+  var fc = $("fCreek").value;
+  try { history.replaceState(null, "", fc ? "#creek=" + fc : location.pathname + location.search); } catch (e) {}
   render();
+  if (fc) { latestOf(fc); window.scrollTo({ top: 0 }); } else { $("detail").hidden = true; SEL = null; list(); }
 });
 function load() {
   fetch(DATA_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
