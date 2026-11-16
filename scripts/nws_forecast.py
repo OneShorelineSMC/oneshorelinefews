@@ -6,6 +6,12 @@ the Bay Area office forecast) is added up for the next 6 hours, 24 hours and 3 d
 period is kept too. The result goes into creeks.json as each creek's "forecast"; the pages show it as
 "Rain expected (NWS forecast)". It never changes a creek's status.
 
+How big a storm the forecast would be (staff, 2026-11-16): the wettest 6, 24 and 48 hours of the next 3 days, against
+NOAA Atlas 14 at the creek's main rain gauge (its rain gauge at its creek level gauge, like First Avenue for San Bruno
+Creek; else its first own rain gauge), as a rough storm size in years (the same log-log reading as observed rain,
+creek_signals.storm_years). The largest of the three is kept as the forecast's "size"; the home page says it as
+"if the forecast holds". A forecast storm size is only as good as the forecast.
+
 The forecast is read at most every FORECAST_EVERY_MIN minutes (lookups/settings.csv); in between, and when NWS
 can't be reached, the previous forecast is kept for up to FORECAST_KEEP_HOURS.
 """
@@ -103,6 +109,55 @@ def summarize(pers, now, issued=None):
     return out
 
 
+SIZE_HOURS = (6, 24, 48)   # Atlas 14 has no 72-hour depth in rain_frequency.csv; 48 hours is the longest
+
+
+def main_rain_gauge(c):
+    """The creek's main rain gauge: its own rain gauge at a creek level gauge's site, else its first own (then supporting) gauge."""
+    own = c.get("rain") or c.get("rain_support") or []
+    nums = {str(g.get("number")) for g in c.get("stages") or [] if g.get("number")}
+    return next((g for g in own if str(g.get("number")) in nums), own[0] if own else None)
+
+
+def storm_size(pers, now, by_min, years_fn):
+    """The wettest window of SIZE_HOURS in the next 72 hours with its rough storm size; None without Atlas 14.
+    by_min: {minutes: {ari: depth}}. years_fn(by_ari, depth) -> years or None (below the 1-year storm)."""
+    h = dt.timedelta(hours=1)
+    starts = sorted({now} | {p[0] for p in pers if now <= p[0] < now + 72 * h})
+    best = None
+    for hrs in SIZE_HOURS:
+        table = by_min.get(hrs * 60)
+        if not table:
+            continue
+        one = table[min(table)]
+        for t in starts:
+            if t + hrs * h > now + 72 * h + h:
+                continue
+            d = total(pers, t, t + hrs * h)
+            if d <= 0:
+                continue
+            y = years_fn(table, d)
+            key = (y or 0, d / one)          # rarest first; below the 1-year storm, the closest to it
+            if best is None or key > best[0]:
+                best = (key, {"hours": hrs, "in": round(d, 2), "years": y, "start": _iso(t),
+                              "one_year_in": round(one, 2)})
+    return best[1] if best else None
+
+
+def add_size(fc, c, sensors, now):
+    """Adds fc["size"] (see storm_size) for the creek's main rain gauge, when its Atlas 14 table is in creeks.json."""
+    g = main_rain_gauge(c)
+    freq = ((sensors.get(g["key"]) or {}).get("signals") or {}).get("freq") if g else None
+    if not freq or not fc.get("periods"):
+        return
+    by_min = {int(m): {float(a): d for a, d in v.items()} for m, v in (freq.get("minutes") or {}).items()}
+    from creek_signals import storm_years
+    sz = storm_size(unpack(fc["periods"]), now, by_min, storm_years)
+    if sz:
+        sz.update(gauge=g.get("label"), number=g.get("number"))
+        fc["size"] = sz
+
+
 def _iso(t):
     return t.strftime("%Y-%m-%dT%H:%MZ")
 
@@ -168,6 +223,10 @@ def add_forecast(result, previous_file, now, settings, fetch=get_json, points=No
                 pers = periods(grids[url])
                 fc.update(grid=url, fetched=_iso(now), periods=pack(pers, now), issued=issued_time(grids[url]), error=None)
             fc.update(summarize(unpack(fc["periods"]), now, fc.get("issued")))
+            try:
+                add_size(fc, c, result.get("sensors") or {}, now)
+            except Exception as e:  # noqa: BLE001 - the size is extra; the forecast stands without it
+                problems.append(f"{c['id']}: forecast storm size not worked out ({type(e).__name__}: {e})"[:200])
         except Exception as e:  # noqa: BLE001 - a forecast problem never stops the creek data
             msg = f"{type(e).__name__}: {e}"[:200]
             problems.append(f"{c['id']}: NWS forecast not read ({msg})")
@@ -176,6 +235,7 @@ def add_forecast(result, previous_file, now, settings, fetch=get_json, points=No
                 try:
                     fc.update({k: prev[k] for k in ("grid", "fetched", "periods", "issued") if k in prev})
                     fc.update(summarize(unpack(prev["periods"]), now, prev.get("issued")))
+                    add_size(fc, c, result.get("sensors") or {}, now)
                 except Exception:  # noqa: BLE001
                     pass
         c["forecast"] = fc

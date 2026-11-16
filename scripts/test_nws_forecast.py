@@ -105,5 +105,27 @@ check("raining after 0.02 in in the last hour", r["raining"] is True)
 r = rain_signals([[at(90), 0.02], [at(20), 0.0]], None, None, NAIVE, 12)
 check("not raining when the last hour is dry", r["raining"] is False)
 
+# forecast storm size against Atlas 14 at the creek's main rain gauge (First Avenue for San Bruno Creek)
+from creek_signals import storm_years
+SB = {"id": "sanbruno", "rain": [{"key": "rain_mountain", "label": "San Bruno Mountain", "number": "41200"},
+                                 {"key": "rain_first_ave", "label": "First Avenue", "number": "41102"}],
+      "stages": [{"key": "sb_stage_41102", "number": "41102"}]}
+check("main rain gauge: the one at the creek level gauge (First Avenue), not the first listed", N.main_rain_gauge(SB)["label"] == "First Avenue")
+check("main rain gauge: no match, the first own gauge", N.main_rain_gauge({"rain": [{"key": "a", "number": "1"}], "stages": [{"number": "2"}]})["key"] == "a")
+FA = {360: {1.0: 1.12, 2.0: 1.36, 5.0: 1.7, 10.0: 1.98}, 1440: {1.0: 1.89, 2.0: 2.36, 5.0: 3.0, 10.0: 3.53}, 2880: {1.0: 2.41, 2.0: 3.0, 5.0: 3.81, 10.0: 4.48}}
+# 0.1 + 0.5 + 1.0 in in 18 hours: 6 h 1.0 in (below 1-year), 24 h 1.6 in (below), 48 h 1.6 (below)
+sz = N.storm_size(pers, NOW, FA, storm_years)
+check("size: below the 1-year storm everywhere: years None, the window closest to it kept", sz["years"] is None and sz["hours"] == 6 and sz["in"] == 1.0)
+BIG = [(a, b, x * 2) for a, b, x in pers]   # 0.2 + 1 + 2 in: 6 h 2.0 in = about 6.6-year
+sz2 = N.storm_size(BIG, NOW, FA, storm_years)
+check("size: the rarest window (6 hours, 2.0 in, about a 10-year storm)", sz2["hours"] == 6 and sz2["in"] == 2.0 and 9 < sz2["years"] <= 10.5)
+fc = {"periods": N.pack(BIG, NOW)}
+sens = {"rain_first_ave": {"signals": {"freq": {"minutes": {str(m): {str(a): d for a, d in v.items()} for m, v in FA.items()}}}}}
+N.add_size(fc, SB, sens, NOW)
+check("add_size: named for the main gauge, from the Atlas 14 table in creeks.json", fc["size"]["gauge"] == "First Avenue" and fc["size"]["number"] == "41102")
+fc2 = {"periods": N.pack(BIG, NOW)}
+N.add_size(fc2, SB, {}, NOW)
+check("add_size: no Atlas 14 table, no size", "size" not in fc2)
+
 print("\n" + ("All passed" if not fails else f"{fails} FAILED"))
 sys.exit(1 if fails else 0)
