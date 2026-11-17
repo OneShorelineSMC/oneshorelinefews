@@ -5,9 +5,11 @@ lower-creek gauges in Palo Alto and East Palo Alto (Waverley, Pope-Chaucer, West
 levels, the Mayfield Slough tide, the upper-creek flows, the USGS gauge at Stanford and the Valley Water rain gauges.
 SFCJPA agreed to OneShoreline reading it (Nov 16, 2026). The gauges and their levels are in lookups/sfcjpa_gauges.csv.
 
-Contrail needs a sign-in. SFCJPA publishes a shared viewer login on its website; the workflow passes it in as the
-CONTRAIL_USER and CONTRAIL_PASSWORD secrets (never in the repo). The script reads the sign-in form from the page itself
-(its fields and where it posts), fills in the login and keeps the session cookie. Each gauge's readings come from its
+Contrail needs a sign-in. SFCJPA publishes a shared viewer login on its website for the public; the workflow passes it
+in as CONTRAIL_USER and CONTRAIL_PASSWORD (repository variables or secrets; not in the repo's files). The script reads
+the sign-in form from the page itself (its fields and where it posts), fills in the login and keeps the session cookie.
+Contrail's form (seen Nov 17, 2026): /login/ posts back to itself with username, password, the "login" button, and
+hidden "continue" and "csrf_token" fields. Each gauge's readings come from its
 graph page, which carries them as [[time in ms (UTC), value], ...].
 
 Writes sfcjpa.json: every gauge with its readings for the last HOURS hours as [Pacific time, value, UTC time], the
@@ -101,7 +103,9 @@ def login_form(page):
     """The sign-in form on a page: (action, method, {field: value}, user field, password field) or None."""
     for m in re.finditer(r"<form\b([^>]*)>(.*?)</form>", page, flags=re.S | re.I):
         attrs, body = m.group(1), m.group(2)
-        inputs = re.findall(r"<input\b([^>]*)>", body, flags=re.I)
+        inputs = re.findall(r"<input\b([^>]*)>", body, flags=re.I) + [
+            'type="submit" ' + a for a in re.findall(r"<button\b([^>]*)>", body, flags=re.I)
+            if re.search(r'\bname\s*=', a, flags=re.I) and not re.search(r'\btype\s*=\s*["\']?(button|reset)', a, flags=re.I)]
         fields, user, pw = {}, None, None
         for a in inputs:
             name = re.search(r'\bname\s*=\s*["\']([^"\']+)', a, flags=re.I)
@@ -119,6 +123,8 @@ def login_form(page):
                     fields[name] = val.group(1) if val else "on"
                 continue
             elif typ in ("submit", "button", "image", "reset"):
+                if typ == "submit" and name not in fields:   # some sign-in pages check that the button was sent (Contrail's is "login")
+                    fields[name] = htmllib.unescape(val.group(1)) if val else ""
                 continue
             fields[name] = htmllib.unescape(val.group(1)) if val else ""
         if pw:

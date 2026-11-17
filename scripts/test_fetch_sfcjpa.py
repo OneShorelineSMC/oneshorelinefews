@@ -21,7 +21,8 @@ def check(name, ok):
 NOW = dt.datetime(2026, 1, 5, 21, 0, tzinfo=dt.timezone.utc)   # Jan 5, 1 PM Pacific
 FORM = """<html><body><form id="login" method="POST" action="/login/?r=1">
 <input type="hidden" name="csrf_token" value="abc123"><input type="text" name="username" placeholder="Username">
-<input type="password" name="password"><input type="checkbox" name="remember_me" value="1"><button type="submit">Sign In</button>
+<input type="password" name="password"><input type="checkbox" name="remember_me" value="1"><input type="submit" name="login" value="Log In">
+<input type="hidden" name="continue" value="naSrxN2U">
 </form></body></html>"""
 LIST = "<html><body><main>Locations (16 Total)</main></body></html>"
 
@@ -61,7 +62,10 @@ G = [{"key": "pope_chaucer", "label": "Pope-Chaucer bridge", "where": "Palo Alto
 
 f = F.login_form(FORM)
 check("sign-in form: posts to its action, keeps the hidden token and remember-me, finds the user and password fields",
-      f[0] == "/login/?r=1" and f[1] == "post" and f[2]["csrf_token"] == "abc123" and f[2]["remember_me"] == "1" and f[3] == "username" and f[4] == "password")
+      f[0] == "/login/?r=1" and f[1] == "post" and f[2]["csrf_token"] == "abc123" and f[2]["remember_me"] == "1" and f[3] == "username" and f[4] == "password"
+      and f[2]["login"] == "Log In" and f[2]["continue"] == "naSrxN2U")
+f2 = F.login_form('<form method="post"><input name="u" type="text"><input name="p" type="password"><button name="go" value="1">Go</button><button type="button" name="x">x</button></form>')
+check("sign-in form: a named <button> is sent, a plain button isn't; no action means the same page", f2[0] == "" and f2[2].get("go") == "1" and "x" not in f2[2])
 check("sign-in form: none on an ordinary page", F.login_form(LIST) is None)
 
 s = FakeSession()
