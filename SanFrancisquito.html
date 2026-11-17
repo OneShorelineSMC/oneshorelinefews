@@ -147,6 +147,7 @@
       <li><b>Datum.</b> One datum for every gauge and its levels (assumed). Ask SFCJPA why the lower gauges read 1.5–2.5 ft in dry weather last January and 0–0.7 ft now.</li>
       <li><b>Thresholds.</b> SFCJPA: Pope-Chaucer 13 / 16.5 ft. City of Palo Alto: Chaucer St 13.2 / 17.9 ft. Pick one.</li>
       <li><b>Cameras.</b> The City of Palo Alto's camera snapshots at Pope-Chaucer and West Bayshore show here for the review; ask the City before going public.</li>
+      <li><b>Stanford's levels.</b> FEWS uses OneRain's levels for the Stanford gauge: 11, 12 and 12.8 ft. January's storm (1,070 cfs, the biggest this year) reached 4.83 ft, and today it reads under 0.5 ft. Confirm with SFCJPA or OneRain whether those levels are in the same datum as the USGS reading; if not, San Francisquito can't show above Normal on the Creeks page either.</li>
       <li><b>Travel time.</b> "Water at Stanford usually reaches Palo Alto within 1 to 2 hours" comes from the Jan 3–7, 2026 storm; the Storm Tracker would refine it each season.</li>
     </ol>
   </div>
@@ -316,10 +317,15 @@ function renderFlow() {
       parts.join(" · ") + " cfs. Flows under 100 cfs are reported as 50.", spark("flow_upper", "var(--flow)"));
     h += '<div class="link">Joins the creek above Stanford</div>';
   }
-  var sq = last("stanford_flow"), ss = last("stanford_stage");
-  if (sq) h += row("stanford_flow", "Stanford", "San Francisquito Creek at Stanford (USGS 11164500)",
-    "<b>" + Math.round(sq[1]).toLocaleString() + "</b> <small>cfs</small>", '<span class="trend">' + trendText("stanford_flow", 25) + "</span>" + stale("stanford_flow"),
-    ss ? "Stage " + ss[1].toFixed(2) + " ft" : "", spark("stanford_flow", "var(--flow)"));
+  // Stanford: the water level (stage) graphed, with FEWS's level for this gauge (OneRain's Flood Monitoring, 11 ft in
+  // thresholds.csv) dashed; flow is the second number (staff, 2026-11-17). The 11 / 12 / 12.8 ft levels are far above
+  // anything this year (Jan 2026 peak 4.83 ft at 1,070 cfs): to confirm their datum with SFCJPA / OneRain.
+  var sq = last("stanford_flow"), ss = last("stanford_stage"), SFQ_LEVELS = [11.0, 12.0, 12.8];
+  if (ss || sq) h += row("stanford_stage", "Stanford", "San Francisquito Creek at Stanford (USGS 11164500)",
+    ss ? "<b>" + ss[1].toFixed(2) + "</b> <small>ft</small>" : '<b class="empty">–</b>',
+    '<span class="trend">' + trendText("stanford_stage", 0.15) + "</span>" + (sq ? '<span class="trend">' + Math.round(sq[1]).toLocaleString() + " cfs</span>" : "") + stale("stanford_stage"),
+    ss ? (SFQ_LEVELS[0] - ss[1]).toFixed(1) + " ft below OneRain's Flood Monitoring level, " + SFQ_LEVELS[0] + " ft. Dashed line: that level (to confirm; this year's highest was 4.83 ft, on Jan 5)." : "",
+    spark("stanford_stage", "var(--flow)", SFQ_LEVELS[0]));
   h += '<div class="link">Downstream through Palo Alto and Menlo Park</div>';
   LOWER.forEach(function (k) {
     var x = g(k), p = last(k); if (!x) return;
