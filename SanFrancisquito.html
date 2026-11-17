@@ -334,7 +334,7 @@ function load() {
     .then(function (j) { D = j; render(); })
     .catch(function () {
       $("stHead").textContent = "No data yet";
-      $("stWhy").textContent = "sfcjpa.json isn't on the data branch yet. It starts with the first data job run after the CONTRAIL_USER and CONTRAIL_PASSWORD secrets are set.";
+      $("stWhy").textContent = "sfcjpa.json isn't on the data branch yet. It starts with the first data job run after the CONTRAIL_USER and CONTRAIL_PASSWORD repository variables are set.";
       $("flow").innerHTML = '<p class="empty">Waiting for the first readings.</p>';
     });
 }
