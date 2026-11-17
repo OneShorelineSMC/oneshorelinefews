@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>San Francisquito Creek · preview</title>
+<!-- PREVIEW for staff review (2026-11-16), linked from staff.html only, not from the public pages. San Francisquito Creek
+     from the hills to the Bay, live: rain in the hills, the upper creeks, Stanford (USGS), SFCJPA's three gauges in Palo
+     Alto and East Palo Alto with their channel-capacity levels, and the Mayfield Slough tide. Data: sfcjpa.json on the
+     data branch (scripts/fetch_sfcjpa.py, from SFCJPA's Contrail site; gauges and levels in lookups/sfcjpa_gauges.csv).
+     Assumed until confirmed: 50% of channel capacity = Stay alert, 70% = Be ready, road level = Flooding likely; one datum
+     for every gauge and its levels. Mockup: claude/sfcjpa-contrail-review.md in the FEWS project. -->
+<style>
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
+    --soft: rgba(26,58,92,.05); --water: #4a90d9; --waterbg: #dfeaf5; --flow: #3d6f99; --tide: #8a97a6; --wav: #1e88e5; --pope: #7e57c2; --bay: #00838f;
+    --ok: #2e7d32; --okbg: #e8f5e9; --l1: #5c4400; --l1bg: #fff3c4; --l1s: #9c7c00; --l2: #a84300; --l2bg: #fff0db; --l2s: #c05000;
+    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #c62828; --off: #56657a; --offbg: #eef1f4; --warnbg: #fff4e5; --warnink: #7a3d00; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --soft: rgba(255,255,255,.05); --water: #5aa0e6; --waterbg: #1d2a38; --flow: #8cb4d9; --tide: #7d8b9b; --wav: #64b5f6; --pope: #b39ddb; --bay: #4fc3d9;
+    --ok: #66bb6a; --okbg: #1c2b1e; --l1: #f2d544; --l1bg: #3a3310; --l1s: #f2d544; --l2: #ffa94d; --l2bg: #3d2a12; --l2s: #ffa94d;
+    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #f47c79; --off: #9aa8b8; --offbg: #1f2a36; --warnbg: #3a2a12; --warnink: #ffd59a; color-scheme: dark; } }
+  :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --soft: rgba(255,255,255,.05); --water: #5aa0e6; --waterbg: #1d2a38; --flow: #8cb4d9; --tide: #7d8b9b; --wav: #64b5f6; --pope: #b39ddb; --bay: #4fc3d9;
+    --ok: #66bb6a; --okbg: #1c2b1e; --l1: #f2d544; --l1bg: #3a3310; --l1s: #f2d544; --l2: #ffa94d; --l2bg: #3d2a12; --l2s: #ffa94d;
+    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #f47c79; --off: #9aa8b8; --offbg: #1f2a36; --warnbg: #3a2a12; --warnink: #ffd59a; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom)); -webkit-text-size-adjust: 100%; }
+  a { color: var(--link); }
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap, main { max-width: 760px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header img { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; }
+  header a { color: #fff; }
+  header .h911 { margin-left: auto; font-size: 13px; font-weight: 700; text-align: right; }
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: .05em; background: rgba(255,255,255,.2); padding: 2px 7px; border-radius: 999px; vertical-align: middle; }
+  main { padding: 12px 16px 30px; display: grid; gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+  h2 { margin: 0 0 8px; font-size: 17px; color: var(--ink); }
+  .note { font-size: 13.5px; color: var(--muted); margin: 0; }
+  .prev { background: var(--warnbg); color: var(--warnink); border: 0; font-size: 13.5px; }
+  .prev b { color: inherit; }
+  /* the creek's status at the top: the worst of the three Palo Alto gauges, then each location */
+  .status { border-radius: 12px; padding: 12px 14px; border: 1px solid var(--line); border-left: 6px solid var(--ok); background: var(--card); }
+  .status .hd { display: flex; align-items: center; gap: 8px; font-size: 19px; font-weight: 700; color: var(--ink); }
+  .status .hd svg { width: 22px; height: 22px; flex: none; }
+  .status.s-normal .hd { color: var(--ok); } .status.s-normal { border-left-color: var(--ok); }
+  .status.s-alert { border-left-color: var(--l1s); background: var(--l1bg); } .status.s-alert .hd { color: var(--l1); }
+  .status.s-ready { border-left-color: var(--l2s); background: var(--l2bg); } .status.s-ready .hd { color: var(--l2); }
+  .status.s-likely { border-left-color: var(--l3s); background: var(--l3bg); color: #fff; } .status.s-likely .hd, .status.s-likely .why, .status.s-likely .todo { color: #fff; }
+  .status.s-offline { border-left-color: var(--off); border-left-style: dashed; } .status.s-offline .hd { color: var(--off); }
+  .status .why { margin: 6px 0 0; }
+  .status .todo { margin: 6px 0 0; }
+  .locs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-top: 10px; }
+  .loc { display: block; text-decoration: none; color: var(--text); background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 10px; padding: 7px 10px; }
+  .loc b { color: var(--ink); display: block; }
+  .loc .w { font-size: 13.5px; font-weight: 700; }
+  .loc .x { font-size: 12.5px; color: var(--muted); display: block; }
+  .loc.k-normal .w { color: var(--ok); } .loc.k-alert { border-left-color: var(--l1s); } .loc.k-alert .w { color: var(--l1); }
+  .loc.k-ready { border-left-color: var(--l2s); } .loc.k-ready .w { color: var(--l2); }
+  .loc.k-likely { border-left-color: var(--l3s); } .loc.k-likely .w { color: var(--l3s); }
+  .loc.k-offline { border-left-color: var(--off); border-left-style: dashed; } .loc.k-offline .w { color: var(--off); }
+  .say { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--soft); }
+  /* the creek, top to bottom */
+  .st { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); scroll-margin-top: 12px; }
+  .st:first-child { border-top: 0; }
+  .st .nm { font-weight: 700; color: var(--ink); }
+  .st .sub { font-size: 12.5px; color: var(--muted); }
+  .st .val { text-align: right; font-variant-numeric: tabular-nums; }
+  .st .val b { font-size: 20px; color: var(--ink); }
+  .st .val small { color: var(--muted); }
+  .trend { font-size: 12.5px; color: var(--muted); display: block; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-top: 3px; }
+  .chip.k-normal { color: var(--ok); background: var(--okbg); } .chip.k-alert { color: var(--l1); background: var(--l1bg); }
+  .chip.k-ready { color: var(--l2); background: var(--l2bg); } .chip.k-likely { color: #fff; background: var(--l3bg); } .chip.k-offline { color: var(--off); background: var(--offbg); }
+  .full { grid-column: 1 / -1; min-width: 0; }
+  .gap { font-size: 12.5px; color: var(--muted); }
+  .link { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); padding: 2px 0 2px 6px; }
+  .link::before { content: ""; width: 2px; height: 18px; background: var(--water); border-radius: 2px; }
+  .spark { display: block; width: 100%; height: 34px; }
+  .cam { display: block; margin-top: 6px; }
+  .cam img { width: 100%; max-width: 360px; border-radius: 8px; border: 1px solid var(--line); display: block; }
+  .cam span { font-size: 12px; color: var(--muted); }
+  ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+  .empty { color: var(--muted); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } header .h911 { display: none; } }
+  nav a.on { color: var(--ink); font-weight: bold; }
+</style>
+<link rel="stylesheet" href="nav.css?v=20261108b">
+</head>
+<body>
+<header><div class="wrap">
+  <img src="img/oneshoreline-mark-white.png" alt="">
+  <div><h1>San Francisquito Creek <span class="tag">PREVIEW</span></h1><div class="org"><a href="staff.html">Staff tools</a> · OneShoreline Flood Early Warning</div></div>
+  <div class="h911">In an emergency, call 911.</div>
+</div></header>
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="staff.html"><span class="i" aria-hidden="true">🧰</span>Staff tools</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+<main>
+  <div class="card prev"><b>Preview for staff review.</b> Not linked from the public pages. Live readings from SFCJPA (Contrail) and USGS.
+    Statuses assumed until confirmed with SFCJPA: 50% of channel capacity = Stay alert, 70% = Be ready, road level = Flooding likely.</div>
+
+  <div id="ncards"></div>
+
+  <section class="status s-offline" id="status" aria-live="polite">
+    <div class="hd" id="stHead">Loading…</div>
+    <p class="why" id="stWhy"></p>
+    <p class="todo" id="stTodo"></p>
+    <div class="locs" id="locs"></div>
+    <p class="say" id="say" hidden></p>
+  </section>
+
+  <div class="card">
+    <h2>From the hills to the Bay</h2>
+    <div id="flow"><p class="empty">Loading…</p></div>
+    <p class="note" id="meta" style="margin-top:8px"></p>
+  </div>
+
+  <div class="card">
+    <h2>For the review</h2>
+    <ol class="note">
+      <li><b>Statuses.</b> 50% of channel capacity = Stay alert, 70% = Be ready, road level = Flooding likely: assumed, to confirm with SFCJPA (and Palo Alto).</li>
+      <li><b>Top of the page.</b> The creek's status is the most serious of the three Palo Alto gauges, with each location below it, so a resident sees which reach. A gauge that hasn't reported in 45 minutes shows as not reporting and doesn't count; if all three are quiet, the status says so and points to Stanford.</li>
+      <li><b>Rising fast.</b> A Palo Alto gauge up 1 ft or more in the last hour is flagged "rising fast" (assumed, to tune with a season of storms).</li>
+      <li><b>Datum.</b> One datum for every gauge and its levels (assumed). Ask SFCJPA why the lower gauges read 1.5–2.5 ft in dry weather last January and 0–0.7 ft now.</li>
+      <li><b>Thresholds.</b> SFCJPA: Pope-Chaucer 13 / 16.5 ft. City of Palo Alto: Chaucer St 13.2 / 17.9 ft. Pick one.</li>
+      <li><b>Cameras.</b> The City of Palo Alto's camera snapshots at Pope-Chaucer and West Bayshore show here for the review; ask the City before going public.</li>
+      <li><b>Travel time.</b> "Water at Stanford usually reaches Palo Alto within 1 to 2 hours" comes from the Jan 3–7, 2026 storm; the Storm Tracker would refine it each season.</li>
+    </ol>
+  </div>
+</main>
+
+<script src="lookups.js?v=20261116c"></script>
+<script src="severity.js?v=20261116c"></script>
+<script src="hero.js?v=20261116c"></script>
+<script>
+var DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/sfcjpa.json";
+var QUIET_MIN = 45, FAST_FT = 1.0, HOURS = 48;
+var LOWER = ["waverley", "pope_chaucer", "west_bayshore"];
+var COLORS = { waverley: "var(--wav)", pope_chaucer: "var(--pope)", west_bayshore: "var(--bay)", mayfield_tide: "var(--tide)" };
+var RANKS = { normal: 1, alert: 2, ready: 3, likely: 4 };
+var D = null, NWS = { list: null, failed: false };
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function T(k, fb, v) { var t = window.LOOKUPS ? LOOKUPS.text(k, v) : ""; return t && t !== k ? t : fb; }
+function ms(p) { return Date.parse(p[2].replace("Z", ":00Z")); }
+function g(key) { return D && (D.gauges || []).filter(function (x) { return x.key === key; })[0]; }
+function last(key) { var x = g(key); return x && x.points && x.points.length ? x.points[x.points.length - 1] : null; }
+function quiet(key) { var p = last(key); return !p || Date.now() - ms(p) > QUIET_MIN * 60000; }
+function at(key, t) {   // the reading at or just before time t (ms)
+  var x = g(key); if (!x || !x.points) return null;
+  var r = null; x.points.forEach(function (p) { if (ms(p) <= t) r = p; }); return r;
+}
+function clock(t) { return new Date(t).toLocaleString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" }); }
+function dayClock(t) { return new Date(t).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" }); }
+function ago(t) { var m = Math.round((Date.now() - t) / 60000); return m < 60 ? m + " min ago" : m < 48 * 60 ? Math.round(m / 60) + " hr ago" : dayClock(t); }
+
+// a Palo Alto gauge's status from its levels [Stay alert, Be ready, Flooding likely]
+function level(key) {
+  var x = g(key), p = last(key);
+  if (!x || !p || quiet(key)) return "offline";
+  var v = p[1], lv = x.levels || [];
+  return v >= lv[2] ? "likely" : v >= lv[1] ? "ready" : v >= lv[0] ? "alert" : "normal";
+}
+function word(k) { return { normal: "Normal", alert: T("verdict_alert", "Stay alert"), ready: T("verdict_ready", "Be ready"), likely: T("verdict_likely", "Flooding likely"), offline: "Not reporting" }[k]; }
+function todo(k) { return { alert: T("verdict_alert_todo", ""), ready: T("verdict_ready_todo", ""), likely: T("verdict_likely_todo", "") }[k] || ""; }
+function rise1h(key) { var p = last(key), q = p && at(key, ms(p) - 3600000); return p && q ? p[1] - q[1] : null; }
+function nextLevel(key) {
+  var x = g(key), p = last(key); if (!x || !p) return "";
+  var v = p[1], lv = x.levels, names = ["Stay alert (50% of channel capacity)", "Be ready (70% of channel capacity)", "Flooding likely (road level)"];
+  for (var i = 0; i < 3; i++) if (v < lv[i]) return (lv[i] - v).toFixed(1) + " ft below " + names[i] + ", " + lv[i] + " ft";
+  return "At or above road level";
+}
+
+function renderStatus() {
+  var ks = LOWER.map(function (k) { return { k: k, lv: level(k) }; });
+  var live = ks.filter(function (x) { return x.lv !== "offline"; });
+  var worst = live.reduce(function (a, b) { return !a || RANKS[b.lv] > RANKS[a.lv] ? b : a; }, null);
+  var st = $("status"), head, why, td = "";
+  if (!live.length) {
+    st.className = "status s-offline";
+    var q = last("stanford_flow");
+    head = "Palo Alto gauges not reporting";
+    why = "SFCJPA's three gauges in Palo Alto and East Palo Alto haven't reported in the last " + QUIET_MIN + " minutes." +
+      (q && !quiet("stanford_flow") ? " Upstream at Stanford: " + Math.round(q[1]).toLocaleString() + " cfs, " + ago(ms(q)) + "." : "");
+  } else if (worst.lv === "normal") {
+    st.className = "status s-normal";
+    head = "Normal";
+    why = "All " + live.length + " reporting gauges in Palo Alto and East Palo Alto are below Stay alert (50% of channel capacity).";
+  } else {
+    st.className = "status s-" + worst.lv;
+    var at2 = live.filter(function (x) { return x.lv === worst.lv; }).map(function (x) { return g(x.k).label; });
+    head = word(worst.lv) + ": " + at2.join(", ");
+    why = "The water is " + { alert: "above 50%", ready: "above 70%", likely: "at road level, 100%" }[worst.lv] + " of the channel's capacity at " + at2.join(" and ") + ".";
+    td = todo(worst.lv);
+  }
+  var svl = { normal: "normal", alert: "watch", ready: "advisory", likely: "warning", offline: "offline" }[live.length ? worst.lv : "offline"];
+  $("stHead").innerHTML = (window.SEVERITY ? SEVERITY.icon(svl) : "") + esc(head);
+  $("stWhy").textContent = why;
+  $("stTodo").innerHTML = td ? "<b>What to do:</b> " + esc(td) : "";
+  $("locs").innerHTML = ks.map(function (x) {
+    var p = last(x.k), r = rise1h(x.k), fast = x.lv !== "offline" && r != null && r >= FAST_FT;
+    var extra = x.lv === "offline" ? (p ? "Last report " + dayClock(ms(p)) : "No readings") : p[1].toFixed(2) + " ft · " + nextLevel(x.k).replace(/ \(.*?\)/, "").replace(/, [\d.]+ ft$/, "");
+    return '<a class="loc k-' + x.lv + '" href="#g-' + x.k + '"><b>' + esc(g(x.k) ? g(x.k).label : x.k) + '</b><span class="w">' + esc(word(x.lv)) + (fast ? " · rising fast" : "") + '</span><span class="x">' + esc(extra) + "</span></a>";
+  }).join("");
+  say();
+}
+
+// rain: hourly amounts from the gauges' running totals (a reset counts as 0)
+function hourly(key, hours) {
+  var x = g(key), now = Date.now(), out = [];
+  if (!x || !x.points || !x.points.length) return null;
+  for (var h = hours; h > 0; h--) {
+    var a = at(key, now - h * 3600000), b = at(key, now - (h - 1) * 3600000);
+    out.push(a && b ? Math.max(0, b[1] - a[1]) : 0);
+  }
+  return out;
+}
+function hillsRain() {
+  var hs = ["rain_wunderlich", "rain_windyhill", "rain_trappers"].map(function (k) { return hourly(k, HOURS); }).filter(Boolean);
+  if (!hs.length) return null;
+  return hs[0].map(function (_, i) { return hs.reduce(function (s, h) { return s + h[i]; }, 0) / hs.length; });
+}
+function say() {
+  var parts = [], rain = hillsRain(), q = last("stanford_flow"), qr = rise1h("stanford_flow");
+  if (rain) {
+    var r1 = rain[rain.length - 1], r3 = rain.slice(-3).reduce(function (a, b) { return a + b; }, 0);
+    if (r1 >= 0.1) parts.push("Heavy rain in the hills: " + r1.toFixed(2) + " in in the last hour.");
+    else if (r3 >= 0.05) parts.push("Rain in the hills: " + r3.toFixed(2) + " in in the last 3 hours.");
+  }
+  if (q && !quiet("stanford_flow") && q[1] > 400) {
+    parts.push("High water is moving down the creek: " + Math.round(q[1]).toLocaleString() + " cfs at Stanford" + (qr > 25 ? " and rising" : qr < -25 ? " and falling" : "") + ".");
+    if (qr > 25) parts.push("Water at Stanford usually reaches Palo Alto and East Palo Alto within 1 to 2 hours.");
+  }
+  var t = last("mayfield_tide");
+  if (t && !quiet("mayfield_tide") && t[1] >= 5) parts.push("High tide in the Bay is holding water up at West Bayshore.");
+  $("say").hidden = !parts.length;
+  $("say").textContent = parts.join(" ");
+}
+
+function spark(key, color, lv) {
+  var x = g(key); if (!x || !x.points || x.points.length < 2) return "";
+  var now = Date.now(), t0 = now - HOURS * 3600000, pts = x.points.filter(function (p) { return ms(p) >= t0; });
+  if (pts.length < 2) return "";
+  var lo = Infinity, hi = -Infinity; pts.forEach(function (p) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); });
+  if (lv != null) hi = Math.max(hi, lv);
+  var W = 300, H = 34, sx = function (t) { return (t - t0) / (now - t0) * W; }, sy = function (v) { return H - 3 - (v - lo) / (hi - lo || 1) * (H - 6); };
+  var d = "", prev = null;
+  pts.forEach(function (p) { var t = ms(p); d += (prev && t - prev > 3 * 3600000 ? "M" : d ? "L" : "M") + sx(t).toFixed(1) + " " + sy(p[1]).toFixed(1); prev = t; });
+  var e = pts[pts.length - 1];
+  return '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+    (lv != null ? '<line x1="0" x2="' + W + '" y1="' + sy(lv).toFixed(1) + '" y2="' + sy(lv).toFixed(1) + '" stroke="var(--l1s)" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke"/>' : "") +
+    '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.8" vector-effect="non-scaling-stroke"/>' +
+    '<circle cx="' + sx(ms(e)).toFixed(1) + '" cy="' + sy(e[1]).toFixed(1) + '" r="3.5" fill="' + color + '"/></svg>';
+}
+function bars(vals) {
+  var W = 300, H = 34, mx = Math.max(0.1, Math.max.apply(null, vals)), bw = W / vals.length;
+  return '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' + vals.map(function (x, j) {
+    if (!x) return ""; var h = x / mx * (H - 2); return '<rect x="' + (j * bw).toFixed(2) + '" y="' + (H - h).toFixed(2) + '" width="' + Math.max(0.6, bw - 0.6).toFixed(2) + '" height="' + h.toFixed(2) + '" fill="var(--water)"/>'; }).join("") + "</svg>";
+}
+function trendText(key, big) {
+  var r = rise1h(key); if (r == null || quiet(key)) return "";
+  return Math.abs(r) < big ? "steady" : (r > 0 ? "▲ rising " : "▼ falling ") + (big >= 1 ? Math.round(Math.abs(r)) + " cfs" : Math.abs(r).toFixed(2) + " ft") + " in the last hour";
+}
+function row(key, name, sub, valHtml, right, extra, graph) {
+  return '<div class="st" id="g-' + key + '"><div><div class="nm">' + esc(name) + '</div><div class="sub">' + esc(sub) + "</div></div>" +
+    '<div class="val">' + valHtml + right + "</div>" + (extra ? '<div class="full gap">' + extra + "</div>" : "") + '<div class="full">' + graph + "</div></div>";
+}
+function stale(key) { var p = last(key); return p && quiet(key) ? ' <span class="chip k-offline">Last report ' + esc(ago(ms(p))) + "</span>" : !p ? ' <span class="chip k-offline">No readings</span>' : ""; }
+function renderFlow() {
+  var h = "", rain = hillsRain();
+  if (rain) {
+    var r1 = rain[rain.length - 1], d24 = rain.slice(-24).reduce(function (a, b) { return a + b; }, 0), d48 = rain.reduce(function (a, b) { return a + b; }, 0);
+    h += row("rain", "Rain in the hills", "Average of Wunderlich, Windy Hill and Trappers Trail (Valley Water gauges)",
+      "<b>" + r1.toFixed(2) + "</b> <small>in, last hour</small>", "", d24.toFixed(2) + " in in the last 24 hours · " + d48.toFixed(2) + " in in 48 hours", bars(rain));
+    h += '<div class="link">Runs off into the upper creeks</div>';
+  }
+  var up = last("flow_upper");
+  if (up) {
+    var parts = [["Searsville", "flow_searsville"], ["Bear", "flow_bear"], ["Los Trancos", "flow_lostrancos"]].map(function (p) { var y = last(p[1]); return p[0] + " " + (y ? Math.round(y[1]) : "–"); });
+    h += row("flow_upper", "Upper creeks", "Searsville Lake, Bear Creek and Los Trancos Creek, combined flow (SFCJPA)",
+      "<b>" + Math.round(up[1]).toLocaleString() + "</b> <small>cfs</small>", '<span class="trend">' + trendText("flow_upper", 25) + "</span>" + stale("flow_upper"),
+      parts.join(" · ") + " cfs. Flows under 100 cfs are reported as 50.", spark("flow_upper", "var(--flow)"));
+    h += '<div class="link">Joins the creek above Stanford</div>';
+  }
+  var sq = last("stanford_flow"), ss = last("stanford_stage");
+  if (sq) h += row("stanford_flow", "Stanford", "San Francisquito Creek at Stanford (USGS 11164500)",
+    "<b>" + Math.round(sq[1]).toLocaleString() + "</b> <small>cfs</small>", '<span class="trend">' + trendText("stanford_flow", 25) + "</span>" + stale("stanford_flow"),
+    ss ? "Stage " + ss[1].toFixed(2) + " ft" : "", spark("stanford_flow", "var(--flow)"));
+  h += '<div class="link">Downstream through Palo Alto and Menlo Park</div>';
+  LOWER.forEach(function (k) {
+    var x = g(k), p = last(k); if (!x) return;
+    var lv = level(k), fast = lv !== "offline" && (rise1h(k) || 0) >= FAST_FT;
+    var cam = /^https:\/\/[^\s"'<>]+$/.test(x.camera || "") ? '<span class="cam"><img src="' + esc(x.camera + (x.camera.indexOf("?") >= 0 ? "&" : "?") + "t=" + Math.floor(Date.now() / 6e4)) + '" alt="City of Palo Alto camera at ' + esc(x.label) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.hidden=true"><span>City of Palo Alto camera</span></span>' : "";
+    h += row(k, x.label, x.where + " (SFCJPA)", p ? "<b>" + p[1].toFixed(2) + "</b> <small>ft</small>" : '<b class="empty">–</b>',
+      '<span class="trend">' + trendText(k, 0.15) + "</span>" + '<span class="chip k-' + lv + '">' + esc(word(lv)) + (fast ? " · rising fast" : "") + "</span>" + (lv === "offline" ? stale(k) : ""),
+      (p && lv !== "offline" ? nextLevel(k) + ". Dashed line: Stay alert." : p ? "Last reading " + dayClock(ms(p)) + ". Not counted in the creek's status until it reports again." : "") + (k === "west_bayshore" && last("mayfield_tide") && last("mayfield_tide")[1] >= 5 && !quiet("mayfield_tide") ? " High tide in the Bay is holding water up here." : "") + cam,
+      spark(k, COLORS[k], x.levels[0]));
+  });
+  var t = last("mayfield_tide");
+  if (t) {
+    h += '<div class="link">Out to the Bay</div>';
+    var tp = at("mayfield_tide", ms(t) - 3600000), state = t[1] >= 5.5 ? "High tide" : t[1] <= 0 ? "Low tide" : tp && t[1] > tp[1] ? "Tide coming in" : "Tide going out";
+    h += row("mayfield_tide", "Mayfield Slough", "Bay tide (SFCJPA)", "<b>" + t[1].toFixed(2) + "</b> <small>ft</small>", stale("mayfield_tide"), state, spark("mayfield_tide", COLORS.mayfield_tide));
+  }
+  $("flow").innerHTML = h;
+  var probs = (D.problems || []).length;
+  $("meta").textContent = "Updated " + ago(Date.parse(D.generated_utc.replace("Z", ":00Z"))) + " from SFCJPA's Contrail site. Graphs: the last " + HOURS + " hours." + (probs ? " " + probs + " gauge" + (probs === 1 ? "" : "s") + " couldn't be read on the last try." : "");
+}
+function render() { if (!D) return; renderStatus(); renderFlow(); drawCards(); }
+function drawCards() {
+  if (!window.HERO) return;
+  var worst = D ? LOWER.map(level).filter(function (k) { return k !== "offline" && k !== "normal"; }).sort(function (a, b) { return RANKS[b] - RANKS[a]; })[0] : null;
+  HERO.nwsCards($("ncards"), { nws: NWS.list, nwsFailed: NWS.failed, current: "creek", only: true, inland: true, localCreek: worst ? word(worst) : null });
+}
+function load() {
+  fetch(DATA_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (j) { D = j; render(); })
+    .catch(function () {
+      $("stHead").textContent = "No data yet";
+      $("stWhy").textContent = "sfcjpa.json isn't on the data branch yet. It starts with the first data job run after the CONTRAIL_USER and CONTRAIL_PASSWORD secrets are set.";
+      $("flow").innerHTML = '<p class="empty">Waiting for the first readings.</p>';
+    });
+}
+if (window.HERO) HERO.loadNWS(function (list, failed) { if (list) { NWS.list = list; NWS.failed = false; } else if (!NWS.list) NWS.failed = true; drawCards(); });
+load();
+setInterval(load, 5 * 60000);
+document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
+</script>
+</body>
+</html>
