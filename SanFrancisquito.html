@@ -83,7 +83,13 @@
   .gap { font-size: 12.5px; color: var(--muted); }
   .link { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); padding: 2px 0 2px 6px; }
   .link::before { content: ""; width: 2px; height: 18px; background: var(--water); border-radius: 2px; }
-  .spark { display: block; width: 100%; height: 34px; }
+  .spark { display: block; width: 100%; height: 56px; }
+  /* each graph's axes: the highest and lowest value on the left, the times along the bottom (staff, 2026-11-17) */
+  .gr { display: grid; grid-template-columns: auto 1fr; gap: 0 6px; margin-top: 4px; }
+  .gr .ya { display: flex; flex-direction: column; justify-content: space-between; text-align: right; font-size: 11px; color: var(--muted);
+    font-variant-numeric: tabular-nums; height: 56px; white-space: nowrap; }
+  .gr .pl { min-width: 0; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .gr .xa { grid-column: 2; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 2px; }
   .cam { display: block; margin-top: 6px; }
   .cam img { width: 100%; max-width: 360px; border-radius: 8px; border: 1px solid var(--line); display: block; }
   .cam span { font-size: 12px; color: var(--muted); }
@@ -254,25 +260,36 @@ function say() {
   $("say").textContent = parts.join(" ");
 }
 
+// the graph with its axes: value range on the left (with units), times along the bottom
+function axes(svg, hi, lo, fmt, unit) {
+  var now = Date.now(), t0 = now - HOURS * 3600000;
+  var day = function (t) { return new Date(t).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric" }); };
+  return '<div class="gr"><div class="ya" aria-hidden="true"><span>' + fmt(hi) + " " + unit + "</span><span>" + fmt(lo) + " " + unit + '</span></div><div class="pl">' + svg + "</div>" +
+    '<div class="xa" aria-hidden="true"><span>' + day(t0) + "</span><span>" + day(t0 + (now - t0) / 2) + "</span><span>Now</span></div></div>";
+}
 function spark(key, color, lv) {
   var x = g(key); if (!x || !x.points || x.points.length < 2) return "";
   var now = Date.now(), t0 = now - HOURS * 3600000, pts = x.points.filter(function (p) { return ms(p) >= t0; });
   if (pts.length < 2) return "";
   var lo = Infinity, hi = -Infinity; pts.forEach(function (p) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); });
   if (lv != null) hi = Math.max(hi, lv);
-  var W = 300, H = 34, sx = function (t) { return (t - t0) / (now - t0) * W; }, sy = function (v) { return H - 3 - (v - lo) / (hi - lo || 1) * (H - 6); };
+  if (hi - lo < 0.5) { hi = lo + 0.5; }   // a quiet day: keep a sensible scale instead of magnifying tiny wiggles
+  var W = 300, H = 56, sx = function (t) { return (t - t0) / (now - t0) * W; }, sy = function (v) { return H - 3 - (v - lo) / (hi - lo || 1) * (H - 6); };
   var d = "", prev = null;
   pts.forEach(function (p) { var t = ms(p); d += (prev && t - prev > 3 * 3600000 ? "M" : d ? "L" : "M") + sx(t).toFixed(1) + " " + sy(p[1]).toFixed(1); prev = t; });
   var e = pts[pts.length - 1];
-  return '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+  var svgOut = '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' +
     (lv != null ? '<line x1="0" x2="' + W + '" y1="' + sy(lv).toFixed(1) + '" y2="' + sy(lv).toFixed(1) + '" stroke="var(--l1s)" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke"/>' : "") +
     '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.8" vector-effect="non-scaling-stroke"/>' +
     '<circle cx="' + sx(ms(e)).toFixed(1) + '" cy="' + sy(e[1]).toFixed(1) + '" r="3.5" fill="' + color + '"/></svg>';
+  var unit = x.unit || "", fmt = unit === "cfs" ? function (v) { return Math.round(v).toLocaleString(); } : function (v) { return v.toFixed(1); };
+  return axes(svgOut, hi, lo, fmt, unit);
 }
 function bars(vals) {
-  var W = 300, H = 34, mx = Math.max(0.1, Math.max.apply(null, vals)), bw = W / vals.length;
-  return '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' + vals.map(function (x, j) {
+  var W = 300, H = 56, mx = Math.max(0.1, Math.max.apply(null, vals)), bw = W / vals.length;
+  var svg = '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' + vals.map(function (x, j) {
     if (!x) return ""; var h = x / mx * (H - 2); return '<rect x="' + (j * bw).toFixed(2) + '" y="' + (H - h).toFixed(2) + '" width="' + Math.max(0.6, bw - 0.6).toFixed(2) + '" height="' + h.toFixed(2) + '" fill="var(--water)"/>'; }).join("") + "</svg>";
+  return axes(svg, mx, 0, function (v) { return v.toFixed(2); }, "in/hr");
 }
 function trendText(key, big) {
   var r = rise1h(key); if (r == null || quiet(key)) return "";
