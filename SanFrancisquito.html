@@ -14,19 +14,23 @@
      data branch (scripts/fetch_sfcjpa.py, from SFCJPA's Contrail site; gauges and levels in lookups/sfcjpa_gauges.csv).
      Assumed until confirmed: 50% of channel capacity = Stay alert, 70% = Be ready, road level = Flooding likely; one datum
      for every gauge and its levels. Mockup: claude/sfcjpa-contrail-review.md in the FEWS project. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
     --soft: rgba(26,58,92,.05); --water: #4a90d9; --waterbg: #dfeaf5; --flow: #3d6f99; --tide: #8a97a6; --wav: #1e88e5; --pope: #7e57c2; --bay: #00838f;
     --ok: #2e7d32; --okbg: #e8f5e9; --l1: #5c4400; --l1bg: #fff3c4; --l1s: #9c7c00; --l2: #a84300; --l2bg: #fff0db; --l2s: #c05000;
-    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #c62828; --off: #56657a; --offbg: #eef1f4; --warnbg: #fff4e5; --warnink: #7a3d00; }
+    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #c62828; --off: #56657a; --offbg: #eef1f4; --warnbg: #fff4e5; --warnink: #7a3d00;
+    --lv1: #7a6400; --lv2: #b45a00; --lv3: #c62828; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
     --soft: rgba(255,255,255,.05); --water: #5aa0e6; --waterbg: #1d2a38; --flow: #8cb4d9; --tide: #7d8b9b; --wav: #64b5f6; --pope: #b39ddb; --bay: #4fc3d9;
     --ok: #66bb6a; --okbg: #1c2b1e; --l1: #f2d544; --l1bg: #3a3310; --l1s: #f2d544; --l2: #ffa94d; --l2bg: #3d2a12; --l2s: #ffa94d;
-    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #f47c79; --off: #9aa8b8; --offbg: #1f2a36; --warnbg: #3a2a12; --warnink: #ffd59a; color-scheme: dark; } }
+    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #f47c79; --off: #9aa8b8; --offbg: #1f2a36; --warnbg: #3a2a12; --warnink: #ffd59a; --lv1: #f2d544; --lv2: #ffa94d; --lv3: #f47c79; color-scheme: dark; } }
   :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
     --soft: rgba(255,255,255,.05); --water: #5aa0e6; --waterbg: #1d2a38; --flow: #8cb4d9; --tide: #7d8b9b; --wav: #64b5f6; --pope: #b39ddb; --bay: #4fc3d9;
     --ok: #66bb6a; --okbg: #1c2b1e; --l1: #f2d544; --l1bg: #3a3310; --l1s: #f2d544; --l2: #ffa94d; --l2bg: #3d2a12; --l2s: #ffa94d;
-    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #f47c79; --off: #9aa8b8; --offbg: #1f2a36; --warnbg: #3a2a12; --warnink: #ffd59a; color-scheme: dark; }
+    --l3: #ffffff; --l3bg: #b71c1c; --l3s: #f47c79; --off: #9aa8b8; --offbg: #1f2a36; --warnbg: #3a2a12; --warnink: #ffd59a; --lv1: #f2d544; --lv2: #ffa94d; --lv3: #f47c79; color-scheme: dark; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     padding-bottom: calc(68px + env(safe-area-inset-bottom)); -webkit-text-size-adjust: 100%; }
@@ -83,13 +87,9 @@
   .gap { font-size: 12.5px; color: var(--muted); }
   .link { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); padding: 2px 0 2px 6px; }
   .link::before { content: ""; width: 2px; height: 18px; background: var(--water); border-radius: 2px; }
-  .spark { display: block; width: 100%; height: 56px; }
-  /* each graph's axes: the highest and lowest value on the left, the times along the bottom (staff, 2026-11-17) */
-  .gr { display: grid; grid-template-columns: auto 1fr; gap: 0 6px; margin-top: 4px; }
-  .gr .ya { display: flex; flex-direction: column; justify-content: space-between; text-align: right; font-size: 11px; color: var(--muted);
-    font-variant-numeric: tabular-nums; height: 56px; white-space: nowrap; }
-  .gr .pl { min-width: 0; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .gr .xa { grid-column: 2; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  /* graphs: the same look as the Creeks page (Chart.js; each level's name and status icon on its line) */
+  .gtitle { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .gbox { position: relative; }
   .cam { display: block; margin-top: 6px; }
   .cam img { width: 100%; max-width: 360px; border-radius: 8px; border: 1px solid var(--line); display: block; }
   .cam span { font-size: 12px; color: var(--muted); }
@@ -160,7 +160,6 @@
 var DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/sfcjpa.json";
 var QUIET_MIN = 45, FAST_FT = 1.0, HOURS = 48;
 var LOWER = ["waverley", "pope_chaucer", "west_bayshore"];
-var COLORS = { waverley: "var(--wav)", pope_chaucer: "var(--pope)", west_bayshore: "var(--bay)", mayfield_tide: "var(--tide)" };
 var RANKS = { normal: 1, alert: 2, ready: 3, likely: 4 };
 var D = null, NWS = { list: null, failed: false };
 function $(id) { return document.getElementById(id); }
@@ -261,36 +260,155 @@ function say() {
   $("say").textContent = parts.join(" ");
 }
 
-// the graph with its axes: value range on the left (with units), times along the bottom
-function axes(svg, hi, lo, fmt, unit) {
-  var now = Date.now(), t0 = now - HOURS * 3600000;
-  var day = function (t) { return new Date(t).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric" }); };
-  return '<div class="gr"><div class="ya" aria-hidden="true"><span>' + fmt(hi) + " " + unit + "</span><span>" + fmt(lo) + " " + unit + '</span></div><div class="pl">' + svg + "</div>" +
-    '<div class="xa" aria-hidden="true"><span>' + day(t0) + "</span><span>" + day(t0 + (now - t0) / 2) + "</span><span>Now</span></div></div>";
+/* ---------- graphs: the same look as the Creeks page (staff, 2026-11-17) ----------
+   Chart.js; each level drawn in its status color and dash with its name, value and status icon on the line (refMarks);
+   hour ticks along the bottom with the day at midnight; units on the left axis; the water level filled. */
+var LV_ICON = { 1: "alert", 2: "ready", 3: "likely" }, LV_DASH = { 1: [3, 3], 2: [8, 4], 3: [16, 4] };
+var CHARTS = {}, QUEUE = [];
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function lvColor(k) { return css("--lv" + Math.min(3, k)); }
+// The status icons drawn on the graph (12 px, left edge x, centered on y): triangle, exclamation in a circle, eye (from Creeks.html)
+function drawIcon(ctx, k, x, y, col, bg) {
+  ctx.save(); ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap = "round";
+  if (k === "likely") {
+    ctx.beginPath(); ctx.moveTo(x + 6, y - 6); ctx.lineTo(x + 12.5, y + 5.5); ctx.lineTo(x - 0.5, y + 5.5); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = bg; ctx.fillStyle = bg; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x + 6, y - 2); ctx.lineTo(x + 6, y + 1.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 6, y + 3.4, 0.9, 0, 7); ctx.fill();
+  } else if (k === "ready") {
+    ctx.beginPath(); ctx.arc(x + 6, y, 6, 0, 7); ctx.fill();
+    ctx.strokeStyle = bg; ctx.fillStyle = bg; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x + 6, y - 3.2); ctx.lineTo(x + 6, y + 0.6); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 6, y + 3, 0.9, 0, 7); ctx.fill();
+  } else if (k === "alert") {
+    ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 6, y - 7, x + 12, y); ctx.quadraticCurveTo(x + 6, y + 7, x, y); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 6, y, 2.1, 0, 7); ctx.fill();
+  }
+  ctx.restore();
 }
-function spark(key, color, lv) {
-  var x = g(key); if (!x || !x.points || x.points.length < 2) return "";
-  var now = Date.now(), t0 = now - HOURS * 3600000, pts = x.points.filter(function (p) { return ms(p) >= t0; });
-  if (pts.length < 2) return "";
-  var lo = Infinity, hi = -Infinity; pts.forEach(function (p) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); });
-  if (lv != null) hi = Math.max(hi, lv);
-  if (hi - lo < 0.5) { hi = lo + 0.5; }   // a quiet day: keep a sensible scale instead of magnifying tiny wiggles
-  var W = 300, H = 56, sx = function (t) { return (t - t0) / (now - t0) * W; }, sy = function (v) { return H - 3 - (v - lo) / (hi - lo || 1) * (H - 6); };
-  var d = "", prev = null;
-  pts.forEach(function (p) { var t = ms(p); d += (prev && t - prev > 3 * 3600000 ? "M" : d ? "L" : "M") + sx(t).toFixed(1) + " " + sy(p[1]).toFixed(1); prev = t; });
-  var e = pts[pts.length - 1];
-  var svgOut = '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-    (lv != null ? '<line x1="0" x2="' + W + '" y1="' + sy(lv).toFixed(1) + '" y2="' + sy(lv).toFixed(1) + '" stroke="var(--l1s)" stroke-dasharray="3 3" stroke-width="1" vector-effect="non-scaling-stroke"/>' : "") +
-    '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="1.8" vector-effect="non-scaling-stroke"/>' +
-    '<circle cx="' + sx(ms(e)).toFixed(1) + '" cy="' + sy(e[1]).toFixed(1) + '" r="3.5" fill="' + color + '"/></svg>';
-  var unit = x.unit || "", fmt = unit === "cfs" ? function (v) { return Math.round(v).toLocaleString(); } : function (v) { return v.toFixed(1); };
-  return axes(svgOut, hi, lo, fmt, unit);
+// Each level's label sits on its line, in the first spot (right end, left end, then stepping across) where it covers no
+// plotted reading and no other label (from Creeks.html)
+var refMarks = {
+  id: "refMarks",
+  afterDatasetsDraw: function (c) {
+    var xs = c.scales.x, ys = c.scales.y, ctx = c.ctx, placed = [], pts = [], bg = css("--card");
+    c.data.datasets.forEach(function (d, i) {
+      if (d.refLabel || !c.isDatasetVisible(i)) return;
+      c.getDatasetMeta(i).data.forEach(function (e) { if (e && isFinite(e.x) && isFinite(e.y)) pts.push(e); });
+    });
+    function free(x, y, w, h) {
+      for (var k = 0; k < pts.length; k++) { var p = pts[k]; if (p.x >= x - 3 && p.x <= x + w + 3 && p.y >= y - 3 && p.y <= y + h + 3) return false; }
+      for (k = 0; k < placed.length; k++) { var q = placed[k]; if (x < q.x + q.w + 6 && x + w + 6 > q.x && y < q.y + q.h && y + h > q.y) return false; }
+      return true;
+    }
+    ctx.save(); ctx.font = "bold 13px Arial, sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    c.data.datasets.forEach(function (d, i) {
+      if (!d.refLabel || !c.isDatasetVisible(i) || !d.data.length) return;
+      var v = d.data[0].y; if (v < ys.min || v > ys.max) return;
+      var ic = d.refIcon ? 15 : 0, py = Math.round(ys.getPixelForValue(v)), w = ctx.measureText(d.refLabel).width + 8 + ic, h = 17, y = py - h / 2;
+      var a = xs.left + 4, b = xs.right - 4 - w, cands = [b, a];
+      for (var f = 0.1; f < 1; f += 0.1) cands.push(b - (b - a) * f);
+      var x = cands[0];
+      for (var n = 0; n < cands.length; n++) { if (free(cands[n], y, w, h)) { x = cands[n]; break; } }
+      ctx.globalAlpha = 0.92; ctx.fillStyle = bg; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
+      ctx.fillStyle = d.borderColor; ctx.fillText(d.refLabel, x + 4 + ic, py + 0.5);
+      if (ic) drawIcon(ctx, d.refIcon, x + 4, py, d.borderColor, bg);
+      placed.push({ x: x, y: y, w: w, h: h });
+    });
+    ctx.restore();
+  }
+};
+// Pacific clock time as if it were UTC, so hour ticks and midnights fall on Pacific hours
+function pacOff(t) { return Date.parse(new Date(t).toLocaleString("sv-SE", { timeZone: "America/Los_Angeles" }).replace(" ", "T") + "Z") - t; }
+function fmtL(lt, o) { return new Date(lt).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
+function niceStep(x) { var s = [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000]; for (var i = 0; i < s.length; i++) if (s[i] >= x) return s[i]; return 10000; }
+
+// A graph's box in the page; the chart itself is drawn once the page is in place (drawGraphs)
+function graph(key, title, hgt, make) {
+  QUEUE.push({ id: "ch-" + key, make: make });
+  return '<div class="gtitle"><span>' + title + '</span></div><div class="gbox" style="height:' + hgt + 'px"><canvas id="ch-' + key + '" role="img" aria-label="' + esc(title.replace(/<[^>]+>/g, "")) + ', last ' + HOURS + ' hours"></canvas></div>';
 }
-function bars(vals) {
-  var W = 300, H = 56, mx = Math.max(0.1, Math.max.apply(null, vals)), bw = W / vals.length;
-  var svg = '<svg class="spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' + vals.map(function (x, j) {
-    if (!x) return ""; var h = x / mx * (H - 2); return '<rect x="' + (j * bw).toFixed(2) + '" y="' + (H - h).toFixed(2) + '" width="' + Math.max(0.6, bw - 0.6).toFixed(2) + '" height="' + h.toFixed(2) + '" fill="var(--water)"/>'; }).join("") + "</svg>";
-  return axes(svg, mx, 0, function (v) { return v.toFixed(2); }, "in/hr");
+function drawGraphs() {
+  var q = QUEUE; QUEUE = [];
+  Object.keys(CHARTS).forEach(function (k) { CHARTS[k].destroy(); }); CHARTS = {};
+  if (typeof Chart === "undefined") return;
+  var now = Date.now(), off = pacOff(now), lnow = now + off, muted = css("--muted"), line = css("--line");
+  var narrow = window.innerWidth < 520, step = (narrow ? 12 : 6) * 3600000;
+  var ctx = {
+    now: now,
+    x: function (show) {
+      return { type: "linear", min: -HOURS, max: 0, offset: false,
+        ticks: { display: show !== false, autoSkip: false, maxRotation: 0, color: muted, font: { size: 13 },
+          callback: function (v) { var lt = Math.round((lnow + v * 3600000) / 3600000) * 3600000;
+            return new Date(lt).getUTCHours() === 0 ? fmtL(lt, { weekday: "short" }) : fmtL(lt, { hour: "numeric" }); } },
+        afterBuildTicks: function (ax) { var o = [], f = Math.ceil((lnow - HOURS * 3600000) / step) * step;
+          for (var t = f; t <= lnow; t += step) o.push({ value: (t - lnow) / 3600000 }); ax.ticks = o; },
+        grid: { offset: false, drawTicks: false, color: function (cx) { return cx.tick && new Date(lnow + cx.tick.value * 3600000).getUTCHours() === 0 ? "#b9c4d0" : line; } } };
+    },
+    y: function (min, max, stp, unit) {
+      return { min: min, max: max, afterFit: function (ax) { ax.width = 68; },
+        ticks: { stepSize: stp, color: muted, font: { size: 13 }, callback: function (v) { return (+v.toFixed(2)).toLocaleString() + " " + unit; } }, grid: { color: line } };
+    },
+    base: function (unit) {
+      return { responsive: true, maintainAspectRatio: false, animation: false,
+        interaction: { mode: "nearest", axis: "x", intersect: false },
+        plugins: { legend: { display: false }, tooltip: { filter: function (it) { return !it.dataset.refLabel; }, callbacks: {
+          title: function (it) { var lt = lnow + it[0].parsed.x * 3600000; return fmtL(lt, { weekday: "short", hour: "numeric", minute: "2-digit" }); },
+          label: function (it) { return (it.dataset.label || "") + ": " + it.parsed.y.toFixed(unit === "cfs" ? 0 : 2) + " " + unit; } } } },
+        layout: { padding: { right: 6 } }, scales: {} };
+    }
+  };
+  q.forEach(function (it) {
+    var el = $(it.id); if (!el) return;
+    try { var cfg = it.make(ctx); cfg.options.scales.x = ctx.x(); CHARTS[it.id] = new Chart(el, { type: cfg.type || "line", data: cfg.data, options: cfg.options, plugins: [refMarks] }); }
+    catch (e) { el.parentNode.innerHTML = '<p class="empty">Graph not drawn.</p>'; }
+  });
+}
+// readings in the last HOURS as {x: hours before now, y}; a gap of over 3 hours breaks the line
+function linePts(key, now) {
+  var x = g(key), out = [], prev = null;
+  (x && x.points || []).forEach(function (p) {
+    var t = ms(p); if (t < now - (HOURS + 1) * 3600000) return;
+    if (prev && t - prev > 3 * 3600000) out.push({ x: (prev - now) / 3600000 + 0.01, y: null });
+    out.push({ x: (t - now) / 3600000, y: p[1] }); prev = t;
+  });
+  return out;
+}
+function vals(sp) { return sp.filter(function (p) { return p.y != null; }).map(function (p) { return p.y; }); }
+// a water level with its levels [{name, value, level 1-3}], like a creek gauge on the Creeks page
+function stageGraph(key, title, levels) {
+  if (!last(key)) return "";
+  return graph(key, title, 170, function (c) {
+    var sp = linePts(key, c.now), vmax = Math.max.apply(null, vals(sp).concat([0]));
+    var smax = Math.max(levels.length ? levels[levels.length - 1].value + 0.4 : 1, vmax + 0.3), stp = smax <= 6 ? 1 : smax <= 14 ? 2 : 5;
+    var o = c.base("ft"); o.scales.y = c.y(0, Math.ceil(smax / stp) * stp, stp, "ft");
+    var sets = levels.map(function (t) {
+      return { label: t.name, refLabel: t.name + " " + t.value.toFixed(2), refIcon: LV_ICON[t.level], data: [{ x: -HOURS, y: t.value }, { x: 0, y: t.value }],
+        borderColor: lvColor(t.level), borderWidth: t.level >= 3 ? 3 : 2, borderDash: LV_DASH[t.level], pointRadius: 0, pointHoverRadius: 0 };
+    });
+    sets.push({ label: "Water level", data: sp, borderColor: css("--ink"), backgroundColor: "rgba(26,58,92,0.12)", borderWidth: 2, pointRadius: 0, fill: "origin", spanGaps: false });
+    return { data: { datasets: sets }, options: o };
+  });
+}
+// a plain line: flow (cfs, from zero) or the tide (ft, fitted to the readings)
+function lineGraph(key, title, unit, hgt) {
+  if (!last(key)) return "";
+  return graph(key, title, hgt, function (c) {
+    var sp = linePts(key, c.now), vs = vals(sp), lo, hi, stp;
+    if (unit === "cfs") { stp = niceStep(Math.max(100, Math.max.apply(null, vs.concat([0])) * 1.15) / 4); lo = 0; hi = Math.ceil(Math.max(100, Math.max.apply(null, vs.concat([0])) * 1.15) / stp) * stp; }
+    else { lo = Math.floor(Math.min.apply(null, vs) - 0.3); hi = Math.ceil(Math.max.apply(null, vs) + 0.3); stp = niceStep((hi - lo) / 4); lo = Math.floor(lo / stp) * stp; hi = Math.ceil(hi / stp) * stp; }
+    var o = c.base(unit); o.scales.y = c.y(lo, hi, stp, unit);
+    return { data: { datasets: [{ label: unit === "cfs" ? "Flow" : "Tide", data: sp, borderColor: css("--ink"), backgroundColor: "rgba(26,58,92,0.12)",
+      borderWidth: 2, pointRadius: 0, fill: unit === "cfs" ? "origin" : false, spanGaps: false }] }, options: o };
+  });
+}
+// rain per hour, as bars (the Creeks page's rain graphs)
+function rainGraph(rain) {
+  return graph("rain", "Rain per hour, average of the three hill gauges", 90, function (c) {
+    var data = rain.map(function (v, i) { return { x: -(rain.length - i) + 0.5, y: v }; }).filter(function (p) { return p.y > 0; });
+    var top = Math.max(0.1, Math.ceil(Math.max.apply(null, rain.concat([0])) * 10) / 10);
+    var o = c.base("in"); o.scales.y = c.y(0, top, top / 2, "in");
+    var box = $("ch-rain").parentNode, px = Math.max(1, (box.clientWidth - 74) / HOURS);
+    return { type: "bar", data: { datasets: [{ label: "Rain", data: data, backgroundColor: "#1e88e5", barThickness: Math.max(2, Math.floor(px * 0.8)) }] }, options: o };
+  });
 }
 function trendText(key, big) {
   var r = rise1h(key); if (r == null || quiet(key)) return "";
@@ -302,11 +420,12 @@ function row(key, name, sub, valHtml, right, extra, graph) {
 }
 function stale(key) { var p = last(key); return p && quiet(key) ? ' <span class="chip k-offline">Last report ' + esc(ago(ms(p))) + "</span>" : !p ? ' <span class="chip k-offline">No readings</span>' : ""; }
 function renderFlow() {
+  QUEUE = [];
   var h = "", rain = hillsRain();
   if (rain) {
     var r1 = rain[rain.length - 1], d24 = rain.slice(-24).reduce(function (a, b) { return a + b; }, 0), d48 = rain.reduce(function (a, b) { return a + b; }, 0);
     h += row("rain", "Rain in the hills", "Average of Wunderlich, Windy Hill and Trappers Trail (Valley Water gauges)",
-      "<b>" + r1.toFixed(2) + "</b> <small>in, last hour</small>", "", d24.toFixed(2) + " in in the last 24 hours · " + d48.toFixed(2) + " in in 48 hours", bars(rain));
+      "<b>" + r1.toFixed(2) + "</b> <small>in, last hour</small>", "", d24.toFixed(2) + " in in the last 24 hours · " + d48.toFixed(2) + " in in 48 hours", rainGraph(rain));
     h += '<div class="link">Runs off into the upper creeks</div>';
   }
   var up = last("flow_upper");
@@ -314,7 +433,7 @@ function renderFlow() {
     var parts = [["Searsville", "flow_searsville"], ["Bear", "flow_bear"], ["Los Trancos", "flow_lostrancos"]].map(function (p) { var y = last(p[1]); return p[0] + " " + (y ? Math.round(y[1]) : "–"); });
     h += row("flow_upper", "Upper creeks", "Searsville Lake, Bear Creek and Los Trancos Creek, combined flow (SFCJPA)",
       "<b>" + Math.round(up[1]).toLocaleString() + "</b> <small>cfs</small>", '<span class="trend">' + trendText("flow_upper", 25) + "</span>" + stale("flow_upper"),
-      parts.join(" · ") + " cfs. Flows under 100 cfs are reported as 50.", spark("flow_upper", "var(--flow)"));
+      parts.join(" · ") + " cfs. Flows under 100 cfs are reported as 50.", lineGraph("flow_upper", "Upper creeks, combined flow · cfs", "cfs", 120));
     h += '<div class="link">Joins the creek above Stanford</div>';
   }
   // Stanford: the water level (stage) graphed, with FEWS's level for this gauge (OneRain's Flood Monitoring, 11 ft in
@@ -324,8 +443,9 @@ function renderFlow() {
   if (ss || sq) h += row("stanford_stage", "Stanford", "San Francisquito Creek at Stanford (USGS 11164500)",
     ss ? "<b>" + ss[1].toFixed(2) + "</b> <small>ft</small>" : '<b class="empty">–</b>',
     '<span class="trend">' + trendText("stanford_stage", 0.15) + "</span>" + (sq ? '<span class="trend">' + Math.round(sq[1]).toLocaleString() + " cfs</span>" : "") + stale("stanford_stage"),
-    ss ? (SFQ_LEVELS[0] - ss[1]).toFixed(1) + " ft below OneRain's Flood Monitoring level, " + SFQ_LEVELS[0] + " ft. Dashed line: that level (to confirm; this year's highest was 4.83 ft, on Jan 5)." : "",
-    spark("stanford_stage", "var(--flow)", SFQ_LEVELS[0]));
+    ss ? (SFQ_LEVELS[0] - ss[1]).toFixed(1) + " ft below OneRain's Flood Monitoring level, " + SFQ_LEVELS[0] + " ft. OneRain's levels are on the graph, to confirm (this year's highest was 4.83 ft, on Jan 5)." : "",
+    stageGraph("stanford_stage", "Stanford · water level (ft) · OneRain's levels, to confirm",
+      [{ name: "Monitoring", value: SFQ_LEVELS[0], level: 1 }, { name: "Watch", value: SFQ_LEVELS[1], level: 2 }, { name: "Warning", value: SFQ_LEVELS[2], level: 3 }]));
   h += '<div class="link">Downstream through Palo Alto and Menlo Park</div>';
   LOWER.forEach(function (k) {
     var x = g(k), p = last(k); if (!x) return;
@@ -333,16 +453,18 @@ function renderFlow() {
     var cam = /^https:\/\/[^\s"'<>]+$/.test(x.camera || "") ? '<span class="cam"><img src="' + esc(x.camera + (x.camera.indexOf("?") >= 0 ? "&" : "?") + "t=" + Math.floor(Date.now() / 6e4)) + '" alt="City of Palo Alto camera at ' + esc(x.label) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.hidden=true"><span>City of Palo Alto camera</span></span>' : "";
     h += row(k, x.label, x.where + " (SFCJPA)", p ? "<b>" + p[1].toFixed(2) + "</b> <small>ft</small>" : '<b class="empty">–</b>',
       '<span class="trend">' + trendText(k, 0.15) + "</span>" + '<span class="chip k-' + lv + '">' + esc(word(lv)) + (fast ? " · rising fast" : "") + "</span>" + (lv === "offline" ? stale(k) : ""),
-      (p && lv !== "offline" ? nextLevel(k) + ". Dashed line: Stay alert." : p ? "Last reading " + dayClock(ms(p)) + ". Not counted in the creek's status until it reports again." : "") + (k === "west_bayshore" && last("mayfield_tide") && last("mayfield_tide")[1] >= 5 && !quiet("mayfield_tide") ? " High tide in the Bay is holding water up here." : "") + cam,
-      spark(k, COLORS[k], x.levels[0]));
+      (p && lv !== "offline" ? nextLevel(k) + "." : p ? "Last reading " + dayClock(ms(p)) + ". Not counted in the creek's status until it reports again." : "") + (k === "west_bayshore" && last("mayfield_tide") && last("mayfield_tide")[1] >= 5 && !quiet("mayfield_tide") ? " High tide in the Bay is holding water up here." : "") + cam,
+      stageGraph(k, esc(x.label) + " · water level (ft)",
+        [{ name: "50% capacity", value: x.levels[0], level: 1 }, { name: "70% capacity", value: x.levels[1], level: 2 }, { name: "Road level", value: x.levels[2], level: 3 }]));
   });
   var t = last("mayfield_tide");
   if (t) {
     h += '<div class="link">Out to the Bay</div>';
     var tp = at("mayfield_tide", ms(t) - 3600000), state = t[1] >= 5.5 ? "High tide" : t[1] <= 0 ? "Low tide" : tp && t[1] > tp[1] ? "Tide coming in" : "Tide going out";
-    h += row("mayfield_tide", "Mayfield Slough", "Bay tide (SFCJPA)", "<b>" + t[1].toFixed(2) + "</b> <small>ft</small>", stale("mayfield_tide"), state, spark("mayfield_tide", COLORS.mayfield_tide));
+    h += row("mayfield_tide", "Mayfield Slough", "Bay tide (SFCJPA)", "<b>" + t[1].toFixed(2) + "</b> <small>ft</small>", stale("mayfield_tide"), state, lineGraph("mayfield_tide", "Mayfield Slough · Bay tide (ft)", "ft", 120));
   }
   $("flow").innerHTML = h;
+  drawGraphs();
   var probs = (D.problems || []).length;
   $("meta").textContent = "Updated " + ago(Date.parse(D.generated_utc.replace("Z", ":00Z"))) + " from SFCJPA's Contrail site. Graphs: the last " + HOURS + " hours." + (probs ? " " + probs + " gauge" + (probs === 1 ? "" : "s") + " couldn't be read on the last try." : "");
 }
