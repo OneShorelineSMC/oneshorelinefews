@@ -1,0 +1,14 @@
+key,label,where,kind,unit,site_id,device_id,order,stay_alert_ft,ready_ft,likely_ft,camera_url,note
+rain_wunderlich,Wunderlich County Park,hills,rain_total,in,18456,2,1,,,,,Valley Water rain gauge; rain total (accumulation)
+rain_windyhill,Windy Hill,hills,rain_total,in,18455,2,2,,,,,Valley Water rain gauge; rain total (accumulation)
+rain_trappers,Trappers Trail,hills,rain_total,in,18452,1,3,,,,,Valley Water rain gauge; rain total (accumulation)
+flow_upper,Upper creeks,"Searsville Lake, Bear Creek and Los Trancos Creek, combined",flow,cfs,18496,1,10,,,,,SFCJPA computed flow; flows under 100 cfs are reported as 50
+flow_searsville,Searsville Lake,upper creeks,flow,cfs,19866,1,11,,,,,SFCJPA
+flow_bear,Bear Creek at Sand Hill Rd,upper creeks,flow,cfs,19872,1,12,,,,,SFCJPA
+flow_lostrancos,Los Trancos Creek at Arastradero,upper creeks,flow,cfs,19873,1,13,,,,,SFCJPA
+stanford_flow,Stanford,San Francisquito Creek at Stanford (USGS 11164500),flow,cfs,18027,1,20,,,,,"USGS, through Contrail"
+stanford_stage,Stanford,San Francisquito Creek at Stanford (USGS 11164500),stage,ft,18027,2,21,,,,,"USGS, through Contrail; no flood levels set"
+waverley,Waverley Street,Palo Alto,stage,ft,18501,1,30,16,20,28,,SFCJPA SFWS; levels 50% / 70% of channel capacity / road level (SFCJPA)
+pope_chaucer,Pope-Chaucer bridge,Palo Alto and Menlo Park,stage,ft,18502,1,31,13,16.5,24,https://g1.ipcamlive.com/player/snapshot.php?alias=chaucerbridgecamera,SFCJPA SFPC; City of Palo Alto lists 13.2 / 17.9 ft for Chaucer St
+west_bayshore,West Bayshore Road,Palo Alto and East Palo Alto,stage,ft,18503,1,32,8,11,15.5,https://cc-webfile.cityofpaloalto.org/creekcam/creekcam.jpg,SFCJPA SFWB; tidal
+mayfield_tide,Mayfield Slough,Bay tide,tide,ft,18504,1,40,,,,,SFCJPA SFBA
