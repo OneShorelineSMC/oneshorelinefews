@@ -6,6 +6,8 @@
 #   status_log.csv - creek status changes (creek status layer, staff review), newest last
 #   tide_tracker.json + tide_tracker_history.json - the water year at four NOAA tide gauges against the tide table and history (TideTracker.html)
 #   storm_tracker.json - each rain event at each creek and a season summary per creek (StormTracker.html)
+#   sfcjpa.json   - San Francisquito Creek from SFCJPA's Contrail site: the Palo Alto gauges, Mayfield Slough tide, upper-creek
+#                   flows and rain (SanFrancisquito.html, preview); only once the CONTRAIL_USER / CONTRAIL_PASSWORD secrets are set
 #   road_closures.json - road closures from flooding and storms in San Mateo County (Caltrans and city posts), logged for the water year (StormTracker.html)
 #   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
@@ -63,6 +65,7 @@ jobs:
             git show FETCH_HEAD:storm_tracker.json > out/storm_tracker.json 2>/dev/null || true
             git show FETCH_HEAD:waves.json > out/waves.json 2>/dev/null || true
             git show FETCH_HEAD:road_closures.json > out/road_closures.json 2>/dev/null || true
+            git show FETCH_HEAD:sfcjpa.json > out/sfcjpa.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -91,6 +94,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 2
         run: python scripts/road_closures.py out/road_closures.json --min-age 9
+
+      - name: San Francisquito Creek from SFCJPA (preview page; scripts/fetch_sfcjpa.py, every 10 minutes)
+        # SFCJPA's own OneRain site (contrail.onerain.com): the three Palo Alto gauges, the Mayfield Slough tide, the upper-creek
+        # flows and rain, for SanFrancisquito.html. Signs in with SFCJPA's published viewer login, kept as secrets; skipped
+        # until they're set. A problem here never stops the creek data; the last readings are kept.
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          CONTRAIL_USER: ${{ secrets.CONTRAIL_USER }}
+          CONTRAIL_PASSWORD: ${{ secrets.CONTRAIL_PASSWORD }}
+        run: |
+          if [ -n "$CONTRAIL_USER" ]; then python scripts/fetch_sfcjpa.py out/sfcjpa.json --min-age 9; else echo "CONTRAIL_USER not set; skipped"; fi
 
       - name: Download all sites for the map (every 15 minutes)
         # A problem here never stops the creek data from being published.
@@ -148,7 +163,7 @@ jobs:
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
             $( [ -s tide_tracker.json ] && echo tide_tracker.json ) $( [ -s tide_tracker_history.json ] && echo tide_tracker_history.json ) \
-            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s road_closures.json ] && echo road_closures.json ) \
+            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s road_closures.json ] && echo road_closures.json ) $( [ -s sfcjpa.json ] && echo sfcjpa.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
