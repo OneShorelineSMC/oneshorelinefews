@@ -7,7 +7,7 @@
 #   tide_tracker.json + tide_tracker_history.json - the water year at four NOAA tide gauges against the tide table and history (TideTracker.html)
 #   storm_tracker.json - each rain event at each creek and a season summary per creek (StormTracker.html)
 #   sfcjpa.json   - San Francisquito Creek from SFCJPA's Contrail site: the Palo Alto gauges, Mayfield Slough tide, upper-creek
-#                   flows and rain (SanFrancisquito.html, preview); only once the CONTRAIL_USER / CONTRAIL_PASSWORD secrets are set
+#                   flows and rain (SanFrancisquito.html, preview); only once the CONTRAIL_USER / CONTRAIL_PASSWORD variables are set
 #   road_closures.json - road closures from flooding and storms in San Mateo County (Caltrans and city posts), logged for the water year (StormTracker.html)
 #   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
@@ -102,8 +102,9 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
         env:
-          CONTRAIL_USER: ${{ secrets.CONTRAIL_USER }}
-          CONTRAIL_PASSWORD: ${{ secrets.CONTRAIL_PASSWORD }}
+          # SFCJPA's public viewer login (published on their website): repository variables, or secrets if you prefer
+          CONTRAIL_USER: ${{ vars.CONTRAIL_USER || secrets.CONTRAIL_USER }}
+          CONTRAIL_PASSWORD: ${{ vars.CONTRAIL_PASSWORD || secrets.CONTRAIL_PASSWORD }}
         run: |
           if [ -n "$CONTRAIL_USER" ]; then python scripts/fetch_sfcjpa.py out/sfcjpa.json --min-age 9; else echo "CONTRAIL_USER not set; skipped"; fi
 
