@@ -308,6 +308,15 @@
     border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
     padding: 14px 18px; gap: 18px; }
   #about.show { display: flex; }
+  /* One-creek screen (?only=sanbruno): About for the EOC */
+  #sbabout { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box; border-radius: 10px; background: var(--panel);
+    display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); padding: 12px 18px; gap: 22px; overflow: hidden; font-size: 12.5px; line-height: 1.34; }
+  #sbabout.show { display: flex; } #stage.creekalert #sbabout { top: 104px; height: 324px; font-size: 12.5px; }
+  #sbabout .sbcol { flex: 1; min-width: 0; } #sbabout h3 { margin: 0 0 6px; font-size: 18px; } #sbabout h4 { margin: 8px 0 3px; font-size: 14px; }
+  #sbabout p { margin: 0 0 6px; } #sbabout .emerg { color: var(--red); } #sbabout .sbfig { padding: 6px 8px; background: var(--bg); border-radius: 6px; }
+  #sbabout .sbsrc { font-size: 11.5px; color: var(--muted); } #sbabout .sbtrial { font-size: 11px; font-weight: normal; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; }
+  #sbabout .sbam { color: var(--amber); } #sbabout .sbbl { color: var(--blue); } #sbabout .sbor { color: #b45a00; }
+  html.only #tabs .tab { padding-left: 16px; padding-right: 16px; }
   /* Outlook tab (staff view, in place of About; staff 2026-11-17, trial) */
   #outlook { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box; border-radius: 10px; background: var(--panel);
     display: none; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,.08); padding: 6px 10px 4px; overflow: hidden; }
@@ -515,6 +524,22 @@
   </div>
 
   <div id="outlook"></div>
+  <div id="sbabout">
+    <div class="sbcol">
+      <h3>San Bruno Creek flood screen</h3>
+      <p>For the EOC during storms. Live readings from OneShoreline’s creek and rain gauge at First Avenue and NOAA’s Bay tide at Alameda, with the National Weather Service rain forecast. The data updates about every 5 minutes. This screen is information, not a warning: follow National Weather Service and County alerts. <b class="emerg">In an emergency, call 911.</b></p>
+      <h4>How San Bruno Creek floods</h4>
+      <p>Mostly from short, intense bursts of rain, 15 to 60 minutes of roughly a 5-year storm or bigger, which can bring flooding along the eastern avenues. A high Bay tide backs water up the creek (the First Avenue gauge rises and falls with the tide), so the worst case is a burst during a high tide or king tide.</p>
+      <p class="sbfig" id="sbFive"></p>
+    </div>
+    <div class="sbcol">
+      <h4>Live conditions</h4>
+      <p>San Bruno Creek’s status, the creek level at First Avenue with its levels (<span id="sbLv"></span>), rain at First Avenue, and the Bay tide. A ⚠ <b>not reporting</b> means the gauge has gone quiet: the number shown is old.</p>
+      <h4>Outlook <span class="sbtrial">trial</span></h4>
+      <p>The last day and the next 3 days on one graph. Shaded times show when conditions that can cause flooding line up: <b class="sbam">amber</b> for 6-hour periods of storm-sized rain in the NWS forecast (at or above a 1-year 6-hour storm, which can hold 5-year bursts), <b class="sbbl">blue</b> for high tides above average (darker at king-tide level), <b class="sbor">outlined</b> for both at once. It is not a forecast of the creek: the forecast can’t say when a burst will hit, and it shifts with each NWS update.</p>
+      <p class="sbsrc">Sources: OneShoreline (OneRain) gauges · NOAA Tides &amp; Currents 9414750 Alameda · National Weather Service · NOAA Atlas 14. OneShoreline <span data-text="contact_phone"></span> · <span data-text="contact_email"></span></p>
+    </div>
+  </div>
   <div id="about">
     <div id="aboutText">
       <h3>About this screen</h3>
@@ -659,6 +684,10 @@ if (params.get("cursor") === "1") document.body.classList.add("cursor");
   }, { passive: true });
 })();
 if (params.get("rotate")) ROTATE_SECONDS = Number(params.get("rotate")) || 0;
+// One-creek screen (staff 2026-11-17): ?only=sanbruno (SanBrunoKiosk.html) shows just that creek: Live (its page from the
+// Creeks tab), Outlook (rain, creek and tide together, next 3 days) and an About written for the EOC
+var ONLY = params.get("only") === "sanbruno" ? "sanbruno" : null;
+if (ONLY) { CREEK_RETURN_MIN = 0; CREEK_AUTO_SWITCH_AT_WARNING = false; document.documentElement.classList.add("only"); }
 /* ================================================== */
 
 /* ---------- Scale the 800x480 design to fit the screen ---------- */
@@ -1569,7 +1598,7 @@ $t("dbody").addEventListener("click", function (e) {
 
 /* ---------- Tabs ---------- */
 var currentTab = "creek", tabChangedAt = Date.now();   // the EOC screen opens on Creeks (All creeks: the status board)
-var C = { data: null, t: 0, charts: {}, sel: params.get("creek") || "all", selAt: Date.now() };
+var C = { data: null, t: 0, charts: {}, sel: ONLY || params.get("creek") || "all", selAt: Date.now() };
 
 function loadCreek() {
   return fetch(CREEK_DATA_URL + "?t=" + Date.now(), { cache: "no-store" })
@@ -1716,6 +1745,7 @@ function renderCreek() {
   el("cpick").innerHTML = all
     ? (board ? "" : '<span class="cinfo" style="margin-left:0">' + (window.CREEK_STATUS && CREEK_STATUS.staff ? "staff view · " : "") + "Tap a creek for its graphs</span>" +
         '<span class="cbtn more" data-more="1" style="margin-left:auto">Go to a creek ▾</span>')
+    : ONLY ? '<span class="cname">' + esc(c.name) + ' · live</span><span class="cinfo" data-info="1" style="margin-left:auto">ⓘ levels and notes</span>'
     : '<span class="cbtn back" data-creek="all">‹ All creeks</span><span class="cname">' + esc(c.name) + "</span>" +
       '<span class="cbtn more" data-more="1" style="margin-left:auto">Go to a creek ▾</span>' +
       '<span class="cinfo" data-info="1" style="margin-left:0">ⓘ notes</span>';
@@ -2264,7 +2294,13 @@ function fitAbout() {
 }
 setInterval(fitAbout, 3000);   // re-check when the alert strip comes or goes
 
-if (window.CREEK_STATUS && CREEK_STATUS.staff) {   // staff view: Outlook in place of About (the disclaimer stays on the Outlook tab)
+if (ONLY) {   // one-creek screen: Live · Outlook · About
+  document.querySelector('.tab[data-tab="creek"]').textContent = "Live conditions";
+  ["tides", "coast", "map"].forEach(function (t) { var e = document.querySelector('#tabs .tab[data-tab="' + t + '"]'); if (e) e.remove(); });
+  var ab = document.querySelector('#tabs .tab[data-tab="about"]'); ab.dataset.tab = "sbabout";
+  ab.insertAdjacentHTML("beforebegin", '<span class="tab" data-tab="outlook">Outlook</span>');
+  document.title = "San Bruno Creek – OneShoreline EOC screen";
+} else if (window.CREEK_STATUS && CREEK_STATUS.staff) {   // staff view: Outlook in place of About (the disclaimer stays on the Outlook tab)
   var aboutTab = document.querySelector('.tab[data-tab="about"]'); aboutTab.dataset.tab = "outlook"; aboutTab.textContent = "San Bruno";
 }
 /* ---------- Outlook tab (staff view, ?preview=1, in place of About; staff 2026-11-17, TRIAL) ----------
@@ -2278,7 +2314,7 @@ if (window.CREEK_STATUS && CREEK_STATUS.staff) {   // staff view: Outlook in pla
      (KING_TIDE_FT_RWC at Redwood City; other Bay gauges the same height above their MHHW).
    - both: storm-sized rain during a high tide, outlined. */
 var OL = { tides: {}, kings: null, ala: null, alaObs: null, chart: null }, OL_PAST = 24, OL_AHEAD = 72, H6 = 6 * 3600000;
-function olStaff() { return !!(window.CREEK_STATUS && CREEK_STATUS.staff); }
+function olStaff() { return !!ONLY || !!(window.CREEK_STATUS && CREEK_STATUS.staff); }
 function olShown() { return currentTab === "outlook"; }
 function olOff(now) { return Math.round((now - Date.now()) / 9e5) * 9e5; }   // Pacific clock minus UTC (nowLocal() drops the seconds)
 function kingFor(id) {
@@ -2449,8 +2485,18 @@ function drawSB(c, now) {
     return "<span><i style='" + (d.type === "bar" ? "height:9px;background:" + d.backgroundColor : "border-top:2px " + (d.borderDash ? "dashed " : "solid ") + d.borderColor) + "'></i>" + esc(d.key) + "</span>"; }).join("");
 }
 
+function fillSbAbout() {
+  var c = creeks().concat(moreCreeks()).filter(function (x) { return x.id === "sanbruno"; })[0]; if (!c) return;
+  var g = (c.stages || [])[0], words = { 1: "Stay alert", 2: "Be ready", 3: "Flooding likely" };
+  document.getElementById("sbLv").textContent = g ? (g.thresholds || []).filter(function (t) { return t.level <= 3; }).map(function (t) {
+    return t.name.replace(/^Flood /, "") + " " + t.value.toFixed(2) + " ft = " + words[t.level]; }).join(", ") : "";
+  var rg = mainRain(c), fr = rg && (((C.data.sensors[rg.key] || {}).signals || {}).freq || {}).minutes, five = function (m) { var t = fr && fr[String(m)]; return t ? t["5.0"] || t["5"] : null; };
+  var parts = [[15, "15 min"], [60, "1 hour"], [360, "6 hours"]].filter(function (x) { return five(x[0]); }).map(function (x) { return five(x[0]).toFixed(2) + " in in " + x[1]; });
+  document.getElementById("sbFive").innerHTML = parts.length ? "<b>A 5-year storm at First Avenue</b> (NOAA Atlas 14): " + esc(parts.join(" · ")) + ". Compare with the rain on the Live tab." : "";
+}
 function showTab(name) {
   if (name === "outlook" && !olStaff()) name = "about";
+  if (ONLY && ["tides", "coast", "map", "about"].indexOf(name) >= 0) name = name === "about" ? "sbabout" : "creek";
   currentTab = name; tabChangedAt = Date.now();
   var creek = name === "creek", about = name === "about", tides = name === "tides" || name === "coast";
   setSide(name === "coast");
@@ -2461,6 +2507,8 @@ function showTab(name) {
   document.getElementById("disclaimer").classList.toggle("show", name === "disclaimer");
   document.getElementById("maptab").classList.toggle("show", name === "map");
   document.getElementById("outlook").classList.toggle("show", name === "outlook");
+  document.getElementById("sbabout").classList.toggle("show", name === "sbabout");
+  if (name === "sbabout") fillSbAbout();
   if (name === "outlook") renderOutlook();
   if (name === "map") showMapTab();
   document.getElementById("tides").classList.toggle("hide", !tides);
@@ -2480,9 +2528,9 @@ every(10, loadExtras);   // team board: SFCJPA and road closures (staff view onl
 every(30, loadOutlook);   // Outlook tab: tide tables (staff view only)
 setInterval(function () {
   var secs = (Date.now() - tabChangedAt) / 1000;
-  if ((currentTab === "about" || currentTab === "disclaimer") && secs >= ABOUT_RETURN_SEC) { showTab("creek"); return; }
-  if (ROTATE_SECONDS > 0 && currentTab !== "about" && currentTab !== "disclaimer" && secs >= ROTATE_SECONDS && !document.getElementById("detail").classList.contains("show")) {
-    showTab(olStaff() ? { creek: "tides", tides: "outlook" }[currentTab] || "creek" : currentTab === "tides" ? "creek" : "tides"); return;
+  if ((currentTab === "about" || currentTab === "disclaimer" || currentTab === "sbabout") && secs >= ABOUT_RETURN_SEC) { showTab("creek"); return; }
+  if (ROTATE_SECONDS > 0 && currentTab !== "about" && currentTab !== "disclaimer" && currentTab !== "sbabout" && secs >= ROTATE_SECONDS && !document.getElementById("detail").classList.contains("show")) {
+    showTab(ONLY ? (currentTab === "creek" ? "outlook" : "creek") : olStaff() ? { creek: "tides", tides: "outlook" }[currentTab] || "creek" : currentTab === "tides" ? "creek" : "tides"); return;
   }
   if (TAB_RETURN_MIN > 0 && (currentTab === "tides" || currentTab === "coast") && secs >= TAB_RETURN_MIN * 60) showTab("creek");
   // a single creek goes back to the "All creeks" summary after a while
@@ -2502,7 +2550,7 @@ function drawQRs() {
   });
   qrDrawn = true;
 }
-showTab(["tides", "coast", "creek", "map", "about", "disclaimer", "outlook"].indexOf(params.get("tab")) >= 0 ? params.get("tab") : "creek");   // Creeks first unless ?tab= says otherwise
+showTab(["tides", "coast", "creek", "map", "about", "disclaimer", "outlook", "sbabout"].indexOf(params.get("tab")) >= 0 ? params.get("tab") : "creek");   // Creeks first unless ?tab= says otherwise
 
 /* ---------- Map tab ---------- */
 var M = { data: null, map: null, markers: [], sel: null, timer: null };
