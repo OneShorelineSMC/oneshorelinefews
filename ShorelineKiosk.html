@@ -601,11 +601,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261117b"></script>
-<script src="tide_season.js?v=20261117b"></script>
-<script src="creek_status.js?v=20261117b"></script>
-<script src="severity.js?v=20261117b"></script>
-<script src="hero.js?v=20261117b"></script>
+<script src="lookups.js?v=20261118a"></script>
+<script src="tide_season.js?v=20261118a"></script>
+<script src="creek_status.js?v=20261118a"></script>
+<script src="severity.js?v=20261118a"></script>
+<script src="hero.js?v=20261118a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -2198,7 +2198,9 @@ function drawCreekCharts(st, now) {
     return { data: sr.map(function (p) { return { x: p.x + off, y: p.y }; }), backgroundColor: RAIN_COLORS[i % RAIN_COLORS.length], barThickness: thick };
   }) }, options: ropt });
   document.getElementById("cRainKey").innerHTML = st.rains.map(function (r, i) {
-    return "<span style='color:" + RAIN_COLORS[i % RAIN_COLORS.length] + "'>■</span> " + esc(r.g.label) + (st.rains.length > 1 ? " (" + esc(r.g.where.replace(" watershed", "")) + ")" : "");
+    var w = null; for (var k = r.p.length - 1; k >= 0; k--) if (r.p[k].v > 0) { w = r.p[k].t; break; }   // a rain gauge only reports rain: say when it last rained
+    return "<span style='color:" + RAIN_COLORS[i % RAIN_COLORS.length] + "'>■</span> " + esc(r.g.label) + (st.rains.length > 1 ? " (" + esc(r.g.where.replace(" watershed", "")) + ")" : "") +
+      " <span style='color:var(--muted)'>· " + (w ? "last rain " + esc(fTime(w)) + (now - w > 864e5 ? " " + esc(fmt(w, { month: "short", day: "numeric" })) : "") : "no rain in 2 days") + "</span>";
   }).join(" &nbsp;");
 
   // Running rain total (e.g. Belmont's 4-hour rain) with its trigger line

@@ -378,10 +378,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261117b"></script>
-<script src="severity.js?v=20261117b"></script>
-<script src="creek_status.js?v=20261117b"></script>
-<script src="hero.js?v=20261117b"></script>
+<script src="lookups.js?v=20261118a"></script>
+<script src="severity.js?v=20261118a"></script>
+<script src="creek_status.js?v=20261118a"></script>
+<script src="hero.js?v=20261118a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -1250,6 +1250,13 @@ function drawCharts(st, now) {
 /* The reading tiles beside each graph (status layer): the number now, how long ago, and where it stands */
 function fillTiles(st, now) {
   var c = st.c, sens = (D.creek && D.creek.sensors) || {};
+  // A rain gauge (tipping bucket) reports only when it measures rain (every 0.04 in), plus a check-in every 12 hours:
+  // "an hour ago" read as stale data, so the tile says when it last rained (staff, 2026-11-18)
+  function lastRain(p, lr) {
+    var w = null; for (var k = p.length - 1; k >= 0; k--) if (p[k].v > 0) { w = p[k].t; break; }
+    var when = function (t) { return fDate(t) === fDate(now) ? fTime(t) : fDate(t) + ", " + fTime(t); };
+    return w ? "last rain " + esc(when(w)) : lr ? "no rain since " + esc(when(p.length ? p[0].t : lr)) : "no recent report";
+  }
   function ago(t) { var m = Math.round((now - t) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " hr ago" : fmt(t, { month: "short", day: "numeric" }); }
   function inch(x) { return x < 0.005 ? "0.00" : x.toFixed(2); }
   function set(id, cls, html) { var e = $(id); if (e) { e.className = "tile " + cls; e.innerHTML = html; } }
@@ -1273,7 +1280,7 @@ function fillTiles(st, now) {
       '<span class="tx">in the last ' + esc(winLabel(w0)) + "</span>" +
       '<span class="tx">' + wins.slice(1).map(function (m) { return winLabel(m) + " <b>" + inch(rainSum(r.p, now - m * 60000, now)) + "</b>"; }).join(" · ") + "</span>" +
       (rl ? '<span class="tw">' + esc(rl >= 3 ? LK.text("rain_severe") : rl === 2 ? LK.text("rain_vheavy") : LK.text("rain_heavy")) + "</span>" : "") +
-      '<span class="tx">' + (lr ? "last report " + esc(ago(lr)) : "no recent report") + "</span>");
+      '<span class="tx">' + lastRain(r.p, lr) + "</span>");
   });
   if (c.rain_running && c.rain_running.line && $("tlRun")) {
     var rr = c.rain_running, amt = rainSum(pts(rr.gauge), now - rr.minutes * 60000, now), met = amt >= rr.line;

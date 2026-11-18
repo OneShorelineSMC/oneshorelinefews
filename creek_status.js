@@ -255,9 +255,10 @@
         '<span class="cs-sm">reading at ' + esc(dated(p[0])) + "</span>" : "—");
     });
     (c.rain || []).concat(c.rain_support || []).forEach(function (g) {
-      var s = (data.sensors[g.key] || {}).signals || {};
+      var s = (data.sensors[g.key] || {}).signals || {}, rp = (data.sensors[g.key] || {}).points || [], wet = null;
+      for (var k = rp.length - 1; k >= 0; k--) if (rp[k][1] > 0) { wet = rp[k][0]; break; }   // last tip: a rain gauge only reports rain (staff, 2026-11-18)
       row(g.label + " rain gauge", (s.level ? esc(rainWord(s.level)) : esc(T(s.raining ? "rain_now" : "rain_none"))) + (s.driver ? " · " + s.driver.inches.toFixed(2) + " in in " + esc(winLabel(s.driver.minutes)) : "") +
-        '<span class="cs-sm">' + (s.last_report ? "last report " + esc(dated(s.last_report)) : "no recent report") + "</span>");
+        '<span class="cs-sm">' + (wet ? "last rain " + esc(dated(wet)) : s.last_report ? "no rain recorded recently" : "no recent report") + "</span>");
     });
     if (st.trigger) row("Flooding trigger", esc(st.trigger.label) + ": " + st.trigger.amount.toFixed(2) + " of " + st.trigger.value.toFixed(2) + " in · met");
     if (st.tidal && st.tide && st.tide.ft != null) row("Bay tide (ft NAVD88)", st.tide.ft.toFixed(2) + " ft · " + (st.tide.rising ? "rising" : "falling") +
