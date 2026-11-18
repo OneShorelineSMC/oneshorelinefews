@@ -886,8 +886,9 @@ function renderMoreRows(now) {
     if (grid.querySelector('[data-creek="' + c.id + '"]')) return;   // the staff view already has it, with its status
     var st = creekState(c, now), d = [];
     st.stages.forEach(function (g) {
-      d.push(esc(g.g.label) + " <b>" + (g.last ? g.last.v.toFixed(2) + g.arrow + " ft" : "–") + "</b> " +
-        (!g.last ? "no data" : g.quiet ? '<span class="warn">offline</span> · last report ' + fDate(g.last.t) : '<span class="cs-dim">' + agoText(now - g.last.t) + "</span>"));
+      // a gauge that has gone quiet shows no old number, only since when (staff 2026-11-17)
+      d.push(esc(g.g.label) + " " + (!g.last ? "<b>–</b> no data" : g.quiet ? '<span class="warn">not reporting</span> since ' + fDate(g.last.t) + ", " + fTime(g.last.t)
+        : "<b>" + g.last.v.toFixed(2) + g.arrow + ' ft</b> <span class="cs-dim">' + agoText(now - g.last.t) + "</span>"));
     });
     var wins = rainWindows(c), wl = wins.length - 1;
     if (st.rains.length && wl >= 0) {

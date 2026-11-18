@@ -282,7 +282,8 @@
   .tb .bar { width: 4px; padding: 0; }
   .tb .ro { font-size: 11.5px; color: var(--muted); font-weight: normal; }
   .tb .wet { font-weight: bold; color: var(--blue); }
-  .tb .note { padding: 3px 10px; font-size: 12.5px; border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tb .cs-bhead { flex: none; white-space: nowrap; } .tb .cs-bhead span { overflow: hidden; text-overflow: ellipsis; margin-left: 10px; }
+  .tb .note { flex: none; padding: 3px 10px; font-size: 12.5px; border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tb .note b { color: var(--ink); } .tb .note[data-roads] { cursor: pointer; }
   .cs-bquiet [data-creek] { cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
   .cinfo { margin-left: auto; font-size: 12.5px; color: var(--muted); padding: 4px 6px; }
@@ -1843,6 +1844,28 @@ function roadsLine() {
       return esc([c.route, c.place].filter(Boolean).join(" ") + (c.what ? " (" + c.what.toLowerCase() + ")" : "")); }).join(" · ") + (act.length > 3 ? " · …" : "")
     : '<span class="m">none open now' + ((d.log || []).length ? " · " + d.log.length + " this season" : "") + "</span>") + ' <span class="m">· tap for the list</span></div>';
 }
+// Creek gauges that have gone quiet (past GAUGE_QUIET_HOURS, or _INTERVAL for scheduled gauges) or that staff have taken out of
+// service (lookups/gauge_outages.csv), every gauge of every creek, not only the main ones (staff 2026-11-17: Pescadero at
+// Stage Road had been silent for over a day without the board saying so). Rain gauges aren't listed: in dry weather a
+// rain gauge has nothing to report.
+function quietGauges(now) {
+  var seen = {}, quiet = [], out = [];
+  creeks().concat(moreCreeks()).forEach(function (c) {
+    creekState(c, now).stages.forEach(function (s) {
+      if (seen[s.g.key]) return; seen[s.g.key] = 1;
+      if (s.out) out.push({ c: c, s: s }); else if (s.quiet) quiet.push({ c: c, s: s });
+    });
+  });
+  quiet.sort(function (a, b) { return (a.s.last ? a.s.last.t : 0) - (b.s.last ? b.s.last.t : 0); });
+  return { quiet: quiet, out: out };
+}
+function quietLine(now) {
+  var q = quietGauges(now); if (!q.quiet.length && !q.out.length) return "";
+  var since = function (x) { return x.s.last ? " since " + fmt(x.s.last.t, { weekday: "short" }) + " " + fTime(x.s.last.t) : " (no readings)"; };
+  return '<div class="note"' + (q.quiet.length ? ' style="background:color-mix(in srgb, var(--amber) 10%, var(--panel))"' : "") + ">" +
+    (q.quiet.length ? '<b style="color:var(--amber)">⚠ Not reporting:</b> ' + q.quiet.map(function (x) { return esc(x.s.g.label + " (" + shortName(x.c) + ")" + since(x)); }).join(" · ") : "") +
+    (q.out.length ? (q.quiet.length ? ' <span class="m">·</span> ' : "") + '<b>Out of service:</b> <span class="m">' + q.out.map(function (x) { return esc(x.s.g.label + " (" + shortName(x.c) + ")"); }).join(" · ") + "</span>" : "") + "</div>";
+}
 function teamBoard(now) {
   var CS = window.CREEK_STATUS, el = document.getElementById("call");
   el.style.gridTemplateColumns = "1fr"; el.style.gridTemplateRows = "1fr";
@@ -1853,8 +1876,10 @@ function teamBoard(now) {
     var r1 = 0, r3 = 0; st.rains.forEach(function (r) { r1 = Math.max(r1, rainSum(r.p, now - 3600000, now)); r3 = Math.max(r3, rainSum(r.p, now - 3 * 3600000, now)); });
     var mg = mainRain(c), fq = mg && (((C.data.sensors[mg.key] || {}).signals || {}).freq || {}).minutes, one = function (min) { var t = fq && fq[String(min)]; return t ? t["1.0"] || t["1"] : null; };
     var fc = c.forecast && !c.forecast.error ? c.forecast : null, ro = isMore(c) && C.data.creeks_readings;
+    var others = st.stages.filter(function (x) { return x !== s && x.quiet && !x.out; }).length;
     var lvl = !s || s.out ? "–" : !s.last ? "–" : s.quiet ? '<span class="m">offline · ' + esc(fDay(s.last.t).replace(/^\w+, /, "")) + "</span>"
       : "<b>" + s.last.v.toFixed(2) + "</b> ft";   // the trend has its own column
+    if (others) lvl = '<span style="color:var(--amber)" title="another gauge on this creek is not reporting">⚠</span> ' + lvl;
     // trend (staff 2026-11-17: in place of the distance to the next level): rising fast in red with its rate
     var sig = s ? (C.data.sensors[s.g.key] || {}).signals || {} : {};
     var trend = !s || !s.last || s.quiet || s.out ? "" : s.fast ? '<b style="color:var(--red)">↑↑ fast' + (s.rate ? " +" + s.rate.toFixed(1) + " ft/hr" : "") + "</b>"
@@ -1872,14 +1897,14 @@ function teamBoard(now) {
       (fc ? wet(fc.next6, one(360)) + (pk ? wet(pk.v, one(360), ' <span class="m">' + esc(fmt(pk.t, { weekday: "short" }) + " " + hm(pk.t)) + "</span>") : '<td class="r m">–</td>') : '<td class="r m">–</td><td class="r m">–</td>') + "</tr>" };
   }).sort(function (a, b) { return b.rank - a.rank || a.ns - b.ns; });
   var gen = C.data.generated ? parseLocal(C.data.generated) : null;
-  el.innerHTML = '<div class="tb"><div class="cs-bhead"><b>Creeks</b><span>level at each creek’s main gauge · rain: 3 hr measured, 6 hr NWS forecast · ' + (gen ? esc(fTime(gen)) : "–") + " · tap a creek for its graphs</span></div>" +
-    '<table><colgroup><col style="width:5px"><col style="width:110px"><col style="width:136px"><col style="width:54px"><col style="width:114px"><col style="width:142px"><col style="width:36px"><col style="width:50px"><col></colgroup>' +
+  el.innerHTML = '<div class="tb"><div class="cs-bhead"><b>Creeks</b><span>level at main gauge · rain: 3 hr measured, 6 hr NWS forecast · ' + (gen ? esc(fTime(gen)) : "–") + "</span></div>" +
+    '<table><colgroup><col style="width:5px"><col style="width:110px"><col style="width:136px"><col style="width:68px"><col style="width:108px"><col style="width:134px"><col style="width:36px"><col style="width:50px"><col></colgroup>' +
     '<thead><tr><th></th><th>Creek</th><th>Status</th><th class="r">Level</th><th>Trend</th><th>Rain now</th><th class="r">3 hr</th><th class="r">Next 6h</th><th class="r">Wettest 6h</th></tr></thead><tbody>' +
-    rows.map(function (r) { return r.html; }).join("") + "</tbody></table>" + sfqLine(now) + roadsLine() + "</div>";
+    rows.map(function (r) { return r.html; }).join("") + "</tbody></table>" + quietLine(now) + sfqLine(now) + roadsLine() + "</div>";
   // the screen is shorter during a creek alert: rows that don't fit go, least serious first
   var box = el.querySelector(".tb"), trs = Array.prototype.slice.call(box.querySelectorAll("tbody tr")), cut = 0;
   while (trs.length > 4 && box.scrollHeight > box.clientHeight + 1) { trs.pop().style.display = "none"; cut++; }
-  if (cut) box.querySelector(".cs-bhead span").textContent += " · " + cut + " quiet creek" + (cut > 1 ? "s" : "") + " not shown";
+  if (cut) box.querySelector(".cs-bhead span").textContent += " · +" + cut + " quiet not shown";
 }
 document.getElementById("call").addEventListener("click", function (e) { if (e.target.closest && e.target.closest("[data-roads]")) { e.stopPropagation(); openRoads(); } }, true);
 
@@ -2309,7 +2334,7 @@ function sbSentence(c, now) {
   var R = rainBlocks(c, now), T = tideBands(c, now).filter(function (x) { return x.t > now; }), fut = R.blocks.filter(function (b) { return !b.past && b.t1 > now; });
   var top = fut.slice().sort(function (a, b) { return b.r - a.r; })[0], s = [], ov = overlaps(fut, T);
   if (!R.one) s.push("No storm sizes for its rain gauge.");
-  else if (top && top.r >= 1) s.push("<b>" + span(top.t0, top.t1) + ": storm-sized rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours). Short bursts in it could flood First Avenue.");
+  else if (top && top.r >= 1) s.push("<b>" + span(top.t0, top.t1) + ": storm-sized rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours). Short bursts in it could bring flooding along the eastern avenues.");
   else if (top && top.r >= 0.5) s.push("<b>" + span(top.t0, top.t1) + ": heavy rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours), below storm size.");
   else s.push("No storm-sized rain forecast.");
   var kt = T.filter(function (x) { return x.king; });
