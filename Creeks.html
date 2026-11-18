@@ -378,10 +378,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261117a"></script>
-<script src="severity.js?v=20261117a"></script>
-<script src="creek_status.js?v=20261117a"></script>
-<script src="hero.js?v=20261117a"></script>
+<script src="lookups.js?v=20261117b"></script>
+<script src="severity.js?v=20261117b"></script>
+<script src="creek_status.js?v=20261117b"></script>
+<script src="hero.js?v=20261117b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -527,7 +527,8 @@ function creekState(c, now) {
     var lat = D.creek.sensors[g.key] && D.creek.sensors[g.key].latest;
     if (lat && (!last || parseLocal(lat[0]) > last.t)) last = { t: parseLocal(lat[0]), v: lat[1] };
     var qh = g.reports === "interval" ? GAUGE_QUIET_HOURS_INTERVAL : GAUGE_QUIET_HOURS;
-    var quiet = !last || now - last.t > qh * 3600000, prev = null;
+    // quiet: past GAUGE_QUIET_HOURS, or its site silent while it rains nearby (the data job's "silent", staff 2026-11-17)
+    var quiet = !last || now - last.t > qh * 3600000 || !!(((D.creek.sensors[g.key] || {}).signals || {}).silent), prev = null;
     for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
     var arrow = quiet || !prev ? "" : last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "";
     var lvl = last && !quiet ? stageLevel(g, last.v) : null;

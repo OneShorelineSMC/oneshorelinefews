@@ -315,7 +315,7 @@
   #sbabout .sbcol { flex: 1; min-width: 0; } #sbabout h3 { margin: 0 0 6px; font-size: 18px; } #sbabout h4 { margin: 8px 0 3px; font-size: 14px; }
   #sbabout p { margin: 0 0 6px; } #sbabout .emerg { color: var(--red); } #sbabout .sbfig { padding: 6px 8px; background: var(--bg); border-radius: 6px; }
   #sbabout .sbsrc { font-size: 11.5px; color: var(--muted); } #sbabout .sbtrial { font-size: 11px; font-weight: normal; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; }
-  #sbabout .sbam { color: var(--amber); } #sbabout .sbbl { color: var(--blue); } #sbabout .sbor { color: #b45a00; }
+  #sbabout .sbam { color: var(--amber); } #sbabout .sbbl { color: #7e57c2; } :root[data-theme="dark"] #sbabout .sbbl { color: #b39ddb; } #sbabout .sbor { color: #b45a00; }
   html.only #tabs .tab { padding-left: 16px; padding-right: 16px; }
   /* Outlook tab (staff view, in place of About; staff 2026-11-17, trial) */
   #outlook { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box; border-radius: 10px; background: var(--panel);
@@ -529,14 +529,14 @@
       <h3>San Bruno Creek flood screen</h3>
       <p>For the EOC during storms. Live readings from OneShoreline’s creek and rain gauge at First Avenue and NOAA’s Bay tide at Alameda, with the National Weather Service rain forecast. The data updates about every 5 minutes. This screen is information, not a warning: follow National Weather Service and County alerts. <b class="emerg">In an emergency, call 911.</b></p>
       <h4>How San Bruno Creek floods</h4>
-      <p>Mostly from short, intense bursts of rain, 15 to 60 minutes of roughly a 5-year storm or bigger, which can bring flooding along the eastern avenues. A high Bay tide backs water up the creek (the First Avenue gauge rises and falls with the tide), so the worst case is a burst during a high tide or king tide.</p>
+      <p>Flooding along the eastern avenues comes from a storm of about 5-year size or bigger, often a short, intense burst, arriving while the Bay is at a king tide or higher. The high Bay backs water up the creek (the First Avenue gauge rises and falls with the tide). Without a high tide, the drainage mostly keeps up.</p>
       <p class="sbfig" id="sbFive"></p>
     </div>
     <div class="sbcol">
       <h4>Live conditions</h4>
       <p>San Bruno Creek’s status, the creek level at First Avenue with its levels (<span id="sbLv"></span>), rain at First Avenue, and the Bay tide. A ⚠ <b>not reporting</b> means the gauge has gone quiet: the number shown is old.</p>
       <h4>Outlook <span class="sbtrial">trial</span></h4>
-      <p>The last day and the next 3 days on one graph. Shaded times show when conditions that can cause flooding line up: <b class="sbam">amber</b> for 6-hour periods of storm-sized rain in the NWS forecast (at or above a 1-year 6-hour storm, which can hold 5-year bursts), <b class="sbbl">blue</b> for high tides above average (darker at king-tide level), <b class="sbor">outlined</b> for both at once. It is not a forecast of the creek: the forecast can’t say when a burst will hit, and it shifts with each NWS update.</p>
+      <p>The last day and the next 3 days on one graph. Shaded times show when conditions that can cause flooding line up: <b class="sbam">amber</b> for 6-hour periods of storm-sized rain in the NWS forecast (at or above a 1-year 6-hour storm, which can hold 5-year bursts), <b class="sbbl">purple</b> for high tides above average (darker at king-tide level), and an <b class="sbor">orange outline</b> where storm-sized rain meets a king-tide-level high: the San Bruno flood case. Not a forecast of the creek: NWS can’t say when a burst will hit.</p>
       <p class="sbsrc">Sources: OneShoreline (OneRain) gauges · NOAA Tides &amp; Currents 9414750 Alameda · National Weather Service · NOAA Atlas 14. OneShoreline <span data-text="contact_phone"></span> · <span data-text="contact_email"></span></p>
     </div>
   </div>
@@ -598,11 +598,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261117a"></script>
-<script src="tide_season.js?v=20261117a"></script>
-<script src="creek_status.js?v=20261117a"></script>
-<script src="severity.js?v=20261117a"></script>
-<script src="hero.js?v=20261117a"></script>
+<script src="lookups.js?v=20261117b"></script>
+<script src="tide_season.js?v=20261117b"></script>
+<script src="creek_status.js?v=20261117b"></script>
+<script src="severity.js?v=20261117b"></script>
+<script src="hero.js?v=20261117b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1647,7 +1647,8 @@ function creekState(c, now) {
     var lat = C.data.sensors[g.key] && C.data.sensors[g.key].latest;
     if (lat && (!last || parseLocal(lat[0]) > last.t)) last = { t: parseLocal(lat[0]), v: lat[1] };
     var quietH = g.reports === "interval" ? GAUGE_QUIET_HOURS_INTERVAL : GAUGE_QUIET_HOURS;
-    var quiet = !last || (now - last.t) > quietH * 3600000, prev = null;
+    // quiet: past GAUGE_QUIET_HOURS, or its site silent while it rains nearby (the data job's "silent", staff 2026-11-17)
+    var quiet = !last || (now - last.t) > quietH * 3600000 || !!(((C.data.sensors[g.key] || {}).signals || {}).silent), prev = null;
     for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
     // trend: the data job's (same rapidly-rising rule as the Creeks page and the board); our own two-reading guess only without it
     var sig = (C.data.sensors[g.key] || {}).signals || {}, fast = !quiet && (sig.trend === "fast" || !!sig.rising_fast);
@@ -2361,8 +2362,10 @@ function tideBands(c, now) {
   return OL.tides[c.tide].filter(function (p) { return m != null && p.v >= m && p.t > now - (OL_PAST + 2) * 3600000 && p.t < now + (OL_AHEAD + 2) * 3600000; })
     .map(function (p) { return { t0: p.t - 1.5 * 3600000, t1: p.t + 1.5 * 3600000, t: p.t, v: p.v, king: k != null && p.v >= k }; });
 }
+// San Bruno floods when a storm of about 5-year size meets a king tide or higher; without the tide its drainage mostly
+// copes (staff, 2026-11-17). So the outline marks storm-sized rain during a king-tide-level high only.
 function overlaps(rb, tb) {
-  var o = []; rb.forEach(function (b) { if (b.r < 1) return; tb.forEach(function (x) { var a = Math.max(b.t0, x.t0), z = Math.min(b.t1, x.t1); if (z > a) o.push({ t0: a, t1: z, b: b, x: x }); }); }); return o;
+  var o = []; rb.forEach(function (b) { if (b.r < 1) return; tb.forEach(function (x) { if (!x.king) return; var a = Math.max(b.t0, x.t0), z = Math.min(b.t1, x.t1); if (z > a) o.push({ t0: a, t1: z, b: b, x: x }); }); }); return o;
 }
 function hm(t) { return fmt(t, { hour: "numeric" }).replace(" ", "").toLowerCase(); }
 function span(a, b) { return fmt(a, { weekday: "short" }) + " " + hm(a) + "–" + hm(b); }
@@ -2370,15 +2373,15 @@ function sbSentence(c, now) {
   var R = rainBlocks(c, now), T = tideBands(c, now).filter(function (x) { return x.t > now; }), fut = R.blocks.filter(function (b) { return !b.past && b.t1 > now; });
   var top = fut.slice().sort(function (a, b) { return b.r - a.r; })[0], s = [], ov = overlaps(fut, T);
   if (!R.one) s.push("No storm sizes for its rain gauge.");
-  else if (top && top.r >= 1) s.push("<b>" + span(top.t0, top.t1) + ": storm-sized rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours). Short bursts in it could bring flooding along the eastern avenues.");
+  else if (top && top.r >= 1) s.push("<b>" + span(top.t0, top.t1) + ": storm-sized rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours)." + (ov.length || !T.some(function (x) { return x.king; }) ? "" : " No king tide then, so drainage should mostly keep up."));
   else if (top && top.r >= 0.5) s.push("<b>" + span(top.t0, top.t1) + ": heavy rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours), below storm size.");
   else s.push("No storm-sized rain forecast.");
   var kt = T.filter(function (x) { return x.king; });
-  s.push(kt.length ? "King-tide-level high " + kt.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fTime(x.t); }).join(", ") + "." : "No king tides this week.");
+  s.push(kt.length ? "King-tide-level high " + kt.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fTime(x.t); }).join(", ") + "." : "No king tides this week" + (top && top.r >= 1 ? ", so drainage should mostly keep up." : "."));
   // the Bay running above the tide table (storm surge, wind): measured minus predicted at Alameda, last hour
   var ob = (OL.alaObs || []).filter(function (p) { return p.t > now - 3600000; }), lo = ob[ob.length - 1], pr = lo && (OL.ala || []).filter(function (p) { return Math.abs(p.t - lo.t) <= 360000; })[0];
   if (lo && pr && lo.v - pr.v >= 0.5) s.push("The Bay is running " + (lo.v - pr.v).toFixed(1) + " ft above the tide table.");
-  if (ov.length) s.push("<b>Both at once " + span(ov[0].t0, ov[0].t1) + ".</b>");
+  if (ov.length) s.push("<b>Storm-sized rain during a king-tide-level high " + span(ov[0].t0, ov[0].t1) + ": flooding along the eastern avenues is possible.</b>");
   return s.join(" ");
 }
 var olBands = {
@@ -2388,7 +2391,7 @@ var olBands = {
     var ctx = ch.ctx, a = ch.chartArea, xs = ch.scales.x, X = function (t) { return xs.getPixelForValue((t - o.now) / 3600000); };
     ctx.save(); ctx.beginPath(); ctx.rect(a.left, a.top, a.right - a.left, a.bottom - a.top); ctx.clip();
     o.rain.forEach(function (b) { if (b.r < 0.5) return; ctx.fillStyle = b.r >= 1 ? "rgba(239,159,39,.30)" : "rgba(239,159,39,.13)"; ctx.fillRect(X(b.t0), a.top, X(b.t1) - X(b.t0), a.bottom - a.top); });
-    o.tide.forEach(function (b) { ctx.fillStyle = b.king ? "rgba(30,111,217,.26)" : "rgba(30,111,217,.11)"; ctx.fillRect(X(b.t0), a.top, X(b.t1) - X(b.t0), a.bottom - a.top); });
+    o.tide.forEach(function (b) { ctx.fillStyle = b.king ? "rgba(126,87,194,.30)" : "rgba(126,87,194,.11)"; ctx.fillRect(X(b.t0), a.top, X(b.t1) - X(b.t0), a.bottom - a.top); });
     o.both.forEach(function (b) { ctx.strokeStyle = "#b45a00"; ctx.lineWidth = 2; ctx.strokeRect(X(b.t0) + 1, a.top + 1, X(b.t1) - X(b.t0) - 2, a.bottom - a.top - 2); });
     ctx.restore();
   },
@@ -2418,8 +2421,8 @@ function renderOutlook() {
   if (!el || !C.data) { if (el) el.innerHTML = '<div class="olnote">Loading…</div>'; return; }
   var now = nowLocal(), sb = creeks().concat(moreCreeks()).filter(function (c) { return c.id === "sanbruno"; })[0];
   var t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000;
-  var h = '<div class="olhead"><b>San Bruno Creek outlook</b> <span>trial · not a creek forecast</span>' +
-    '<span class="olkey"><i style="background:rgba(239,159,39,.45)"></i>storm-sized rain <i style="background:rgba(239,159,39,.18)"></i>heavy <i style="background:rgba(30,111,217,.18)"></i>high tide <i style="background:rgba(30,111,217,.38)"></i>king level <i style="border:2px solid #b45a00;background:transparent"></i>both</span></div>';
+  var h = '<div class="olhead"><b>San Bruno Creek outlook</b> <span>trial</span>' +
+    '<span class="olkey"><i style="background:rgba(239,159,39,.45)"></i>storm-sized rain <i style="background:rgba(239,159,39,.18)"></i>heavy <i style="background:rgba(126,87,194,.18)"></i>high tide <i style="background:rgba(126,87,194,.42)"></i>king-tide level <i style="border:2px solid #b45a00;background:transparent"></i>storm + king tide</span></div>';
   if (sb) h += '<div class="olsb">' + esc(sbSentence(sb, now)).replace(/&lt;(\/?)b&gt;/g, "<$1b>") + '</div><div class="olchart"><canvas id="olCanvas"></canvas></div><div class="olkey2" id="olKey"></div>';
   var kings = (OL.kings || []).filter(function (r) { return r[1] * 864e5 >= now - 864e5; }).slice(0, 4).map(function (r) {
     return fmt(r[0] * 864e5, { month: "short", day: "numeric" }) + (r[1] > r[0] ? "–" + fmt(r[1] * 864e5, r[1] - r[0] < 31 && new Date(r[1] * 864e5).getUTCMonth() === new Date(r[0] * 864e5).getUTCMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }) : ""); });
@@ -2433,7 +2436,7 @@ function renderOutlook() {
 // One graph, like the Storm Tracker's storm graph: rain bars (left axis), the creek level and the Bay tide (right axes)
 function drawSB(c, now) {
   var cv = document.getElementById("olCanvas"); if (!cv || typeof Chart === "undefined") return;
-  var H = function (t) { return (t - now) / 3600000; }, t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000, muted = cssVar("--muted"), line = cssVar("--line"), ink = cssVar("--ink"), tc = cssVar("--fcline") || "#00838f";
+  var H = function (t) { return (t - now) / 3600000; }, t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000, muted = cssVar("--muted"), line = cssVar("--line"), ink = cssVar("--ink"), tc = document.documentElement.dataset.theme === "dark" ? "#b39ddb" : "#7e57c2";   // tide in purple: apart from the blue rain
   var R = rainBlocks(c, now), T = tideBands(c, now), g = (c.stages || [])[0], rg = R.g;
   var sp = g ? pts(g.key).filter(function (p) { return p.t >= t0 - 3600000; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
   var ls = sp[sp.length - 1], gs = g ? creekState(c, now).stages.filter(function (x) { return x.g === g; })[0] : null;

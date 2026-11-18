@@ -284,10 +284,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261117a"></script>
-<script src="severity.js?v=20261117a"></script>
-<script src="creek_status.js?v=20261117a"></script>
-<script src="hero.js?v=20261117a"></script>
+<script src="lookups.js?v=20261117b"></script>
+<script src="severity.js?v=20261117b"></script>
+<script src="creek_status.js?v=20261117b"></script>
+<script src="hero.js?v=20261117b"></script>
 <script>
 // The home page with the creek status layer (public since Oct 16: STATUS_PUBLIC in settings.csv; ?preview=1 = staff view).
 // Redesign (staff, 2026-10-26): one alert at the top (National Weather Service, the Bay tide and the creeks together),
@@ -586,7 +586,7 @@ function creekState(c, now) {
     var lat = C.data.sensors[g.key] && C.data.sensors[g.key].latest;
     if (lat && (!last || parseLocal(lat[0]) > last.t)) { last = { t: parseLocal(lat[0]), v: lat[1] }; p = p.concat([last]); }
     var qh = g.reports === "interval" ? GAUGE_QUIET_HOURS_INTERVAL : GAUGE_QUIET_HOURS;
-    var quiet = !last || now - last.t > qh * 3600000, prev = null;
+    var quiet = !last || now - last.t > qh * 3600000 || !!(((C.data.sensors[g.key] || {}).signals || {}).silent), prev = null;   // or silent while it rains nearby (data job)
     for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
     var arrow = quiet || !prev ? "" : last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "";
     var lvl = last && !quiet ? stageLevel(g, last.v) : null;
