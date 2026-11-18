@@ -613,11 +613,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261118d"></script>
-<script src="tide_season.js?v=20261118d"></script>
-<script src="creek_status.js?v=20261118d"></script>
-<script src="severity.js?v=20261118d"></script>
-<script src="hero.js?v=20261118d"></script>
+<script src="lookups.js?v=20261118e"></script>
+<script src="tide_season.js?v=20261118e"></script>
+<script src="creek_status.js?v=20261118e"></script>
+<script src="severity.js?v=20261118e"></script>
+<script src="hero.js?v=20261118e"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1615,10 +1615,10 @@ $t("dbody").addEventListener("click", function (e) {
 var currentTab = "creek", tabChangedAt = Date.now();   // the EOC screen opens on Creeks (All creeks: the status board)
 var C = { data: null, t: 0, charts: {}, sel: ONLY || params.get("creek") || "all", selAt: Date.now() };
 
-function loadCreek() {
-  return fetch(CREEK_DATA_URL + "?t=" + Date.now(), { cache: "no-store" })
-    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then(function (j) { C.data = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; C.t = Date.now(); renderCreek(); if (currentTab === "outlook") renderOutlook(); })
+function loadCreek() {   // storm mode: through GitHub's API, every minute (LK.getData; staff 2026-11-18)
+  return (LK.getData ? LK.getData("creeks.json", LK.stormy(C.data)) : fetch(CREEK_DATA_URL + "?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }))
+    .then(function (j) { if (LK.newer && !LK.newer(j, C.data)) return; C.data = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; C.t = Date.now(); renderCreek(); if (currentTab === "outlook") renderOutlook(); })
     .catch(function () { C.failed = true; renderCreek(); });
 }
 function pts(key) {
@@ -2588,7 +2588,7 @@ function showTab(name) {
 Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
   t.addEventListener("click", function (e) { e.stopPropagation(); closeDetail(); showTab(t.dataset.tab); });
 });
-every(CREEK_EVERY_MIN, loadCreek);
+(function creekLoop() { loadCreek().then(function () { setTimeout(creekLoop, LK.stormy && LK.stormy(C.data) ? 60000 : CREEK_EVERY_MIN * 60000); }); })();
 every(10, loadExtras);   // team board: SFCJPA and road closures (staff view only)
 every(30, loadOutlook);   // Outlook tab: tide tables (staff view only)
 setInterval(function () {

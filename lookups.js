@@ -615,8 +615,25 @@
       : "in feet above or below the average high tide there (MHHW, " + ms + " ft NAVD88)";
   }
 
+  /* Creek data during a storm (staff, 2026-11-18: San Bruno and Belmont are flashy). raw.githubusercontent.com caches a
+     file for 5 minutes whatever the address; GitHub's API serves the same file with a 1-minute cache. So while the data
+     job is in storm mode (creeks.json "fast_mode"), pages read it through the API and check every minute; if the API
+     refuses (60 reads an hour per internet address) they go back to the ordinary address for 15 minutes. A file older
+     than the one the page already has is never shown. */
+  var DATA_RAW = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/",
+    DATA_API = "https://api.github.com/repos/OneShorelineSMC/oneshorelinefews/contents/", apiOffUntil = 0;
+  function getData(name, fast) {
+    var raw = function () { return fetch(DATA_RAW + name + "?t=" + Date.now(), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }); };
+    if (!fast || Date.now() < apiOffUntil) return raw();
+    return fetch(DATA_API + name + "?ref=data", { cache: "no-store", headers: { Accept: "application/vnd.github.raw+json" } })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .catch(function () { apiOffUntil = Date.now() + 15 * 60000; return raw(); });
+  }
+  function stormy(d) { return !!(d && d.fast_mode && d.fast_mode.length); }
+  function newer(a, b) { return !b || !a || String(a.generated || "") >= String(b.generated || ""); }   // a is at least as new as b
+
   L = window.LOOKUPS = {
-    fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
+    getData: getData, stormy: stormy, newer: newer, fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
     tideAlt: tideAlt, tideUnit: tideUnit, tideUnits: tideUnits, heightMode: heightMode, setHeightMode: setHeightMode,
     problems: [], loaded: false,
     num: function (k) { return k in cur.settings ? cur.settings[k] : NaN; },
