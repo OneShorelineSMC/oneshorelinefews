@@ -392,7 +392,10 @@ def add_signals(result, previous, now):
             e["signals"] = sig
     # Creek gauges: trend and rapidly rising; then, while it rains nearby, a gauge whose site has gone quiet counts as
     # not reporting after STAGE_SILENT_RAIN_MIN instead of GAUGE_QUIET_HOURS (creek_signals.silent_in_rain)
-    site_last, county = {}, []
+    # Only OneRain sites with their own rain gauge (staff, 2026-11-18: the first morning flagged Green Hills, Pilarcitos
+    # and Pescadero wrongly): a USGS gauge sends its readings in hourly batches, and a creek gauge with no rain gauge at
+    # its site can sit unchanged through light rain. A site with a rain gauge sends something whenever it rains there.
+    site_last, county, rain_sites = {}, [], set()
     for c in all_creeks(result):
         for g in c["stages"] + c["rain"] + c.get("rain_support", []):
             e = sens.get(g["key"])
@@ -402,6 +405,8 @@ def add_signals(result, previous, now):
                 site_last[n] = max(site_last.get(n, p[-1][0]), p[-1][0])
             if e and g in c["rain"] + c.get("rain_support", []) and g["key"] not in [k for k, _ in county]:
                 county.append((g["key"], p))
+            if g in c["rain"] + c.get("rain_support", []) and str(g.get("number") or "").isdigit():
+                rain_sites.add(str(g["number"]))
     county = [p for _, p in county]
     for c in all_creeks(result):
         rain_keys = [g["key"] for g in c["rain"] + c.get("rain_support", [])]
@@ -411,7 +416,8 @@ def add_signals(result, previous, now):
             if not e:
                 continue
             sig = stage_signals(e["points"], e.get("latest"), g, now, SIGNAL_SETTINGS, rain_series)
-            quiet = silent_in_rain(site_last.get(str(g.get("number"))), rain_series, county, now, SIGNAL_SETTINGS) if not e.get("out_of_service") else None
+            n = str(g.get("number") or "")
+            quiet = silent_in_rain(site_last.get(n), rain_series, county, now, SIGNAL_SETTINGS) if n in rain_sites and not e.get("out_of_service") else None
             if quiet:
                 sig = {"trend": None, "ft_per_hr": None, "window_min": None, "points": 0, "rising_fast": None, "silent": quiet}
             e["signals"] = sig
