@@ -34,7 +34,8 @@ SETTINGS = {
     "RISE_REF_LATE_MIN": (15, 0, 240), "RISE_CONFIRM_MIN": (20, 0, 120), "RISE_CONFIRM_FRACTION": (0.5, 0, 1),
     "RISE_HOLD_MIN": (30, 0, 240),
     "RISE_TIDAL_RAIN_IN": (0.10, 0, 5), "RISE_TIDAL_RAIN_HOURS": (3, 0.25, 48),
-    "GAUGE_QUIET_HOURS": (12, 0.5, 168), "GAUGE_QUIET_HOURS_INTERVAL": (3, 0.25, 168),
+    "GAUGE_QUIET_HOURS": (13, 0.5, 168), "GAUGE_QUIET_HOURS_INTERVAL": (3, 0.25, 168),
+    "STAGE_SILENT_RAIN_MIN": (60, 15, 720), "RAIN_NEAR_IN": (0.05, 0.01, 1), "RAIN_NEAR_GAUGES": (2, 1, 10),
     "TREND_WINDOW_MIN": (30, 5, 240), "TREND_MAX_WINDOW_MIN": (120, 15, 360), "TREND_STEADY_FT_PER_HR": (0.1, 0.01, 2),
     "RAIN_SEVERE_CONFIRM_GAUGES": (2, 1, 5), "RAIN_SILENT_MIN": (60, 15, 720), "TIDE_RISING_LOOKAHEAD_HOURS": (3, 0.5, 12),
     "BE_READY_FROM_RAIN": (1, 0, 1), "RAIN_NOW_MIN": (60, 15, 180), "RAIN_NOW_IN": (0.01, 0.01, 0.5),
@@ -129,6 +130,31 @@ def _series(points, latest):
             p.append((lt, latest[1]))
     p.sort(key=lambda x: x[0])
     return p
+
+
+def silent_in_rain(site_last, own_rain, county_rain, now, S):
+    """A creek gauge whose site has reported nothing for STAGE_SILENT_RAIN_MIN while it is raining nearby (staff,
+    2026-11-17). In dry weather an on-change gauge's site only checks in every 12 hours, so silence means nothing; in
+    rain a working site reports within minutes (its rain gauge tips, the creek moves), so silence means it is down.
+    Raining nearby: one of the creek's own rain gauges recorded RAIN_NEAR_IN in the last STAGE_SILENT_RAIN_MIN, or
+    (when its own are silent too, as when they share the site) at least RAIN_NEAR_GAUGES gauges anywhere in the county did.
+    site_last: datetime of the last report from any sensor at the gauge's site (None = never).
+    own_rain / county_rain: [series] of rain increments. Returns {"since", "minutes", "rain_in", "basis"} or None."""
+    win = dt.timedelta(minutes=S["STAGE_SILENT_RAIN_MIN"])
+    if site_last is not None and now - site_last <= win:
+        return None
+    amt = lambda ser: rain_total(ser, now - win, now)
+    own = max((amt(x) for x in own_rain), default=0.0)
+    wet = sorted((amt(x) for x in county_rain), reverse=True)
+    if own >= S["RAIN_NEAR_IN"]:
+        basis, inches = "creek", own
+    elif len([x for x in wet if x >= S["RAIN_NEAR_IN"]]) >= S["RAIN_NEAR_GAUGES"]:
+        basis, inches = "county", wet[int(S["RAIN_NEAR_GAUGES"]) - 1]
+    else:
+        return None
+    return {"since": site_last.strftime("%Y-%m-%d %H:%M") if site_last else None,
+            "minutes": int((now - site_last).total_seconds() // 60) if site_last else None,
+            "rain_in": round(inches, 2), "basis": basis}
 
 
 def rain_total(series, start, end):

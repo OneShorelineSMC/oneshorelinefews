@@ -8,7 +8,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from creek_signals import SETTINGS, creek_status, rise_check, load_rain_frequency, load_settings, rain_signals, stage_signals, storm_years, tide_state
+from creek_signals import SETTINGS, creek_status, silent_in_rain, rise_check, load_rain_frequency, load_settings, rain_signals, stage_signals, storm_years, tide_state
 
 NOW = dt.datetime(2026, 1, 5, 12, 0)
 S = {k: v[0] for k, v in SETTINGS.items()}
@@ -65,7 +65,7 @@ s = stage_signals([[at(600), 0.4]], None, chg, NOW, S, [])
 check(s["trend"] == "steady" and s["ft_per_hr"] == 0.0, f"on-change gauge with no report = steady: {s}")
 s = stage_signals([[at(90), 3.0], [at(20), 2.8], [at(5), 2.7]], None, chg, NOW, S, [])
 check(s["trend"] == "falling", f"falling: {s}")
-s = stage_signals([[at(13 * 60), 0.4]], None, chg, NOW, S, [])
+s = stage_signals([[at(14 * 60), 0.4]], None, chg, NOW, S, [])
 check(s["trend"] is None, "offline gauge has no trend")
 tidal = dict(ivl, tidal=True)
 s = stage_signals(fast, None, tidal, NOW, S, [[]])
@@ -225,6 +225,18 @@ st = creek(flat(1.0), [dry, dry])
 check(st["key"] == "none" and not st["reasons"], f"quiet creek = No alerts: {st}")
 T = tide_state([(NOW, 5.0)], [(NOW + dt.timedelta(hours=2), 7.2, "H"), (NOW + dt.timedelta(hours=8), 0.5, "L")], [], NOW, 3)
 check(T["ft"] == 5.0 and T["source"] == "predicted" and T["rising"] and T["high_soon"], f"tide state: {T}")
+
+# A creek gauge's site quiet while it rains nearby (staff, 2026-11-17)
+from creek_signals import _series as _ser
+wet = _ser([[at(50), 0.03], [at(20), 0.04]], None)          # 0.07 in in the last hour
+dry0 = _ser([[at(600), 0.0]], None)
+q = silent_in_rain(NOW - dt.timedelta(minutes=95), [wet], [], NOW, S)
+check(q and q["basis"] == "creek" and q["minutes"] == 95, f"site quiet 95 min while its creek's rain gauge records 0.07 in: not reporting: {q}")
+check(silent_in_rain(NOW - dt.timedelta(minutes=30), [wet], [], NOW, S) is None, "site reported 30 min ago: fine")
+check(silent_in_rain(NOW - dt.timedelta(hours=9), [dry0], [dry0, dry0], NOW, S) is None, "dry weather: 9 hours of quiet is a normal gap between check-ins")
+q = silent_in_rain(NOW - dt.timedelta(hours=2), [], [wet, wet, dry0], NOW, S)
+check(q and q["basis"] == "county", f"own rain gauge shares the quiet site; two gauges elsewhere in the county record rain: not reporting: {q}")
+check(silent_in_rain(NOW - dt.timedelta(hours=2), [], [wet, dry0], NOW, S) is None, "rain at only one gauge elsewhere: not enough to call it")
 
 vals, prob = load_settings()
 check(not prob, f"settings.csv values the data job uses are valid: {prob}")

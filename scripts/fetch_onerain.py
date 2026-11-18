@@ -39,7 +39,7 @@ MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lis
 import os
 
 from creek_config import CREEKS, CONFIG_ERRORS, THRESHOLD_ERRORS, SETTINGS_ERRORS
-from creek_signals import load_settings, load_rain_frequency, rain_signals, stage_signals, _series, tide_state, creek_status
+from creek_signals import load_settings, load_rain_frequency, rain_signals, stage_signals, _series, tide_state, creek_status, silent_in_rain
 
 # Creek status layer (in development): rain levels and creek trends, written into creeks.json for the staff preview
 SIGNAL_SETTINGS, _sp = load_settings()
@@ -390,11 +390,31 @@ def add_signals(result, previous, now):
                 sig["freq"] = {"minutes": {str(m): {str(a): d for a, d in v.items()} for m, v in freq["minutes"].items()},
                                "levels": {str(m): v for m, v in freq["levels"].items()}}
             e["signals"] = sig
+    # Creek gauges: trend and rapidly rising; then, while it rains nearby, a gauge whose site has gone quiet counts as
+    # not reporting after STAGE_SILENT_RAIN_MIN instead of GAUGE_QUIET_HOURS (creek_signals.silent_in_rain)
+    site_last, county = {}, []
+    for c in all_creeks(result):
+        for g in c["stages"] + c["rain"] + c.get("rain_support", []):
+            e = sens.get(g["key"])
+            p = _series(e["points"], e.get("latest")) if e else []
+            if p and g.get("number"):
+                n = str(g["number"])
+                site_last[n] = max(site_last.get(n, p[-1][0]), p[-1][0])
+            if e and g in c["rain"] + c.get("rain_support", []) and g["key"] not in [k for k, _ in county]:
+                county.append((g["key"], p))
+    county = [p for _, p in county]
+    for c in all_creeks(result):
+        rain_keys = [g["key"] for g in c["rain"] + c.get("rain_support", [])]
         rain_series = [_series(sens[k]["points"], sens[k].get("latest")) for k in rain_keys if k in sens]
         for g in c["stages"]:
             e = sens.get(g["key"])
-            if e:
-                e["signals"] = stage_signals(e["points"], e.get("latest"), g, now, SIGNAL_SETTINGS, rain_series)
+            if not e:
+                continue
+            sig = stage_signals(e["points"], e.get("latest"), g, now, SIGNAL_SETTINGS, rain_series)
+            quiet = silent_in_rain(site_last.get(str(g.get("number"))), rain_series, county, now, SIGNAL_SETTINGS) if not e.get("out_of_service") else None
+            if quiet:
+                sig = {"trend": None, "ft_per_hr": None, "window_min": None, "points": 0, "rising_fast": None, "silent": quiet}
+            e["signals"] = sig
 
 
 def point_utc(p):
