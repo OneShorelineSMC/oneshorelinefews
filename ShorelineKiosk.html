@@ -601,11 +601,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261118b"></script>
-<script src="tide_season.js?v=20261118b"></script>
-<script src="creek_status.js?v=20261118b"></script>
-<script src="severity.js?v=20261118b"></script>
-<script src="hero.js?v=20261118b"></script>
+<script src="lookups.js?v=20261118c"></script>
+<script src="tide_season.js?v=20261118c"></script>
+<script src="creek_status.js?v=20261118c"></script>
+<script src="severity.js?v=20261118c"></script>
+<script src="hero.js?v=20261118c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1926,7 +1926,7 @@ function teamBoard(now) {
     var wet = function (x, lim, txt) { var col = lim && x >= lim ? ' style="color:var(--red);font-weight:bold"' : lim && x >= lim / 2 ? ' class="wet"' : ""; return '<td class="r"><span' + col + ">" + inch(x) + "</span>" + (txt || "") + "</td>"; };
     var pk = fc && fc.peak_in ? { v: fc.peak_in, t: Date.parse(fc.peak_start.replace("Z", ":00Z")) + olOff(now) } : null;
     return { rank: v.rank || 0, ns: NS.indexOf(c.id) < 0 ? 99 : NS.indexOf(c.id), html: '<tr data-creek="' + esc(c.id) + '"><td class="bar" style="background:' + esc(v.color || "transparent") + '"></td>' +
-      '<td class="n">' + esc(shortName(c)) + "</td><td>" + (ro ? '<span class="ro">' + esc(LK.text("more_creeks_badge")) + "</span>" : '<span class="w" style="color:' + esc(v.key === "alert" ? "#8a6d00" : v.rank <= 1 ? "var(--ink)" : v.color) + '">' + CS.icon(v.key) + esc(v.word) + "</span>") + "</td>" +
+      '<td class="n">' + esc(shortName(c)) + "</td><td>" + (ro ? '<span class="ro">' + esc(LK.text("more_creeks_badge").split(" · ")[0]) + "</span>" : '<span class="w" style="color:' + esc(v.key === "alert" ? "#8a6d00" : v.rank <= 1 ? "var(--ink)" : v.color) + '">' + CS.icon(v.key) + esc(v.word) + "</span>") + "</td>" +
       '<td class="r">' + lvl + "</td><td>" + trend + "</td><td>" + inten + "</td>" + wet(r3, one(180)) +
       (fc ? wet(fc.next6, one(360)) + (pk ? wet(pk.v, one(360), ' <span class="m">' + esc(fmt(pk.t, { weekday: "short" }) + " " + hm(pk.t)) + "</span>") : '<td class="r m">–</td>') : '<td class="r m">–</td><td class="r m">–</td>') + "</tr>" };
   }).sort(function (a, b) { return b.rank - a.rank || a.ns - b.ns; });
