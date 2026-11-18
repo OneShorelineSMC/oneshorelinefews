@@ -307,6 +307,18 @@
     border-radius: 10px; background: var(--panel); display: none; box-shadow: 0 2px 8px rgba(0,0,0,.08);
     padding: 14px 18px; gap: 18px; }
   #about.show { display: flex; }
+  /* Outlook tab (staff view, in place of About; staff 2026-11-17, trial) */
+  #outlook { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box; border-radius: 10px; background: var(--panel);
+    display: none; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,.08); padding: 6px 10px 4px; overflow: hidden; }
+  #outlook.show { display: flex; }
+  #stage.creekalert #outlook { top: 104px; height: 324px; }
+  .olhead { display: flex; align-items: baseline; gap: 8px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  .olhead b { font-size: 16px; color: var(--ink); } .olkey { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .olkey i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-left: 6px; box-sizing: border-box; }
+  .olsb { font-size: 13.5px; line-height: 1.3; margin: 2px 0 2px; color: var(--ink); }
+  .olchart { position: relative; flex: 1 1 auto; min-height: 150px; }
+  .olnote { flex: none; font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .olnote b { color: var(--ink); }
 
   /* Disclaimer tab */
   #disclaimer { position: absolute; left: 8px; top: 76px; width: 784px; height: 352px; box-sizing: border-box;
@@ -499,6 +511,7 @@
     </div>
   </div>
 
+  <div id="outlook"></div>
   <div id="about">
     <div id="aboutText">
       <h3>About this screen</h3>
@@ -1558,7 +1571,7 @@ var C = { data: null, t: 0, charts: {}, sel: params.get("creek") || "all", selAt
 function loadCreek() {
   return fetch(CREEK_DATA_URL + "?t=" + Date.now(), { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-    .then(function (j) { C.data = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; C.t = Date.now(); renderCreek(); })
+    .then(function (j) { C.data = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; C.t = Date.now(); renderCreek(); if (currentTab === "outlook") renderOutlook(); })
     .catch(function () { C.failed = true; renderCreek(); });
 }
 function pts(key) {
@@ -2213,7 +2226,176 @@ function fitAbout() {
 }
 setInterval(fitAbout, 3000);   // re-check when the alert strip comes or goes
 
+if (window.CREEK_STATUS && CREEK_STATUS.staff) {   // staff view: Outlook in place of About (the disclaimer stays on the Outlook tab)
+  var aboutTab = document.querySelector('.tab[data-tab="about"]'); aboutTab.dataset.tab = "outlook"; aboutTab.textContent = "Outlook";
+}
+/* ---------- Outlook tab (staff view, ?preview=1, in place of About; staff 2026-11-17, TRIAL) ----------
+   San Bruno Creek's graph for the last day and the next 3 days (Bay tide at Alameda, the creek at First Avenue, rain at
+   First Avenue with the NWS forecast), then one strip per creek. Shaded bands mark when conditions that can lead to
+   flooding line up; they are not a forecast of the creek:
+   - rain: 6-hour blocks (the NWS forecast's own blocks; measured rain for blocks already past) at or above the 1-year
+     6-hour storm at the creek's main rain gauge (NOAA Atlas 14) = storm-sized; at or above half of it = heavy.
+     Bursts within storm-sized rain can reach 5-year size, which is what floods San Bruno Creek.
+   - tide: 1.5 hours either side of each high tide above MHHW at the creek's tide gauge; darker at the king tide level
+     (KING_TIDE_FT_RWC at Redwood City; other Bay gauges the same height above their MHHW).
+   - both: storm-sized rain during a high tide, outlined. */
+var OL = { tides: {}, kings: null, ala: null, alaObs: null, chart: null }, OL_PAST = 24, OL_AHEAD = 72, H6 = 6 * 3600000;
+function olStaff() { return !!(window.CREEK_STATUS && CREEK_STATUS.staff); }
+function olShown() { return currentTab === "outlook"; }
+function olOff(now) { return Math.round((now - Date.now()) / 9e5) * 9e5; }   // Pacific clock minus UTC (nowLocal() drops the seconds)
+function kingFor(id) {
+  var rwc = LK.station("9414523").mhhw, k = LK.num("KING_TIDE_FT_RWC"), m = LK.station(id).mhhw;
+  return id === "9414523" ? k : m != null && rwc != null && k ? m + (k - rwc) : null;
+}
+function loadOutlook() {
+  if (!olStaff()) return;
+  var now = nowLocal(), ids = {}, toPts = function (a) { return (a || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v), type: p.type }; }).filter(function (p) { return !isNaN(p.v); }); };
+  var redraw = function () { if (olShown()) renderOutlook(); };
+  ["9414750"].forEach(function (id) { ids[id] = 1; });
+  Object.keys(ids).forEach(function (id) {
+    getJSON(noaa({ id: id }, "predictions", ymd(now - 2 * 864e5), ymd(now + 4 * 864e5), "&interval=hilo"))
+      .then(function (j) { OL.tides[id] = toPts(j.predictions).filter(function (p) { return p.type === "H"; }); }).catch(function () {}).then(redraw);
+  });
+  getJSON(noaa({ id: "9414750" }, "predictions", ymd(now - 2 * 864e5), ymd(now + 4 * 864e5))).then(function (j) { OL.ala = toPts(j.predictions); }).catch(function () {}).then(redraw);
+  getJSON(noaa({ id: "9414750" }, "water_level", ymd(now - 2 * 864e5), ymd(now))).then(function (j) { OL.alaObs = toPts(j.data); }).catch(function () {}).then(redraw);
+  getJSON(noaa({ id: "9414523" }, "predictions", ymd(now), ymd(now + 150 * 864e5), "&interval=hilo")).then(function (j) {
+    var k = LK.num("KING_TIDE_FT_RWC"), days = [];
+    toPts(j.predictions).forEach(function (p) { if (p.type === "H" && p.v >= k) { var d = Math.floor(p.t / 864e5); if (days.indexOf(d) < 0) days.push(d); } });
+    var runs = []; days.forEach(function (d) { var r = runs[runs.length - 1]; if (r && d - r[1] <= 1) r[1] = d; else runs.push([d, d]); });
+    OL.kings = runs;
+  }).catch(function () {}).then(redraw);
+}
+function mainRain(c) {
+  var own = (c.rain || []).length ? c.rain : c.rain_support || [], nums = (c.stages || []).map(function (g) { return String(g.number); });
+  return own.filter(function (g) { return nums.indexOf(String(g.number)) >= 0; })[0] || own[0] || null;
+}
+// 6-hour rain blocks for a creek: measured for the past day, then the NWS forecast; each with its share of the 1-year 6-hour storm
+function rainBlocks(c, now) {
+  var g = mainRain(c), fr = g && (((C.data.sensors[g.key] || {}).signals || {}).freq || {}).minutes, one = fr && fr["360"] ? fr["360"]["1.0"] || fr["360"]["1"] : null;
+  if (!one) return { blocks: [], one: null, g: g };
+  var off = olOff(now), out = [], p = pts(g.key), fc = c.forecast && !c.forecast.error ? c.forecast.periods || [] : [];
+  var first = fc.length ? Date.parse(fc[0][0].replace("Z", ":00Z")) + off : Math.floor((now - off) / H6) * H6 + off;
+  for (var t = first - Math.ceil(OL_PAST / 6) * H6; t < first; t += H6) {
+    var x = rainSum(p, t, Math.min(t + H6, now)); out.push({ t0: t, t1: t + H6, in: x, r: x / one, past: true });
+  }
+  fc.forEach(function (q) { var t0 = Date.parse(q[0].replace("Z", ":00Z")) + off, t1 = t0 + q[1] * 3600000; if (t0 < now + OL_AHEAD * 3600000) out.push({ t0: t0, t1: t1, in: q[2], r: q[2] / (one * q[1] / 6), past: false }); });
+  return { blocks: out, one: one, g: g };
+}
+function tideBands(c, now) {
+  if (!c.tide || !OL.tides[c.tide]) return [];
+  var m = LK.station(c.tide).mhhw, k = kingFor(c.tide);
+  return OL.tides[c.tide].filter(function (p) { return m != null && p.v >= m && p.t > now - (OL_PAST + 2) * 3600000 && p.t < now + (OL_AHEAD + 2) * 3600000; })
+    .map(function (p) { return { t0: p.t - 1.5 * 3600000, t1: p.t + 1.5 * 3600000, t: p.t, v: p.v, king: k != null && p.v >= k }; });
+}
+function overlaps(rb, tb) {
+  var o = []; rb.forEach(function (b) { if (b.r < 1) return; tb.forEach(function (x) { var a = Math.max(b.t0, x.t0), z = Math.min(b.t1, x.t1); if (z > a) o.push({ t0: a, t1: z, b: b, x: x }); }); }); return o;
+}
+function hm(t) { return fmt(t, { hour: "numeric" }).replace(" ", "").toLowerCase(); }
+function span(a, b) { return fmt(a, { weekday: "short" }) + " " + hm(a) + "–" + hm(b); }
+function sbSentence(c, now) {
+  var R = rainBlocks(c, now), T = tideBands(c, now).filter(function (x) { return x.t > now; }), fut = R.blocks.filter(function (b) { return !b.past && b.t1 > now; });
+  var top = fut.slice().sort(function (a, b) { return b.r - a.r; })[0], s = [], ov = overlaps(fut, T);
+  if (!R.one) s.push("No storm sizes for its rain gauge.");
+  else if (top && top.r >= 1) s.push("Storm-sized rain " + span(top.t0, top.t1) + " (" + top.in.toFixed(2) + " in in 6 hr; 1-year: " + R.one.toFixed(2) + "), bursts that flood First Ave possible.");
+  else if (top && top.r >= 0.5) s.push("Heavy rain " + span(top.t0, top.t1) + " (" + top.in.toFixed(2) + " in in 6 hr), below storm size.");
+  else s.push("No storm-sized rain forecast.");
+  var kt = T.filter(function (x) { return x.king; });
+  s.push(kt.length ? "King-tide level " + kt.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fTime(x.t); }).join(", ") + "." : "No king-tide level highs.");
+  if (ov.length) s.push("<b>Both at once " + span(ov[0].t0, ov[0].t1) + ".</b>");
+  return s.join(" ");
+}
+var olBands = {
+  id: "olBands",
+  beforeDatasetsDraw: function (ch) {
+    var o = ch.options.plugins.olBands; if (!o) return;
+    var ctx = ch.ctx, a = ch.chartArea, xs = ch.scales.x, X = function (t) { return xs.getPixelForValue((t - o.now) / 3600000); };
+    ctx.save(); ctx.beginPath(); ctx.rect(a.left, a.top, a.right - a.left, a.bottom - a.top); ctx.clip();
+    o.rain.forEach(function (b) { if (b.r < 0.5) return; ctx.fillStyle = b.r >= 1 ? "rgba(239,159,39,.30)" : "rgba(239,159,39,.13)"; ctx.fillRect(X(b.t0), a.top, X(b.t1) - X(b.t0), a.bottom - a.top); });
+    o.tide.forEach(function (b) { ctx.fillStyle = b.king ? "rgba(30,111,217,.26)" : "rgba(30,111,217,.11)"; ctx.fillRect(X(b.t0), a.top, X(b.t1) - X(b.t0), a.bottom - a.top); });
+    o.both.forEach(function (b) { ctx.strokeStyle = "#b45a00"; ctx.lineWidth = 2; ctx.strokeRect(X(b.t0) + 1, a.top + 1, X(b.t1) - X(b.t0) - 2, a.bottom - a.top - 2); });
+    ctx.restore();
+  },
+  afterDatasetsDraw: function (ch) {
+    var o = ch.options.plugins.olBands; if (!o) return;
+    var ctx = ch.ctx, a = ch.chartArea, px = ch.scales.x.getPixelForValue(0);
+    ctx.save(); ctx.strokeStyle = "#8a96a6"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+    ctx.font = "bold 11px Arial, sans-serif"; ctx.fillStyle = cssVar("--muted"); ctx.textBaseline = "top";
+    ctx.fillText("Now", px + 3, a.top + 1);
+    (o.names || []).forEach(function (n) { var s = ch.scales[n[0]]; if (s) { ctx.fillStyle = cssVar("--ink"); ctx.fillText(n[1], a.left + 4, s.top + 2); } });
+    // each flat line's name at its right end, on a card-colored backing
+    ctx.textBaseline = "middle"; ctx.textAlign = "right";
+    ch.data.datasets.forEach(function (d) {
+      if (!d.olLabel) return; var s = ch.scales[d.yAxisID], y = s.getPixelForValue(d.data[0].y), w = ctx.measureText(d.olLabel).width + 6;
+      if (y < s.top || y > s.bottom) return;
+      ctx.globalAlpha = 0.9; ctx.fillStyle = cssVar("--panel"); ctx.fillRect(a.right - w - 2, y - 7, w, 14); ctx.globalAlpha = 1;
+      ctx.fillStyle = d.borderColor; ctx.fillText(d.olLabel, a.right - 5, y);
+    });
+    ctx.restore();
+  }
+};
+function renderOutlook() {
+  var el = document.getElementById("outlook");
+  if (!el || !C.data) { if (el) el.innerHTML = '<div class="olnote">Loading…</div>'; return; }
+  var now = nowLocal(), sb = creeks().concat(moreCreeks()).filter(function (c) { return c.id === "sanbruno"; })[0];
+  var t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000;
+  var h = '<div class="olhead"><b>San Bruno Creek outlook</b> <span>trial · not a creek forecast</span>' +
+    '<span class="olkey"><i style="background:rgba(239,159,39,.45)"></i>storm-sized rain <i style="background:rgba(239,159,39,.18)"></i>heavy <i style="background:rgba(30,111,217,.18)"></i>high tide <i style="background:rgba(30,111,217,.38)"></i>king level <i style="border:2px solid #b45a00;background:transparent"></i>both</span></div>';
+  if (sb) h += '<div class="olsb">' + esc(sbSentence(sb, now)).replace(/&lt;(\/?)b&gt;/g, "<$1b>") + '</div><div class="olchart"><canvas id="olCanvas"></canvas></div>';
+  var kings = (OL.kings || []).filter(function (r) { return r[1] * 864e5 >= now - 864e5; }).slice(0, 4).map(function (r) {
+    return fmt(r[0] * 864e5, { month: "short", day: "numeric" }) + (r[1] > r[0] ? "–" + fmt(r[1] * 864e5, r[1] - r[0] < 31 && new Date(r[1] * 864e5).getUTCMonth() === new Date(r[0] * 864e5).getUTCMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }) : ""); });
+  var iss = sb && sb.forecast && sb.forecast.issued ? Date.parse(sb.forecast.issued.replace("Z", ":00Z")) + olOff(now) : null;
+  h += '<div class="olnote">' + (kings.length ? "<b>Next king tides</b> (Redwood City tide table at " + LK.num("KING_TIDE_FT_RWC") + " ft or more): " + esc(kings.join(" · ")) + " · " : "") +
+    "NWS forecast" + (iss ? " " + esc(fmt(iss, { weekday: "short" }) + " " + fTime(iss)) : "") + " in 6-hr blocks vs NOAA Atlas 14 at First Avenue · tides: NOAA Alameda</div>";
+  if (OL.chart) { OL.chart.destroy(); OL.chart = null; }
+  el.innerHTML = h;
+  if (sb) drawSB(sb, now);
+}
+function drawSB(c, now) {
+  var cv = document.getElementById("olCanvas"); if (!cv || typeof Chart === "undefined") return;
+  var H = function (t) { return (t - now) / 3600000; }, t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000, muted = cssVar("--muted"), line = cssVar("--line"), ink = cssVar("--ink");
+  var R = rainBlocks(c, now), T = tideBands(c, now), g = (c.stages || [])[0], rg = R.g;
+  var sp = g ? pts(g.key).filter(function (p) { return p.t >= t0 - 3600000; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
+  var ths = g ? (g.thresholds || []).filter(function (t) { return t.level <= 3; }) : [];
+  var smax = Math.max(ths.length ? ths[ths.length - 1].value + 0.4 : 2, Math.max.apply(null, sp.map(function (p) { return p.y; }).concat([0])) + 0.3);
+  var hr = {}; if (rg) pts(rg.key).forEach(function (p) { if (p.t > t0 && p.t <= now) { var k = Math.ceil(p.t / 3600000) * 3600000; hr[k] = (hr[k] || 0) + p.v; } });
+  var rainPast = Object.keys(hr).filter(function (k) { return hr[k] > 0; }).map(function (k) { return { x: H(+k) - 0.5, y: hr[k] }; });
+  var rainFc = []; R.blocks.forEach(function (b) { if (b.past || !b.in) return; for (var t = Math.max(b.t0, now); t < Math.min(b.t1, t1); t += 3600000) rainFc.push({ x: H(t) + 0.5, y: b.in / 6 }); });
+  var rtop = Math.max(0.2, Math.ceil(Math.max.apply(null, rainPast.concat(rainFc).map(function (p) { return p.y; }).concat([0])) * 10) / 10);
+  var tp = (OL.ala || []).filter(function (p) { return p.t >= t0 && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
+  var to = (OL.alaObs || []).filter(function (p) { return p.t >= t0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
+  var mh = LK.station("9414750").mhhw, kg = kingFor("9414750"), tys = tp.concat(to).map(function (p) { return p.y; }).concat(mh != null ? [mh] : [], kg != null ? [kg] : []);
+  var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 0.2) : 8;
+  var flat = function (v, ax, col, dash, lab) { return { label: lab, yAxisID: ax, data: [{ x: H(t0), y: v }, { x: H(t1), y: v }], borderColor: col, borderWidth: 1.5, borderDash: dash, pointRadius: 0, pointHoverRadius: 0 }; };
+  var ds = [];
+  if (mh != null) ds.push(Object.assign(flat(mh, "yt", muted, [4, 3], "MHHW"), { olLabel: "MHHW " + mh.toFixed(2) }));
+  if (kg != null) ds.push(Object.assign(flat(kg, "yt", "#1e6fd9", [10, 4], "King-tide level"), { olLabel: "King-tide level " + kg.toFixed(2) }));
+  ds.push({ label: "Tide table (ft NAVD88)", yAxisID: "yt", data: tp, borderColor: muted, borderWidth: 1.5, pointRadius: 0 });
+  ds.push({ label: "Measured tide", yAxisID: "yt", data: to, borderColor: "#1e88e5", borderWidth: 2, pointRadius: 0 });
+  ths.forEach(function (t) { ds.push(Object.assign(flat(t.value, "ys", lvColor(t.level), LV_DASH[t.level], t.name), { borderWidth: t.level >= 3 ? 2.5 : 2, olLabel: t.name.replace(/^Flood | Flood Stage$/g, "") + " " + t.value.toFixed(2) })); });
+  ds.push({ label: "Creek level (ft)", yAxisID: "ys", data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.12)", fill: "origin", borderWidth: 2, pointRadius: 0 });
+  ds.push({ type: "bar", label: "Rain, measured (in/hr)", yAxisID: "yr", data: rainPast, backgroundColor: "#1e88e5", barPercentage: 1, categoryPercentage: 1, grouped: false });
+  ds.push({ type: "bar", label: "Rain, NWS forecast (6-hr average, in/hr)", yAxisID: "yr", data: rainFc, backgroundColor: "rgba(30,136,229,.35)", barPercentage: 1, categoryPercentage: 1, grouped: false });
+  var yax = function (min, max, step, w, unit, top) { return { stack: "sb", stackWeight: w, min: min, max: max, offset: false, grid: { color: line }, afterFit: function (ax) { ax.width = 52; },
+    afterBuildTicks: function (ax) { if (!top) ax.ticks = ax.ticks.filter(function (t) { return t.value < max - 1e-9; }); },   // no label where two strips meet
+    ticks: { stepSize: step, color: muted, font: { size: 11.5 }, padding: 2, callback: function (v) { return +v.toFixed(2) + " " + unit; } } }; };
+  OL.chart = new Chart(cv, { type: "line", data: { datasets: ds }, plugins: [olBands], options: {
+    responsive: true, maintainAspectRatio: false, animation: false, parsing: true,
+    plugins: { legend: { display: false }, tooltip: { enabled: false },
+      olBands: { now: now, rain: R.blocks, tide: T, both: overlaps(R.blocks, T), names: [["yt", "Bay tide, Alameda"], ["ys", "Creek, First Avenue"], ["yr", "Rain, First Avenue"]] } },
+    layout: { padding: { right: 6 } },
+    scales: {
+      x: { type: "linear", min: -OL_PAST, max: OL_AHEAD, grid: { color: function (cx) { return cx.tick && new Date(now + cx.tick.value * 3600000).getUTCHours() === 0 ? "#b9c4d0" : line; } },
+        afterBuildTicks: function (ax) { var o = [], f = Math.ceil(t0 / H6) * H6; for (var t = f; t <= t1; t += H6) o.push({ value: H(t) }); ax.ticks = o; },
+        ticks: { color: muted, font: { size: 11 }, maxRotation: 0, autoSkip: false, callback: function (v) { var t = Math.round((now + v * 3600000) / 3600000) * 3600000;
+          return new Date(t).getUTCHours() === 0 ? fmt(t, { weekday: "short" }) : new Date(t).getUTCHours() === 12 ? "noon" : ""; } } },
+      yt: yax(tlo, thi, Math.max(2, Math.ceil((thi - tlo) / 3)), 1, "ft"),
+      ys: yax(0, Math.ceil(smax), Math.max(1, Math.ceil(Math.ceil(smax) / 3)), 1.2, "ft"),
+      yr: yax(0, rtop, rtop, 0.6, "in", true)
+    } } });
+}
+
 function showTab(name) {
+  if (name === "outlook" && !olStaff()) name = "about";
   currentTab = name; tabChangedAt = Date.now();
   var creek = name === "creek", about = name === "about", tides = name === "tides" || name === "coast";
   setSide(name === "coast");
@@ -2223,6 +2405,8 @@ function showTab(name) {
   document.getElementById("about").classList.toggle("show", about);
   document.getElementById("disclaimer").classList.toggle("show", name === "disclaimer");
   document.getElementById("maptab").classList.toggle("show", name === "map");
+  document.getElementById("outlook").classList.toggle("show", name === "outlook");
+  if (name === "outlook") renderOutlook();
   if (name === "map") showMapTab();
   document.getElementById("tides").classList.toggle("hide", !tides);
   document.getElementById("stage").classList.toggle("tidesOn", tides);   // the tide headline banner under the NWS bar
@@ -2238,11 +2422,12 @@ Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
 });
 every(CREEK_EVERY_MIN, loadCreek);
 every(10, loadExtras);   // team board: SFCJPA and road closures (staff view only)
+every(30, loadOutlook);   // Outlook tab: tide tables (staff view only)
 setInterval(function () {
   var secs = (Date.now() - tabChangedAt) / 1000;
   if ((currentTab === "about" || currentTab === "disclaimer") && secs >= ABOUT_RETURN_SEC) { showTab("creek"); return; }
   if (ROTATE_SECONDS > 0 && currentTab !== "about" && currentTab !== "disclaimer" && secs >= ROTATE_SECONDS && !document.getElementById("detail").classList.contains("show")) {
-    showTab(currentTab === "tides" ? "creek" : "tides"); return;
+    showTab(olStaff() ? { creek: "tides", tides: "outlook" }[currentTab] || "creek" : currentTab === "tides" ? "creek" : "tides"); return;
   }
   if (TAB_RETURN_MIN > 0 && (currentTab === "tides" || currentTab === "coast") && secs >= TAB_RETURN_MIN * 60) showTab("creek");
   // a single creek goes back to the "All creeks" summary after a while
@@ -2262,7 +2447,7 @@ function drawQRs() {
   });
   qrDrawn = true;
 }
-showTab(["tides", "coast", "creek", "map", "about", "disclaimer"].indexOf(params.get("tab")) >= 0 ? params.get("tab") : "creek");   // Creeks first unless ?tab= says otherwise
+showTab(["tides", "coast", "creek", "map", "about", "disclaimer", "outlook"].indexOf(params.get("tab")) >= 0 ? params.get("tab") : "creek");   // Creeks first unless ?tab= says otherwise
 
 /* ---------- Map tab ---------- */
 var M = { data: null, map: null, markers: [], sel: null, timer: null };
