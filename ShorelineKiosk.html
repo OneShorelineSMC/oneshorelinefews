@@ -314,6 +314,7 @@
   #sbabout.show { display: flex; } #stage.creekalert #sbabout { top: 104px; height: 324px; font-size: 12.5px; }
   #sbabout .sbcol { flex: 1; min-width: 0; } #sbabout h3 { margin: 0 0 6px; font-size: 18px; } #sbabout h4 { margin: 8px 0 3px; font-size: 14px; }
   #sbabout p { margin: 0 0 6px; } #sbabout .emerg { color: var(--red); } #sbabout .sbfig { padding: 6px 8px; background: var(--bg); border-radius: 6px; }
+  #sbabout .sbtxt { padding: 5px 8px; border-left: 3px solid var(--amber); background: var(--bg); }
   #sbabout .sbsrc { font-size: 11.5px; color: var(--muted); } #sbabout .sbtrial { font-size: 11px; font-weight: normal; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; }
   #sbabout .sbam { color: var(--amber); } #sbabout .sbbl { color: #7e57c2; } :root[data-theme="dark"] #sbabout .sbbl { color: #b39ddb; } #sbabout .sbor { color: #b45a00; }
   html.only #tabs .tab { padding-left: 16px; padding-right: 16px; }
@@ -527,17 +528,18 @@
   <div id="sbabout">
     <div class="sbcol">
       <h3>San Bruno Creek flood screen</h3>
-      <p>For the EOC during storms. Live readings from OneShoreline’s creek and rain gauge at First Avenue and NOAA’s Bay tide at Alameda, with the National Weather Service rain forecast. The data updates about every 5 minutes. This screen is information, not a warning: follow National Weather Service and County alerts. <b class="emerg">In an emergency, call 911.</b></p>
+      <p>For the EOC during storms: OneShoreline’s creek and rain gauge at First Avenue, NOAA’s Bay tide at Alameda and the NWS rain forecast, updated about every 5 minutes. Information, not a warning: follow NWS and County alerts. <b class="emerg">In an emergency, call 911.</b></p>
       <h4>How San Bruno Creek floods</h4>
       <p>Flooding along the eastern avenues comes from a storm of about 5-year size or bigger, often a short, intense burst, arriving while the Bay is at a king tide or higher. The high Bay backs water up the creek (the First Avenue gauge rises and falls with the tide). Flooding can still happen without one.</p>
       <p class="sbfig" id="sbFive"></p>
+      <p class="sbsrc">Sources: OneShoreline (OneRain) · NOAA 9414750 Alameda · NWS · NOAA Atlas 14 · OneShoreline <span data-text="contact_phone"></span></p>
     </div>
     <div class="sbcol">
       <h4>Live conditions</h4>
-      <p>San Bruno Creek’s status, the creek level at First Avenue with its levels (<span id="sbLv"></span>), rain at First Avenue, and the Bay tide. A ⚠ <b>not reporting</b> means the gauge has gone quiet: the number shown is old.</p>
+      <p>The creek level at First Avenue with its levels (<span id="sbLv"></span>), rain, and the Bay tide. ⚠ <b>Not reporting</b> means the gauge has gone quiet.</p>
+      <p class="sbtxt"><b>Orange and red texts</b> report where the creek is at that moment, not a countdown to flooding. If intense rain keeps falling, expect the creek to keep rising; if the rain eases, it can level off. Watch the Live tab to see which.</p>
       <h4>Outlook <span class="sbtrial">trial</span></h4>
-      <p>The last day and the next 3 days on one graph. Shaded times show when conditions that can cause flooding line up: <b class="sbam">amber</b> for <b>flood-size rain</b>: 6 hours of NWS forecast rain at or above a 1-year storm<span id="sbOne"></span>, enough to hold the 5-year bursts that flood the eastern avenues; <b class="sbbl">purple</b> for high tides (darker for a king tide); an <b class="sbor">orange outline</b> where flood-size rain meets a king tide. Not a forecast of the creek, and no shading never means no flooding.</p>
-      <p class="sbsrc">Sources: OneShoreline (OneRain) gauges · NOAA Tides &amp; Currents 9414750 Alameda · National Weather Service · NOAA Atlas 14. OneShoreline <span data-text="contact_phone"></span> · <span data-text="contact_email"></span></p>
+      <p>The last day and next 3 days. Shading shows when flood conditions line up: <b class="sbam">amber</b> for <b>flood-size rain</b>: 6 hours of forecast rain at or above a 1-year storm<span id="sbOne"></span>, enough to hold 5-year bursts; <b class="sbbl">purple</b> for high tides (darker: king tide); <b class="sbor">orange outline</b> where they meet. Not a forecast; no shading never means no flooding.</p>
     </div>
   </div>
   <div id="about">
