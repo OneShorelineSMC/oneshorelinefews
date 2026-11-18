@@ -1849,19 +1849,26 @@ function teamBoard(now) {
     var r1 = 0, r24 = 0; st.rains.forEach(function (r) { r1 = Math.max(r1, rainSum(r.p, now - 3600000, now)); r24 = Math.max(r24, rainSum(r.p, now - 86400000, now)); });
     var fc = c.forecast && !c.forecast.error ? c.forecast : null, ro = isMore(c) && C.data.creeks_readings;
     var lvl = !s || s.out ? "–" : !s.last ? "–" : s.quiet ? '<span class="m">offline · ' + esc(fDay(s.last.t).replace(/^\w+, /, "")) + "</span>"
-      : "<b>" + s.last.v.toFixed(2) + "</b> ft" + esc(s.arrow);
-    var nxt = s && s.last && !s.quiet && !s.out ? (s.next ? '<span class="m">' + (s.next.value - s.last.v).toFixed(2) + " to " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "").replace(/^Monitoring$/, "Monitor")) + "</span>"
-      : s.lvl ? "<b>above " + esc(s.lvl.name.replace(/^Flood | Flood Stage$/g, "")) + "</b>" : '<span class="m">no levels</span>') : "";
+      : "<b>" + s.last.v.toFixed(2) + "</b> ft";   // the trend has its own column
+    // trend (staff 2026-11-17: in place of the distance to the next level): rising fast in red with its rate
+    var sig = s ? (C.data.sensors[s.g.key] || {}).signals || {} : {};
+    var trend = !s || !s.last || s.quiet || s.out ? "" : s.fast ? '<b style="color:var(--red)">↑↑ fast' + (s.rate ? " +" + s.rate.toFixed(1) + " ft/hr" : "") + "</b>"
+      : sig.trend === "rising" ? "↑ rising" + (sig.ft_per_hr > 0 ? ' <span class="m">+' + sig.ft_per_hr.toFixed(2) + " ft/hr</span>" : "") : sig.trend === "falling" ? '<span class="m">↓ falling</span>' : '<span class="m">steady</span>';
+    // rain intensity: the creek's wettest gauge by its rating (Heavy / Very heavy / Intense) and the amount behind it
+    var rs = (c.rain || []).concat(c.rain_support || []).map(function (rg) { return ((C.data.sensors[rg.key] || {}).signals) || {}; });
+    var top = rs.filter(function (x) { return x.level; }).sort(function (a, b) { return b.level - a.level || (b.driver ? b.driver.inches : 0) - (a.driver ? a.driver.inches : 0); })[0];
+    var inten = top ? '<b style="color:' + (top.level >= 2 ? "var(--red)" : "var(--amber)") + '">' + esc(CS.rainWord(top.level)) + "</b>" + (top.driver ? ' <span class="m">' + top.driver.inches.toFixed(2) + " in/" + esc(winLabel(top.driver.minutes)) + "</span>" : "")
+      : r1 >= 0.005 ? '<span class="wet">' + inch(r1) + ' in</span> <span class="m">last hr</span>' : rs.some(function (x) { return x.raining; }) ? "light rain" : '<span class="m">dry</span>';
     var wet = function (x, lim) { return '<td class="r' + (x >= lim ? " wet" : "") + '">' + inch(x) + "</td>"; };
     return { rank: v.rank || 0, ns: NS.indexOf(c.id) < 0 ? 99 : NS.indexOf(c.id), html: '<tr data-creek="' + esc(c.id) + '"><td class="bar" style="background:' + esc(v.color || "transparent") + '"></td>' +
       '<td class="n">' + esc(shortName(c)) + "</td><td>" + (ro ? '<span class="ro">' + esc(LK.text("more_creeks_badge")) + "</span>" : '<span class="w" style="color:' + esc(v.key === "alert" ? "#8a6d00" : v.rank <= 1 ? "var(--ink)" : v.color) + '">' + CS.icon(v.key) + esc(v.word) + "</span>") + "</td>" +
-      '<td class="m">' + esc(g ? g.label : "") + '</td><td class="r">' + lvl + "</td><td>" + nxt + "</td>" + wet(r1, 0.1) + wet(r24, 1) +
+      '<td class="r">' + lvl + "</td><td>" + trend + "</td><td>" + inten + "</td>" + wet(r24, 1) +
       (fc ? wet(fc.next24, 1) + wet(fc.next72, 2) : '<td class="r m">–</td><td class="r m">–</td>') + "</tr>" };
   }).sort(function (a, b) { return b.rank - a.rank || a.ns - b.ns; });
   var gen = C.data.generated ? parseLocal(C.data.generated) : null;
-  el.innerHTML = '<div class="tb"><div class="cs-bhead"><b>Creeks</b><span>staff board · creek data ' + (gen ? esc(fTime(gen)) : "–") + " · tap a creek for its graphs</span></div>" +
-    '<table><colgroup><col style="width:5px"><col style="width:112px"><col style="width:162px"><col><col style="width:62px"><col style="width:128px"><col style="width:38px"><col style="width:42px"><col style="width:58px"><col style="width:46px"></colgroup>' +
-    '<thead><tr><th></th><th>Creek</th><th>Status</th><th>Main gauge</th><th class="r">Level</th><th>Next level</th><th class="r">1 hr</th><th class="r">24 hr</th><th class="r">NWS 24h</th><th class="r">3 days</th></tr></thead><tbody>' +
+  el.innerHTML = '<div class="tb"><div class="cs-bhead"><b>Creeks</b><span>staff board · level at each creek’s main gauge · creek data ' + (gen ? esc(fTime(gen)) : "–") + " · tap a creek for its graphs</span></div>" +
+    '<table><colgroup><col style="width:5px"><col><col style="width:166px"><col style="width:62px"><col style="width:124px"><col style="width:148px"><col style="width:42px"><col style="width:56px"><col style="width:44px"></colgroup>' +
+    '<thead><tr><th></th><th>Creek</th><th>Status</th><th class="r">Level</th><th>Trend</th><th>Rain now</th><th class="r">24 hr</th><th class="r">NWS 24h</th><th class="r">3 days</th></tr></thead><tbody>' +
     rows.map(function (r) { return r.html; }).join("") + "</tbody></table>" + sfqLine(now) + roadsLine() + "</div>";
   // the screen is shorter during a creek alert: rows that don't fit go, least serious first
   var box = el.querySelector(".tb"), trs = Array.prototype.slice.call(box.querySelectorAll("tbody tr")), cut = 0;
