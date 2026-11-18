@@ -271,6 +271,19 @@
   .cbtn.back { border-color: var(--ink); }
   .cname { font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   #cpick:empty { display: none; }
+  /* Team board (staff view, ?preview=1; staff 2026-11-17): every creek on one screen, calm or not */
+  .tb { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .tb table { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
+  .tb th { font-size: 11.5px; font-weight: bold; color: var(--muted); text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .tb td { padding: 0 6px; height: 21px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tb tr[data-creek] { cursor: pointer; }
+  .tb .n { font-weight: bold; } .tb .r { text-align: right; font-variant-numeric: tabular-nums; } .tb .m { color: var(--muted); }
+  .tb .w { display: inline-flex; align-items: center; gap: 4px; font-weight: bold; } .tb .w .cs-ic { width: 13px; height: 13px; }
+  .tb .bar { width: 4px; padding: 0; }
+  .tb .ro { font-size: 11.5px; color: var(--muted); font-weight: normal; }
+  .tb .wet { font-weight: bold; color: var(--blue); }
+  .tb .note { padding: 3px 10px; font-size: 12.5px; border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tb .note b { color: var(--ink); } .tb .note[data-roads] { cursor: pointer; }
   .cs-bquiet [data-creek] { cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
   .cinfo { margin-left: auto; font-size: 12.5px; color: var(--muted); padding: 4px 6px; }
   #cbody { flex: 1; min-height: 0; display: flex; gap: 10px; }
@@ -1767,7 +1780,85 @@ function creekStatus(st) {
   if (st.stages.length && st.stages.every(function (s) { return s.quiet; })) return { w: LK.text(st.stages.every(function (s) { return s.out; }) ? "gauge_out" : "status_offline_long"), col: "#6b7a8c", ink: "#fff" };
   return { w: LK.text("status_normal"), col: "#2e7d32", ink: "#fff", ok: true };
 }
+/* ---------- Team board (staff view, ?preview=1; staff 2026-11-17) ----------
+   For the team's office screen: every creek in one table, calm or not, worst first, then Bay side north to south and
+   the coast: status, its main gauge's level and the next level, rain in the last hour and 24 hours at its wettest gauge,
+   and the NWS rain forecast for the next 24 hours and 3 days. Under it, San Francisquito's three Palo Alto gauges from
+   SFCJPA (statuses assumed) and the storm road closures. Tap a creek for its graphs; tap the closures for the list. */
+var SFQ = { d: null }, ROADS = { d: null };
+function loadExtras() {
+  if (!(window.CREEK_STATUS && CREEK_STATUS.staff)) return;
+  var base = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/", t = "?t=" + Math.floor(Date.now() / 6e4);
+  fetch(base + "sfcjpa.json" + t, { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) { SFQ.d = j; if (C.data) renderCreek(); }).catch(function () {});
+  fetch(base + "road_closures.json" + t, { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) { ROADS.d = j; if (C.data) renderCreek(); }).catch(function () {});
+}
+function mainGauge(c) { var s = c.stages || []; return s.filter(function (g) { return (g.thresholds || []).length; })[0] || s[0] || null; }
+function sfqLine(now) {
+  var d = SFQ.d; if (!d) return "";
+  var ms = function (p) { return Date.parse(p[2].replace("Z", ":00Z")); }, best = null, quiet = 0, lastT = 0;
+  (d.gauges || []).filter(function (g) { return ["waverley", "pope_chaucer", "west_bayshore"].indexOf(g.key) >= 0; }).forEach(function (g) {
+    var p = g.points && g.points[g.points.length - 1]; if (!p) { quiet++; return; }
+    lastT = Math.max(lastT, ms(p));
+    if (Date.now() - ms(p) > 45 * 60000) { quiet++; return; }
+    var lv = g.levels || [], f = lv[0] ? p[1] / lv[0] : 0;
+    if (!best || f > best.f) best = { g: g, v: p[1], f: f, lv: lv };
+  });
+  if (!best) return '<div class="note"><b>San Francisquito, Palo Alto (SFCJPA):</b> <span class="m">gauges not reporting' + (lastT ? " since " + esc(fTime(lastT - (Date.now() - now))) : "") + "</span></div>";
+  var lv = best.lv, nm = ["50% capacity", "70% capacity", "road level"], i = best.v >= lv[2] ? 3 : best.v >= lv[1] ? 2 : best.v >= lv[0] ? 1 : 0;
+  return '<div class="note"><b>San Francisquito, Palo Alto (SFCJPA):</b> ' + esc(best.g.label) + " <b>" + best.v.toFixed(2) + " ft</b>" +
+    (i < 3 ? ' <span class="m">· ' + (lv[i] - best.v).toFixed(1) + " ft below " + nm[i] + "</span>" : " <b style='color:var(--red)'>at road level</b>") +
+    ' <span class="m">· highest of 3' + (quiet ? " (" + quiet + " not reporting)" : "") + " · levels assumed</span></div>";
+}
+function openRoads() {
+  var d = ROADS.d; if (!d) return;
+  var act = (Array.isArray(d.active) ? d.active : (d.log || []).filter(function (c) { return c.active; }));
+  var past = (d.log || []).filter(function (c) { return !c.active; }).slice(-8).reverse();
+  function li(c) { return "<li><b>" + esc([c.route, c.place].filter(Boolean).join(", ")) + "</b> · " + esc(c.what || c.closure || "") + (c.where ? " · " + esc(c.where) : "") +
+    '<span class="m"> · ' + esc(c.active ? "since " + c.started : (c.started || "") + " to " + (c.ended || c.last_seen || "")) + (c.creeks && c.creeks.length ? " · " + esc(c.creeks.join(", ")) : c.watersheds && c.watersheds.length ? " · " + esc(c.watersheds.join(", ")) : "") + "</span></li>"; }
+  openDetail("Storm road closures", (act.length ? "<p><b>Open now</b></p><ul>" + act.map(li).join("") + "</ul>" : "<p>No storm road closures open now in San Mateo County.</p>") +
+    (past.length ? "<p><b>Recently</b></p><ul>" + past.map(li).join("") + "</ul>" : "") +
+    '<div id="dnote">Caltrans Lane Closure System (storm work: flooding, slides, debris, repairs) and city news feeds. Checked ' + esc(d.generated || "") + ". Full log on the Storm Tracker.</div>");
+}
+function roadsLine() {
+  var d = ROADS.d; if (!d) return "";
+  var act = (Array.isArray(d.active) ? d.active : (d.log || []).filter(function (c) { return c.active; }));
+  return '<div class="note" data-roads="1"><b>Storm road closures:</b> ' + (act.length ? act.length + " open · " + act.slice(0, 3).map(function (c) {
+      return esc([c.route, c.place].filter(Boolean).join(" ") + (c.what ? " (" + c.what.toLowerCase() + ")" : "")); }).join(" · ") + (act.length > 3 ? " · …" : "")
+    : '<span class="m">none open now' + ((d.log || []).length ? " · " + d.log.length + " this season" : "") + "</span>") + ' <span class="m">· tap for the list</span></div>';
+}
+function teamBoard(now) {
+  var CS = window.CREEK_STATUS, el = document.getElementById("call");
+  el.style.gridTemplateColumns = "1fr"; el.style.gridTemplateRows = "1fr";
+  var all = creeks().concat(moreCreeks()), NS = ["colma", "sanbruno", "greenhills", "sanmateo", "belmont", "atherton", "sanfrancisquito", "pilarcitos", "sangregorio", "pescadero", "butano"];
+  function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
+  var rows = all.map(function (c) {
+    var v = CS.view(C.data, c), st = creekState(c, now), g = mainGauge(c), s = g ? st.stages.filter(function (x) { return x.g === g; })[0] : null;
+    var r1 = 0, r24 = 0; st.rains.forEach(function (r) { r1 = Math.max(r1, rainSum(r.p, now - 3600000, now)); r24 = Math.max(r24, rainSum(r.p, now - 86400000, now)); });
+    var fc = c.forecast && !c.forecast.error ? c.forecast : null, ro = isMore(c) && C.data.creeks_readings;
+    var lvl = !s || s.out ? "–" : !s.last ? "–" : s.quiet ? '<span class="m">offline · ' + esc(fDay(s.last.t).replace(/^\w+, /, "")) + "</span>"
+      : "<b>" + s.last.v.toFixed(2) + "</b> ft" + esc(s.arrow);
+    var nxt = s && s.last && !s.quiet && !s.out ? (s.next ? '<span class="m">' + (s.next.value - s.last.v).toFixed(2) + " to " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "").replace(/^Monitoring$/, "Monitor")) + "</span>"
+      : s.lvl ? "<b>above " + esc(s.lvl.name.replace(/^Flood | Flood Stage$/g, "")) + "</b>" : '<span class="m">no levels</span>') : "";
+    var wet = function (x, lim) { return '<td class="r' + (x >= lim ? " wet" : "") + '">' + inch(x) + "</td>"; };
+    return { rank: v.rank || 0, ns: NS.indexOf(c.id) < 0 ? 99 : NS.indexOf(c.id), html: '<tr data-creek="' + esc(c.id) + '"><td class="bar" style="background:' + esc(v.color || "transparent") + '"></td>' +
+      '<td class="n">' + esc(shortName(c)) + "</td><td>" + (ro ? '<span class="ro">' + esc(LK.text("more_creeks_badge")) + "</span>" : '<span class="w" style="color:' + esc(v.key === "alert" ? "#8a6d00" : v.rank <= 1 ? "var(--ink)" : v.color) + '">' + CS.icon(v.key) + esc(v.word) + "</span>") + "</td>" +
+      '<td class="m">' + esc(g ? g.label : "") + '</td><td class="r">' + lvl + "</td><td>" + nxt + "</td>" + wet(r1, 0.1) + wet(r24, 1) +
+      (fc ? wet(fc.next24, 1) + wet(fc.next72, 2) : '<td class="r m">–</td><td class="r m">–</td>') + "</tr>" };
+  }).sort(function (a, b) { return b.rank - a.rank || a.ns - b.ns; });
+  var gen = C.data.generated ? parseLocal(C.data.generated) : null;
+  el.innerHTML = '<div class="tb"><div class="cs-bhead"><b>Creeks</b><span>staff board · creek data ' + (gen ? esc(fTime(gen)) : "–") + " · tap a creek for its graphs</span></div>" +
+    '<table><colgroup><col style="width:5px"><col style="width:112px"><col style="width:162px"><col><col style="width:62px"><col style="width:128px"><col style="width:38px"><col style="width:42px"><col style="width:58px"><col style="width:46px"></colgroup>' +
+    '<thead><tr><th></th><th>Creek</th><th>Status</th><th>Main gauge</th><th class="r">Level</th><th>Next level</th><th class="r">1 hr</th><th class="r">24 hr</th><th class="r">NWS 24h</th><th class="r">3 days</th></tr></thead><tbody>' +
+    rows.map(function (r) { return r.html; }).join("") + "</tbody></table>" + sfqLine(now) + roadsLine() + "</div>";
+  // the screen is shorter during a creek alert: rows that don't fit go, least serious first
+  var box = el.querySelector(".tb"), trs = Array.prototype.slice.call(box.querySelectorAll("tbody tr")), cut = 0;
+  while (trs.length > 4 && box.scrollHeight > box.clientHeight + 1) { trs.pop().style.display = "none"; cut++; }
+  if (cut) box.querySelector(".cs-bhead span").textContent += " · " + cut + " quiet creek" + (cut > 1 ? "s" : "") + " not shown";
+}
+document.getElementById("call").addEventListener("click", function (e) { if (e.target.closest && e.target.closest("[data-roads]")) { e.stopPropagation(); openRoads(); } }, true);
+
 function renderAllCreeks(states, now) {
+  if (window.CREEK_STATUS && CREEK_STATUS.staff && CREEK_STATUS.board) { teamBoard(now); return; }
   if (window.CREEK_STATUS && CREEK_STATUS.preview) {   // status board (STATUS_PUBLIC, or ?preview=1), one row per creek, worst first; tap a dashboard creek's row for its graphs
     var el = document.getElementById("call");
     el.style.gridTemplateColumns = "1fr"; el.style.gridTemplateRows = "1fr";
@@ -2146,6 +2237,7 @@ Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
   t.addEventListener("click", function (e) { e.stopPropagation(); closeDetail(); showTab(t.dataset.tab); });
 });
 every(CREEK_EVERY_MIN, loadCreek);
+every(10, loadExtras);   // team board: SFCJPA and road closures (staff view only)
 setInterval(function () {
   var secs = (Date.now() - tabChangedAt) / 1000;
   if ((currentTab === "about" || currentTab === "disclaimer") && secs >= ABOUT_RETURN_SEC) { showTab("creek"); return; }
