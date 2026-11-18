@@ -96,8 +96,7 @@
   @media (prefers-color-scheme: dark) { .fmap { color: #8cc8ff; } .fnd select { border-color: #8cc8ff; } }
   #jLevel, #jRain, #tideTitle, #cmap, #stages, #rainBox, #cityPick { scroll-margin-top: 120px; }
   .flows { margin: 4px 2px 12px; font-size: 15px; color: var(--muted); line-height: 1.4; }
-  .ro-tag { display: inline-block; font-size: 13px; font-weight: 600; color: var(--muted); background: var(--soft, rgba(26,58,92,.06));
-    border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
+  .ro-tag { font-size: 14px; font-weight: normal; color: var(--muted); margin-left: 6px; white-space: nowrap; }   /* plain text, not a tag (staff 2026-11-18) */
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   /* city picker: which creeks we measure in or near a city (lookups/creek_facts.csv "cities") */
   .cp { margin: 0 0 12px; }
@@ -378,10 +377,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261118a"></script>
-<script src="severity.js?v=20261118a"></script>
-<script src="creek_status.js?v=20261118a"></script>
-<script src="hero.js?v=20261118a"></script>
+<script src="lookups.js?v=20261118b"></script>
+<script src="severity.js?v=20261118b"></script>
+<script src="creek_status.js?v=20261118b"></script>
+<script src="hero.js?v=20261118b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -899,7 +898,7 @@ function renderMoreRows(now) {
     }
     grid.insertAdjacentHTML("beforeend", '<article class="cs-card cs-brief cs-rowc cs-none cs-ro" data-creek="' + esc(c.id) + '" data-sev="0" data-ns="' + CS.nsKey(c, 50 + i) +
       '" data-az="' + esc(c.name.toLowerCase()) + '"><a class="cs-rowa" href="#' + esc(c.id) + '" aria-label="' + esc(c.name + ": " + LK.text("more_creeks_badge") + ". Graphs and readings") + '">' +
-      '<span class="cs-rowt"><span class="cs-rown"><b>' + esc(c.name) + '</b><span class="ro-tag">' + esc(LK.text("more_creeks_badge")) + "</span></span>" +
+      '<span class="cs-rowt"><span class="cs-rown"><b>' + esc(c.name) + '</b><span class="ro-tag">· ' + esc(LK.text("more_creeks_badge").toLowerCase()) + "</span></span>" +
       d.map(function (x) { return '<span class="cs-rowd">' + x + "</span>"; }).join("") + '</span><span class="cs-go" aria-hidden="true">›</span></a></article>');
   });
 }
