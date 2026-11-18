@@ -179,6 +179,15 @@
     });
     // only (the Tides pages, staff 2026-11-10): just this page's shoreline card; the other shoreline's products aren't
     // listed under "Also in effect" either (Bayside shows Bay products, Coastside coast products)
+    // shoreAlso (the Creeks page, staff 2026-11-17): only this page's card, and the Bay and coast products rolled up into
+    // one "Also in effect" line, each linked to its Tides page, instead of their own cards
+    var shoreAlso = [];
+    if (s.only && s.current && s.shoreAlso) groups.forEach(function (g) {
+      if (g.id !== s.current && g.ps) g.ps.forEach(function (p) {
+        shoreAlso.push('<a href="Tides.html' + (g.id === "coast" ? "?side=coast" : "") + (hasPreview() ? (g.id === "coast" ? "&" : "?") + "preview=1" : "") + '">' +
+          esc(p.event) + " (" + esc(g.id === "coast" ? "coast" : "Bay shoreline") + ")\u00a0›</a>");
+      });
+    });
     if (s.only && s.current) groups = groups.filter(function (g) { return g.id === s.current; });
     var open = el._open || null;
     if (open && !groups.some(function (g) { return g.id === open && g.ps && g.ps.length; })) open = null;
@@ -206,7 +215,7 @@
       return '<div class="al"><h3>' + esc(p.event) + '</h3><div class="when">' + esc(nwsUntil(p)) + (p.areaDesc ? " · " + esc(p.areaDesc) : "") + "</div>" + alertBody(p) + "</div>";
     }).join("") + '<p class="src">National Weather Service San Francisco Bay Area.</p>' : "";
     var rest = list.filter(function (p) { return !used[key(p)]; });
-    var others = rest.map(function (p) { return esc(p.event + " " + nwsUntil(p)); });
+    var others = shoreAlso.concat(rest.map(function (p) { return esc(p.event + " " + nwsUntil(p)); }));
     var CR = s.creeks;
     if (CR && CR.worst) others.push((s.creekLink === false ? "" : '<a href="Creeks.html' + hasPreview() + '">') + esc(CR.headline) + (s.creekLink === false ? "" : " ›</a>"));
     var h = '<div class="ncards n' + groups.length + '" role="group" aria-label="National Weather Service alerts by area">' + cards + "</div>" +

@@ -331,7 +331,7 @@
     var hm = home(data, linkFor, { noMore: true, nws: opts.nws, slim: true });   // the same status board as the home page
     // then one "find your creek" block: the city box (with the map link) and "How to read this page" as a plain link under it
     var h = badge() + (opts.noBanner ? "" : hm.banner) + hm.html +   // noBanner: the page's alert at the top says it (hero.js) '<div class="cs-find"><div id="cpSlot"></div>' + howTo() + "</div>" +   // cpSlot: the page puts its city finder here
-      '<div class="cs-allh"><h2 class="cs-qh">' + esc(T("quiet_title")) + '</h2><div class="cs-sort" role="group" aria-label="Order the creeks">' +
+      '<div class="cs-allh"><h2 class="cs-qh">' + esc(opts.allTitle || T("quiet_title")) + '</h2><div class="cs-sort" role="group" aria-label="Order the creeks">' +
       [["sev", "Most serious first"], ["ns", "North to south"], ["az", "A–Z"]].map(function (b) {
         return '<button type="button" data-sort="' + b[0] + '" aria-pressed="' + (b[0] === by) + '">' + b[1] + "</button>"; }).join("") + "</div></div>" +
       '<div class="cs-grid" id="csAll">' + rows.map(function (x) {
@@ -813,6 +813,6 @@
     return data;
   }
 
-  window.CREEK_STATUS = { stillWatching: stillWatching, prepare: prepare, levelsOnly: levelsOnly, chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow };
+  window.CREEK_STATUS = { stillWatching: stillWatching, prepare: prepare, levelsOnly: levelsOnly, chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow, nsKey: nsKey, sortCards: sortCards };
   Object.defineProperty(window.CREEK_STATUS, "preview", { get: shown });   // true when the status layer shows on this page
 })();

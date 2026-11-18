@@ -78,6 +78,26 @@
   .pick button.on { border-color: var(--ink); background: var(--soft); box-shadow: inset 0 0 0 1px var(--ink); }
   .two.stack { grid-template-columns: 1fr; }
   /* All creeks summary */
+  /* Finder (staff, 2026-11-17): one sticky "creek or city" picker at the top, with "‹ All creeks" and, on a creek's page,
+     links down to its level, rain, tide and map */
+  .finder { position: sticky; top: 0; z-index: 900; background: var(--bg); border-bottom: 1px solid var(--line);
+    padding: 8px max(12px, calc((100% - 696px) / 2)) 8px; }
+  .fnd { display: flex; gap: 8px; align-items: center; }
+  .finder [hidden] { display: none; }
+  .fnd select { flex: 1; min-width: 0; font: inherit; font-size: 16px; min-height: 44px; padding: 8px 10px; border-radius: 8px;
+    border: 2px solid #0A5587; background: var(--card); color: var(--ink); }
+  .fback { flex: none; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+    color: var(--ink); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .fmap { flex: none; min-height: 44px; display: flex; align-items: center; padding: 0 4px; font-weight: 700; color: #0A5587; text-underline-offset: 3px; }
+  .fjump { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+  .fjump a { flex: none; display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--card);
+    border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 14.5px; font-weight: 600; }
+  .fnd select:focus-visible, .fback:focus-visible, .fmap:focus-visible, .fjump a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
+  @media (prefers-color-scheme: dark) { .fmap { color: #8cc8ff; } .fnd select { border-color: #8cc8ff; } }
+  #jLevel, #jRain, #tideTitle, #cmap, #stages, #rainBox, #cityPick { scroll-margin-top: 120px; }
+  .flows { margin: 4px 2px 12px; font-size: 15px; color: var(--muted); line-height: 1.4; }
+  .ro-tag { display: inline-block; font-size: 13px; font-weight: 600; color: var(--muted); background: var(--soft, rgba(26,58,92,.06));
+    border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
   .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   /* city picker: which creeks we measure in or near a city (lookups/creek_facts.csv "cities") */
   .cp { margin: 0 0 12px; }
@@ -205,7 +225,7 @@
 
   /* About */
   #about { display: none; }
-  body.about #creekView, body.about .pick { display: none; } body.about #about { display: block; }
+  body.about #creekView, body.about .pick, body.about #finder { display: none; } body.about #about { display: block; }
   #about h2 { font-size: 18px; margin: 0 0 6px; color: var(--ink); }
   #about p { font-size: 14.5px; line-height: 1.45; margin: 0 0 8px; }
   .emerg { color: var(--red); font-weight: bold; font-size: 16px !important; }
@@ -254,24 +274,30 @@
 
 <div class="pick" id="pick"></div>
 
+<div class="finder" id="finder" hidden>
+  <div class="fnd">
+    <button type="button" class="fback" id="fBack" hidden>‹ All creeks</button>
+    <label class="vh" for="fSel">Find a creek or city</label>
+    <select id="fSel"></select>
+    <a class="fmap" id="fMap" href="SiteMap.html">Map</a>
+  </div>
+  <div class="fjump" id="fJump" role="navigation" aria-label="On this creek's page" hidden></div>
+</div>
+
 <main>
   <!-- ===================== CREEK ===================== -->
   <div id="creekView">
     <div id="cpBanner"></div>
     <section class="cp" id="cityPick" hidden>
-      <div class="cp-box">
-        <h2 class="cp-t" id="cpH" data-text="city_title">Find flood information for your city</h2>
-        <label class="vh" for="cpSel" data-text="city_choose">Choose a city or community</label>
-        <select id="cpSel"></select>
+      <div class="cp-box" style="padding:12px 14px 4px">
         <div id="cpOut" aria-live="polite"></div>
-        <p class="cp-map">Not sure which creek is near you? <a href="SiteMap.html">See the map ›</a></p>
       </div>
     </section>
     <div id="allView"></div>
     <div id="one">
-    <a class="back" href="#all" id="backAll">‹ All creeks</a>
     <div class="intro" id="intro"></div>
     <div id="csOne"></div>
+    <p class="flows" id="flows" hidden></p>
     <div class="card" id="csRead" style="display:none"></div>
     <div id="stages"></div>
     <div class="two" id="rainBox">
@@ -303,7 +329,7 @@
       <h2>About this page</h2>
       <p><b>Creek water levels</b> (stage) measured by OneShoreline's creek gauges, with each gauge's flood thresholds:
         Flood Monitoring (yellow), Flood Watch (orange) and Flood Warning (red). These are levels on OneShoreline's gauges,
-        not National Weather Service alerts. Use the buttons at the top to switch creeks.</p>
+        not National Weather Service alerts. Use the picker at the top to switch creeks, or to find the creeks near a city.</p>
       <p><b>Rainfall</b> at the creek's rain gauges and the <b>Bay tide</b> nearby. Creeks near the Bay rise and fall with the tide,
         so a rise can come from rain, a high tide, or both.</p>
       <p data-text="tide_words" data-lead></p>
@@ -352,10 +378,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261116c"></script>
-<script src="severity.js?v=20261116c"></script>
-<script src="creek_status.js?v=20261116c"></script>
-<script src="hero.js?v=20261116c"></script>
+<script src="lookups.js?v=20261117a"></script>
+<script src="severity.js?v=20261117a"></script>
+<script src="creek_status.js?v=20261117a"></script>
+<script src="hero.js?v=20261117a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -456,7 +482,8 @@ function loadAlerts() {
 // The Bay tide bar that used to sit here is gone: the Bay shoreline card covers NWS, and Bay tides has the tide itself
 function renderHero() {
   var crx = D.creek ? HERO.creeks(D.creek, D.alerts || []) : null;
-  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true, waves: WV, prepAlso: !!(crx && crx.worst), localCreek: crx && crx.worst ? crx.headline : null });
+  // Only the creek card (staff, 2026-11-17): Bay and coast products are one "Also in effect" line, linked to Tides
+  HERO.nwsCards($("ncards"), { nws: D.alerts || null, nwsFailed: D.alertsFailed, current: "creek", inland: true, only: true, shoreAlso: true, prepAlso: !!(crx && crx.worst), localCreek: crx && crx.worst ? crx.headline : null });
 }
 
 
@@ -568,34 +595,25 @@ function cityInit() {
     });
     CITY.list = Object.keys(map).map(function (k) { return { slug: k, name: map[k].name, creeks: map[k].creeks }; })
       .sort(function (a, b) { return a.name.localeCompare(b.name); });
-    var sel = $("cpSel");
-    sel.innerHTML = '<option value="">' + esc(LK.text("city_choose")) + "</option>" +
-      CITY.list.map(function (x) { return '<option value="' + esc(x.slug) + '">' + esc(x.name) + "</option>"; }).join("") +
-      '<option value="_other">' + esc(LK.text("city_other")) + "</option>";
     var q = (location.search.match(/[?&]city=([a-z0-9-]+)/) || [])[1], saved = "";
     try { saved = localStorage.getItem("fews_city") || ""; } catch (e) {}
     CITY.sel = q || saved;
     if (CITY.sel && CITY.sel !== "_other" && !CITY.list.some(function (x) { return x.slug === CITY.sel; })) CITY.sel = "";
-    sel.value = CITY.sel;
-    sel.addEventListener("change", function () {
-      CITY.sel = sel.value; try { localStorage.setItem("fews_city", CITY.sel); } catch (e) {}
-      renderCity();
-    });
     if (D.creek) render();
   }).catch(function () { /* no picker without the table */ });
 }
 document.addEventListener("click", function (e) {
   if (e.target && e.target.id === "cpAll") {
     CITY.sel = ""; try { localStorage.setItem("fews_city", ""); } catch (x) {}
-    var sel = $("cpSel"); if (sel) { sel.value = ""; sel.focus(); }
-    renderCity();
+    renderCity(); fillFinder();
+    var sel = $("fSel"); if (sel) sel.focus();
   }
   var how = e.target && e.target.closest && e.target.closest("[data-howto]");   // "New to this page?": open the explainer
   if (how) { var d = $("howto"); if (d) { e.preventDefault(); d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" }); var sm = d.querySelector("summary"); if (sm) sm.focus(); } }
 });
 function renderCity() {
   if (!CITY.list || !D.creek) return;
-  $("cityPick").hidden = false;
+  $("cityPick").hidden = !CITY.sel || D.sel !== "all";   // only once a city is picked (in the finder at the top)
   var CS = window.CREEK_STATUS, all = (D.creek.creeks || []).concat(D.creek.creeks_preview || [], D.creek.creeks_readings || []);
   var views = all.map(function (c) { return { c: c, v: CS && c.status ? CS.view(D.creek, c) : null }; });   // readings-only creeks: no status word
   var out = $("cpOut"), h = "";
@@ -635,7 +653,7 @@ function showCreekMap(c) {
   var fig = $("cmap"), img = $("cmapI");
   if (fig.dataset.id === c.id) { img.alt = mapAlt(c); return; }
   fig.dataset.id = c.id; fig.hidden = true;
-  img.onload = function () { fig.hidden = false; };
+  img.onload = function () { fig.hidden = false; fillJump(creek(), readingsOnly(c)); };
   img.onerror = function () { fig.hidden = true; };   // no map built yet for this creek
   img.alt = mapAlt(c);
   img.src = "img/creekmaps/" + encodeURIComponent(c.id) + ".svg";
@@ -667,26 +685,31 @@ function render() {
   if (worst) $("navDot").style.background = worst.top.color;
   $("allView").style.display = c ? "none" : "";
   $("cpBanner").style.display = c ? "none" : "";
-  $("cityPick").hidden = !!c || !CITY.list;
+  $("cityPick").hidden = !!c || !CITY.list || !CITY.sel;
+  fillFinder(); fillJump(c, ro);
   if (!c) renderCity();
   $("one").style.display = c ? "" : "none";
   if (!c) {
     document.title = "Creek Conditions – OneShoreline";
     if (PV) {
       $("creekView").insertBefore($("cityPick"), $("allView"));   // out of the way before the cards are redrawn
-      $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); }, { previewLinks: true, compactNotes: true, nws: D.alerts || [], noBanner: true });
+      $("allView").innerHTML = CS.page(D.creek, function (x) { return "#" + encodeURIComponent(x.id); }, { previewLinks: true, compactNotes: true, nws: D.alerts || [], noBanner: true, allTitle: "All creeks" });
       var slot = $("cpSlot"); if (slot) slot.appendChild($("cityPick"));   // under the summary: answer first, then "your city"
     }
     else renderAll(states, now);
     // (a creek's "call 911" banner: in the alert at the top now)
     $("cpBanner").innerHTML = ""; renderHero();
-    if (!PV || D.creek.creeks_readings) renderMore(now);   // readings-only creeks under the status cards (public, flood levels only)
+    if (PV && $("csAll") && CS.nsKey) renderMoreRows(now);   // readings-only creeks in the same list (staff, 2026-11-17)
+    else if (!PV || D.creek.creeks_readings) renderMore(now);   // readings-only creeks under the status cards (public, flood levels only)
     var gen0 = states.length && states[0].gen;
     $("updated").textContent = (states.length && states[0].late && gen0 ? "⚠ Creek data delayed · updated " + agoText(now - gen0) + " · " : "Updated " + fTime(now) + " " + tzAbbr() + " · ") + "all times Pacific · refreshes automatically";
     return;
   }
   document.title = c.name + " – OneShoreline";
   showCreekMap(c);
+  var fx = (CITY.facts || {})[c.id], places = fx ? String(fx.cities || "").split(";").map(cityClean).filter(Boolean) : [];
+  $("flows").hidden = !places.length;
+  $("flows").textContent = places.length ? "Runs through " + (places.length < 2 ? places[0] : places.slice(0, -1).join(", ") + " and " + places[places.length - 1]) + "." : "";
   $("intro").textContent = c.intro;
   $("csOne").innerHTML = !PV ? "" : CS.badge() + (ro ? '<div class="card acard ro"><div class="ah"><span class="an">' + esc(c.name) + '</span><span class="ac ro">' +
     esc(LK.text("more_creeks_badge")) + '</span></div><p class="morei" style="margin:6px 0 0">' + esc(LK.text("more_creeks_note")) + "</p></div>" : CS.card(D.creek, c, { compact: true }));
@@ -854,6 +877,31 @@ function renderAll(states, now) {
     }).join("");
 }
 
+/* Readings-only creeks as rows in the one "All creeks" list (staff, 2026-11-17): the same tap target as the others,
+   tagged "Readings only"; they sort with the rest (last when sorted by status) */
+function renderMoreRows(now) {
+  var CS = window.CREEK_STATUS, grid = $("csAll"), more = moreCreeks();
+  function inch(x) { return x < 0.005 ? "0" : x.toFixed(2); }
+  more.forEach(function (c, i) {
+    if (grid.querySelector('[data-creek="' + c.id + '"]')) return;   // the staff view already has it, with its status
+    var st = creekState(c, now), d = [];
+    st.stages.forEach(function (g) {
+      d.push(esc(g.g.label) + " <b>" + (g.last ? g.last.v.toFixed(2) + g.arrow + " ft" : "–") + "</b> " +
+        (!g.last ? "no data" : g.quiet ? '<span class="warn">offline</span> · last report ' + fDate(g.last.t) : '<span class="cs-dim">' + agoText(now - g.last.t) + "</span>"));
+    });
+    var wins = rainWindows(c), wl = wins.length - 1;
+    if (st.rains.length && wl >= 0) {
+      var wet = st.rains.filter(function (r) { return r.w[wl] >= 0.005; });
+      d.push(!wet.length ? "No rain in the last " + esc(winLabel(wins[wl])) : "Rain in the last " + esc(winLabel(wins[wl])) + ": " +
+        wet.map(function (r) { return "<b>" + inch(r.w[wl]) + " in</b>" + (st.rains.length > 1 ? " at " + esc(r.g.label) : ""); }).join(", "));
+    }
+    grid.insertAdjacentHTML("beforeend", '<article class="cs-card cs-brief cs-rowc cs-none cs-ro" data-creek="' + esc(c.id) + '" data-sev="0" data-ns="' + CS.nsKey(c, 50 + i) +
+      '" data-az="' + esc(c.name.toLowerCase()) + '"><a class="cs-rowa" href="#' + esc(c.id) + '" aria-label="' + esc(c.name + ": " + LK.text("more_creeks_badge") + ". Graphs and readings") + '">' +
+      '<span class="cs-rowt"><span class="cs-rown"><b>' + esc(c.name) + '</b><span class="ro-tag">' + esc(LK.text("more_creeks_badge")) + "</span></span>" +
+      d.map(function (x) { return '<span class="cs-rowd">' + x + "</span>"; }).join("") + '</span><span class="cs-go" aria-hidden="true">›</span></a></article>');
+  });
+}
+
 /* More creeks: readings only, no status (flood levels not set yet) */
 function renderMore(now) {
   var more = moreCreeks();
@@ -882,24 +930,99 @@ function renderMore(now) {
   $("allView").insertAdjacentHTML("beforeend", h);
 }
 
-function showCreek(id) {
+/* ---------- Finder at the top: every creek (with its status) and every city, in one list (staff, 2026-11-17) ---------- */
+function allList() { return creeks().concat(moreCreeks()); }
+function fillFinder() {
+  var sel = $("fSel"), CS = window.CREEK_STATUS, c = creek();
+  if (!sel || !D.creek) return;
+  $("finder").hidden = false;
+  $("fBack").hidden = !c;
+  $("fMap").hidden = !!c;   // on a creek's page the map is in the links under the picker
+  var h = '<option value="">' + (c ? "" : CITY.sel && CITY.sel !== "_other" ? "" : "Find your creek or city") + "</option>" + '<optgroup label="Creeks">' +
+    allList().slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) {
+      var w = readingsOnly(x) ? LK.text("more_creeks_badge") : CS && x.status ? CS.view(D.creek, x).word : "";
+      return '<option value="c:' + esc(x.id) + '">' + esc(x.name) + (w ? " · " + esc(w) : "") + "</option>";
+    }).join("") + "</optgroup>";
+  if (CITY.list) h += '<optgroup label="Cities and communities">' + CITY.list.map(function (x) {
+    return '<option value="city:' + esc(x.slug) + '">' + esc(x.name) + "</option>"; }).join("") +
+    '<option value="city:_other">' + esc(LK.text("city_other")) + "</option></optgroup>";
+  var v = c ? "c:" + c.id : CITY.sel ? "city:" + CITY.sel : "";
+  if (sel._h !== h && document.activeElement !== sel) { sel.innerHTML = h; sel._h = h; }   // not while it's open
+  if (document.activeElement !== sel) sel.value = v;
+}
+// Links down a creek's page: its level, rain, tide and map
+function fillJump(c, ro) {
+  var j = $("fJump"); if (!j) return;
+  if (!c) { j.hidden = true; j.innerHTML = ""; return; }
+  var PV = window.CREEK_STATUS && CREEK_STATUS.preview, L = [];
+  L.push([PV ? "jLevel" : "stages", "Creek level"]);
+  if ((c.rain || []).length || (ro && (c.rain_support || []).length)) L.push([PV ? "jRain" : "rainBox", "Rain"]);
+  if (c.tide && PV) L.push(["tideTitle", "Tide"]);
+  if (!$("cmap").hidden) L.push(["cmap", "Map"]);
+  var h = L.map(function (x) { return '<a href="#' + x[0] + '" data-jump="' + x[0] + '">' + x[1] + "</a>"; }).join("");
+  if (j.innerHTML !== h) j.innerHTML = h;
+  j.hidden = false;
+}
+$("fJump").addEventListener("click", function (e) {
+  var a = e.target.closest("a[data-jump]"); if (!a) return;
+  e.preventDefault();   // scroll only: the address keeps the creek (so Back still goes to All creeks)
+  var t = $(a.dataset.jump); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+$("fSel").addEventListener("change", function () {
+  var v = this.value; this.blur();
+  if (v.indexOf("c:") === 0) go(v.slice(2), D.sel === "all" ? "push" : "replace");
+  else if (v.indexOf("city:") === 0) {
+    CITY.sel = v.slice(5); try { localStorage.setItem("fews_city", CITY.sel); } catch (x) {}
+    if (D.sel !== "all") go("all", "push"); else { render(); window.scrollTo(0, 0); }
+  }
+});
+
+/* ---------- Moving between All creeks and a creek, with the browser's Back button (staff, 2026-11-17) ----------
+   Opening a creek from All creeks adds a step to the browser's history, so Back returns to All creeks (at the same
+   place in the list); switching creeks in the finder replaces that step, so Back still goes to All creeks; a creek
+   opened straight from a link (Home, a shared link) gets All creeks put under it. */
+function go(id, mode) {   // mode: "push" (a new step), "replace", or "none" (the browser already moved)
+  id = id || "all";
+  try {
+    if (mode === "push") {
+      if (D.sel === "all") history.replaceState(Object.assign({}, history.state, { v: "all", y: window.scrollY }), "", location.href);
+      history.pushState({ v: id, pushed: true }, "", "#" + id);
+    } else if (mode === "replace") history.replaceState({ v: id, pushed: !!(history.state && history.state.pushed) }, "", "#" + id);
+  } catch (x) {}
+  showCreek(id, mode === "none" && history.state && history.state.y);
+}
+function showCreek(id, y) {
   D.sel = id || "all";
-  try { history.replaceState(null, "", "#" + D.sel); } catch (x) {}
-  render(); loadTides(); window.scrollTo(0, 0);
+  render(); loadTides(); window.scrollTo(0, y || 0);
+}
+function backToAll() {
+  if (history.state && history.state.pushed) history.back();   // the step before is All creeks
+  else go("all", "replace");
 }
 $("pick").addEventListener("click", function (e) {
-  var b = e.target.closest("button[data-creek]"); if (b) showCreek(b.dataset.creek);
+  var b = e.target.closest("button[data-creek]"); if (b) go(b.dataset.creek, D.sel === "all" ? "push" : "replace");
 });
-$("allView").addEventListener("click", function (e) {
-  var b = e.target.closest("[data-creek]"); if (b) showCreek(b.dataset.creek);
+// Any link or card to "#<creek>" on the page (the creek list, the city list, a card) opens that creek
+document.addEventListener("click", function (e) {
+  if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
+  var a = e.target.closest && e.target.closest('a[href^="#"], #allView [data-creek]');
+  if (!a || !$("creekView").contains(a)) return;
+  var id = a.dataset.creek || decodeURIComponent((a.getAttribute("href") || "").slice(1));
+  if (!allList().some(function (c) { return c.id === id; })) return;
+  e.preventDefault();
+  go(id, D.sel === "all" ? "push" : "replace");
 });
-$("backAll").addEventListener("click", function (e) { e.preventDefault(); showCreek("all"); });
-// Any link to "#<creek>" (the city finder's list, a shared link, the browser's Back button) opens that creek
-window.addEventListener("hashchange", function () {
-  var h = decodeURIComponent(location.hash.replace("#", "")) || "all";   // no creek in the address (Back to the page's start): all creeks
+$("fBack").addEventListener("click", backToAll);
+function fromAddress() {
+  var h = decodeURIComponent(location.hash.replace("#", "")) || "all";   // no creek in the address: all creeks
   if (h === "about" || h === "howto" || h === D.sel) return;
-  if (h === "all" || creeks().concat(moreCreeks()).some(function (c) { return c.id === h; })) showCreek(h);
-});
+  if (h === "all" || allList().some(function (c) { return c.id === h; })) go(h, "none");
+}
+window.addEventListener("popstate", fromAddress);
+window.addEventListener("hashchange", fromAddress);   // a typed or old-style "#<creek>" link
+if (D.sel !== "all" && !(history.state && history.state.v)) {   // opened straight on a creek: put All creeks under it
+  try { history.replaceState({ v: "all" }, "", "#all"); history.pushState({ v: D.sel, pushed: true }, "", "#" + D.sel); } catch (x) {}
+}
 
 /* ---------- graphs: rain, each gauge's stage, and the tide on one time axis ---------- */
 var nowLine = {
@@ -979,9 +1102,9 @@ function drawCharts(st, now) {
     Object.keys(D.charts).forEach(function (k) { D.charts[k].destroy(); }); D.charts = {};
     var g = "";
     function row(canvas, hgt, tile, title) { return '<div class="srow"><div><div class="gtitle"><span>' + title + '</span></div><div class="gbox" style="height:' + hgt + 'px"><canvas id="' + canvas + '"></canvas></div></div><div class="tile" id="' + tile + '"></div></div>'; }
-    g += '<div class="sgh">Creek level</div>';
+    g += '<div class="sgh" id="jLevel">Creek level</div>';
     st.stages.forEach(function (s, i) { g += row("chStage" + i, 170, "tlStage" + i, gaugeLink(s.g, esc(s.g.label)) + " · ft (gauge height)"); });
-    g += '<div class="sgh">Rain</div>';
+    g += '<div class="sgh" id="jRain">Rain</div>';
     st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · rain per hour (in)"); });
     if (c.rain_running && c.rain_running.line) g += row("chRun", 90, "tlRun", esc(c.rain_running.label));
     g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul>';
@@ -1183,12 +1306,12 @@ Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (
   b.addEventListener("click", function () {
     if (b.dataset.href) { location.href = b.dataset.href; return; }   // Home and Map open their own pages
     // tapping Creeks while already on a creek goes back to All creeks
-    if (b.dataset.tab === "creek" && !document.body.classList.contains("about") && D.sel !== "all") { showCreek("all"); return; }
+    if (b.dataset.tab === "creek" && !document.body.classList.contains("about") && D.sel !== "all") { backToAll(); return; }
     document.body.classList.toggle("about", b.dataset.tab === "about");
     Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (x) { x.classList.toggle("on", x === b); });
     window.scrollTo(0, 0);
     if (b.dataset.tab === "creek") { D.built = null; render(); }
-    try { history.replaceState(null, "", b.dataset.tab === "about" ? "#about" : "#" + (D.sel || "")); } catch (e) {}
+    try { history.replaceState(history.state, "", b.dataset.tab === "about" ? "#about" : "#" + (D.sel || "")); } catch (e) {}
   });
 });
 if (location.hash === "#about") document.querySelector('nav button[data-tab="about"]').click();
