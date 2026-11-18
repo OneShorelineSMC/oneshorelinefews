@@ -776,9 +776,14 @@
      fast, the other creeks' statuses); public pages get:
      - the four dashboard creeks colored by their flood levels and OneRain's rain triggers (Belmont) only;
      - the other creeks as readings only (data.creeks_readings, no status, no flood-level lines);
-     - no Heavy / Very heavy / Intense rain ratings and no "rising fast" (a fast rise shows as rising).
+     - no Heavy / Very heavy / Intense rain ratings; "rising fast" only with CREEK_PUBLIC_RISING_FAST = 1 (staff,
+       2026-11-18: on, every creek), and then as a flag, never a status.
      The full answer is kept beside each piece (status_full, signals_full, thresholds_full). */
   function levelsOnly() { return !STAFF && LK.num("CREEK_PUBLIC_LEVELS_ONLY") === 1; }
+  // Rising fast on public pages, every creek (CREEK_PUBLIC_RISING_FAST = 1; staff, 2026-11-18): shown as a flag and a
+  // reason line, never as a status color (the public status stays on flood levels and rain triggers)
+  function risingPublic() { return LK.num("CREEK_PUBLIC_RISING_FAST") === 1; }
+  var KEEP_FAST = { why_rising_fast: 1 };
   var KEEP = { why_out_of_service: 1, why_level_note: 1, why_warning: 1, why_watch: 1, why_monitoring: 1, why_trigger: 1, why_trigger_tide: 1 };
   function publicStatus(s) {
     var lv = s.level || 0, tl = s.trigger ? s.trigger.level || 0 : 0;
@@ -787,9 +792,10 @@
     var o = JSON.parse(JSON.stringify(s));
     o.key = key;
     o.rain = Object.assign({}, o.rain || {}, { level: 0, driver: null, elevated: 0, silent: [] });
-    if (o.trend && o.trend.trend === "fast") o.trend.trend = "rising";
-    o.reasons = (o.reasons || []).filter(function (r) { return KEEP[r.code] || (r.code === "why_gauge_offline" && tl); })
-      .map(function (r) { return r.code === "why_watch" || r.code === "why_monitoring" ? Object.assign({}, r, { rising_fast: false, rising: !!(r.rising || r.rising_fast) }) : r; });
+    var rf = risingPublic();
+    if (o.trend && o.trend.trend === "fast" && !rf) o.trend.trend = "rising";
+    o.reasons = (o.reasons || []).filter(function (r) { return KEEP[r.code] || (rf && KEEP_FAST[r.code]) || (r.code === "why_gauge_offline" && tl); })
+      .map(function (r) { return !rf && (r.code === "why_watch" || r.code === "why_monitoring") ? Object.assign({}, r, { rising_fast: false, rising: !!(r.rising || r.rising_fast) }) : r; });
     if (key !== s.key) o.since = null;
     o.prev = null;
     return o;
@@ -808,12 +814,38 @@
       var sg = data.sensors[k].signals; if (!sg) return;
       data.sensors[k].signals_full = JSON.parse(JSON.stringify(sg));
       if (sg.level != null) { sg.level = 0; sg.driver = null; }
-      if (sg.trend === "fast") sg.trend = "rising";
-      if (sg.rising_fast) sg.rising_fast = false;
+      if (!risingPublic()) { if (sg.trend === "fast") sg.trend = "rising"; if (sg.rising_fast) sg.rising_fast = false; }
     });
     return data;
   }
 
-  window.CREEK_STATUS = { stillWatching: stillWatching, prepare: prepare, levelsOnly: levelsOnly, chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow, nsKey: nsKey, sortCards: sortCards };
+  /* How a creek gauge reports, and whether it is working (staff, 2026-11-18: "3 hr ago" read as broken when the gauge
+     was only waiting for the level to change). g: the gauge; pts: [{t, v}] its readings (ms, oldest first); now: ms;
+     quiet: past its limit (the page's own test); siteRain: its site has a rain gauge; fmtT(ms) -> "8:15 AM".
+     Returns {ok, head, line, how}: line for the tile, how for the "How these gauges report" notes. */
+  function gaugeHealth(g, pts, now, quiet, siteRain, fmtT) {
+    var usgs = /^USGS/.test(String(g.number || "")) || !/^\d+$/.test(String(g.number || "")), last = pts.length ? pts[pts.length - 1] : null;
+    var qh = window.LK && LK.num ? LK.num("GAUGE_QUIET_HOURS") : 13, qi = window.LK && LK.num ? LK.num("GAUGE_QUIET_HOURS_INTERVAL") : 3;
+    var rq = window.LK && LK.num ? LK.num("STAGE_SILENT_RAIN_MIN") : 60;
+    var gaps = []; for (var i = Math.max(1, pts.length - 12); i < pts.length; i++) gaps.push((pts[i].t - pts[i - 1].t) / 60000);
+    gaps.sort(function (a, b) { return a - b; });
+    var med = gaps.length ? gaps[Math.floor(gaps.length / 2)] : null, every = med ? (med >= 50 ? "hourly" : "every " + Math.max(5, Math.round(med / 5) * 5) + " min") : null;
+    var how, line;
+    if (usgs) {
+      how = "USGS gauge: readings every 15 minutes, sent to USGS in batches about once an hour. Shown as not reporting after " + qi + " hours with no new readings.";
+      line = "USGS sends readings hourly";
+    } else if (g.reports === "interval") {
+      how = "Reports on a schedule (" + (every || "regularly") + "). Shown as not reporting after " + qi + " hours with no report" + (siteRain ? ", or " + rq + " minutes while it rains nearby." : ".");
+      line = "reports " + (every || "on a schedule");
+    } else {
+      how = "Reports when the level changes, and checks in every 12 hours. Shown as not reporting after " + qh + " hours with no report" + (siteRain ? ", or " + rq + " minutes while it rains nearby." : ".");
+      var since = null; for (var k = pts.length - 1; k > 0; k--) if (pts[k - 1].v !== pts[k].v) { since = pts[k].t; break; }
+      line = since && now - since > 30 * 60000 ? "level unchanged since " + fmtT(since) : "reports when the level changes";
+    }
+    if (!last || quiet) return { ok: false, head: "Not reporting", line: last ? "since " + fmtT(last.t) : "no readings", how: how };
+    return { ok: true, head: "Working", line: line + (/unchanged since/.test(line) ? "" : " · last " + fmtT(last.t)), how: how };
+  }
+
+  window.CREEK_STATUS = { stillWatching: stillWatching, prepare: prepare, levelsOnly: levelsOnly, chip: chip, rainWord: rainWord, staff: STAFF, review: review, kiosk: kiosk, view: view, card: card, summary: summary, page: page, staffTable: staffTable, tile: tile, badge: badge, icon: icon, home: home, board: board, plain: plain, brief: brief, forecast: forecastRow, nsKey: nsKey, sortCards: sortCards, gaugeHealth: gaugeHealth };
   Object.defineProperty(window.CREEK_STATUS, "preview", { get: shown });   // true when the status layer shows on this page
 })();

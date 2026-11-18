@@ -377,10 +377,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261118c"></script>
-<script src="severity.js?v=20261118c"></script>
-<script src="creek_status.js?v=20261118c"></script>
-<script src="hero.js?v=20261118c"></script>
+<script src="lookups.js?v=20261118d"></script>
+<script src="severity.js?v=20261118d"></script>
+<script src="creek_status.js?v=20261118d"></script>
+<script src="hero.js?v=20261118d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -531,7 +531,8 @@ function creekState(c, now) {
     for (var k = p.length - 2; k >= 0 && last; k--) { if (last.t - p[k].t >= 20 * 60000) { prev = p[k]; break; } }
     var arrow = quiet || !prev ? "" : last.v > prev.v + 0.04 ? " ↑" : last.v < prev.v - 0.04 ? " ↓" : "";
     var lvl = last && !quiet ? stageLevel(g, last.v) : null;
-    st.stages.push({ g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl, out: (D.creek.sensors[g.key] || {}).out_of_service || null,
+    var sgF = (D.creek.sensors[g.key] || {}).signals || {};
+    st.stages.push({ g: g, p: p, last: last, quiet: quiet, arrow: arrow, lvl: lvl, fast: !quiet && (sgF.trend === "fast" || !!sgF.rising_fast), out: (D.creek.sensors[g.key] || {}).out_of_service || null,
       next: last ? (g.thresholds || []).filter(function (t) { return t.value > last.v; })[0] : null });
     if (lvl && !late && (!st.top || lvl.level > st.top.level)) st.top = lvl;
   });
@@ -888,7 +889,7 @@ function renderMoreRows(now) {
     st.stages.forEach(function (g) {
       // a gauge that has gone quiet shows no old number, only since when (staff 2026-11-17)
       d.push(esc(g.g.label) + " " + (!g.last ? "<b>–</b> no data" : g.quiet ? '<span class="warn">not reporting</span> since ' + fDate(g.last.t) + ", " + fTime(g.last.t)
-        : "<b>" + g.last.v.toFixed(2) + g.arrow + ' ft</b> <span class="cs-dim">' + agoText(now - g.last.t) + "</span>"));
+        : "<b>" + g.last.v.toFixed(2) + g.arrow + " ft</b>" + (g.fast ? ' <b style="color:var(--red)">' + esc(LK.text("trend_fast")) + "</b>" : "") + ' <span class="cs-dim">' + agoText(now - g.last.t) + "</span>"));
     });
     var wins = rainWindows(c), wl = wins.length - 1;
     if (st.rains.length && wl >= 0) {
@@ -1239,6 +1240,15 @@ function drawCharts(st, now) {
   if (readingsOnly(c)) { if (!PVk) notes.push(esc(LK.text("more_creeks_note"))); }   // creeks.csv notes are for staff; with the status layer the note sits at the top
   else if (c.note) notes.push(esc(c.note));
   (c.rain_triggers || []).forEach(function (tr) { notes.push("<b>Flooding likely:</b> " + esc(tr.label.toLowerCase()) + " of " + tr.value.toFixed(2) + " in or more" + (tr.high_tide ? (tr.tide_min != null ? " while the " + esc(T ? T.st.name : "Bay") + " tide is at or above " + tr.tide_min.toFixed(2) + " ft NAVD88" : " while the tide is at or above MHHW") : "")); });
+  // How these gauges report, so an old time can be read for what it is (staff, 2026-11-18)
+  if (window.CREEK_STATUS && CREEK_STATUS.gaugeHealth) {
+    var nowH = nowLocal(), howL = (c.stages || []).map(function (g) {
+      var sp = pts(g.key), h = CREEK_STATUS.gaugeHealth(g, sp, nowH, false, (c.rain || []).concat(c.rain_support || []).some(function (r) { return String(r.number) === String(g.number); }), fTime);
+      return "<li><b>" + esc(g.label) + ":</b> " + esc(h.how) + "</li>";
+    });
+    if ((c.rain || []).length || (c.rain_support || []).length) howL.push("<li><b>Rain gauges:</b> report each 0.04 in of rain as it falls, so in dry weather they are quiet; the time shown is the last rain.</li>");
+    if (howL.length) notes.push("<b>How these gauges report</b><ul style=\"margin:4px 0 0;padding-left:20px\">" + howL.join("") + "</ul>");
+  }
   if (PVk) {   // staff preview: the creek's intro, level meanings, triggers and gauge notes, folded under the graphs
     var gn = c.stages.filter(function (g) { return g.note; }).map(function (g) { return "<b>" + esc(g.label) + ":</b> " + esc(g.note); });
     $("csNotesB").innerHTML = [esc(c.intro || "")].concat(notes, gn).filter(Boolean).map(function (x) { return "<p>" + x + "</p>"; }).join("");
@@ -1256,6 +1266,14 @@ function fillTiles(st, now) {
     var when = function (t) { return fDate(t) === fDate(now) ? fTime(t) : fDate(t) + ", " + fTime(t); };
     return w ? "last rain " + esc(when(w)) : lr ? "no rain since " + esc(when(p.length ? p[0].t : lr)) : "no recent report";
   }
+  // ✓ Working · level unchanged since 5:00 AM (staff 2026-11-18: an old time alone read as a broken gauge)
+  function whenT(t) { return fDate(t) === fDate(now) ? fTime(t) : fDate(t) + ", " + fTime(t); }
+  function siteRain(c, g) { return (c.rain || []).concat(c.rain_support || []).some(function (r) { return String(r.number) === String(g.number); }); }
+  function healthLine(c, s) {
+    if (!window.CREEK_STATUS || !CREEK_STATUS.gaugeHealth) return esc(ago(s.last.t));
+    var h = CREEK_STATUS.gaugeHealth(s.g, s.p || pts(s.g.key), now, s.quiet, siteRain(c, s.g), whenT);
+    return '<span style="color:var(--green)">✓</span> ' + esc(h.line);
+  }
   function ago(t) { var m = Math.round((now - t) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " hr ago" : fmt(t, { month: "short", day: "numeric" }); }
   function inch(x) { return x < 0.005 ? "0.00" : x.toFixed(2); }
   function set(id, cls, html) { var e = $(id); if (e) { e.className = "tile " + cls; e.innerHTML = html; } }
@@ -1263,14 +1281,14 @@ function fillTiles(st, now) {
     var g = s.g, sig = (sens[g.key] || {}).signals || {}, th = (g.thresholds || []).filter(function (t) { return t.level >= 1 && t.level <= 4; });
     if (s.out) { set("tlStage" + i, "off", '<span class="tv">–</span><span class="tw">' + esc(LK.text("gauge_out")) + "</span>" + (s.out.note ? '<span class="tx">' + esc(s.out.note) + "</span>" : "")); return; }
     if (!s.last || s.quiet) { set("tlStage" + i, "off", '<span class="tv">' + (s.last ? s.last.v.toFixed(2) : "–") + '<small> ft</small></span><span class="tw">Not reporting</span>' +
-      (s.last ? '<span class="tx">last report ' + esc(ago(s.last.t)) + "</span>" : "")); return; }
+      (s.last ? '<span class="tx">since ' + esc(whenT(s.last.t)) + "</span>" : "")); return; }
     var lv = s.lvl ? Math.min(4, s.lvl.level) : 0, arrow = { fast: "↑↑", rising: "↑", steady: "→", falling: "↓" }[sig.trend] || "";
     var word = !th.length ? "" : s.lvl ? s.lvl.name.replace(/^Flood | Flood Stage$/g, "") : LK.text("status_normal");
     set("tlStage" + i, !th.length ? "" : "l" + lv, '<span class="tv">' + s.last.v.toFixed(2) + "<small> ft " + arrow + "</small></span>" +
       (word ? '<span class="tw">' + (s.lvl ? lvIcon(s.lvl.level) : "") + esc(word) + "</span>" : '<span class="tx">' + esc(LK.text(D.creek.creeks_readings && readingsOnly(st.c) ? "more_creeks_badge" : "no_flood_level_title")) + "</span>") +
       (sig.trend === "fast" || sig.rising_fast ? '<span class="tt"><b>' + esc(LK.text("trend_fast")) + "</b>" + (sig.ft_per_hr > 0 ? " · +" + sig.ft_per_hr.toFixed(1) + " ft/hr" : "") + "</span>" : "") +   // same words as the kiosk tile
       (s.next && th.length ? '<span class="tt">' + (s.next.value - s.last.v).toFixed(2) + " ft below " + esc(s.next.name.replace(/^Flood | Flood Stage$/g, "")) + "</span>" : "") +
-      '<span class="tt">' + esc(ago(s.last.t)) + "</span>");
+      '<span class="tt">' + healthLine(c, s) + "</span>");
   });
   st.rains.forEach(function (r, i) {
     var sig = (sens[r.g.key] || {}).signals || {}, lr = sig.last_report ? parseLocal(sig.last_report) : null, wins = rainWindows(c);
