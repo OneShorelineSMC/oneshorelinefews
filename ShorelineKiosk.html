@@ -317,6 +317,8 @@
   .olkey i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-left: 6px; box-sizing: border-box; }
   .olsb { font-size: 13.5px; line-height: 1.3; margin: 2px 0 2px; color: var(--ink); }
   .olchart { position: relative; flex: 1 1 auto; min-height: 150px; }
+  .olkey2 { flex: none; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .olkey2 i { display: inline-block; width: 16px; margin-right: 4px; vertical-align: middle; }
   .olnote { flex: none; font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .olnote b { color: var(--ink); }
 
@@ -2234,7 +2236,7 @@ function fitAbout() {
 setInterval(fitAbout, 3000);   // re-check when the alert strip comes or goes
 
 if (window.CREEK_STATUS && CREEK_STATUS.staff) {   // staff view: Outlook in place of About (the disclaimer stays on the Outlook tab)
-  var aboutTab = document.querySelector('.tab[data-tab="about"]'); aboutTab.dataset.tab = "outlook"; aboutTab.textContent = "Outlook";
+  var aboutTab = document.querySelector('.tab[data-tab="about"]'); aboutTab.dataset.tab = "outlook"; aboutTab.textContent = "San Bruno";
 }
 /* ---------- Outlook tab (staff view, ?preview=1, in place of About; staff 2026-11-17, TRIAL) ----------
    San Bruno Creek's graph for the last day and the next 3 days (Bay tide at Alameda, the creek at First Avenue, rain at
@@ -2331,9 +2333,12 @@ var olBands = {
     (o.names || []).forEach(function (n) { var s = ch.scales[n[0]]; if (s) { ctx.fillStyle = cssVar("--ink"); ctx.fillText(n[1], a.left + 4, s.top + 2); } });
     // each flat line's name at its right end, on a card-colored backing
     ctx.textBaseline = "middle"; ctx.textAlign = "right";
+    var used = [];
     ch.data.datasets.forEach(function (d) {
       if (!d.olLabel) return; var s = ch.scales[d.yAxisID], y = s.getPixelForValue(d.data[0].y), w = ctx.measureText(d.olLabel).width + 6;
       if (y < s.top || y > s.bottom) return;
+      for (var k = 0; k < 6 && used.some(function (u) { return Math.abs(u - y) < 14; }); k++) y -= 14;   // two lines close together: the label moves up
+      used.push(y);
       ctx.globalAlpha = 0.9; ctx.fillStyle = cssVar("--panel"); ctx.fillRect(a.right - w - 2, y - 7, w, 14); ctx.globalAlpha = 1;
       ctx.fillStyle = d.borderColor; ctx.fillText(d.olLabel, a.right - 5, y);
     });
@@ -2347,7 +2352,7 @@ function renderOutlook() {
   var t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000;
   var h = '<div class="olhead"><b>San Bruno Creek outlook</b> <span>trial · not a creek forecast</span>' +
     '<span class="olkey"><i style="background:rgba(239,159,39,.45)"></i>storm-sized rain <i style="background:rgba(239,159,39,.18)"></i>heavy <i style="background:rgba(30,111,217,.18)"></i>high tide <i style="background:rgba(30,111,217,.38)"></i>king level <i style="border:2px solid #b45a00;background:transparent"></i>both</span></div>';
-  if (sb) h += '<div class="olsb">' + esc(sbSentence(sb, now)).replace(/&lt;(\/?)b&gt;/g, "<$1b>") + '</div><div class="olchart"><canvas id="olCanvas"></canvas></div>';
+  if (sb) h += '<div class="olsb">' + esc(sbSentence(sb, now)).replace(/&lt;(\/?)b&gt;/g, "<$1b>") + '</div><div class="olchart"><canvas id="olCanvas"></canvas></div><div class="olkey2" id="olKey"></div>';
   var kings = (OL.kings || []).filter(function (r) { return r[1] * 864e5 >= now - 864e5; }).slice(0, 4).map(function (r) {
     return fmt(r[0] * 864e5, { month: "short", day: "numeric" }) + (r[1] > r[0] ? "–" + fmt(r[1] * 864e5, r[1] - r[0] < 31 && new Date(r[1] * 864e5).getUTCMonth() === new Date(r[0] * 864e5).getUTCMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }) : ""); });
   var iss = sb && sb.forecast && sb.forecast.issued ? Date.parse(sb.forecast.issued.replace("Z", ":00Z")) + olOff(now) : null;
@@ -2357,13 +2362,15 @@ function renderOutlook() {
   el.innerHTML = h;
   if (sb) drawSB(sb, now);
 }
+// One graph, like the Storm Tracker's storm graph: rain bars (left axis), the creek level and the Bay tide (right axes)
 function drawSB(c, now) {
   var cv = document.getElementById("olCanvas"); if (!cv || typeof Chart === "undefined") return;
-  var H = function (t) { return (t - now) / 3600000; }, t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000, muted = cssVar("--muted"), line = cssVar("--line"), ink = cssVar("--ink");
+  var H = function (t) { return (t - now) / 3600000; }, t0 = now - OL_PAST * 3600000, t1 = now + OL_AHEAD * 3600000, muted = cssVar("--muted"), line = cssVar("--line"), ink = cssVar("--ink"), tc = cssVar("--fcline") || "#00838f";
   var R = rainBlocks(c, now), T = tideBands(c, now), g = (c.stages || [])[0], rg = R.g;
   var sp = g ? pts(g.key).filter(function (p) { return p.t >= t0 - 3600000; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
-  var ths = g ? (g.thresholds || []).filter(function (t) { return t.level <= 3; }) : [];
-  var smax = Math.max(ths.length ? ths[ths.length - 1].value + 0.4 : 2, Math.max.apply(null, sp.map(function (p) { return p.y; }).concat([0])) + 0.3);
+  var peak = Math.max.apply(null, sp.map(function (p) { return p.y; }).concat([0]));
+  var ths = g ? (g.thresholds || []).filter(function (t) { return t.level <= 3 && !(t.value > peak + 2.5 && t.level > 1); }) : [];   // the Storm Tracker's rule: the first level always, higher ones once the creek is near
+  var smax = Math.max(ths.length ? ths[ths.length - 1].value + 0.5 : 2, peak + 0.5);
   var hr = {}; if (rg) pts(rg.key).forEach(function (p) { if (p.t > t0 && p.t <= now) { var k = Math.ceil(p.t / 3600000) * 3600000; hr[k] = (hr[k] || 0) + p.v; } });
   var rainPast = Object.keys(hr).filter(function (k) { return hr[k] > 0; }).map(function (k) { return { x: H(+k) - 0.5, y: hr[k] }; });
   var rainFc = []; R.blocks.forEach(function (b) { if (b.past || !b.in) return; for (var t = Math.max(b.t0, now); t < Math.min(b.t1, t1); t += 3600000) rainFc.push({ x: H(t) + 0.5, y: b.in / 6 }); });
@@ -2371,34 +2378,35 @@ function drawSB(c, now) {
   var tp = (OL.ala || []).filter(function (p) { return p.t >= t0 && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
   var to = (OL.alaObs || []).filter(function (p) { return p.t >= t0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
   var mh = LK.station("9414750").mhhw, kg = kingFor("9414750"), tys = tp.concat(to).map(function (p) { return p.y; }).concat(mh != null ? [mh] : [], kg != null ? [kg] : []);
-  var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 0.2) : 8;
-  var flat = function (v, ax, col, dash, lab) { return { label: lab, yAxisID: ax, data: [{ x: H(t0), y: v }, { x: H(t1), y: v }], borderColor: col, borderWidth: 1.5, borderDash: dash, pointRadius: 0, pointHoverRadius: 0 }; };
+  var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 0.3) : 8;
+  var flat = function (v, ax, col, dash, lab) { return { label: lab, yAxisID: ax, data: [{ x: H(t0), y: v }, { x: H(t1), y: v }], borderColor: col, borderWidth: 1.5, borderDash: dash, pointRadius: 0, pointHoverRadius: 0, order: 1 }; };
   var ds = [];
-  if (mh != null) ds.push(Object.assign(flat(mh, "yt", muted, [4, 3], "MHHW"), { olLabel: "MHHW " + mh.toFixed(2) }));
-  if (kg != null) ds.push(Object.assign(flat(kg, "yt", "#1e6fd9", [10, 4], "King-tide level"), { olLabel: "King-tide level " + kg.toFixed(2) }));
-  ds.push({ label: "Tide table (ft NAVD88)", yAxisID: "yt", data: tp, borderColor: muted, borderWidth: 1.5, pointRadius: 0 });
-  ds.push({ label: "Measured tide", yAxisID: "yt", data: to, borderColor: "#1e88e5", borderWidth: 2, pointRadius: 0 });
-  ths.forEach(function (t) { ds.push(Object.assign(flat(t.value, "ys", lvColor(t.level), LV_DASH[t.level], t.name), { borderWidth: t.level >= 3 ? 2.5 : 2, olLabel: t.name.replace(/^Flood | Flood Stage$/g, "") + " " + t.value.toFixed(2) })); });
-  ds.push({ label: "Creek level (ft)", yAxisID: "ys", data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.12)", fill: "origin", borderWidth: 2, pointRadius: 0 });
-  ds.push({ type: "bar", label: "Rain, measured (in/hr)", yAxisID: "yr", data: rainPast, backgroundColor: "#1e88e5", barPercentage: 1, categoryPercentage: 1, grouped: false });
-  ds.push({ type: "bar", label: "Rain, NWS forecast (6-hr average, in/hr)", yAxisID: "yr", data: rainFc, backgroundColor: "rgba(30,136,229,.35)", barPercentage: 1, categoryPercentage: 1, grouped: false });
-  var yax = function (min, max, step, w, unit, top) { return { stack: "sb", stackWeight: w, min: min, max: max, offset: false, grid: { color: line }, afterFit: function (ax) { ax.width = 52; },
-    afterBuildTicks: function (ax) { if (!top) ax.ticks = ax.ticks.filter(function (t) { return t.value < max - 1e-9; }); },   // no label where two strips meet
-    ticks: { stepSize: step, color: muted, font: { size: 11.5 }, padding: 2, callback: function (v) { return +v.toFixed(2) + " " + unit; } } }; };
+  ths.forEach(function (t) { ds.push(Object.assign(flat(t.value, "ys", lvColor(t.level), LV_DASH[t.level], t.name), { borderWidth: t.level >= 3 ? 2.5 : 2, olLabel: t.name.replace(/^Flood | Flood Stage$/g, "") + " " + t.value.toFixed(2) + " ft" })); });
+  if (mh != null) ds.push(Object.assign(flat(mh, "yt", tc, [2, 3], "MHHW"), { olLabel: "MHHW " + mh.toFixed(2) }));
+  if (kg != null) ds.push(Object.assign(flat(kg, "yt", tc, [10, 4], "King-tide level"), { olLabel: "King-tide level " + kg.toFixed(2) }));
+  ds.push({ label: "Tide table", yAxisID: "yt", data: tp, borderColor: tc, borderWidth: 1.5, borderDash: [5, 3], pointRadius: 0, order: 2, key: "Tide table, Alameda" });
+  ds.push({ label: "Measured tide", yAxisID: "yt", data: to, borderColor: tc, borderWidth: 2.2, pointRadius: 0, order: 2, key: "Measured tide" });
+  ds.push({ label: "Creek level", yAxisID: "ys", data: sp, borderColor: ink, borderWidth: 2.4, pointRadius: 0, order: 0, key: "Creek level, First Avenue" });
+  ds.push({ type: "bar", label: "Rain, measured", yAxisID: "yr", data: rainPast, backgroundColor: "#1e88e5", barPercentage: 1, categoryPercentage: 1, grouped: false, order: 3, key: "Rain per hour, measured" });
+  ds.push({ type: "bar", label: "Rain, NWS forecast", yAxisID: "yr", data: rainFc, backgroundColor: "rgba(30,136,229,.35)", barPercentage: 1, categoryPercentage: 1, grouped: false, order: 3, key: "Rain per hour, NWS forecast (6-hr average)" });
+  var tk = function (col, unit) { return { color: col, font: { size: 11 }, padding: 2, callback: function (v) { return +v.toFixed(2) + (unit ? " " + unit : ""); } }; };
+  var ttl = function (txt, col) { return { display: true, text: txt, color: col, font: { size: 11 }, padding: 1 }; };
   OL.chart = new Chart(cv, { type: "line", data: { datasets: ds }, plugins: [olBands], options: {
-    responsive: true, maintainAspectRatio: false, animation: false, parsing: true,
-    plugins: { legend: { display: false }, tooltip: { enabled: false },
-      olBands: { now: now, rain: R.blocks, tide: T, both: overlaps(R.blocks, T), names: [["yt", "Bay tide, Alameda"], ["ys", "Creek, First Avenue"], ["yr", "Rain, First Avenue"]] } },
-    layout: { padding: { right: 6 } },
+    responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: { legend: { display: false }, tooltip: { enabled: false }, olBands: { now: now, rain: R.blocks, tide: T, both: overlaps(R.blocks, T) } },
+    layout: { padding: { right: 2 } },
     scales: {
       x: { type: "linear", min: -OL_PAST, max: OL_AHEAD, grid: { color: function (cx) { return cx.tick && new Date(now + cx.tick.value * 3600000).getUTCHours() === 0 ? "#b9c4d0" : line; } },
         afterBuildTicks: function (ax) { var o = [], f = Math.ceil(t0 / H6) * H6; for (var t = f; t <= t1; t += H6) o.push({ value: H(t) }); ax.ticks = o; },
         ticks: { color: muted, font: { size: 11 }, maxRotation: 0, autoSkip: false, callback: function (v) { var t = Math.round((now + v * 3600000) / 3600000) * 3600000;
           return new Date(t).getUTCHours() === 0 ? fmt(t, { weekday: "short" }) : new Date(t).getUTCHours() === 12 ? "noon" : ""; } } },
-      yt: yax(tlo, thi, Math.max(2, Math.ceil((thi - tlo) / 3)), 1, "ft"),
-      ys: yax(0, Math.ceil(smax), Math.max(1, Math.ceil(Math.ceil(smax) / 3)), 1.2, "ft"),
-      yr: yax(0, rtop, rtop, 0.6, "in", true)
+      yr: { position: "left", min: 0, max: rtop * 2, grid: { color: line }, ticks: Object.assign(tk(muted, ""), { stepSize: rtop / 2 }), title: ttl("rain per hour (in)", muted) },
+      ys: { position: "right", min: 0, max: Math.ceil(smax), grid: { display: false }, ticks: Object.assign(tk(ink, ""), { stepSize: smax > 6 ? 2 : 1 }), title: ttl("creek level (ft)", ink) },
+      yt: { position: "right", min: tlo, max: thi, grid: { display: false }, ticks: Object.assign(tk(tc, ""), { stepSize: thi - tlo > 6 ? 2 : 1 }), title: ttl("tide (ft NAVD88)", tc) }
     } } });
+  var key = document.getElementById("olKey");
+  if (key) key.innerHTML = ds.filter(function (d) { return d.key; }).map(function (d) {
+    return "<span><i style='" + (d.type === "bar" ? "height:9px;background:" + d.backgroundColor : "border-top:2px " + (d.borderDash ? "dashed " : "solid ") + d.borderColor) + "'></i>" + esc(d.key) + "</span>"; }).join("");
 }
 
 function showTab(name) {
