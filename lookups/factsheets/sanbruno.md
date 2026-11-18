@@ -82,7 +82,6 @@ How settings were chosen: the highest setting that still warned before all, or a
 
 | Gauge | OneRain ID | Location | Where | Use in the 2026 Update |
 |---|---|---|---|---|
-| San Bruno Mountain | 41200 | 37.69222, -122.44833 | upper watershed | Shown on the 2026 Update page and counts toward the rain indicator |
 | First Avenue | 41102 | 37.62273, -122.40671 | lower watershed | Shown on the 2026 Update page and counts toward the rain indicator |
 
 **Rain indicator** (Heavy, Very heavy, Intense). Why these numbers: for most creeks there is no record of how much rain causes flooding, so the rain indicator says how **rare** the rain is instead. It uses NOAA Atlas 14, the federal standard for rainfall frequency, at each gauge's own location, so the same word means equally rare rain at every gauge. The three steps are the 1-, 2- and 5-year storm: Heavy is reached in most years (about a 63% chance each year), Very heavy in about 2 years in 5 (39%), Intense in about 1 year in 5 (18%). Status: **Provisional**: a starting point, not yet checked against past floods on this creek.
@@ -93,9 +92,6 @@ The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm,
 
 | Gauge | Level | 15 min | 30 min | 1 hr | 24 hr |
 |---|---|---|---|---|---|
-| San Bruno Mountain | Heavy (1-year) | 0.251 | 0.346 | 0.489 | 2.11 |
-| San Bruno Mountain | Very heavy (2-year) | 0.302 | 0.417 | 0.589 | 2.68 |
-| San Bruno Mountain | Intense (5-year) | 0.372 | 0.513 | 0.725 | 3.44 |
 | First Avenue | Heavy (1-year) | 0.227 | 0.311 | 0.442 | 1.89 |
 | First Avenue | Very heavy (2-year) | 0.277 | 0.379 | 0.538 | 2.36 |
 | First Avenue | Intense (5-year) | 0.344 | 0.471 | 0.669 | 3.0 |
@@ -123,8 +119,6 @@ Each row is one length of time ("rain within"). **2026 Update** = the amounts at
 
 | Gauge | Rain within | 2026 Update (inches) | OneRain thresholds and text alerts (inches) |
 |---|---|---|---|
-| San Bruno Mountain | 30 min | Heavy from 0.346 in, Very heavy from 0.417 in, Intense from 0.513 in | **Text alert** rule #6 (Off): more than 0.5 in |
-| San Bruno Mountain | 6 hr | Heavy from 1.26 in, Very heavy from 1.52 in, Intense from 1.86 in | **Text alert** rule #23 (**On**): more than 2.00 in<br>**Text alert** rule #8 (Off): more than 2.00 in |
 | First Avenue | 30 min | Heavy from 0.311 in, Very heavy from 0.379 in, Intense from 0.471 in | **Text alert** rule #26 (**On**): more than 0.5 in |
 | First Avenue | 1 hr | Heavy from 0.442 in, Very heavy from 0.538 in, Intense from 0.669 in | **Text alert** rule #24 (**On**): more than 0.9 in |
 
