@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
 <title>Shoreline Kiosk – San Mateo County</title>
+<script>
+  // The kiosk is the team's screen (staff, 2026-11-18): it opens in the staff view (?preview=1: the team board, the San
+  // Bruno tab, every creek's status) without anyone adding it to the address. ?public=1 shows the public view instead.
+  (function () {
+    var q = new URLSearchParams(location.search);
+    if (!q.has("preview") && q.get("public") !== "1") { q.set("preview", "1"); history.replaceState(null, "", location.pathname + "?" + q.toString() + location.hash); }
+  })();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
   integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
