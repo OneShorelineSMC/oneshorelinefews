@@ -72,6 +72,9 @@
   .chip.l1 { background: var(--c1bg); color: var(--lv1); } .chip.l2 { background: var(--c2bg); color: var(--lv2); } .chip.l3 { background: var(--c3bg); color: var(--lv3); }
   .chip.l0 { color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
   ul.pk { margin: 2px 0 0; padding-left: 18px; font-size: 14px; } ul.pk li { margin: 2px 0; } ul.pk .sm { display: block; }
+  .exp { float: right; font: inherit; font-size: 13.5px; font-weight: 600; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--brand); color: var(--link); background: var(--card); cursor: pointer; margin-left: 8px; }
+  .exp:hover { background: var(--sel); }
+  @media print { .exp { display: none; } }
   .live { box-shadow: inset 0 0 0 1.5px var(--live, var(--rain)); color: var(--live, var(--rain)); }
   .opens { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
   .ocard { border: 1.5px solid var(--rain); border-radius: 10px; padding: 10px 12px; }
@@ -210,7 +213,10 @@ var J = null, SEL = null, charts = {};
 var WORD = ["", "Heavy", "Very heavy", "Intense"], STATUS = { none: "No alerts", alert: "Stay alert", ready: "Be ready", likely: "Flooding likely" };
 var LEVEL = ["", "Flood Monitoring", "Flood Watch", "Flood Warning"];
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
-function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+var CSSO = null;   // export: draw with the light colors whatever the screen's theme
+var LIGHT = { "--ink": "#003B5C", "--text": "#22303f", "--muted": "#5d6d80", "--line": "#e3e8ee", "--rain": "#1e6fd9", "--rain2": "#7fb2ef",
+  "--lv1": "#7a6000", "--lv2": "#9a4a00", "--lv3": "#c62828", "--tide": "#0f7a7a" };
+function css(v) { return CSSO && CSSO[v] ? CSSO[v] : getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 function pt(s) { var m = String(s).match(/(\d+)-(\d+)-(\d+)[ T](\d+):(\d+)/); return m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) : null; }
 function fmt(ms, o) { return new Date(ms).toLocaleString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
 function when(s) { var t = pt(s); return t == null ? "–" : fmt(t, { weekday: "short", month: "short", day: "numeric" }) + ", " + fmt(t, { hour: "numeric" }); }
@@ -527,16 +533,22 @@ function show(k, quiet) {
   var s = find(k); if (!s) return;
   SEL = k; list();
   var d = $("detail"); d.hidden = false;
-  var peaks = ["15", "30", "60", "180", "360", "720", "1440", "2880"];   // 48 hr: staff 2026-11-19
-  var tbl = "<table><thead><tr><th>Rain gauge</th><th class='n'>Total</th>" + peaks.map(function (m) { return "<th class='n'>" + mins(+m) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+  showRest(s, d, rainTable(s), levelText(s), quiet);
+}
+var PEAKS = ["15", "30", "60", "180", "360", "720", "1440", "2880"];   // rain windows (48 hr: staff 2026-11-19)
+function rainTable(s) {
+  var peaks = PEAKS;
+  return "<table><thead><tr><th>Rain gauge</th><th class='n'>Total</th>" + peaks.map(function (m) { return "<th class='n'>" + mins(+m) + "</th>"; }).join("") + "</tr></thead><tbody>" +
     s.rain.map(function (r) { return "<tr><td><b>" + esc(r.label) + "</b>" + (r.support ? '<span class="sm">supporting gauge</span>' : "") + "</td><td class='n'><b>" + inch(r.total) + "</b></td>" +
       peaks.map(function (m) { var p = r.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) + (p.rate && p.rate.level ? '<span class="sm"><span class="chip l' + p.rate.level + '">' + WORD[p.rate.level] + "</span></span>" : "") +
         (p.rate && p.rate.years ? '<span class="sm">' + yr(p.rate.years) + " · " + aep(p.rate.years) + "</span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") +
     // SFO airport (NWS) as a check on the creek's own gauge (San Bruno; staff 2026-11-18). Hourly only, so no 15/30 min.
     (s.sfo && s.sfo.peaks ? "<tr class='sfo'><td><b>" + esc(s.sfo.label) + '</b><span class="sm">for comparison · reports hourly</span></td><td class="n"><b>' + inch(s.sfo.total) + "</b></td>" +
       peaks.map(function (m) { var p = s.sfo.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) : '<span class="sm">–</span>') + "</td>"; }).join("") + "</tr>" : "") + "</tbody></table>";
+}
+function levelText(s) {
   // the creek: peak, when (against the heaviest rain), the tide at that hour, hours at each flood level (simplified 2026-11-14)
-  var lvt = (s.levels || []).map(function (l) {
+  return (s.levels || []).map(function (l) {
     if (l.peak == null) return "<p class='note'><b>" + esc(l.label) + ":</b> no readings during the storm.</p>";
     var lag = l.lag_hours == null ? "" : l.lag_hours === 0 ? ", at the heaviest rain" : ", " + Math.abs(l.lag_hours) + " hr " + (l.lag_hours > 0 ? "after" : "before") + " the heaviest rain";
     return "<p style='margin:8px 0 0'><b>" + esc(l.label) + "</b>: peak <b>" + l.peak.toFixed(2) + " ft</b> " + esc(when(l.peak_at)) + lag +
@@ -544,7 +556,10 @@ function show(k, quiet) {
       (l.thresholds.length ? '<p class="note" style="margin-top:2px">Hours at ' + l.thresholds.map(function (t) {
         return esc(String(t.name).replace(/^Flood /, "")) + " (" + t.value + " ft) <b>" + t.hours + "</b>"; }).join(" · ") + "</p>" : "") + peaksList(l);
   }).join("");
-  d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? liveChip(s) : "") + "</h2>" +
+}
+function showRest(s, d, tbl, lvt, quiet) {
+  d.innerHTML = '<button type="button" class="exp" id="expBtn">Export event</button>' +
+    "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? liveChip(s) : "") + "</h2>" +
     '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
     "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(sTotal(s)) + " in</b>" + sAt(s) + " in " + s.hours + " hours " + chip(sLevel(s)) + "</p>" + rareText(s) + lvt +
     (s.tide ? tideText(s.tide) : "") +
@@ -554,11 +569,16 @@ function show(k, quiet) {
     (RC ? roadsDetail(s) : "") +
     '<h3>Largest rain in each window <span class="sm" style="display:inline;font-weight:400">with storm size and AEP (Atlas 14)</span></h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
   draw(s);
+  $("expBtn").onclick = function () { exportEvent(s); };
   if (!quiet) d.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function draw(s) {
   if (!window.Chart) return;
   if (charts.s) charts.s.destroy();
+  charts.s = drawTo(s, $("chS"), $("kS"));
+}
+// exp: the export's copy, a fixed-size picture with its own legend and a white background
+function drawTo(s, cv, keyEl, exp) {
   var t0 = pt(s.start), H = function (t) { return (pt(t) - t0) / 36e5; }, sets = [], cols = [css("--rain"), css("--rain2")];
   s.rain.forEach(function (r, i) { sets.push({ type: "bar", label: r.label + " rain", data: (r.series || []).map(function (p) { return { x: H(p[0]) + 0.5, y: p[1] }; }),
     backgroundColor: cols[i % 2], yAxisID: "y", barPercentage: 1, categoryPercentage: 1, grouped: false, order: 3 }); });
@@ -579,8 +599,9 @@ function draw(s) {
   (s.rain || []).forEach(function (r) { (r.series || []).forEach(function (p) { xs.push(H(p[0]) + 1); }); });
   var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
   var muted = css("--muted"), line = css("--line");
-  charts.s = new Chart($("chS"), { data: { datasets: sets }, options: { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
-    plugins: { legend: { display: false }, tooltip: { filter: function (it) { return !it.dataset.thr; }, callbacks: {
+  var chart = new Chart(cv, { data: { datasets: sets }, plugins: exp ? [{ id: "bg", beforeDraw: function (c) { var x = c.ctx; x.save(); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.restore(); } }] : [],
+    options: { responsive: !exp, maintainAspectRatio: false, animation: false, parsing: false, devicePixelRatio: exp ? 2 : undefined,
+    plugins: { legend: { display: !!exp, position: "bottom", labels: { color: css("--text"), boxWidth: 14, boxHeight: 8, font: { size: 11 } } }, tooltip: { filter: function (it) { return !it.dataset.thr; }, callbacks: {
       title: function (it) { var t = t0 + Math.floor(it[0].parsed.x) * 36e5; return fmt(t, { weekday: "short", month: "short", day: "numeric", hour: "numeric" }); },
       label: function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + (it.dataset.yAxisID === "y" ? " in" : it.dataset.yAxisID === "y3" ? " ft NAVD88" : " ft"); } } } },
     scales: { x: { type: "linear", min: x0, max: x1, ticks: { color: muted, maxRotation: 0, stepSize: x1 - x0 > 30 ? 6 : 3,
@@ -588,7 +609,189 @@ function draw(s) {
       y: { beginAtZero: true, grace: "10%", position: "left", ticks: { color: muted }, grid: { color: line }, title: { display: true, text: "rain per hour (in)", color: muted } },
       y2: { display: (s.levels || []).some(function (l) { return l.series && l.series.length; }), position: "right", grace: "10%", ticks: { color: muted }, grid: { display: false }, title: { display: true, text: "creek level (ft)", color: muted } },
       y3: { display: hasTide, position: "right", grace: "10%", ticks: { color: tc }, grid: { display: false }, title: { display: true, text: "tide (ft NAVD88)", color: tc } } } } });
-  $("kS").innerHTML = sets.map(function (x) { return "<span><i style='" + (x.type === "bar" ? "height:10px;background:" + x.backgroundColor : "border-top:2px " + (x.borderDash ? "dashed " : "solid ") + x.borderColor) + "'></i>" + esc(x.label) + "</span>"; }).join("");
+  if (keyEl) keyEl.innerHTML = sets.map(function (x) { return "<span><i style='" + (x.type === "bar" ? "height:10px;background:" + x.backgroundColor : "border-top:2px " + (x.borderDash ? "dashed " : "solid ") + x.borderColor) + "'></i>" + esc(x.label) + "</span>"; }).join("");
+  return chart;
+}
+// ---- Export event (staff 2026-11-19): a report to print or save as PDF, plus the graph, the tables, the hourly record and
+// every raw reading (from the data archive, topped up from the live 7-day file) as files, or all of them in one zip.
+var ARCHIVE_RAW = "https://raw.githubusercontent.com/OneShorelineSMC/fews-data-archive/main/raw/";
+var LIVE7_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks_7day.json";
+function plain(h) { var d = document.createElement("div"); d.innerHTML = h; return d.textContent.replace(/\s+/g, " ").trim(); }
+function csvCell(v) { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function csv(rows) { return rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n") + "\r\n"; }
+function fileBase(s) { return (s.name || s.creek).replace(/[^A-Za-z0-9]+/g, "_").replace(/_+$/, "") + "_" + s.start.slice(0, 10) + "_storm"; }
+function narrative(s) {
+  var m = mainOf(s), out = [], live = s.live && !rainOver(s);
+  out.push(s.name + " storm, " + when(s.start) + " to " + when(s.end) + " (" + s.hours + " hours" + (live ? ", still in progress when exported" : "") + "). " +
+    (m ? m.label + " recorded " + inch(m.total) + " inches of rain." : ""));
+  var rr = plain(rareText(s)).replace(/^How rare:\s*/, ""); if (rr) out.push("How rare: " + rr.charAt(0).toUpperCase() + rr.slice(1));
+  (s.levels || []).forEach(function (l) {
+    if (l.peak == null) { out.push(l.label + " had no creek readings during the storm."); return; }
+    var lag = l.lag_hours == null ? "" : l.lag_hours === 0 ? ", at the heaviest rain" : ", " + Math.abs(l.lag_hours) + " hours " + (l.lag_hours > 0 ? "after" : "before") + " the heaviest rain";
+    var lv = (l.thresholds || []).filter(function (t) { return t.hours && t.hours !== "0"; }).map(function (t) { return t.name + " for " + t.hours + " hr"; });
+    out.push("The creek at " + l.label + " peaked at " + l.peak.toFixed(2) + " ft on " + when(l.peak_at) + lag + ", " + (l.reached ? "reaching " + LEVEL[l.reached] : "below Flood Monitoring") + "." +
+      (lv.length ? " It was at " + lv.join(", ") + "." : ""));
+    if (l.peaks && l.peaks.length > 1) out.push("It had " + l.peaks.length + " separate peaks: " + l.peaks.map(function (p) {
+      var r = p.rain || {}, t = p.tide || {};
+      return p.ft.toFixed(2) + " ft on " + when(p.at) + (r.total != null ? " after " + inch(r.total) + " in of rain" + (r["60"] && r["60"].rate && r["60"].rate.years ? " (wettest hour about a " + yr(r["60"].rate.years) + " storm)" : "") : "") +
+        (t.ft != null ? ", with the tide at " + t.ft.toFixed(2) + " ft NAVD88" : "");
+    }).join("; ") + ".");
+  });
+  if (s.tide && s.tide.peak != null) out.push(plain(tideText(s.tide)).replace(/^Tide\s*/, "The tide "));
+  if (s.status) out.push("The site's highest status for " + s.name + " was " + STATUS[s.status] + (s.rising_fast ? ", with the creek rising fast at times" : "") + ".");
+  if (s.quiet && s.quiet.length) out.push("Gauges that went quiet during the storm: " + s.quiet.join(", ") + ". Their rain may be missing.");
+  if (RC) { var g = closuresFor(s); out.push("Road closures logged in the watershed: " + (g.here.length || "none") + "; elsewhere nearby: " + (g.near.length || "none") + "."); }
+  return out;
+}
+function tablesCsv(s) {
+  var rows = [["Rain windows: largest rain in each window, with storm size (NOAA Atlas 14)"], ["gauge", "storm total (in)", "window", "inches", "when", "storm size (years)", "AEP"]];
+  (s.rain || []).concat(s.sfo && s.sfo.peaks ? [Object.assign({ label: s.sfo.label }, s.sfo)] : []).forEach(function (r) {
+    PEAKS.forEach(function (m) { var p = r.peaks[m]; if (!p) return;
+      rows.push([r.label, r.total, mins(+m), p.in, p.at || "", p.rate && p.rate.years ? p.rate.years : "", p.rate && p.rate.years ? aep(p.rate.years) : ""]); });
+  });
+  rows.push([], ["Creek levels"], ["gauge", "start (ft)", "peak (ft)", "peak at", "flood level reached", "hours after heaviest rain"].concat(["hours at Flood Monitoring", "hours at Flood Watch", "hours at Flood Warning"]));
+  (s.levels || []).forEach(function (l) {
+    var h = [1, 2, 3].map(function (k) { var t = (l.thresholds || []).filter(function (x) { return x.level === k; })[0]; return t ? t.hours : ""; });
+    rows.push([l.label, l.start_value, l.peak, l.peak_at, l.reached ? LEVEL[l.reached] : "below Flood Monitoring", l.lag_hours].concat(h));
+  });
+  var pk = []; (s.levels || []).forEach(function (l) { (l.peaks || []).forEach(function (p) { pk.push([l, p]); }); });
+  if (pk.length) {
+    rows.push([], ["Separate creek peaks, with the rain leading up to each and the tide"],
+      ["gauge", "peak at", "creek (ft)", "flood level", "rain from", "rain total (in)", "wettest 1 hr (in)", "1 hr storm size (years)", "wettest 3 hr (in)", "3 hr storm size (years)",
+       "tide at peak (ft NAVD88)", "vs tide table (ft)", "nearest high water (ft)", "high water at", "creek peak after high water (hr)", "high water vs MHHW (ft)"]);
+    pk.forEach(function (x) { var l = x[0], p = x[1], r = p.rain || {}, t = p.tide || {}, r1 = r["60"] || {}, r3 = r["180"] || {};
+      rows.push([l.label, p.at, p.ft, p.reached ? LEVEL[p.reached] : "", r.from, r.total, r1.in, r1.rate && r1.rate.years, r3.in, r3.rate && r3.rate.years,
+        t.ft, t.vs_table, t.high_ft, t.high_at, t.creek_after_high_hours, t.high_vs_mhhw]); });
+  }
+  if (s.tide) { var t = s.tide;
+    rows.push([], ["Tide"], ["station", "highest (ft NAVD88)", "at", "vs tide table at the peak (ft)", "most above the table (ft)", "average vs table (ft)", "vs average high tide MHHW (ft)", "creek peak vs high tide (hr)"],
+      [t.name + " (" + t.station + ")", t.peak, t.peak_at, t.push_at_peak, t.push_max, t.push_mean, t.above_mhhw, t.creek_vs_tide_hours]); }
+  rows.push([], ["Storm"], ["creek", "start", "end", "hours", "highest status", "rising fast", "gauges quiet"], [s.name, s.start, s.end, s.hours, STATUS[s.status] || "", s.rising_fast ? "yes" : "", (s.quiet || []).join("; ")]);
+  rows.push([], ["Provisional data, not reviewed by OneShoreline staff. Times Pacific. Exported " + new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }) + " from the FEWS Storm Tracker."]);
+  return csv(rows);
+}
+function hourlyCsv(s) {
+  var cols = [], idx = {};
+  (s.rain || []).forEach(function (r) { cols.push({ h: r.label + " rain (in)", d: r.series }); });
+  (s.levels || []).forEach(function (l) { cols.push({ h: l.label + " creek (ft)", d: l.series }); });
+  if (s.tide && s.tide.series) { cols.push({ h: s.tide.name + " tide measured (ft NAVD88)", d: s.tide.series, i: 1 }); cols.push({ h: s.tide.name + " tide predicted (ft NAVD88)", d: s.tide.series, i: 2 }); }
+  cols.forEach(function (c, k) { (c.d || []).forEach(function (p) { (idx[p[0]] = idx[p[0]] || {})[k] = p[c.i || 1]; }); });
+  var rows = [["hour (Pacific)"].concat(cols.map(function (c) { return c.h; }))];
+  Object.keys(idx).sort().forEach(function (h) { rows.push([h].concat(cols.map(function (c, k) { return idx[h][k]; }))); });
+  return csv(rows);
+}
+function gunzipText(buf) {
+  if (!window.DecompressionStream) return Promise.reject(new Error("this browser can't unzip the archive"));
+  return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+}
+function rawCsv(s) {   // every reading for the storm's gauges and tide, start - 6 hr to 18 hr after the rain (or now)
+  var keys = {}, lab = {};
+  (s.rain || []).forEach(function (r) { keys[r.key] = 1; lab[r.key] = r.label + " rain"; });
+  (s.levels || []).forEach(function (l) { keys[l.key] = 1; lab[l.key] = l.label + " creek"; });
+  if (s.tide && s.tide.station) ["measured", "predicted"].forEach(function (k) { var n = "tide_" + s.tide.station + "_" + k; keys[n] = 1; lab[n] = s.tide.name + " tide " + k; });
+  var a = pt(s.start) - 6 * 36e5, b = Math.min(pt(s.end) + 18 * 36e5, pt(J.generated) || Infinity), days = [];
+  for (var t = a - (a % 864e5); t <= b; t += 864e5) days.push(new Date(t).toISOString().slice(0, 10));
+  var rows = [], seen = {}, last = {}, notes = [];
+  var inWin = function (loc) { var x = pt(loc); return x != null && x >= a && x <= b; };
+  return Promise.all(days.map(function (dd) {
+    return fetch(ARCHIVE_RAW + dd.slice(0, 4) + "/" + dd.slice(5, 7) + "/" + dd + ".csv.gz").then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(gunzipText).then(function (txt) { return { d: dd, txt: txt }; }).catch(function () { notes.push(dd); return { d: dd, txt: "" }; });
+  })).then(function (files) {
+    var head = null;
+    files.forEach(function (f) {
+      f.txt.split(/\r?\n/).forEach(function (line, i) {
+        if (!line) return;
+        var c = line.split(","); if (i === 0) { head = head || c; return; }
+        var o = {}; head.forEach(function (h, k) { o[h] = c[k]; });   // no quoted commas in these files' columns before source_id
+        if (!keys[o.sensor] || !inWin(o.datetime_local)) return;
+        var id = o.sensor + "|" + o.datetime_utc;
+        if (seen[id] != null) { rows[seen[id]] = row(o, "archive"); return; }   // a later retrieval of the same reading: keep the newest
+        seen[id] = rows.length; rows.push(row(o, "archive"));
+        if (!last[o.sensor] || o.datetime_utc > last[o.sensor]) last[o.sensor] = o.datetime_utc;
+      });
+    });
+    function row(o, via) { return [lab[o.sensor] || o.sensor, o.sensor, o.kind, o.datetime_local, o.datetime_utc, o.value, o.unit, o.quality, o.source, o.source_id, via]; }
+    return fetch(LIVE7_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (j7) {
+      var sens = (j7 && j7.sensors) || {};
+      Object.keys(keys).forEach(function (k) {
+        var x = sens[k]; if (!x || !x.points) return;
+        x.points.forEach(function (p) {
+          var utc = p[2] || "", loc = p[0];
+          if (!inWin(loc) || (last[k] && utc && utc <= last[k]) || seen[k + "|" + utc] != null) return;
+          rows.push(row({ sensor: k, kind: x.kind || "", datetime_local: loc, datetime_utc: utc, value: p[1], unit: x.unit || "", quality: "provisional", source: "", source_id: "" }, "live 7-day"));
+        });
+      });
+      rows.sort(function (p, q) { return p[1] < q[1] ? -1 : p[1] > q[1] ? 1 : p[4] < q[4] ? -1 : p[4] > q[4] ? 1 : 0; });
+      var hdr = ["gauge", "sensor", "kind", "time (Pacific)", "time (UTC)", "value", "unit", "quality", "source", "source id", "from"];
+      return { text: csv([hdr].concat(rows)), n: rows.length, missing: notes };
+    });
+  });
+}
+function loadZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise(function (ok, no) { var sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+    sc.onload = function () { ok(window.JSZip); }; sc.onerror = no; document.head.appendChild(sc); });
+}
+function exportEvent(s) {
+  var w = window.open("", "_blank");
+  if (w) w.document.write("<!doctype html><title>Preparing export…</title><p style='font:15px sans-serif;padding:20px'>Preparing the export…</p>");
+  // the graph, drawn with the light colors at a fixed size
+  var box = document.createElement("div"); box.style.cssText = "position:fixed;left:-99999px;top:0;width:1100px;height:520px";
+  var cv = document.createElement("canvas"); cv.width = 1100; cv.height = 520; box.appendChild(cv); document.body.appendChild(box);
+  CSSO = LIGHT; var ch = null, png = "";
+  try { ch = drawTo(s, cv, null, true); png = ch.toBase64Image("image/png"); } catch (e) {} finally { CSSO = null; if (ch) ch.destroy(); box.remove(); }
+  var base = fileBase(s), files = { tables: tablesCsv(s), hourly: hourlyCsv(s) };
+  var rpt = function (raw, zipUrl) {
+    var url = function (t, type) { return URL.createObjectURL(new Blob([t], { type: type })); };
+    var dl = [["Graph (PNG)", png, base + "_graph.png"], ["Summary tables (CSV)", url(files.tables, "text/csv"), base + "_tables.csv"],
+      ["Hourly record: rain, creek and tide (CSV)", url(files.hourly, "text/csv"), base + "_hourly.csv"]];
+    if (raw && raw.n) dl.push(["Every raw reading: " + raw.n.toLocaleString() + " rows (CSV)", url(raw.text, "text/csv"), base + "_raw_readings.csv"]);
+    var html = reportHtml(s, png, dl, raw, zipUrl, base);
+    files.report = html;
+    return html;
+  };
+  var finish = function (raw) {
+    var html = rpt(raw, null);
+    return loadZip().then(function (Z) {
+      var z = new Z(), dir = z.folder(base);
+      dir.file(base + "_report.html", reportHtml(s, png, [], raw, null, base));   // the zipped copy: no download links (they only work in this window) dir.file(base + "_tables.csv", files.tables); dir.file(base + "_hourly.csv", files.hourly);
+      if (raw && raw.n) dir.file(base + "_raw_readings.csv", raw.text);
+      if (png) dir.file(base + "_graph.png", png.split(",")[1], { base64: true });
+      return z.generateAsync({ type: "blob" }).then(function (b) { return rpt(raw, URL.createObjectURL(b)); });
+    }).catch(function () { return html; });
+  };
+  rawCsv(s).catch(function () { return null; }).then(finish).then(function (html) {
+    if (w && !w.closed) { w.document.open(); w.document.write(html); w.document.close(); }
+    else { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); a.download = base + "_report.html"; document.body.appendChild(a); a.click(); a.remove(); }
+  });
+}
+function reportHtml(s, png, dl, raw, zipUrl, base) {
+  var gen = new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" });
+  var st = "body{font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#22303f;background:#fff;max-width:1000px;margin:0 auto;padding:18px}" +
+    "h1{font-size:21px;color:#003B5C;margin:0 0 2px}h2{font-size:16px;color:#003B5C;margin:18px 0 6px;border-bottom:1px solid #e3e8ee;padding-bottom:3px}h3{font-size:15px;color:#003B5C;margin:14px 0 4px}" +
+    ".meta,.note,.sm{color:#5d6d80}.meta{margin:0 0 10px}.note{font-size:13.5px;margin:6px 0 0}.sm{display:block;font-size:12px}" +
+    "table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{text-align:left;padding:4px 6px;border-top:1px solid #e3e8ee;vertical-align:top}th{color:#5d6d80;font-weight:600}td.n,th.n{text-align:right;white-space:nowrap}" +
+    ".chip{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:0 7px;white-space:nowrap}.chip.l1{background:#fff6cc;color:#7a6000}.chip.l2{background:#ffe6cc;color:#9a4a00}.chip.l3{background:#fde2e0;color:#c62828}.chip.l0{color:#5d6d80;box-shadow:inset 0 0 0 1px #e3e8ee}" +
+    "ul.pk,ul.rcl{margin:2px 0 0;padding-left:18px}ul.pk li,ul.rcl li{margin:2px 0}img{width:100%;height:auto;border:1px solid #e3e8ee;border-radius:6px}" +
+    ".bar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.bar a,.bar button{font:inherit;font-size:13.5px;padding:6px 12px;border-radius:8px;border:1px solid #0A5587;color:#0A5587;background:#fff;text-decoration:none;cursor:pointer}.bar .main{background:#0A5587;color:#fff}" +
+    "tr.sfo td{color:#5d6d80}details{margin-top:4px}.live{display:none}" +
+    "@media print{.bar,.noprint{display:none}body{padding:0}h2{break-after:avoid}table,img{break-inside:avoid}}";
+  var nar = narrative(s).map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("");
+  var lvt = levelText(s);
+  return "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + esc(s.name + " storm, " + s.start.slice(0, 10)) + "</title><style>" + st + "</style></head><body>" +
+    "<h1>" + esc(s.name) + " storm · " + esc(when(s.start)) + " to " + esc(when(s.end)) + "</h1>" +
+    "<p class='meta'>OneShoreline Flood Early Warning System · Storm Tracker export · " + esc(gen) + (s.live && !rainOver(s) ? " · storm still in progress" : "") + "</p>" +
+    "<div class='bar noprint'><button class='main' onclick='window.print()'>Print or save as PDF</button>" +
+    (zipUrl ? "<a href='" + zipUrl + "' download='" + esc(base) + ".zip'>Download everything (.zip)</a>" : "") +
+    dl.map(function (x) { return x[1] ? "<a href='" + x[1] + "' download='" + esc(x[2]) + "'>" + esc(x[0]) + "</a>" : ""; }).join("") + "</div>" +
+    (raw && raw.missing && raw.missing.length ? "<p class='note noprint'>Not in the data archive yet: " + esc(raw.missing.join(", ")) + ". Raw readings for those days come from the live 7-day file where it still has them.</p>" : "") +
+    "<h2>Summary</h2>" + nar +
+    (png ? "<h2>Rain, creek and tide</h2><img src='" + png + "' alt='Hourly rain, creek level and tide during the storm'>" : "") +
+    "<h2>Creek</h2>" + lvt + (s.tide ? "<h2>Tide</h2>" + tideText(s.tide) : "") +
+    "<h2>Largest rain in each window</h2><p class='note' style='margin:0 0 4px'>With storm size and annual exceedance probability (AEP) from NOAA Atlas 14.</p>" + rainTable(s) +
+    (RC ? "<h2>Road closures</h2>" + roadsDetail(s).replace(/^<h3>.*?<\/h3>/, "") : "") +
+    "<p class='note' style='margin-top:18px'>Provisional data as published by the agencies (OneRain, USGS, NOAA), not reviewed or approved by OneShoreline staff. Times are Pacific. Storm sizes are from NOAA Atlas 14 for each rain gauge's location. Tide heights are feet NAVD88.</p>" +
+    "</body></html>";
 }
 document.addEventListener("click", function (e) {
   var el = e.target.closest("[data-k]"); if (el) show(el.dataset.k);
