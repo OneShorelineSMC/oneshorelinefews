@@ -216,5 +216,15 @@ check("SFO in a storm: total and wettest hours", sf["total"] == 0.4 and sf["peak
 check("SFO: read at most hourly", T.update_sfo(o, dt.datetime(2026, 11, 18, 12, 30), fetch=lambda u: 1 / 0) == [])
 check("SFO: NWS down keeps the record", T.update_sfo(o, dt.datetime(2026, 11, 18, 14, 0), fetch=lambda u: 1 / 0, log=lambda m: None) and o["ledger"]["sfo:KSFO"]["h"] == h)
 
+# Separate creek peaks within one storm (San Bruno, Nov 18 2026: ~4.2 ft at 10 AM, down to 0.5 ft, 4.7 ft at 11 PM)
+H0 = dt.datetime(2026, 11, 18, 3)
+ser = lambda vals: [(H0 + dt.timedelta(hours=i), x) for i, x in enumerate(vals)]   # noqa: E731
+SB = [1.48, 1.71, 1.40, 1.19, 1.19, 3.0, 3.71, 4.22, 4.07, 3.49, 2.45, 1.89, 1.57, 1.15, 0.95, 0.74, 0.63, 0.53, 3.12, 2.99, 4.74]
+check("peaks: San Bruno's two flood peaks, with the low before each", T.creek_peaks(ser(SB)) == [(7, 4), (20, 17)])
+check("peaks: the second still counts once the creek starts down", T.creek_peaks(ser(SB + [4.63])) == [(7, 4), (20, 17)])
+check("peaks: a small bump on the way up isn't a peak (1.71 ft at 4 AM)", 1 not in [i for i, _ in T.creek_peaks(ser(SB))])
+check("peaks: a wiggle on the falling side isn't a peak", T.creek_peaks(ser([0.2, 1, 2, 3, 2.6, 2.8, 2, 1])) == [(3, 0)])
+check("peaks: a smaller second peak counts", T.creek_peaks(ser([0.2, 2, 4, 2, 0.5, 2.5, 1])) == [(2, 0), (5, 4)])
+
 print("storm_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)

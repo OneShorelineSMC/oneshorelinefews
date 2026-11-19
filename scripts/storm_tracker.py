@@ -57,7 +57,10 @@ LOOKUPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookup
 SETTINGS = {"STORM_DRY_HOURS": [6, 1, 48], "STORM_MIN_IN": [0.1, 0.01, 2], "STORM_WET_IN": [0.01, 0.01, 0.2],
             "STORM_RESPONSE_HOURS": [12, 0, 48]}
 KEEP_DAYS = 10                          # hourly record kept (a storm can't be longer than this and still be found)
-PEAK_HOURS = [1, 3, 6, 12, 24]          # peak rain windows read from the hourly record
+PEAK_HOURS = [1, 3, 6, 12, 24, 48]      # peak rain windows read from the hourly record (48 h: staff 2026-11-19)
+PEAK_MIN_FT = 0.5                       # a creek peak within a storm stands out by at least this much...
+PEAK_MIN_SHARE = 0.25                   # ...and this share of the storm's range (see creek_peaks)
+PEAK_MAX = 4                            # most peaks listed per gauge
 SUB_HOURLY = ["15", "30"]               # and from the data job's rolling totals (minutes)
 STATUS_RANK = {"none": 0, "alert": 1, "ready": 2, "likely": 3}   # offline / delayed don't count
 HFMT = "%Y-%m-%d %H:00"
@@ -328,6 +331,42 @@ def rate(freq, minutes, depth):
     return {"level": level, "years": storm_years(by, depth) if by and depth > 0 else None}
 
 
+def creek_peaks(series, min_ft=PEAK_MIN_FT, share=PEAK_MIN_SHARE, most=PEAK_MAX):
+    """Separate peaks of the creek within one storm (staff 2026-11-19: San Bruno rose to about 4.2 ft at 10 AM, fell to
+    0.5 ft, then rose to 4.7 ft at midnight, all one storm because a stray tip bridged the dry hours). series: sorted
+    [(hour, level)]. A peak is an hour at least as high as its neighbors that stands out: the creek fell by at least
+    max(min_ft, share of the storm's range) between it and any higher peak, on both sides; with no higher hour after it,
+    only the rise to it counts (the creek may still be rising, or not have fallen yet). Returns [(i_peak, i_trough_before)], in time
+    order, at most `most` (the highest kept)."""
+    v = [x[1] for x in series]
+    n = len(v)
+    if n < 3:
+        return []
+    need = max(min_ft, share * (max(v) - min(v)))
+    out = []
+    for i in range(n):
+        if (i > 0 and v[i] <= v[i - 1]) or (i < n - 1 and v[i] < v[i + 1]):
+            continue   # not a high point (a flat top counts once, at its first hour)
+        j = i - 1   # back to the nearest higher hour (or the start): the low point on the way
+        while j >= 0 and v[j] <= v[i]:
+            j -= 1
+        left = range(j + 1, i)
+        k = i + 1   # ahead to the nearest higher hour (or the end)
+        while k < n and v[k] <= v[i]:
+            k += 1
+        right = range(i + 1, k)
+        if not left:
+            continue   # the storm started at its high: nothing rose to it
+        at_l = min(left, key=lambda x: (v[x], -x))
+        if k >= n:
+            prom = v[i] - v[at_l]   # nothing higher after it: judged by the rise to it (the fall may still be coming)
+        else:
+            prom = v[i] - max(v[at_l], min(v[x] for x in right))
+        if prom >= need - 1e-9:
+            out.append((i, at_l))
+    return sorted(sorted(out, key=lambda x: -v[x[0]])[:most])
+
+
 def build_storm(c, start, end, ledger, S, freq, now, track, tlevels=None):
     rain_g, stage_g = creek_gauges(c)
     resp_end = min(end + dt.timedelta(hours=S["STORM_RESPONSE_HOURS"]), now.replace(minute=0, second=0))
@@ -382,6 +421,25 @@ def build_storm(c, start, end, ledger, S, freq, now, track, tlevels=None):
                              "start_value": s.get(start), "peak": inside[ph], "peak_at": hkey(ph), "reached": reached, "thresholds": lv,
                              "lag_hours": round(lag, 1) if lag is not None else None,
                              "series": [[hkey(h), v] for h, v in sorted(s.items())]})
+        # more than one peak: each with its level and the rain that led up to it (from the low point before it)
+        ser = sorted(inside.items())
+        pk = creek_peaks(ser)
+        if len(pk) >= 2:
+            main_r = next((g2 for g2 in rain_g if not g2["support"]), rain_g[0] if rain_g else None)
+            rs = hours_of(ledger, main_r["key"]) if main_r else {}
+            f = freq.get(str(main_r.get("number"))) if freq and main_r else None
+            out = []
+            for i, it in pk:
+                h, v = ser[i]
+                frm = ser[it][0] if it < i else start
+                frm = max(frm - dt.timedelta(hours=1), start)   # the hour the low came in can be wet already
+                lvl = max([t.get("level") or 0 for t in g.get("thresholds") or [] if v >= t["value"]] or [0])
+                burst = {"from": hkey(frm), "total": round(sum(x for t, x in rs.items() if frm <= t <= h), 2)}
+                for hrs in (1, 3, 6):
+                    x, _ = window_peak(rs, frm, h, hrs)
+                    burst[str(hrs * 60)] = {"in": x, "rate": rate(f, hrs * 60, x)}
+                out.append({"at": hkey(h), "ft": v, "reached": lvl, "rain": burst if main_r else None})
+            st["levels"][-1]["peaks"] = out
     # the tide during the storm, and the creek's peak against it (the first level gauge with a peak)
     lp = next((x for x in st["levels"] if x.get("peak") is not None), None)
     st["tide"] = storm_tide(c, start, resp_end, ledger, tlevels or {}, parse_t(lp["peak_at"]) if lp else None)
