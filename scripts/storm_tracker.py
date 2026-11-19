@@ -31,6 +31,12 @@ it: the highest water and when, the tide table then, how far the water ran above
 the average high tide (MHHW) and above the gauge's flood levels (from tide_tracker.json), and how far the creek's peak
 was from the day's high tide. Rain and a high tide together are what floods the tidal creeks.
 
+SFO airport (staff, 2026-11-18; Storm Tracker only): the National Weather Service's station at San Francisco International
+Airport (KSFO, about 1.5 miles from San Bruno Creek's First Avenue gauge) is read hourly from api.weather.gov into the same
+record ("sfo:KSFO", rain in each hour), at most every SFO_EVERY_MIN minutes. Each San Bruno storm gets SFO's total and
+its wettest 1, 3, 6, 12 and 24 hours, as a check on First Avenue (and when First Avenue goes quiet). SFO reports hourly,
+so it can't show the 15- and 30-minute bursts; it isn't rated or used for a storm's size or status.
+
 Settings (lookups/settings.csv; the same ranges as lookups.js): STORM_DRY_HOURS, STORM_MIN_IN, STORM_WET_IN,
 STORM_RESPONSE_HOURS. Basis: lookups/THRESHOLDS_BASIS.md §12.
 
@@ -57,6 +63,10 @@ STATUS_RANK = {"none": 0, "alert": 1, "ready": 2, "likely": 3}   # offline / del
 HFMT = "%Y-%m-%d %H:00"
 TIDE_EVERY_MIN = 55                     # NOAA tide read at most this often (the record is hourly)
 COAST_TIDE = "9413450"                  # Monterey: the coast creeks have no tide gauge of their own
+SFO_STATION = "KSFO"                    # NWS station at San Francisco International Airport
+SFO_CREEKS = ("sanbruno",)              # storms that get SFO's rain alongside their own gauges
+SFO_EVERY_MIN = 55
+NWS_API = "https://api.weather.gov"
 TIDE_NAMES = {"9414523": "Redwood City", "9414750": "Alameda", "9414290": "San Francisco", "9413450": "Monterey"}
 
 
@@ -178,6 +188,58 @@ def update_tides(out, stations, now, fetch=None, every=TIDE_EVERY_MIN, log=print
     for p in problems:
         log("  " + p)
     return problems
+
+
+def update_sfo(out, now, fetch=None, every=SFO_EVERY_MIN, log=print):
+    """Adds SFO's hourly rain (NWS observations, precipitationLastHour) to the hourly record, at most every `every`
+    minutes; the first read goes back 6 days, later ones 12 hours. An observation at 10:56 covers 9:56-10:56 and goes in
+    the 10:00 hour (Pacific). Hours with no rain aren't stored. Problems leave the record as it was."""
+    last = out.get("sfo_fetched")
+    if last and now - parse_t(last) < dt.timedelta(minutes=every):
+        return []
+    from zoneinfo import ZoneInfo
+    pac, utc = ZoneInfo("America/Los_Angeles"), dt.timezone.utc
+    rec = out["ledger"].setdefault("sfo:" + SFO_STATION, {"kind": "rain", "h": {}})
+    back = dt.timedelta(hours=12) if rec.get("h") or out.get("sfo_fetched") else dt.timedelta(days=6)
+    start = (now - back).replace(tzinfo=pac).astimezone(utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        j = (fetch or TT.get_json)("%s/stations/%s/observations?start=%s" % (NWS_API, SFO_STATION, start))
+    except Exception as e:  # noqa: BLE001 - NWS down: keep what we have
+        log("  SFO: %s" % str(e)[:120])
+        return ["SFO: %s" % str(e)[:120]]
+    hours = {}
+    for f in (j or {}).get("features") or []:
+        pr = f.get("properties") or {}
+        t, q = pr.get("timestamp"), pr.get("precipitationLastHour") or {}
+        if not t:
+            continue
+        tl = dt.datetime.fromisoformat(t.replace("Z", "+00:00")).astimezone(pac).replace(tzinfo=None)
+        if tl.minute < 45:   # specials between hourly reports: their amount is part of the next hourly one
+            continue
+        h = tl.replace(minute=0, second=0, microsecond=0)
+        v = q.get("value")
+        mm = str(q.get("unitCode", "")).endswith("mm")
+        hours[h] = round((v / 25.4 if mm else v), 3) if isinstance(v, (int, float)) else hours.get(h, 0.0)
+    for h, v in hours.items():
+        if v and v > 0:
+            rec["h"][hkey(h)] = v
+        else:
+            rec["h"].pop(hkey(h), None)
+    out["sfo_fetched"] = now.strftime("%Y-%m-%d %H:%M")
+    return []
+
+
+def sfo_for(start, end, ledger):
+    """SFO's rain in a storm: total, and the wettest 1-24 hours (inches); None when the record doesn't cover it."""
+    rec = ledger.get("sfo:" + SFO_STATION)
+    if not rec:
+        return None
+    s = hours_of(ledger, "sfo:" + SFO_STATION)
+    out = {"station": SFO_STATION, "label": "SFO airport (NWS)", "total": round(sum(v for h, v in s.items() if start <= h <= end), 2), "peaks": {}}
+    for hrs in PEAK_HOURS:
+        v, at = window_peak(s, start, end, hrs)
+        out["peaks"][str(hrs * 60)] = {"in": v, "at": hkey(at) if at else None}
+    return out
 
 
 def tide_levels(tide_tracker):
@@ -323,6 +385,8 @@ def build_storm(c, start, end, ledger, S, freq, now, track, tlevels=None):
     # the tide during the storm, and the creek's peak against it (the first level gauge with a peak)
     lp = next((x for x in st["levels"] if x.get("peak") is not None), None)
     st["tide"] = storm_tide(c, start, resp_end, ledger, tlevels or {}, parse_t(lp["peak_at"]) if lp else None)
+    if c["id"] in SFO_CREEKS:
+        st["sfo"] = sfo_for(start, end, ledger)
     main = [r for r in st["rain"] if not r["support"]] or st["rain"]
     st["total"] = max([r["total"] for r in main] or [0])
     tops = [r["rarest"]["level"] for r in st["rain"] if r["rarest"]]
@@ -430,8 +494,10 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
     sensors = creeks_json.get("sensors") or {}
     creeks = (creeks_json.get("creeks") or []) + (creeks_json.get("creeks_preview") or [])
     merge_ledger(out["ledger"], sensors, now)
+    out["sfo_fetched"] = prev.get("sfo_fetched")
     if tides:
         out["tide_problems"] = update_tides(out, {tide_station(c) for c in creeks}, now, fetch) or prev.get("tide_problems") or []
+        update_sfo(out, now, fetch)
     tlev = tide_levels(tide_tracker)
     update_days(out["days"], out["ledger"], creeks, sensors, now)
     done = {(s["creek"], s["start"]) for s in out["storms"]}
@@ -498,6 +564,12 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
         if td.get("peak") is not None:
             td["added_later"] = True
         st["tide"] = td
+    sfo_h = hours_of(out["ledger"], "sfo:" + SFO_STATION)
+    for st in out["storms"]:   # closed San Bruno storms from before SFO was recorded: added once, when the record covers them
+        if st["creek"] in SFO_CREEKS and not st.get("sfo") and out.get("sfo_fetched") and sfo_h is not None:
+            s0, e0 = parse_t(st["start"]), parse_t(st["end"])
+            if now - s0 <= dt.timedelta(days=6):
+                st["sfo"] = dict(sfo_for(s0, e0, out["ledger"]) or {}, added_later=True) if out["ledger"].get("sfo:" + SFO_STATION) else None
     out["storms"].sort(key=lambda s: (s["start"], s["creek"]))
     out["summary"] = [season_summary(c, out["days"], out["storms"] + opened, wy0) for c in creeks]
     out["creeks"] = [{"id": c["id"], "name": c["name"], "short": c.get("short"), "preview_only": bool(c.get("preview_only")),

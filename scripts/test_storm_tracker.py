@@ -198,5 +198,23 @@ t1 = T0 + dt.timedelta(hours=40, minutes=30)
 st1 = T.run(snapshot(t1), copy.deepcopy(st0), t1, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
 check("first tide run: the closed storm gets its tide, marked as added later", st1["storms"][0]["tide"]["peak"] == 7.3 and st1["storms"][0]["tide"]["added_later"])
 
+# SFO airport's hourly rain (NWS), San Bruno storms only (staff, 2026-11-18)
+def fake_nws(url):
+    assert "stations/KSFO/observations" in url
+    feats = []
+    for hh, mm in [(8, 2.54), (9, 7.62), (10, None)]:   # 0.10 in, 0.30 in, dry hour
+        feats.append({"properties": {"timestamp": "2026-11-18T%02d:56:00+00:00" % (hh + 8), "precipitationLastHour": {"unitCode": "wmoUnit:mm", "value": mm}}})
+    feats.append({"properties": {"timestamp": "2026-11-18T17:20:00+00:00", "precipitationLastHour": {"unitCode": "wmoUnit:mm", "value": 5.0}}})   # a special: skipped
+    return {"features": feats}
+o = {"ledger": {}}
+T.update_sfo(o, dt.datetime(2026, 11, 18, 12, 0), fetch=fake_nws, log=lambda m: None)
+h = o["ledger"]["sfo:KSFO"]["h"]
+check("SFO: hourly reports in Pacific hours, mm to inches, dry hours and specials left out",
+      h == {"2026-11-18 08:00": 0.1, "2026-11-18 09:00": 0.3})
+sf = T.sfo_for(dt.datetime(2026, 11, 18, 7), dt.datetime(2026, 11, 18, 11), o["ledger"])
+check("SFO in a storm: total and wettest hours", sf["total"] == 0.4 and sf["peaks"]["60"]["in"] == 0.3 and sf["peaks"]["180"]["in"] == 0.4)
+check("SFO: read at most hourly", T.update_sfo(o, dt.datetime(2026, 11, 18, 12, 30), fetch=lambda u: 1 / 0) == [])
+check("SFO: NWS down keeps the record", T.update_sfo(o, dt.datetime(2026, 11, 18, 14, 0), fetch=lambda u: 1 / 0, log=lambda m: None) and o["ledger"]["sfo:KSFO"]["h"] == h)
+
 print("storm_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
