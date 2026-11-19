@@ -295,6 +295,25 @@ def storm_tide(c, start, resp_end, ledger, levels, creek_peak=None):
     return out
 
 
+def peak_tide(c, ledger, at, levels):
+    """The tide at one creek peak (staff 2026-11-19: each peak with its rain, level and tide): the water then and against
+    the tide table, the nearest high water within 6 hours and how many hours the creek peaked after it (+) or before
+    (-), and that high water against the average high tide (MHHW)."""
+    stn = tide_station(c)
+    meas, pred = hours_of(ledger, "tide:" + stn), hours_of(ledger, "tidepred:" + stn)
+    near = {h: v for h, v in meas.items() if abs((h - at).total_seconds()) <= 6 * 3600}
+    if not near and at not in meas:
+        return None
+    out = {"ft": meas.get(at), "vs_table": round(meas[at] - pred[at], 2) if at in meas and at in pred else None}
+    if near:
+        th = max(near, key=lambda h: (near[h], -h.timestamp()))
+        out.update({"high_ft": near[th], "high_at": hkey(th), "creek_after_high_hours": round((at - th).total_seconds() / 3600, 1)})
+        mh = next((l["ft"] for l in (levels.get(stn) or []) if l["key"] == "mhhw"), None)
+        if mh is not None:
+            out["high_vs_mhhw"] = round(near[th] - mh, 2)
+    return out
+
+
 # --------------------------------------------------------------------------------------------- storms
 def find_storms(rain_series, S):
     """[(first wet hour, last wet hour)] from the creek's rain gauges' hourly rain."""
@@ -443,6 +462,9 @@ def build_storm(c, start, end, ledger, S, freq, now, track, tlevels=None):
     # the tide during the storm, and the creek's peak against it (the first level gauge with a peak)
     lp = next((x for x in st["levels"] if x.get("peak") is not None), None)
     st["tide"] = storm_tide(c, start, resp_end, ledger, tlevels or {}, parse_t(lp["peak_at"]) if lp else None)
+    for x in st["levels"]:   # each separate peak gets the tide at that hour too
+        for p in x.get("peaks") or []:
+            p["tide"] = peak_tide(c, ledger, parse_t(p["at"]), tlevels or {})
     if c["id"] in SFO_CREEKS:
         st["sfo"] = sfo_for(start, end, ledger)
     main = [r for r in st["rain"] if not r["support"]] or st["rain"]

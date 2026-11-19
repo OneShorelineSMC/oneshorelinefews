@@ -226,5 +226,12 @@ check("peaks: a small bump on the way up isn't a peak (1.71 ft at 4 AM)", 1 not 
 check("peaks: a wiggle on the falling side isn't a peak", T.creek_peaks(ser([0.2, 1, 2, 3, 2.6, 2.8, 2, 1])) == [(3, 0)])
 check("peaks: a smaller second peak counts", T.creek_peaks(ser([0.2, 2, 4, 2, 0.5, 2.5, 1])) == [(2, 0), (5, 4)])
 
+L = {"tide:9414750": {"h": {"2026-11-18 07:00": 6.92, "2026-11-18 08:00": 6.89, "2026-11-18 10:00": 5.74}},
+     "tidepred:9414750": {"h": {"2026-11-18 10:00": 3.68}}}
+pt_ = T.peak_tide({"id": "sanbruno", "tide": "9414750"}, L, dt.datetime(2026, 11, 18, 10), {"9414750": [{"key": "mhhw", "ft": 6.37}]})
+check("peak tide: water then, vs the table, the nearest high water 3 hr before, vs MHHW",
+      pt_ == {"ft": 5.74, "vs_table": 2.06, "high_ft": 6.92, "high_at": "2026-11-18 07:00", "creek_after_high_hours": 3.0, "high_vs_mhhw": 0.55})
+check("peak tide: none recorded = None", T.peak_tide({"id": "sanbruno", "tide": "9414750"}, {}, dt.datetime(2026, 11, 18, 10), {}) is None)
+
 print("storm_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
