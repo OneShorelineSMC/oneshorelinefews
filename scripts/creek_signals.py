@@ -39,6 +39,9 @@ SETTINGS = {
     "TREND_WINDOW_MIN": (30, 5, 240), "TREND_MAX_WINDOW_MIN": (120, 15, 360), "TREND_STEADY_FT_PER_HR": (0.1, 0.01, 2),
     "RAIN_SEVERE_CONFIRM_GAUGES": (2, 1, 5), "RAIN_SILENT_MIN": (60, 15, 720), "TIDE_RISING_LOOKAHEAD_HOURS": (3, 0.5, 12),
     "BE_READY_FROM_RAIN": (1, 0, 1), "RAIN_NOW_MIN": (60, 15, 180), "RAIN_NOW_IN": (0.01, 0.01, 0.5),
+    # A rain-only status eases once the rain stops for this long and the creek isn't rising (0 = off; staff, 2026-11-18).
+    # Data job only for now: not in settings.csv, since the pages would call it an unknown key (it needs lookups.js too).
+    "RAIN_EASE_MIN": (60, 0, 360),
     # NWS rain forecast (scripts/nws_forecast.py)
     "FORECAST_EVERY_MIN": (60, 15, 360), "FORECAST_KEEP_HOURS": (12, 1, 48),
     # Bay offset after the NOAA projection (scripts/tide_offset.py): days averaged
@@ -481,14 +484,28 @@ def creek_status(c, sens, tide, now, S):
     fast = bool(trend and trend.get("trend") == "fast")
     tidal = any(g.get("tidal") for g in c["stages"])
     tide_line = bool(tidal and tide.get("high_soon"))
+    # Rain-only status eases once the rain stops (staff, 2026-11-18): Stay alert / Be ready from rain alone looks back
+    # over up to 24 hours, so it held for hours after a storm ended while the creek fell. It eases when no working rain
+    # gauge has recorded rain for RAIN_EASE_MIN and every working creek gauge is steady or falling (rising is allowed on a
+    # tidal gauge, which follows the tide; rising fast never). Flood levels and rain triggers are untouched.
+    rain_s, ease = rain, S.get("RAIN_EASE_MIN", SETTINGS["RAIN_EASE_MIN"][0])
+    if ease and rain >= 1 and level == 0 and not trigger and not fast and stage_rows and working:
+        since = now - dt.timedelta(minutes=ease)
+        dry = all(rain_total(_series(sens[g["key"]].get("points"), sens[g["key"]].get("latest")), since, now) < S["RAIN_NOW_IN"] - 1e-9
+                  for g, sig in working)
+        calm = all(sig.get("trend") in ("steady", "falling") or (g.get("tidal") and sig.get("trend") == "rising")
+                   for g, sig, v in stage_rows)
+        if dry and calm:
+            rain_s = 0
+            staff.append(f"rain stopped {int(ease)}+ min ago and the creek isn't rising: rain no longer raises the status")
 
     # Status, worst first
     trig3 = bool(trigger and trigger["level"] >= 3)
     if level >= 3 or trig3:
         key = "likely"
-    elif level == 2 or (not has_levels and (fast or rain == 3) and S["BE_READY_FROM_RAIN"] >= 1):
+    elif level == 2 or (not has_levels and (fast or rain_s == 3) and S["BE_READY_FROM_RAIN"] >= 1):
         key = "ready"
-    elif level == 1 or rain >= 2 or fast or (trigger and trigger["level"] >= 1) or (rain == 1 and tide_line):
+    elif level == 1 or rain_s >= 2 or fast or (trigger and trigger["level"] >= 1) or (rain_s == 1 and tide_line):
         key = "alert"
     elif working_stages == 0 and c["stages"]:
         key = "offline"

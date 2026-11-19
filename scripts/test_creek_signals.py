@@ -238,6 +238,26 @@ q = silent_in_rain(NOW - dt.timedelta(hours=2), [], [wet, wet, dry0], NOW, S)
 check(q and q["basis"] == "county", f"own rain gauge shares the quiet site; two gauges elsewhere in the county record rain: not reporting: {q}")
 check(silent_in_rain(NOW - dt.timedelta(hours=2), [], [wet, dry0], NOW, S) is None, "rain at only one gauge elsewhere: not enough to call it")
 
+# Rain-only status eases once the rain stops (staff, 2026-11-18)
+stopped = [[at(m), 0.12] for m in range(330, 89, -15)]              # 2.0 in over 4 hours, ending 90 min ago
+fall = [[at(m), 2.2 - (120 - m) * 0.01] for m in range(120, -1, -15)]   # 1.2 ft/hr down, below Flood Monitoring
+st = creek(fall, [stopped])
+check(st["rain"]["level"] >= 2 and st["key"] == "none" and any("rain stopped" in n for n in st["staff_notes"]),
+      f"severe rain ended 90 min ago, creek falling = no longer Stay alert: {st}")
+st = creek(fall, [stopped], settings=dict(S, RAIN_EASE_MIN=0))
+check(st["key"] == "alert", f"...unless RAIN_EASE_MIN = 0: {st}")
+st = creek(fall, [stopped], settings=dict(S, RAIN_EASE_MIN=120))
+check(st["key"] == "alert", f"...or the rain stopped less than RAIN_EASE_MIN ago: {st}")
+rise = [[at(m), 1.0 + (120 - m) * 0.003] for m in range(120, -1, -15)]   # 0.18 ft/hr up
+st = creek(rise, [stopped])
+check(st["key"] == "alert", f"rain stopped but the creek is still rising = still Stay alert: {st}")
+st = creek(rise, [stopped], tidal=True)
+check(st["key"] == "none", f"...but a tidal gauge rising with the tide after the rain stopped eases: {st}")
+st = creek(fall, [stopped + [[at(20), 0.04]]])
+check(st["key"] == "alert", f"still raining in the last hour = still Stay alert: {st}")
+st = creek([[at(m), 2.5] for m in range(120, -1, -15)], [stopped])
+check(st["key"] == "alert" and codes(st)[0] == "why_monitoring", f"a flood level never eases: {st}")
+
 vals, prob = load_settings()
 check(not prob, f"settings.csv values the data job uses are valid: {prob}")
 print(f"creek_signals: {checks} checks passed")
