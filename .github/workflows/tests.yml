@@ -79,5 +79,7 @@ jobs:
         run: python scripts/test_road_closures.py
       - name: San Francisquito Creek from SFCJPA (sign-in and readings)
         run: python scripts/test_fetch_sfcjpa.py
+      - name: Storm mode (San Bruno and Belmont every minute)
+        run: python scripts/test_storm_mode.py
       - name: Home page severity scale, section order and colors
         run: node scripts/test_home.js

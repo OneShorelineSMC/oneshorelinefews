@@ -171,6 +171,35 @@ jobs:
               commit -q -m "OneRain data $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
 
+      - name: Storm mode (San Bruno and Belmont about every minute while it rains there; fetch_onerain.py --fast)
+        # San Bruno and Belmont Creeks are flashy (staff, 2026-11-18: San Bruno rose 1.2 ft in 35 minutes). While it is
+        # raining at either one, or either creek is rising, this run keeps going for about 3 more minutes: about every
+        # minute it re-reads just those two creeks' gauges, updates creeks.json (readings, signals, statuses) and
+        # republishes it. The next scheduled run carries on from there. Stops as soon as there is no rain or rise
+        # (exit 3), and a problem here never touches the data the run already published.
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          end=$(( $(date +%s) + 190 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            sleep 45
+            set +e
+            python scripts/fetch_onerain.py out/creeks.json --fast sanbruno,belmont
+            code=$?
+            set -e
+            if [ "$code" -eq 3 ]; then break; fi
+            if [ "$code" -ne 0 ]; then continue; fi
+            (
+              cd out
+              cp creeks.json sanbruno.json
+              git add creeks.json sanbruno.json $( [ -f status_log.csv ] && echo status_log.csv )
+              git -c user.name="github-actions[bot]" \
+                  -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                  commit -q --amend -m "OneRain data $(date -u +%Y-%m-%dT%H:%MZ) (storm mode)"
+              git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
+            ) || echo "storm mode: publish failed; the next run publishes"
+          done
+
       - name: Check the lookups/ files (creeks, gauges, thresholds, tide stations)
         # Runs after publishing, so a typo never stops the creek readings. If a file has a mistake the data job
         # keeps the last good settings, and this step marks the run as failed and lists the row and problem.
