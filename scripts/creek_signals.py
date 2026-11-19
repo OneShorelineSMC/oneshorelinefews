@@ -273,7 +273,8 @@ def rise_check(p, gauge, now, S):
     it must have risen too, by at least RISE_CONFIRM_FRACTION of the threshold over its own RISE_MINUTES. An on-change gauge that was quiet for more than RISE_MINUTES before the reading (its
     level wasn't changing) and then jumps needs its next report to confirm it: a real rise is reported step by step. Once met, it stays on until RISE_HOLD_MIN after that
     reading, and a scheduled gauge's newest reading counts until the next one arrives; it ends early if the level
-    drops back. The newest reading must be within RISE_FRESH_MIN.
+    drops back. A reading lower than the one before it never meets the rule (Belmont, Nov 18: falling from 1.63 ft, each
+    reading was still more than 0.5 ft above an hour earlier and kept "rising fast" on). The newest reading must be within RISE_FRESH_MIN.
     Returns {"rise_ft", "i" (index of the reading that met it), "at", "held" (True once that reading is not the
     newest or is more than RISE_HOLD_MIN old: the rise may have stopped), "threshold_ft"} or None.
     Tidal gauges: the caller applies the rain condition."""
@@ -296,6 +297,8 @@ def rise_check(p, gauge, now, S):
         r = rise_at(i)
         if r is None or r < th - 1e-9:
             return None
+        if i > 0 and p[i][1] < p[i - 1][1] - HOLD_TOLERANCE_FT:
+            return None   # a reading lower than the one before isn't rising, however high it is above an hour ago (staff 2026-11-18, Belmont)
         if not S["RISE_CONFIRM_MIN"]:
             return r   # 0 = confirmation off
         near = i > 0 and p[i][0] - p[i - 1][0] <= dt.timedelta(minutes=S["RISE_CONFIRM_MIN"])

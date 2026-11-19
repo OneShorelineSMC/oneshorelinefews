@@ -238,6 +238,16 @@ q = silent_in_rain(NOW - dt.timedelta(hours=2), [], [wet, wet, dry0], NOW, S)
 check(q and q["basis"] == "county", f"own rain gauge shares the quiet site; two gauges elsewhere in the county record rain: not reporting: {q}")
 check(silent_in_rain(NOW - dt.timedelta(hours=2), [], [wet, dry0], NOW, S) is None, "rain at only one gauge elsewhere: not enough to call it")
 
+# Falling readings never count as rising fast (Belmont, Nov 18 2026: 0.16 ft, then 0.30 to 1.63 ft in 18 min, then falling)
+from creek_signals import rise_check
+BG = {"reports": "on change", "rise_ft": 0.5, "thresholds": TH}
+def bel(times_vals):
+    return [(NOW - dt.timedelta(minutes=m), v) for m, v in times_vals]
+up = [(420, 0.16), (62, 0.30), (60, 0.51), (58, 0.70), (55, 0.92), (53, 1.09), (50, 1.30), (48, 1.45), (44, 1.63)]
+check(rise_check(bel(up), BG, NOW - dt.timedelta(minutes=44), S), "Belmont 0.30 to 1.63 ft in 18 min = rising fast")
+down = up + [(17, 1.49), (13, 1.29), (9, 1.10), (5, 0.95)]
+check(rise_check(bel(down), BG, NOW, S) is None, "...and falling from 1.63 to 0.95 ft is not, though 0.95 is 0.79 ft above an hour ago")
+
 # Rain-only status eases once the rain stops (staff, 2026-11-18)
 stopped = [[at(m), 0.12] for m in range(330, 89, -15)]              # 2.0 in over 4 hours, ending 90 min ago
 fall = [[at(m), 2.2 - (120 - m) * 0.01] for m in range(120, -1, -15)]   # 1.2 ft/hr down, below Flood Monitoring
