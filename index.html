@@ -553,6 +553,7 @@ function riseCheck(p, g, now) {
   function meets(i) {
     var r = riseAt(i);
     if (r == null || r < th - 1e-9) return null;
+    if (i > 0 && p[i].v < p[i - 1].v - HOLD_TOLERANCE_FT) return null;   // lower than the reading before: not rising (staff 2026-11-18, Belmont)
     if (!RISE_CONFIRM_MIN) return r;   // 0 = confirmation off
     var near = i > 0 && p[i].t - p[i - 1].t <= RISE_CONFIRM_MIN * 60000;
     if (onChange && (i === 0 || p[i].t - p[i - 1].t > win)) return null;   // quiet for over RISE_MINUTES, then a jump: wait for the next report
