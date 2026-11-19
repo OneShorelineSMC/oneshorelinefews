@@ -356,11 +356,23 @@ function liveChip(s) { return rainOver(s) ? ' <span class="chip">rain ended</spa
 // Separate creek peaks within one storm (storm_tracker.py creek_peaks; staff 2026-11-19, San Bruno's two peaks on Nov 18)
 function peakRain(w, p) { var x = p && p[w]; if (!x || !(x.in > 0)) return "";
   return (w === "60" ? "wettest hour " : "wettest 3 hours ") + inch(x.in) + " in" + (x.rate && x.rate.years ? " (about " + yr(x.rate.years) + ", " + aep(x.rate.years) + " AEP)" : ""); }
+// the tide at one peak: the water then (and against the tide table), and the nearest high water and its timing
+function peakTide(t) {
+  if (!t) return "";
+  var bits = [];
+  if (t.ft != null) bits.push("tide then " + t.ft.toFixed(2) + " ft NAVD88" + (t.vs_table != null ? " (" + (t.vs_table >= 0 ? "+" : "−") + Math.abs(t.vs_table).toFixed(2) + " vs the tide table)" : ""));
+  if (t.high_ft != null) {
+    var h = t.creek_after_high_hours, when_ = h === 0 ? "at the creek peak" : Math.abs(h) + " hr " + (h > 0 ? "before" : "after") + " the creek peak";
+    bits.push("high water " + t.high_ft.toFixed(2) + " ft " + when_ + (t.high_vs_mhhw != null ? " (" + (t.high_vs_mhhw >= 0 ? "+" : "−") + Math.abs(t.high_vs_mhhw).toFixed(2) + " vs the average high tide)" : ""));
+  }
+  return bits.length ? "Tide: " + bits.join("; ") : "";
+}
 function peaksList(l) {
   if (!l.peaks || l.peaks.length < 2) return "";
   return '<p class="note" style="margin-top:4px"><b>' + l.peaks.length + " separate peaks:</b></p><ul class='pk'>" + l.peaks.map(function (p) {
     var r = p.rain, bits = r ? [inch(r.total) + " in of rain from " + when(r.from).replace(/^\w+, \w+ \d+, /, ""), peakRain("60", r), peakRain("180", r)].filter(Boolean) : [];
-    return "<li><b>" + p.ft.toFixed(2) + " ft</b> " + esc(when(p.at)) + (p.reached ? " · " + LEVEL[p.reached] : "") + (bits.length ? '<span class="sm">' + esc(bits.join(" · ")) + "</span>" : "") + "</li>";
+    return "<li><b>" + p.ft.toFixed(2) + " ft</b> " + esc(when(p.at)) + (p.reached ? " · " + LEVEL[p.reached] : "") + (bits.length ? '<span class="sm">' + esc(bits.join(" · ")) + "</span>" : "") +
+      (peakTide(p.tide) ? '<span class="sm">' + esc(peakTide(p.tide)) + "</span>" : "") + "</li>";
   }).join("") + "</ul>";
 }
 function peaksShort(s) {
