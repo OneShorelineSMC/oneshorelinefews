@@ -2422,7 +2422,7 @@ function sbSentence(c, now) {
   var top = fut.slice().sort(function (a, b) { return b.r - a.r; })[0], s = [], ov = overlaps(fut, T);
   if (!R.one) s.push("No storm sizes for its rain gauge.");
   else if (top && top.r >= 1) s.push("<b>" + span(top.t0, top.t1) + ": flood-size rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours)." + (ov.length || !T.some(function (x) { return x.king; }) ? "" : " No king tide then."));
-  else s.push("No flood-size rain in the forecast" + (top && top.in >= 0.05 ? " (most in 6 hours: " + top.in.toFixed(2) + " in, " + span(top.t0, top.t1) + ")" : "") + ".");
+  else s.push(top && top.in >= 0.05 ? "Most rain forecast in 6 hours: " + top.in.toFixed(2) + " in, " + span(top.t0, top.t1) + "." : "Little or no rain forecast.");   // no "no flood-size rain" (staff 2026-11-19)
   var kt = T.filter(function (x) { return x.king; });
   s.push(kt.length ? "King-tide-level high " + kt.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fTime(x.t); }).join(", ") + "." : "No king tides this week.");
   // the Bay running above the tide table (storm surge, wind): measured minus predicted at Alameda, last hour
@@ -2484,7 +2484,7 @@ function renderOutlook() {
   if (!fc) r += '<div class="olv m">Forecast not available</div>';
   else {
     r += top && top.r >= 1 ? '<div class="olv am">Flood-size rain</div><div class="olt"><b>' + esc(span(top.t0, top.t1)) + "</b>: " + inch(top.in) + " in in 6 hr</div>"
-      : '<div class="olv">No flood-size rain</div>' + (top && top.in >= 0.05 ? '<div class="olt">Wettest 6 hr: <b>' + inch(top.in) + " in</b> " + esc(span(top.t0, top.t1)) + "</div>" : "");
+      : top && top.in >= 0.05 ? '<div class="olv">Wettest 6 hr: ' + inch(top.in) + ' in</div><div class="olt">' + esc(span(top.t0, top.t1)) + "</div>" : '<div class="olv">Little or no rain</div>';
     r += '<div class="olt">Next 6 hr <b>' + inch(fc.next6) + '</b> · 24 hr <b>' + inch(fc.next24) + '</b> · 3 days <b>' + inch(fc.next72) + "</b></div>" +
       '<div class="olt m">Flood-size: ' + (R.one ? inch(R.one) + " in in 6 hr" : "–") + (iss ? " · issued " + esc(fmt(iss, { weekday: "short" }) + " " + fTime(iss)) : "") + "</div>";
   }
@@ -2501,7 +2501,7 @@ function renderOutlook() {
     (kings.length ? '<div class="olt m">Next king tides: ' + esc(kings.join(" · ")) + "</div>" : "") + "</div>";
   // flood case
   var f = ov.length ? '<div class="olbox olhit"><div class="olv or">Flood-size rain + king tide</div><div class="olt"><b>' + esc(span(ov[0].t0, ov[0].t1)) + "</b>: flooding along the eastern avenues is possible.</div></div>"
-    : '<div class="olbox"><div class="olt"><b>Flood-size rain + king tide:</b> not in the next 3 days. Flooding can still happen.</div></div>';
+    : '<div class="olbox"><div class="olt"><b>Watch for:</b> flood-size rain during a king tide (outlined on the graph). Flooding can still happen at other times.</div></div>';
   el.innerHTML = '<div class="olhead"><b>San Bruno Creek · outlook</b> <span>trial · last day and next 3 days</span><span class="olkey" id="olKeyTop"></span></div>' +
     '<div class="olbody"><div class="olleft">' + r + t + f + '</div><div class="olright">' +
     '<div class="olg"><div class="olgt">First Avenue · creek level (ft)</div><div class="olc" style="flex:1.15"><canvas id="olC1"></canvas></div></div>' +
