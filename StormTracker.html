@@ -71,7 +71,6 @@
   .chip { display: inline-block; font-size: 12.5px; font-weight: 700; border-radius: 999px; padding: 0 8px; white-space: nowrap; }
   .chip.l1 { background: var(--c1bg); color: var(--lv1); } .chip.l2 { background: var(--c2bg); color: var(--lv2); } .chip.l3 { background: var(--c3bg); color: var(--lv3); }
   .chip.l0 { color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
-  ul.pk { margin: 2px 0 0; padding-left: 18px; font-size: 14px; } ul.pk li { margin: 2px 0; } ul.pk .sm { display: block; }
   .live { box-shadow: inset 0 0 0 1.5px var(--live, var(--rain)); color: var(--live, var(--rain)); }
   .opens { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
   .ocard { border: 1.5px solid var(--rain); border-radius: 10px; padding: 10px 12px; }
@@ -354,26 +353,30 @@ function closesAt(s) {
 }
 function liveChip(s) { return rainOver(s) ? ' <span class="chip">rain ended</span>' : ' <span class="chip live">in progress</span>'; }
 // Separate creek peaks within one storm (storm_tracker.py creek_peaks; staff 2026-11-19, San Bruno's two peaks on Nov 18)
-function peakRain(w, p) { var x = p && p[w]; if (!x || !(x.in > 0)) return "";
-  return (w === "60" ? "wettest hour " : "wettest 3 hours ") + inch(x.in) + " in" + (x.rate && x.rate.years ? " (about " + yr(x.rate.years) + ", " + aep(x.rate.years) + " AEP)" : ""); }
-// the tide at one peak: the water then (and against the tide table), and the nearest high water and its timing
-function peakTide(t) {
-  if (!t) return "";
-  var bits = [];
-  if (t.ft != null) bits.push("tide then " + t.ft.toFixed(2) + " ft NAVD88" + (t.vs_table != null ? " (" + (t.vs_table >= 0 ? "+" : "−") + Math.abs(t.vs_table).toFixed(2) + " vs the tide table)" : ""));
-  if (t.high_ft != null) {
-    var h = t.creek_after_high_hours, when_ = h === 0 ? "at the creek peak" : Math.abs(h) + " hr " + (h > 0 ? "before" : "after") + " the creek peak";
-    bits.push("high water " + t.high_ft.toFixed(2) + " ft " + when_ + (t.high_vs_mhhw != null ? " (" + (t.high_vs_mhhw >= 0 ? "+" : "−") + Math.abs(t.high_vs_mhhw).toFixed(2) + " vs the average high tide)" : ""));
-  }
-  return bits.length ? "Tide: " + bits.join("; ") : "";
-}
-function peaksList(l) {
-  if (!l.peaks || l.peaks.length < 2) return "";
-  return '<p class="note" style="margin-top:4px"><b>' + l.peaks.length + " separate peaks:</b></p><ul class='pk'>" + l.peaks.map(function (p) {
-    var r = p.rain, bits = r ? [inch(r.total) + " in of rain from " + when(r.from).replace(/^\w+, \w+ \d+, /, ""), peakRain("60", r), peakRain("180", r)].filter(Boolean) : [];
-    return "<li><b>" + p.ft.toFixed(2) + " ft</b> " + esc(when(p.at)) + (p.reached ? " · " + LEVEL[p.reached] : "") + (bits.length ? '<span class="sm">' + esc(bits.join(" · ")) + "</span>" : "") +
-      (peakTide(p.tide) ? '<span class="sm">' + esc(peakTide(p.tide)) + "</span>" : "") + "</li>";
-  }).join("") + "</ul>";
+// One row per creek peak: the creek, the rain that led up to it, and the tide paired with it (staff 2026-11-19)
+function sgn(x) { return (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(2); }
+function rainCell(x) { if (!x || !(x.in > 0)) return "–";
+  return inch(x.in) + " in" + (x.rate && x.rate.years ? '<span class="sm">' + yr(x.rate.years) + " · " + aep(x.rate.years) + " AEP</span>" : '<span class="sm">below 1-year</span>'); }
+function peaksTable(s) {
+  var l = (s.levels || []).filter(function (x) { return x.peaks && x.peaks.length > 1; })[0];
+  if (!l) return "";
+  var tn = s.tide && s.tide.name ? esc(s.tide.name) : "tide";
+  var rows = l.peaks.map(function (p) {
+    var r = p.rain || {}, t = p.tide || {}, h = t.creek_after_high_hours;
+    return "<tr><td><b>" + esc(when(p.at)) + "</b></td>" +
+      "<td class='n'><b>" + p.ft.toFixed(2) + " ft</b>" + (p.reached ? '<span class="sm">' + LEVEL[p.reached] + "</span>" : '<span class="sm">below flood levels</span>') + "</td>" +
+      "<td class='n'>" + (r.total != null ? inch(r.total) + " in" + '<span class="sm">from ' + esc(when(r.from).replace(/^\w+, \w+ \d+, /, "")) + "</span>" : "–") + "</td>" +
+      "<td class='n'>" + rainCell(r["60"]) + "</td><td class='n'>" + rainCell(r["180"]) + "</td>" +
+      "<td class='n'>" + (t.ft != null ? t.ft.toFixed(2) + " ft" + (t.vs_table != null ? '<span class="sm">' + sgn(t.vs_table) + " vs table</span>" : "") : "–") + "</td>" +
+      "<td class='n'>" + (t.high_ft != null ? t.high_ft.toFixed(2) + " ft" + '<span class="sm">' + esc(when(t.high_at).replace(/^\w+, \w+ \d+, /, "")) +
+        (h ? " · " + Math.abs(h) + " hr " + (h > 0 ? "before" : "after") + " the creek" : " · with the creek") + "</span>" +
+        (t.high_vs_mhhw != null ? '<span class="sm">' + sgn(t.high_vs_mhhw) + " vs avg high tide</span>" : "") : "–") + "</td></tr>";
+  }).join("");
+  return '<h3>Each creek peak: rain, creek and tide <span class="sm" style="display:inline;font-weight:400">' + esc(l.label) + " · rain at " + esc((mainOf(s) || {}).label || "the creek's gauge") + " · tide at " + tn + ", ft NAVD88</span></h3>" +
+    '<div class="tablewrap" tabindex="0" role="region" aria-label="Each creek peak (scrolls sideways)"><table><thead>' +
+    "<tr><th rowspan='2'>Peak</th><th rowspan='2' class='n'>Creek</th><th colspan='3' class='n' style='text-align:center'>Rain leading up to it</th><th colspan='2' class='n' style='text-align:center'>Tide</th></tr>" +
+    "<tr><th class='n'>Total</th><th class='n'>Wettest 1 hr</th><th class='n'>Wettest 3 hr</th><th class='n'>At the peak</th><th class='n'>Nearest high water</th></tr>" +
+    "</thead><tbody>" + rows + "</tbody></table></div>";
 }
 function peaksShort(s) {
   var l = (s.levels || []).filter(function (x) { return x.peaks && x.peaks.length > 1; })[0];
@@ -540,7 +543,7 @@ function show(k, quiet) {
     return "<p style='margin:8px 0 0'><b>" + esc(l.label) + "</b>: peak <b>" + l.peak.toFixed(2) + " ft</b> " + esc(when(l.peak_at)) + lag +
       (l.start_value != null ? " (from " + l.start_value.toFixed(2) + " ft)" : "") + "." + tideAt(s, l.peak_at) + "</p>" +
       (l.thresholds.length ? '<p class="note" style="margin-top:2px">Hours at ' + l.thresholds.map(function (t) {
-        return esc(String(t.name).replace(/^Flood /, "")) + " (" + t.value + " ft) <b>" + t.hours + "</b>"; }).join(" · ") + "</p>" : "") + peaksList(l);
+        return esc(String(t.name).replace(/^Flood /, "")) + " (" + t.value + " ft) <b>" + t.hours + "</b>"; }).join(" · ") + "</p>" : "");
   }).join("");
   d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? liveChip(s) : "") + "</h2>" +
     '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
@@ -549,7 +552,7 @@ function show(k, quiet) {
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
     (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing." +
       (s.sfo && s.sfo.peaks ? " SFO airport had " + inch(s.sfo.total) + " in." : "") + "</p>" : "") + "</div></div>" +
-    (RC ? roadsDetail(s) : "") +
+    (RC ? roadsDetail(s) : "") + peaksTable(s) +
     '<h3>Largest rain in each window <span class="sm" style="display:inline;font-weight:400">with storm size and AEP (Atlas 14)</span></h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
   draw(s);
   if (!quiet) d.scrollIntoView({ behavior: "smooth", block: "start" });
