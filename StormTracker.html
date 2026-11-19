@@ -129,7 +129,7 @@
   </div>
 
   <div class="card" id="openCard" hidden>
-    <h2>Storms in progress</h2>
+    <h2 id="openH">Storms in progress</h2>
     <div class="opens" id="opens"></div>
   </div>
 
@@ -338,6 +338,20 @@ function loadRoads() {
 }
 function creekName(id) { var c = (J.creeks || []).filter(function (x) { return x.id === id; })[0]; return c ? c.name : id; }
 
+// A storm in progress whose rain is over (staff 2026-11-18: two Belmont cards, the morning storm's rain had ended at 2 PM).
+// Once STORM_DRY_HOURS have passed since its last wet hour, new rain starts a new storm; the tracker keeps the old one
+// open for STORM_RESPONSE_HOURS more to record the creek's response, so it's shown as "rain ended", not as in progress.
+function rainOver(s) {
+  var r = J.rules || {}, dry = r.STORM_DRY_HOURS != null ? r.STORM_DRY_HOURS : 6, now = pt(J.generated), e = pt(s.end);
+  return !!(s.live && now != null && e != null && now - e >= dry * 3600000);
+}
+function closesAt(s) {
+  var r = J.rules || {}, h = (r.STORM_DRY_HOURS != null ? r.STORM_DRY_HOURS : 6) + (r.STORM_RESPONSE_HOURS != null ? r.STORM_RESPONSE_HOURS : 12);
+  var e = pt(s.end); if (e == null) return "";
+  var d = new Date(e + h * 3600000).toISOString();
+  return d.slice(0, 10) + " " + d.slice(11, 16);
+}
+function liveChip(s) { return rainOver(s) ? ' <span class="chip">rain ended</span>' : ' <span class="chip live">in progress</span>'; }
 function render() {
   var r = J.rules || {};
   Array.prototype.forEach.call(document.querySelectorAll(".rule"), function (el) { var v = r[el.dataset.r]; if (v != null) el.textContent = el.dataset.r === "STORM_MIN_IN" ? v.toFixed(2) : v; });
@@ -346,13 +360,18 @@ function render() {
   $("warn").textContent = J.since && J.wy_start && J.since > J.wy_start ? "This record started " + day(J.since) + ", so the season totals don't include rain before then. " +
     "Earlier storms can be added from the OneRain history." : "";
   // storms in progress
-  var fc = $("fCreek").value, op = (J.open || []).filter(function (s) { return !fc || s.creek === fc; });
+  var fc = $("fCreek").value, op = (J.open || []).filter(function (s) { return !fc || s.creek === fc; })
+    .map(function (s) { return Object.assign({ live: true }, s); });
+  op.sort(function (a, b) { return (rainOver(a) - rainOver(b)) || (a.start < b.start ? 1 : -1); });   // still raining first, newest first
   $("openCard").hidden = !op.length;
+  $("openH").textContent = op.some(rainOver) ? (op.every(rainOver) ? "Storms just ended" : "Storms in progress and just ended") : "Storms in progress";
   $("opens").innerHTML = op.map(function (s) {
-    var lv = (s.levels || []).filter(function (x) { return x.peak != null; })[0];
-    return '<div class="ocard"><b>' + esc(s.name) + '</b><span class="sm">since ' + esc(when(s.start)) + "</span>" +
-      '<div><b class="big">' + inch(sTotal(s)) + "</b> in so far" + sAt(s) + " " + chip(sLevel(s)) + "</div>" +
-      (lv ? '<div class="sm">Creek level peak so far ' + lv.peak.toFixed(2) + " ft (" + esc(when(lv.peak_at)) + ")" + (lv.reached ? " · " + LEVEL[lv.reached] : "") + "</div>" : "") +
+    var lv = (s.levels || []).filter(function (x) { return x.peak != null; })[0], over = rainOver(s);
+    return '<div class="ocard"' + (over ? ' style="opacity:.85"' : "") + '><b>' + esc(s.name) + '</b><span class="sm">' +
+      (over ? esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + " · rain ended" : "since " + esc(when(s.start))) + "</span>" +
+      '<div><b class="big">' + inch(sTotal(s)) + "</b> in" + (over ? "" : " so far") + sAt(s) + " " + chip(sLevel(s)) + "</div>" +
+      (lv ? '<div class="sm">Creek level peak' + (over ? "" : " so far") + " " + lv.peak.toFixed(2) + " ft (" + esc(when(lv.peak_at)) + ")" + (lv.reached ? " · " + LEVEL[lv.reached] : "") + "</div>" : "") +
+      (over ? '<div class="sm">New rain now counts as a new storm. This one closes ' + esc(when(closesAt(s))) + ", once the creek's response is recorded.</div>" : "") +
       (s.tide ? '<div class="sm">' + tideLine(s.tide) + "</div>" : "") +
       '<button type="button" class="sm" style="all:unset;cursor:pointer;color:var(--link);text-decoration:underline" data-k="o|' + esc(s.creek + "|" + s.start) + '">Graphs ›</button></div>';
   }).join("");
@@ -445,7 +464,7 @@ function list() {
     (ss.length ? ss.map(function (s) {
       var k = (s.live ? "o|" : "c|") + s.creek + "|" + s.start, lv = (s.levels || []).filter(function (x) { return x.peak != null; })[0];
       var mg = mainOf(s), rr = mg && mg.rarest ? mg : null;
-      return '<tr class="pick' + (SEL === k ? " on" : "") + '" data-k="' + esc(k) + '"><td><button type="button">' + esc(when(s.start)) + "</button>" + (s.live ? ' <span class="chip live">in progress</span>' : "") + "</td>" +
+      return '<tr class="pick' + (SEL === k ? " on" : "") + '" data-k="' + esc(k) + '"><td><button type="button">' + esc(when(s.start)) + "</button>" + (s.live ? liveChip(s) : "") + "</td>" +
         "<td>" + esc(s.name) + "</td><td class='n'>" + s.hours + "</td><td class='n'>" + inch(sTotal(s)) + (sAt(s) ? '<span class="sm">' + esc(mg.label) + "</span>" : "") + "</td>" +
         "<td>" + chip(sLevel(s), rr && rr.rarest.years) + (rr ? '<span class="sm">' + mins(rr.rarest.minutes) + " at " + esc(rr.label) + "</span>" : "") + "</td>" +
         "<td class='n'>" + (lv ? lv.peak.toFixed(2) : "–") + "</td><td>" + reached(s.reached) + (s.rising_fast ? '<span class="sm">rising fast</span>' : "") + "</td>" +
@@ -495,7 +514,7 @@ function show(k, quiet) {
       (l.thresholds.length ? '<p class="note" style="margin-top:2px">Hours at ' + l.thresholds.map(function (t) {
         return esc(String(t.name).replace(/^Flood /, "")) + " (" + t.value + " ft) <b>" + t.hours + "</b>"; }).join(" · ") + "</p>" : "");
   }).join("");
-  d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? ' <span class="chip live">in progress</span>' : "") + "</h2>" +
+  d.innerHTML = "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? liveChip(s) : "") + "</h2>" +
     '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
     "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(sTotal(s)) + " in</b>" + sAt(s) + " in " + s.hours + " hours " + chip(sLevel(s)) + "</p>" + rareText(s) + lvt +
     (s.tide ? tideText(s.tide) : "") +
