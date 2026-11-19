@@ -754,7 +754,8 @@ function exportEvent(s) {
     var html = rpt(raw, null);
     return loadZip().then(function (Z) {
       var z = new Z(), dir = z.folder(base);
-      dir.file(base + "_report.html", reportHtml(s, png, [], raw, null, base));   // the zipped copy: no download links (they only work in this window) dir.file(base + "_tables.csv", files.tables); dir.file(base + "_hourly.csv", files.hourly);
+      dir.file(base + "_report.html", reportHtml(s, png, [], raw, null, base));   // the zipped copy has no download links (they only work in this window)
+      dir.file(base + "_tables.csv", files.tables); dir.file(base + "_hourly.csv", files.hourly);
       if (raw && raw.n) dir.file(base + "_raw_readings.csv", raw.text);
       if (png) dir.file(base + "_graph.png", png.split(",")[1], { base64: true });
       return z.generateAsync({ type: "blob" }).then(function (b) { return rpt(raw, URL.createObjectURL(b)); });
