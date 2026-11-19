@@ -1888,19 +1888,31 @@ function sfqLine(now) {
     (i < 3 ? ' <span class="m">· ' + (lv[i] - best.v).toFixed(1) + " ft below " + nm[i] + "</span>" : " <b style='color:var(--red)'>at road level</b>") +
     ' <span class="m">· highest of 3' + (quiet ? " (" + quiet + " not reporting)" : "") + " · levels assumed</span></div>";
 }
+// Open closures as records: road_closures.json's "active" is a list of ids into "log" (staff 2026-11-18: the list showed "· · to")
+function roadsActive(d) {
+  var log = d.log || [], ids = Array.isArray(d.active) ? d.active : [];
+  var byId = {}; log.forEach(function (c) { if (c && c.id) byId[c.id] = c; });
+  var out = ids.map(function (x) { return typeof x === "string" ? byId[x] : x; }).filter(function (c) { return c && typeof c === "object"; });
+  return out.length ? out : log.filter(function (c) { return c && c.active; });
+}
+function creekName(id) {
+  var all = C.data ? (C.data.creeks || []).concat(C.data.creeks_preview || [], C.data.creeks_readings || []) : [];
+  var c = all.filter(function (x) { return x.id === id; })[0];
+  return c ? c.name : id;
+}
 function openRoads() {
   var d = ROADS.d; if (!d) return;
-  var act = (Array.isArray(d.active) ? d.active : (d.log || []).filter(function (c) { return c.active; }));
+  var act = roadsActive(d);
   var past = (d.log || []).filter(function (c) { return !c.active; }).slice(-8).reverse();
   function li(c) { return "<li><b>" + esc([c.route, c.place].filter(Boolean).join(", ")) + "</b> · " + esc(c.what || c.closure || "") + (c.where ? " · " + esc(c.where) : "") +
-    '<span class="m"> · ' + esc(c.active ? "since " + c.started : (c.started || "") + " to " + (c.ended || c.last_seen || "")) + (c.creeks && c.creeks.length ? " · " + esc(c.creeks.join(", ")) : c.watersheds && c.watersheds.length ? " · " + esc(c.watersheds.join(", ")) : "") + "</span></li>"; }
+    '<span class="m"> · ' + esc(c.active ? "since " + c.started : (c.started || "") + " to " + (c.ended || c.last_seen || "")) + (c.creeks && c.creeks.length ? " · " + esc(c.creeks.map(creekName).join(", ")) : c.watersheds && c.watersheds.length ? " · " + esc(c.watersheds.join(", ")) : "") + "</span></li>"; }
   openDetail("Storm road closures", (act.length ? "<p><b>Open now</b></p><ul>" + act.map(li).join("") + "</ul>" : "<p>No storm road closures open now in San Mateo County.</p>") +
     (past.length ? "<p><b>Recently</b></p><ul>" + past.map(li).join("") + "</ul>" : "") +
     '<div id="dnote">Caltrans Lane Closure System (storm work: flooding, slides, debris, repairs) and city news feeds. Checked ' + esc(d.generated || "") + ". Full log on the Storm Tracker.</div>");
 }
 function roadsLine() {
   var d = ROADS.d; if (!d) return "";
-  var act = (Array.isArray(d.active) ? d.active : (d.log || []).filter(function (c) { return c.active; }));
+  var act = roadsActive(d);
   return '<div class="note" data-roads="1"><b>Storm road closures:</b> ' + (act.length ? act.length + " open · " + act.slice(0, 3).map(function (c) {
       return esc([c.route, c.place].filter(Boolean).join(" ") + (c.what ? " (" + c.what.toLowerCase() + ")" : "")); }).join(" · ") + (act.length > 3 ? " · …" : "")
     : '<span class="m">none open now' + ((d.log || []).length ? " · " + d.log.length + " this season" : "") + "</span>") + ' <span class="m">· tap for the list</span></div>';
