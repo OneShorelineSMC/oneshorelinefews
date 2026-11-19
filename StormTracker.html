@@ -15,6 +15,7 @@
   integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
+  tr.sfo td { color: var(--muted); background: rgba(26,58,92,.04); }
   :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
     --rain: #1e6fd9; --rain2: #7fb2ef; --live: #1558b0; --lv1: #7a6000; --lv2: #9a4a00; --lv3: #c62828; --sel: #e8f1fa; --warnbg: #fff4e5; --warnink: #7a3d00; --tide: #0f7a7a;
     --c1bg: #fff6cc; --c2bg: #ffe6cc; --c3bg: #fde2e0; }
@@ -481,7 +482,10 @@ function show(k, quiet) {
   var tbl = "<table><thead><tr><th>Rain gauge</th><th class='n'>Total</th>" + peaks.map(function (m) { return "<th class='n'>" + mins(+m) + "</th>"; }).join("") + "</tr></thead><tbody>" +
     s.rain.map(function (r) { return "<tr><td><b>" + esc(r.label) + "</b>" + (r.support ? '<span class="sm">supporting gauge</span>' : "") + "</td><td class='n'><b>" + inch(r.total) + "</b></td>" +
       peaks.map(function (m) { var p = r.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) + (p.rate && p.rate.level ? '<span class="sm"><span class="chip l' + p.rate.level + '">' + WORD[p.rate.level] + "</span></span>" : "") +
-        (p.rate && p.rate.years ? '<span class="sm">' + yr(p.rate.years) + " · " + aep(p.rate.years) + "</span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+        (p.rate && p.rate.years ? '<span class="sm">' + yr(p.rate.years) + " · " + aep(p.rate.years) + "</span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") +
+    // SFO airport (NWS) as a check on the creek's own gauge (San Bruno; staff 2026-11-18). Hourly only, so no 15/30 min.
+    (s.sfo && s.sfo.peaks ? "<tr class='sfo'><td><b>" + esc(s.sfo.label) + '</b><span class="sm">for comparison · reports hourly</span></td><td class="n"><b>' + inch(s.sfo.total) + "</b></td>" +
+      peaks.map(function (m) { var p = s.sfo.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) : '<span class="sm">–</span>') + "</td>"; }).join("") + "</tr>" : "") + "</tbody></table>";
   // the creek: peak, when (against the heaviest rain), the tide at that hour, hours at each flood level (simplified 2026-11-14)
   var lvt = (s.levels || []).map(function (l) {
     if (l.peak == null) return "<p class='note'><b>" + esc(l.label) + ":</b> no readings during the storm.</p>";
@@ -496,7 +500,8 @@ function show(k, quiet) {
     "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(sTotal(s)) + " in</b>" + sAt(s) + " in " + s.hours + " hours " + chip(sLevel(s)) + "</p>" + rareText(s) + lvt +
     (s.tide ? tideText(s.tide) : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
-    (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing.</p>" : "") + "</div></div>" +
+    (s.quiet && s.quiet.length ? "<p class='note'>⚠ Went quiet during the storm: " + esc(s.quiet.join(", ")) + ". Its rain may be missing." +
+      (s.sfo && s.sfo.peaks ? " SFO airport had " + inch(s.sfo.total) + " in." : "") + "</p>" : "") + "</div></div>" +
     (RC ? roadsDetail(s) : "") +
     '<h3>Largest rain in each window <span class="sm" style="display:inline;font-weight:400">with storm size and AEP (Atlas 14)</span></h3><div class="tablewrap" tabindex="0" role="region" aria-label="Rain windows (scrolls sideways)">' + tbl + "</div>";
   draw(s);
