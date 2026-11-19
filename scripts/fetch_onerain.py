@@ -39,7 +39,7 @@ MAX_PAGES = 40      # safety limit when a sensor has many readings (the page lis
 import os
 
 from creek_config import CREEKS, CONFIG_ERRORS, THRESHOLD_ERRORS, SETTINGS_ERRORS
-from creek_signals import load_settings, load_rain_frequency, rain_signals, stage_signals, _series, tide_state, creek_status, silent_in_rain
+from creek_signals import load_settings, load_rain_frequency, rain_signals, stage_signals, _series, tide_state, creek_status, silent_in_rain, rain_total
 
 # Creek status layer (in development): rain levels and creek trends, written into creeks.json for the staff preview
 SIGNAL_SETTINGS, _sp = load_settings()
@@ -461,7 +461,79 @@ def write_history(result, path, days=HISTORY_DAYS, now=None):
                    "timezone": "America/Los_Angeles", "sensors": sensors}, f, separators=(",", ":"))
 
 
+FAST_HOURS = 6   # storm mode re-reads the last 6 hours of each of its gauges and keeps the older readings it had
+
+
+def storm_active(result, ids, now):
+    """Storm mode (staff, 2026-11-18: San Bruno and Belmont are flashy; 5-minute data was too slow): on while any of these
+    creeks' rain gauges recorded rain in the last 30 minutes, or any of their creek gauges is rising."""
+    for c in all_creeks(result):
+        if c["id"] not in ids:
+            continue
+        for g in c["rain"] + c.get("rain_support", []):
+            e = result.get("sensors", {}).get(g["key"]) or {}
+            if rain_total(_series(e.get("points") or [], e.get("latest")), now - dt.timedelta(minutes=30), now) > 0:
+                return True
+        for g in c["stages"]:
+            if ((result.get("sensors", {}).get(g["key"]) or {}).get("signals") or {}).get("trend") in ("rising", "fast"):
+                return True
+    return False
+
+
+def fast_update(out_path, ids):
+    """Storm mode: re-read only these creeks' gauges (OneRain and USGS) and update creeks.json in place: readings,
+    signals and statuses. Everything else (other creeks, forecasts, history) stays as the last full run left it.
+    Exit 3 when there is no storm at these creeks (the workflow then stops its storm-mode loop)."""
+    try:
+        with open(out_path) as f:
+            result = json.load(f)
+    except (OSError, ValueError):
+        print("storm mode: no creeks.json to update", file=sys.stderr)
+        sys.exit(1)
+    previous_file = json.loads(json.dumps(result))
+    now = dt.datetime.now(TZ).replace(tzinfo=None, microsecond=0)
+    if not storm_active(result, ids, now):
+        print(f"storm mode: no rain or rise at {', '.join(sorted(ids))}; off")
+        sys.exit(3)
+    keys = []
+    for c in all_creeks(result):
+        if c["id"] in ids:
+            keys += [g["key"] for g in c["stages"] + c["rain"] + c.get("rain_support", []) if g["key"] not in keys]
+    session, start = Session(), now - dt.timedelta(hours=FAST_HOURS)
+    for key in keys:
+        s, old = SENSORS.get(key), result["sensors"].get(key)
+        if not s or not old or key in GAUGE_OUTAGES:
+            continue
+        try:
+            read = fetch_usgs_gauge if s.get("source") == "usgs" else (lambda s_, a, b: fetch_sensor(session, s_, a, b))
+            pts, latest, _ = read(s, start, now + dt.timedelta(minutes=5))
+        except Exception as e:  # noqa: BLE001 - keep what the last run had
+            print(f"storm mode: {key} not read ({type(e).__name__}: {e})", file=sys.stderr)
+            continue
+        cut = start.strftime("%Y-%m-%d %H:%M")
+        kept = [p for p in with_utc(old.get("points", [])) if p[0] < cut]
+        old["points"] = kept + [p for p in pts if p[0] >= cut]
+        old["latest"] = latest or old.get("latest")
+        old["fetched"], old["error"] = now.strftime("%Y-%m-%d %H:%M:%S"), None
+        print(f"storm mode: {key}: latest {old['latest']}")
+    result["generated"] = now.strftime("%Y-%m-%d %H:%M:%S")
+    result["generated_utc"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    result["fast_mode"] = sorted(ids)
+    add_signals(result, previous_file.get("sensors", {}), now)
+    add_status(result, now, previous_file)
+    log_status_changes(result, previous_file, out_path)
+    with open(out_path, "w") as f:
+        json.dump(result, f, separators=(",", ":"))
+
+
+FAST_CREEKS = ("sanbruno", "belmont")
+
+
 def main():
+    if "--fast" in sys.argv:   # python scripts/fetch_onerain.py out/creeks.json --fast sanbruno,belmont
+        i = sys.argv.index("--fast")
+        fast_update(sys.argv[1], set((sys.argv[i + 1] if len(sys.argv) > i + 1 else ",".join(FAST_CREEKS)).split(",")))
+        return
     out_path = sys.argv[1] if len(sys.argv) > 1 else "creeks.json"
     try:
         with open(out_path) as f:
@@ -541,6 +613,8 @@ def main():
     except Exception as e:  # noqa: BLE001
         print(f"NWS forecast step failed ({type(e).__name__}: {e})", file=sys.stderr)
     log_status_changes(result, previous_file, out_path)
+    if storm_active(result, set(FAST_CREEKS), now):
+        result["fast_mode"] = sorted(FAST_CREEKS)   # pages check every minute while this is set
 
     with open(out_path, "w") as f:
         json.dump(result, f, separators=(",", ":"))
