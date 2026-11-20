@@ -389,10 +389,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261120a"></script>
-<script src="severity.js?v=20261120a"></script>
-<script src="creek_status.js?v=20261120a"></script>
-<script src="hero.js?v=20261120a"></script>
+<script src="lookups.js?v=20261120b"></script>
+<script src="severity.js?v=20261120b"></script>
+<script src="creek_status.js?v=20261120b"></script>
+<script src="hero.js?v=20261120b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -547,20 +547,27 @@ function rrfsFor(c) {
 function utcToPage(iso) { return Date.parse(iso) - Math.round((Date.now() - nowLocal()) / 9e5) * 9e5; }   // as ptime()
 function rrfsRun(RF) { var p = RF.R.products["15"] || RF.R.products["60"]; return p ? fmt(utcToPage(p.run), { weekday: "short", hour: "numeric", minute: "2-digit" }) : "?"; }
 // Bars in the graph's bin (15 min on the short ranges, from the 15-minute product where it reaches; hourly otherwise)
+// Bars in the graph's bin, from the bin after the one in progress (staff 2026-11-20: a forecast bar in the hour under way
+// sat left of "now", over measured rain). The 15-minute product comes from the newest run, so it's used as far as it
+// reaches, added up into hours on the hourly ranges; the hourly product after that.
 function rrfsBars(RF, now, x1) {
-  var bin = rainBinMin(), H = function (t) { return (t - now) / 3600000; }, avg = [], max = [], upto = now;
-  function add(prod, pe, step) {
-    if (!prod || !pe) return;
-    prod.steps.forEach(function (s, k) {
-      var t = utcToPage(s), a = pe.avg[k], m = pe.max[k];
-      if (t <= upto || t - step * 60000 > x1 || a == null) return;
-      avg.push({ x: H(t) - step / 120, y: a }); max.push({ x: H(t) - step / 60, y: m == null ? a : m }, { x: H(t), y: m == null ? a : m });
-    });
-    if (prod.steps.length) upto = Math.max(upto, utcToPage(prod.steps[prod.steps.length - 1]));
+  var bin = rainBinMin(), bm = bin * 60000, H = function (t) { return (t - now) / 3600000; }, avg = [], upto = Math.ceil(now / bm) * bm;
+  function put(t, a) { if (t - bm >= upto - 1 && t - bm <= x1) avg.push({ x: H(t) - bin / 120, y: a }); }
+  var q = RF.R.products["15"], qe = RF.e.p15;
+  if (q && qe) {
+    var bins = {};
+    q.steps.forEach(function (s, k) { var t = utcToPage(s), a = qe.avg[k]; if (a == null) return;
+      var e = Math.ceil(t / bm) * bm; bins[e] = bins[e] || { n: 0, y: 0 }; bins[e].n++; bins[e].y += a; });
+    var last = 0;
+    Object.keys(bins).map(Number).sort(function (a, b) { return a - b; }).forEach(function (e) {
+      if (bins[e].n < bin / 15) return;   // a bin the 15-minute run only partly covers is left to the hourly product
+      put(e, Math.round(bins[e].y * 1000) / 1000); last = e; });
+    upto = Math.max(upto, last);
   }
-  if (bin === 15) add(RF.R.products["15"], RF.e.p15, 15);
-  add(RF.R.products["60"], RF.e.p60, 60);
-  return { avg: avg, max: max };
+  var h = RF.R.products["60"], he = RF.e.p60;
+  // the hourly product after that (on the 15-minute ranges nothing past the 15-minute run: an hour can't be split into quarters)
+  if (h && he && bin === 60) h.steps.forEach(function (s, k) { var t = utcToPage(s); if (t > upto && he.avg[k] != null) put(t, he.avg[k]); });
+  return { avg: avg };
 }
 // Where this page's numbers come from (staff, 2026-11-20), at the end of "Flood levels, data sources and notes"
 function sourcesHtml(c, T) {
@@ -1512,7 +1519,8 @@ function fillTiles(st, now) {
     set("tlRain" + i, rl >= 3 ? "l3" : rl === 2 ? "l2" : rl === 1 ? "l1" : "", '<span class="tv">' + inch(big) + "<small> in</small></span>" +
       '<span class="tx">in the last ' + esc(winLabel(w0)) + "</span>" +
       '<span class="tx">' + wins.slice(1).map(function (m) { return winLabel(m) + " <b>" + inch(rainSum(r.p, now - m * 60000, now)) + "</b>"; }).join(" · ") + "</span>" +
-      (rl ? '<span class="tw">' + esc(rl >= 3 ? LK.text("rain_severe") : rl === 2 ? LK.text("rain_vheavy") : LK.text("rain_heavy")) + "</span>" : "") +
+      (rl ? '<span class="tw">' + esc(rl >= 3 ? LK.text("rain_severe") : rl === 2 ? LK.text("rain_vheavy") : LK.text("rain_heavy")) +
+        "</span>" + (sig.driver && sig.driver.minutes ? '<span class="tx">' + sig.driver.inches.toFixed(2) + " in in " + esc(winLabel(sig.driver.minutes)) + "</span>" : "") : "") +
       '<span class="tx">' + lastRain(r.p, lr) + "</span>");
   });
   if (c.rain_running && c.rain_running.line && $("tlRun")) {
