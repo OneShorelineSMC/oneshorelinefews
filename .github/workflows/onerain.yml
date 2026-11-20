@@ -9,6 +9,8 @@
 #   sfcjpa.json   - San Francisquito Creek from SFCJPA's Contrail site: the Palo Alto gauges, Mayfield Slough tide, upper-creek
 #                   flows and rain (SanFrancisquito.html, preview); only once the CONTRAIL_USER / CONTRAIL_PASSWORD variables are set
 #   road_closures.json - road closures from flooding and storms in San Mateo County (Caltrans and city posts), logged for the water year (StormTracker.html)
+#   alert_review.json + alert_review.csv - each rain or rising-fast alert (full status above the public one) checked against the flood levels that followed (StormTracker.html)
+#   rrfs.json + rrfs_log.csv - the RRFS model rain forecast (AQPI / CW3E) for each creek's watershed, staff view only (Creeks.html?preview=1)
 #   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
@@ -64,6 +66,8 @@ jobs:
             git show FETCH_HEAD:tide_tracker_history.json > out/tide_tracker_history.json 2>/dev/null || true
             git show FETCH_HEAD:storm_tracker.json > out/storm_tracker.json 2>/dev/null || true
             git show FETCH_HEAD:waves.json > out/waves.json 2>/dev/null || true
+            git show FETCH_HEAD:rrfs.json > out/rrfs.json 2>/dev/null || true
+            git show FETCH_HEAD:rrfs_log.csv > out/rrfs_log.csv 2>/dev/null || true
             git show FETCH_HEAD:road_closures.json > out/road_closures.json 2>/dev/null || true
             git show FETCH_HEAD:sfcjpa.json > out/sfcjpa.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
@@ -143,6 +147,22 @@ jobs:
         timeout-minutes: 5
         run: python scripts/waves.py out/waves.json --min-age 25
 
+      - name: Review of the rain and rising-fast alerts (Storm Tracker; scripts/alert_review.py)
+        # Since 2026-11-20 the staff view shows the same flood-level status as the public pages; the full status (rain
+        # ratings, rising fast) is still worked out and logged in status_log.csv. This checks each of those alerts against
+        # the flood levels that followed. A problem here never stops the creek data.
+        continue-on-error: true
+        timeout-minutes: 1
+        run: python scripts/alert_review.py out/status_log.csv out/alert_review.json --creeks out/creeks.json
+
+      - name: RRFS rain forecast from AQPI / CW3E (staff view; scripts/rrfs.py, every 20 minutes)
+        # The RRFS model's rain in each hour (out to 3.5 days) and each 15 minutes (out to 18 hours), averaged over each
+        # creek's watershed, for the Creeks page staff view (?preview=1); never the kiosks, never a creek's status. Each new
+        # run is logged in rrfs_log.csv to check against the gauges after storms. A problem here never stops the creek data.
+        continue-on-error: true
+        timeout-minutes: 3
+        run: python scripts/rrfs.py out/rrfs.json --creeks out/creeks.json --min-age 20
+
       - name: Flood reports approved by staff (every 15 minutes)
         # A problem here never stops the creek data from being published; the last published reports are kept.
         continue-on-error: true
@@ -164,7 +184,7 @@ jobs:
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
             $( [ -s tide_tracker.json ] && echo tide_tracker.json ) $( [ -s tide_tracker_history.json ] && echo tide_tracker_history.json ) \
-            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s road_closures.json ] && echo road_closures.json ) $( [ -s sfcjpa.json ] && echo sfcjpa.json ) \
+            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s rrfs.json ] && echo rrfs.json ) $( [ -s rrfs_log.csv ] && echo rrfs_log.csv ) $( [ -s alert_review.json ] && echo alert_review.json alert_review.csv ) $( [ -s road_closures.json ] && echo road_closures.json ) $( [ -s sfcjpa.json ] && echo sfcjpa.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \

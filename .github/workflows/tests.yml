@@ -81,5 +81,9 @@ jobs:
         run: python scripts/test_fetch_sfcjpa.py
       - name: Storm mode (San Bruno and Belmont every minute)
         run: python scripts/test_storm_mode.py
+      - name: RRFS rain forecast from AQPI (watershed averages, log)
+        run: python scripts/test_rrfs.py
+      - name: Review of the rain and rising-fast alerts (status_log.csv public column)
+        run: python scripts/test_alert_review.py
       - name: Home page severity scale, section order and colors
         run: node scripts/test_home.js
