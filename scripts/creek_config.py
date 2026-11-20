@@ -120,6 +120,9 @@ def load_creeks(tides):
             assert wins and all(0 < x <= 10080 for x in wins)
         except (ValueError, AssertionError):
             errors.append(f"{w}: rain_windows_min must be minutes separated by spaces, e.g. 15 30 60 1440"); continue
+        rmax = (r.get("rating_max_min") or "").strip()
+        if rmax and not (rmax.isdigit() and 15 <= int(rmax) <= 2880):
+            errors.append(f"{w}: rating_max_min must be blank or minutes from 15 to 2880, e.g. 360"); continue
         try:
             order[cid] = float(r.get("order") or 99)
         except ValueError:
@@ -127,6 +130,8 @@ def load_creeks(tides):
         c = {"id": cid, "name": r["name"], "short": r["short_name"], "rain_windows": wins,
              "intro": r.get("intro", ""), "tide": r.get("tide_station") or None, "note": r.get("note", ""), "stages": [], "rain": [],
              "rain_support": [], "preview_only": pv == "yes"}
+        if rmax:
+            c["rating_max_min"] = int(rmax)   # longest rain window that rates (blank: RAIN_RATING_MAX_MIN)
         rg, rm, rl = r.get("running_rain_gauge", ""), r.get("running_rain_min", ""), r.get("running_rain_label", "")
         if rg or rm:
             try:

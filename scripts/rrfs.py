@@ -211,7 +211,7 @@ LEVEL_YEARS = ((5, 3), (2, 2), (1, 1))   # Intense = 5-year storm, Very heavy = 
 SHADE_MIN = (15, 30, 60, 180, 360)       # shaded windows: up to 6 hours (a 24-hour window would shade a whole day)
 
 
-def heavy_spans(series_by_step, by_min, years_fn, now):
+def heavy_spans(series_by_step, by_min, years_fn, now, max_min=None):
     """Stretches where the forecast reaches Heavy or more at the creek's main rain gauge (NOAA Atlas 14), over any window of
     SHADE_MIN: [{"start", "end", "level", "minutes", "in", "years"}], merged where they overlap, the strongest window kept.
     series_by_step: {step_min: (steps, values)}; windows up to 60 min use the 15-minute product, longer ones the hourly."""
@@ -219,7 +219,7 @@ def heavy_spans(series_by_step, by_min, years_fn, now):
     q_end = series_by_step[15][0][-1] if series_by_step.get(15) and series_by_step[15][0] else None
     for m in SHADE_MIN:
         for sm in (15, 60):
-            if sm not in series_by_step or m not in by_min or m % sm or (sm == 15 and m > 60):
+            if (max_min and m > max_min) or sm not in series_by_step or m not in by_min or m % sm or (sm == 15 and m > 60):
                 continue
             steps, vals = series_by_step[sm]
             table, k = by_min[m], max(1, m // sm)
@@ -250,12 +250,12 @@ def heavy_spans(series_by_step, by_min, years_fn, now):
     return [{"start": iso(a), "end": iso(b), "level": l, "minutes": m, "in": d, "years": y} for a, b, l, m, d, y in out]
 
 
-def storm_size(windows, by_min, years_fn):
+def storm_size(windows, by_min, years_fn, max_min=None):
     """Rarest of the rated windows: {"minutes", "in", "years", "end", "one_year_in"}; None without Atlas 14."""
     best = None
     for m, w in windows.items():
         table = by_min.get(m)
-        if not table or not w or w[0] <= 0:
+        if not table or not w or w[0] <= 0 or (max_min and m > max_min):
             continue
         one = table[min(table)]
         y = years_fn(table, w[0])
@@ -303,11 +303,13 @@ def build(products, creeks_file, points, sheds, now):
                 e["totals"] = {str(h): round(total(steps, avg, now, now + dt.timedelta(hours=h)), 2) for h in (6, 24, 72)}
         by_min, g = creek_freq(c, sensors)
         if by_min:
-            sz = storm_size(windows, by_min, storm_years)
+            from nws_forecast import rating_max_min
+            cap = rating_max_min(c)   # the creek's longest rated window (creeks.csv rating_max_min)
+            sz = storm_size(windows, by_min, storm_years, cap)
             if sz:
                 sz.update(gauge=g.get("label"), number=g.get("number"))
                 e["size"] = sz
-            e["heavy"] = heavy_spans(by_step, by_min, storm_years, now)
+            e["heavy"] = heavy_spans(by_step, by_min, storm_years, now, cap)
         out[cid] = e
     return out
 

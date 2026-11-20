@@ -39,6 +39,9 @@ SETTINGS = {
     "TREND_WINDOW_MIN": (30, 5, 240), "TREND_MAX_WINDOW_MIN": (120, 15, 360), "TREND_STEADY_FT_PER_HR": (0.1, 0.01, 2),
     "RAIN_SEVERE_CONFIRM_GAUGES": (2, 1, 5), "RAIN_SILENT_MIN": (60, 15, 720), "TIDE_RISING_LOOKAHEAD_HOURS": (3, 0.5, 12),
     "BE_READY_FROM_RAIN": (1, 0, 1), "RAIN_NOW_MIN": (60, 15, 180), "RAIN_NOW_IN": (0.01, 0.01, 0.5),
+    # Longest rain window that sets a Heavy / Very heavy / Intense rating (staff, 2026-11-20: the 48-hour total kept
+    # First Avenue at Intense for two days after the rain); a creek's rating_max_min in creeks.csv overrides it
+    "RAIN_RATING_MAX_MIN": (360, 15, 2880),
     # A rain-only status eases once the rain stops for this long and the creek isn't rising (0 = off; staff, 2026-11-18).
     # Data job only for now: not in settings.csv, since the pages would call it an unknown key (it needs lookups.js too).
     "RAIN_EASE_MIN": (60, 0, 360),
@@ -180,9 +183,10 @@ def storm_years(by_ari, depth):
     return float(aris[-1])   # at or beyond the largest storm in the table
 
 
-def rain_signals(points, latest, freq, now, quiet_hours, now_min=60, now_in=0.01):
+def rain_signals(points, latest, freq, now, quiet_hours, now_min=60, now_in=0.01, max_min=None):
     """Rolling totals and the rain level for one rain gauge (freq: this gauge's entry from load_rain_frequency).
-    "raining": at least now_in inches in the last now_min minutes (the pages say "Raining" below Heavy)."""
+    "raining": at least now_in inches in the last now_min minutes (the pages say "Raining" below Heavy).
+    max_min: the longest window that rates (the creek's rating_max_min); totals are kept for every window."""
     s = _series(points, latest)
     last = s[-1][0] if s else None
     out = {"last_report": last.strftime("%Y-%m-%d %H:%M") if last else None,
@@ -198,7 +202,7 @@ def rain_signals(points, latest, freq, now, quiet_hours, now_min=60, now_in=0.01
     best = None
     for m in DURATIONS:
         cut = freq["levels"].get(m)
-        if not cut:
+        if not cut or (max_min and m > max_min):
             continue
         depth = out["totals"][str(m)]
         lvl = 3 if depth >= cut[2] else 2 if depth >= cut[1] else 1 if depth >= cut[0] else 0

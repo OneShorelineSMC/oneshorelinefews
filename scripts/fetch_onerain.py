@@ -408,7 +408,9 @@ def add_signals(result, previous, now):
             else:
                 freq = _freq_from_json(previous.get(g["key"], {}).get("signals", {}).get("freq"))
             sig = rain_signals(e["points"], e.get("latest"), freq, now, SIGNAL_SETTINGS["GAUGE_QUIET_HOURS"],
-                               SIGNAL_SETTINGS["RAIN_NOW_MIN"], SIGNAL_SETTINGS["RAIN_NOW_IN"])
+                               SIGNAL_SETTINGS["RAIN_NOW_MIN"], SIGNAL_SETTINGS["RAIN_NOW_IN"],
+                               c.get("rating_max_min") or SIGNAL_SETTINGS["RAIN_RATING_MAX_MIN"])
+            sig["rating_max_min"] = int(c.get("rating_max_min") or SIGNAL_SETTINGS["RAIN_RATING_MAX_MIN"])
             if freq:
                 sig["freq"] = {"minutes": {str(m): {str(a): d for a, d in v.items()} for m, v in freq["minutes"].items()},
                                "levels": {str(m): v for m, v in freq["levels"].items()}}

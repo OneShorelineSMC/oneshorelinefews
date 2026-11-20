@@ -119,7 +119,15 @@ def main_rain_gauge(c):
     return next((g for g in own if str(g.get("number")) in nums), own[0] if own else None)
 
 
-def storm_size(pers, now, by_min, years_fn):
+def rating_max_min(c):
+    """The longest window that rates for this creek: creeks.csv rating_max_min, else RAIN_RATING_MAX_MIN (settings.csv)."""
+    if c.get("rating_max_min"):
+        return int(c["rating_max_min"])
+    from creek_signals import load_settings
+    return int(load_settings()[0]["RAIN_RATING_MAX_MIN"])
+
+
+def storm_size(pers, now, by_min, years_fn, max_min=None):
     """The wettest window of SIZE_HOURS in the next 72 hours with its rough storm size; None without Atlas 14.
     by_min: {minutes: {ari: depth}}. years_fn(by_ari, depth) -> years or None (below the 1-year storm)."""
     h = dt.timedelta(hours=1)
@@ -127,7 +135,7 @@ def storm_size(pers, now, by_min, years_fn):
     best = None
     for hrs in SIZE_HOURS:
         table = by_min.get(hrs * 60)
-        if not table:
+        if not table or (max_min and hrs * 60 > max_min):
             continue
         one = table[min(table)]
         for t in starts:
@@ -152,7 +160,7 @@ def add_size(fc, c, sensors, now):
         return
     by_min = {int(m): {float(a): d for a, d in v.items()} for m, v in (freq.get("minutes") or {}).items()}
     from creek_signals import storm_years
-    sz = storm_size(unpack(fc["periods"]), now, by_min, storm_years)
+    sz = storm_size(unpack(fc["periods"]), now, by_min, storm_years, rating_max_min(c))
     if sz:
         sz.update(gauge=g.get("label"), number=g.get("number"))
         fc["size"] = sz

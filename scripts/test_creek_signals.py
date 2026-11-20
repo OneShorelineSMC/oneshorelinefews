@@ -48,6 +48,14 @@ r = rain_signals([[at(11 * 60), 0.0]], None, ATH, NOW, 12)
 check(r["fresh"], "dry-weather report 11 hours ago = still fresh (gauges report every 1-12 h when dry)")
 r = rain_signals(rain(0.2, 60), None, None, NOW, 12)
 check(r["level"] is None and r["totals"]["60"] == 0.8, "no Atlas 14 values: totals but no level")
+# The longest window that rates (creeks.csv rating_max_min; staff, 2026-11-20): an old storm's 48-hour total no longer rates
+old = [[at(m), 0.15] for m in range(40 * 60, 28 * 60, -15)] + [[at(60), 0.0]]   # 7.2 in, 28 to 40 hours ago
+r = rain_signals(old, None, ATH, NOW, 12)
+check(r["level"] == 3 and r["driver"]["minutes"] in (1440, 2880), f"every window rates without a limit: {r['driver']}")
+r = rain_signals(old, None, ATH, NOW, 12, max_min=360)
+check(r["level"] == 0 and r["driver"] is None and r["totals"]["2880"] > 7, f"6-hour limit: no rating, 48-hour total kept: {r}")
+r = rain_signals(rain(0.1, 180), None, ATH, NOW, 12, max_min=360)
+check(r["level"] == 3 and r["driver"]["minutes"] == 180, "a 3-hour burst still rates under a 6-hour limit")
 check(storm_years(ATH["minutes"][60], 0.30) is None, "below the 1-year storm = no storm size")
 check(storm_years(ATH["minutes"][60], 2.0) == 100.0, "beyond the table = 100-year (largest listed)")
 
