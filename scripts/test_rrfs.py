@@ -85,6 +85,18 @@ check("assign: the big watersheds use only points inside", a["sangregorio"]["how
 check("assign: Butano (no watershed named) uses the nearest points", a["butano"]["how"] == "nearest")
 check("in_shape: a point far offshore is in no watershed", not any(R.in_shape(-123.5, 37.5, g) for gs in sheds.values() for g in gs))
 
+# Heavy-or-more stretches against Atlas 14 (1-year 60 min = 0.5 in, 2-year = 0.7; 1-year 15 min = 0.25 in)
+from creek_signals import storm_years  # noqa: E402
+T0 = dt.datetime(2026, 11, 20, 16, tzinfo=UTC)
+h_steps = [T0 + dt.timedelta(hours=k) for k in range(1, 7)]
+q_steps = [T0 + dt.timedelta(minutes=15 * k) for k in range(1, 13)]
+by_min = {60: {1.0: 0.5, 2.0: 0.7, 5.0: 1.0}, 15: {1.0: 0.25, 2.0: 0.35, 5.0: 0.5}}
+hs = R.heavy_spans({60: (h_steps, [0.1, 0.6, 0.2, 0.0, 0.8, 0.0]), 15: (q_steps, [0.0] * 4 + [0.15] * 4 + [0.0] * 4)}, by_min, storm_years, T0)
+check("heavy: each stretch with its level, window and start/end; the 15-minute product up to 19:00, the hourly one after",
+      [(h["start"][11:16], h["end"][11:16], h["level"]) for h in hs] == [("17:00", "18:00", 1), ("20:00", "21:00", 2)] and hs[1]["minutes"] == 60)
+check("heavy: nothing below the 1-year storm", R.heavy_spans({60: (h_steps, [0.2] * 6)}, by_min, storm_years, T0) == [])
+check("heavy: past steps are left out", R.heavy_spans({60: (h_steps, [0.0, 0.6, 0, 0, 0, 0])}, by_min, storm_years, T0 + dt.timedelta(hours=3)) == [])
+
 tmp = tempfile.mkdtemp()
 try:
     creeks_file = {}
@@ -105,6 +117,8 @@ try:
     check("output: San Bruno's wettest hour is the one ending 17 UTC", sb["peak60"]["end"] == "2026-11-20T17:00Z" and sb["peak60"]["in"] >= 0.1)
     check("output: next 6 hours = 3 rainy hours", 0.29 < sb["totals"]["6"] < 1.3)
     check("output: wettest 15 minutes", sb["peak15"] == {"in": 0.1, "end": "2026-11-20T16:30Z"})
+    if creeks_file.get("sensors"):
+        check("output: heavy stretches listed for each creek with Atlas 14", isinstance(sb.get("heavy"), list))
     check("output: average never above the wettest point", all(a_ <= m for a_, m in zip(sb["p60"]["avg"], sb["p60"]["max"]) if a_ is not None))
     if creeks_file.get("sensors"):
         check("output: storm size against Atlas 14 at the main gauge", "size" in sb and sb["size"]["number"] in ("41102", 41102))

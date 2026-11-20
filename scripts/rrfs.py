@@ -12,8 +12,10 @@ Units are not stated in the files. They are inches: on 2026-11-20 the 6 AM run g
 For each creek this step averages the grid points inside its County watershed (the `watershed` column of
 lookups/forecast_points.csv, polygons in data/watersheds.geojson). A watershed with fewer than MIN_POINTS grid points
 inside also takes the nearest points to its forecast point. It keeps the average and the wettest point per step, the
-totals for the next 6, 24 and 72 hours, the wettest hour and 15 minutes, and a rough storm size against NOAA Atlas 14
-at the creek's main rain gauge (as for the NWS forecast; the size is only as good as the forecast).
+totals for the next 6, 24 and 72 hours, the wettest hour and 15 minutes, a rough storm size against NOAA Atlas 14
+at the creek's main rain gauge (as for the NWS forecast; the size is only as good as the forecast), and the stretches
+where the watershed average reaches Heavy (1-year storm) or more over any window from 15 minutes to 6 hours ("heavy";
+the Creeks page shades them). The wettest grid point is kept but never rated: it crosses the line far more often.
 
 It never changes a creek's status, and the pages show it only in the staff view (?preview=1), never on the kiosks.
 
@@ -205,6 +207,49 @@ def total(steps, vals, a, b):
     return sum(v for t, v in zip(steps, vals) if v is not None and a < t <= b)
 
 
+LEVEL_YEARS = ((5, 3), (2, 2), (1, 1))   # Intense = 5-year storm, Very heavy = 2-year, Heavy = 1-year (as the gauges)
+SHADE_MIN = (15, 30, 60, 180, 360)       # shaded windows: up to 6 hours (a 24-hour window would shade a whole day)
+
+
+def heavy_spans(series_by_step, by_min, years_fn, now):
+    """Stretches where the forecast reaches Heavy or more at the creek's main rain gauge (NOAA Atlas 14), over any window of
+    SHADE_MIN: [{"start", "end", "level", "minutes", "in", "years"}], merged where they overlap, the strongest window kept.
+    series_by_step: {step_min: (steps, values)}; windows up to 60 min use the 15-minute product, longer ones the hourly."""
+    hits = []
+    q_end = series_by_step[15][0][-1] if series_by_step.get(15) and series_by_step[15][0] else None
+    for m in SHADE_MIN:
+        for sm in (15, 60):
+            if sm not in series_by_step or m not in by_min or m % sm or (sm == 15 and m > 60):
+                continue
+            steps, vals = series_by_step[sm]
+            table, k = by_min[m], max(1, m // sm)
+            for j in range(k - 1, len(steps)):
+                if steps[j] <= now or (sm == 60 and m <= 60 and q_end and steps[j] <= q_end):
+                    continue   # up to an hour: the 15-minute product where it reaches, the hourly one after it
+                span, v = steps[j - k + 1:j + 1], vals[j - k + 1:j + 1]
+                if span[-1] - span[0] != dt.timedelta(minutes=sm * (k - 1)) or any(x is None for x in v):
+                    continue
+                y = years_fn(table, sum(v))
+                if not y:
+                    continue
+                lvl = next(l for yy, l in LEVEL_YEARS if y >= yy) if y >= 1 else 0
+                if lvl:   # shade the wet part of the window only (a 6-hour window may be mostly dry around a burst)
+                    wet = [i for i, x in enumerate(v) if x >= 0.01]
+                    a0, a1 = (wet[0], wet[-1]) if wet else (0, len(v) - 1)
+                    hits.append([span[a0] - dt.timedelta(minutes=sm), span[a1], lvl, m, round(sum(v), 2), y])
+    hits.sort()
+    out = []
+    for h in hits:
+        if out and h[0] <= out[-1][1]:
+            o = out[-1]
+            o[1] = max(o[1], h[1])
+            if (h[2], h[5]) > (o[2], o[5]):
+                o[2:] = h[2:]
+        else:
+            out.append(list(h))
+    return [{"start": iso(a), "end": iso(b), "level": l, "minutes": m, "in": d, "years": y} for a, b, l, m, d, y in out]
+
+
 def storm_size(windows, by_min, years_fn):
     """Rarest of the rated windows: {"minutes", "in", "years", "end", "one_year_in"}; None without Atlas 14."""
     best = None
@@ -241,12 +286,13 @@ def build(products, creeks_file, points, sheds, now):
     for cid in sorted(points, key=lambda k: [c["id"] for c in creeks].index(k) if k in names else 99):
         c = names.get(cid, {"id": cid})
         e = {"name": c.get("name") or cid, "watershed": "; ".join(points[cid]["watersheds"])}
-        windows = {}
+        windows, by_step = {}, {}
         for key, (run, steps, grid) in products.items():
             a = assign(grid, {cid: points[cid]}, sheds)[cid]
             avg, mx = series(grid, a["idx"], len(steps))
             sm = int(key)
             e["p" + key] = {"avg": avg, "max": mx, "points": len(a["idx"]), "how": a["how"]}
+            by_step[sm] = (steps, avg)
             for m in SIZE_MIN:
                 if (sm == 15 and m <= 60) or (sm == 60 and m > 60):
                     windows[m] = window_max(steps, avg, sm, m, now)
@@ -261,6 +307,7 @@ def build(products, creeks_file, points, sheds, now):
             if sz:
                 sz.update(gauge=g.get("label"), number=g.get("number"))
                 e["size"] = sz
+            e["heavy"] = heavy_spans(by_step, by_min, storm_years, now)
         out[cid] = e
     return out
 
