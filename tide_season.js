@@ -312,4 +312,7 @@
   }
   window.TIDE_SEASON = make({ station: "9414523", red: "TIDE_RED_FT_RWC", king: "KING_TIDE_FT_RWC" });
   window.TIDE_SEASON_COAST = make({ station: "9413450", red: null, king: "KING_TIDE_FT_MRY", sfx: "_coast" });
+  // Alameda, San Bruno Creek's tide gauge (staff 2026-11-19): only the recent offset and its easing (addAt), for the estimate
+  // after the NOAA projection on the San Bruno outlook. Nothing here loads its tide table or calendar.
+  window.TIDE_SEASON_ALA = make({ station: "9414750", red: null, king: null });
 })();

@@ -349,7 +349,9 @@
   .olt { font-size: 12px; line-height: 1.3; margin-top: 1px; } .olgrid { display: grid; grid-template-columns: auto auto auto auto auto auto; gap: 0 5px; font-size: 12px; margin: 2px 0; }
   .olgrid b { font-variant-numeric: tabular-nums; }
   .olg { display: flex; flex-direction: column; min-height: 0; flex: 1; } .olg:nth-child(1) { flex: 1.15; } .olg:nth-child(2) { flex: .8; }
-  .olgt { font-size: 12px; color: var(--muted); } .olc { position: relative; flex: 1; min-height: 0; }
+  .olgt { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .olk { display: inline-flex; gap: 10px; } .olk span { display: inline-flex; align-items: center; gap: 4px; }
+  .olk i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; } .olk i.ln { width: 16px; height: 0; border-radius: 0; } .olc { position: relative; flex: 1; min-height: 0; }
   :root[data-theme="dark"] .olv.pu { color: #b39ddb; } :root[data-theme="dark"] .olv.am { color: #f2b450; }
   .olkey2 { flex: none; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 11px; color: var(--muted); margin-top: 1px; }
   .olkey2 i { display: inline-block; width: 16px; margin-right: 4px; vertical-align: middle; }
@@ -622,11 +624,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261118e"></script>
-<script src="tide_season.js?v=20261118e"></script>
-<script src="creek_status.js?v=20261118e"></script>
-<script src="severity.js?v=20261118e"></script>
-<script src="hero.js?v=20261118e"></script>
+<script src="lookups.js?v=20261119a"></script>
+<script src="tide_season.js?v=20261119a"></script>
+<script src="creek_status.js?v=20261119a"></script>
+<script src="severity.js?v=20261119a"></script>
+<script src="hero.js?v=20261119a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -1258,7 +1260,7 @@ function loadModel() {   // every station: Redwood City for the Bay Tides tab, a
         // the King Tide line and calendar use the same projection: hand it over instead of downloading it again
         [window.TIDE_SEASON, window.TIDE_SEASON_COAST].forEach(function (T) { if (T && T.station === s.st.id) T.setModel(p, s.tOfs); });
       }).catch(function () {});   // no model: the graphs show the predictions as before
-  })).then(function () { renderTides(); if (currentTab === "creek" && C.data) renderCreek(); });
+  })).then(function () { renderTides(); if (currentTab === "creek" && C.data) renderCreek(); if (typeof olShown === "function" && olShown()) renderOutlook(); });
 }
 
 /* ---------- NWS alerts ---------- */
@@ -2499,13 +2501,16 @@ function renderOutlook() {
   }
   r += "</div>";
   // tide readout
-  var hi = T.filter(function (x) { return x.t > now; }).sort(function (a, b) { return b.v - a.v; })[0], kt = T.filter(function (x) { return x.king && x.t > now; });
+  // the highest coming high tide: the NOAA projection's peak where it reaches (as on the Tides page), else the tide table
+  var sa = S.filter(function (x) { return x.st.id === "9414750"; })[0], pj = sa && modelOK(sa, now) ? sa.ofs : null;
+  var hiOf = function (x) { if (pj && x.t + 90 * 60000 <= pj[pj.length - 1].t) { var m = null; pj.forEach(function (p) { if (Math.abs(p.t - x.t) <= 90 * 60000 && (!m || p.v > m.v)) m = p; }); if (m) return { t: m.t, v: m.v, proj: true }; } return x; };
+  var hi = T.filter(function (x) { return x.t > now; }).map(hiOf).sort(function (a, b) { return b.v - a.v; })[0], kt = T.filter(function (x) { return x.king && x.t > now; });
   var ob = (OL.alaObs || []).filter(function (p) { return p.t > now - 3600000; }), lo = ob[ob.length - 1], pr = lo && (OL.ala || []).filter(function (p) { return Math.abs(p.t - lo.t) <= 360000; })[0];
   var kings = (OL.kings || []).filter(function (x) { return x[1] * 864e5 >= now - 864e5; }).slice(0, 2).map(function (x) {
     return fmt(x[0] * 864e5, { month: "short", day: "numeric" }) + (x[1] > x[0] ? "–" + fmt(x[1] * 864e5, new Date(x[1] * 864e5).getUTCMonth() === new Date(x[0] * 864e5).getUTCMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }) : ""); });
   var t = '<div class="olbox"><div class="ollbl">Bay tide · Alameda</div>' +
     (kt.length ? '<div class="olv pu">King tide</div><div class="olt"><b>' + esc(fmt(kt[0].t, { weekday: "short" }) + " " + fTime(kt[0].t)) + "</b>: " + kt[0].v.toFixed(1) + " ft</div>"
-      : '<div class="olv">No king tide</div>' + (hi ? '<div class="olt">Highest high: <b>' + hi.v.toFixed(1) + " ft</b> " + esc(fmt(hi.t, { weekday: "short" }) + " " + fTime(hi.t)) + "</div>" : "")) +
+      : '<div class="olv">No king tide</div>' + (hi ? '<div class="olt">Highest high: <b>' + hi.v.toFixed(1) + " ft</b> " + esc(fmt(hi.t, { weekday: "short" }) + " " + fTime(hi.t)) + (hi.proj ? " (NOAA projection)" : "") + "</div>" : "")) +
     (lo && pr && lo.v - pr.v >= 0.5 ? '<div class="olt"><b>Running ' + (lo.v - pr.v).toFixed(1) + " ft above the table</b></div>" : "") +
     (kings.length ? '<div class="olt m">Next king tides: ' + esc(kings.join(" · ")) + "</div>" : "") + "</div>";
   // flood case
@@ -2513,9 +2518,9 @@ function renderOutlook() {
     : '<div class="olbox"><div class="olt"><b>Watch for</b> flood-size rain during a king tide, outlined on the graph. Flooding can also happen at other times.</div></div>';
   el.innerHTML = '<div class="olhead"><b>San Bruno Creek · outlook</b> <span>last day and next 3 days</span><span class="olkey" id="olKeyTop"></span></div>' +
     '<div class="olbody"><div class="olleft">' + r + t + f + '</div><div class="olright">' +
-    '<div class="olg"><div class="olgt">First Avenue · creek level (ft)</div><div class="olc" style="flex:1.15"><canvas id="olC1"></canvas></div></div>' +
-    '<div class="olg"><div class="olgt">Rain per hour (in) · measured, then NWS forecast</div><div class="olc" style="flex:.8"><canvas id="olC2"></canvas></div></div>' +
-    '<div class="olg"><div class="olgt">Alameda tide (ft NAVD88) · measured and tide table</div><div class="olc" style="flex:1.05"><canvas id="olC3"></canvas></div></div>' +
+    '<div class="olg"><div class="olgt"><span>First Avenue · creek level (ft)</span><span class="olk" id="olK1"></span></div><div class="olc" style="flex:1.15"><canvas id="olC1"></canvas></div></div>' +
+    '<div class="olg"><div class="olgt"><span>Rain per hour (in)</span><span class="olk" id="olK2"></span></div><div class="olc" style="flex:.8"><canvas id="olC2"></canvas></div></div>' +
+    '<div class="olg"><div class="olgt"><span>Alameda tide (ft NAVD88)</span><span class="olk" id="olK3"></span></div><div class="olc" style="flex:1.05"><canvas id="olC3"></canvas></div></div>' +
     "</div></div>";
   drawSB(sb, now, R, T);
 }
@@ -2536,8 +2541,16 @@ function drawSB(c, now, R, T) {
   var rtop = Math.max(0.1, Math.ceil(Math.max.apply(null, rainPast.concat(rainFc).map(function (p) { return p.y; }).concat([0])) * 10) / 10);
   var tp = (OL.ala || []).filter(function (p) { return p.t >= t0 && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
   var to = (OL.alaObs || []).filter(function (p) { return p.t >= t0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
-  var mh = LK.station("9414750").mhhw, kg = kingFor("9414750"), tys = tp.concat(to).map(function (p) { return p.y; }).concat(mh != null ? [mh] : [], kg != null ? [kg] : []);
-  var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 1.2) : 8;
+  // NOAA projection (the same water level forecast as the Tides page, ~2 days ahead), after the measured level (staff 2026-11-19)
+  var sa = S.filter(function (x) { return x.st.id === "9414750"; })[0], lastObs = (OL.alaObs || []).length ? OL.alaObs[OL.alaObs.length - 1].t : now - 18e5;
+  var tf = sa && modelOK(sa, now) ? sa.ofs.filter(function (p) { return p.t >= lastObs && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
+  OL.proj = tf.length ? { end: sa.ofs[sa.ofs.length - 1].t, pts: sa.ofs } : null;
+  // after the projection (or from now without one): the tide table plus Alameda's recent offset, easing, as on the Tides
+  // page for Redwood City (tide_season.js TIDE_SEASON_ALA; staff 2026-11-19)
+  var TA = window.TIDE_SEASON_ALA, oa = TA && TA.offset(), est0 = tf.length ? OL.proj.end : Math.max(now, lastObs);
+  var te = oa ? (OL.ala || []).filter(function (p) { return p.t >= est0 && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v + TA.addAt(p.t, now) }; }) : [];
+  var mh = LK.station("9414750").mhhw, kg = kingFor("9414750"), tys = tp.concat(to, tf, te).map(function (p) { return p.y; }).concat(mh != null ? [mh] : [], kg != null ? [kg] : []);
+  var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 1.7) : 8;   // room above the top line for its label
   var flat = function (v, col, dash, lab, w) { return { label: lab, data: [{ x: H(t0), y: v }, { x: H(t1), y: v }], borderColor: col, borderWidth: w || 1.5, borderDash: dash, pointRadius: 0, pointHoverRadius: 0, olLabel: lab }; };
   var x = function (show) {
     return { type: "linear", min: -OL_PAST, max: OL_AHEAD, grid: { color: function (cx) { return cx.tick && new Date(now + cx.tick.value * 3600000).getUTCHours() === 0 ? "#b9c4d0" : line; } },
@@ -2565,8 +2578,12 @@ function drawSB(c, now, R, T) {
   var d3 = [];
   if (mh != null) d3.push(flat(mh, tc, [2, 3], "MHHW " + mh.toFixed(2), 1.2));
   if (kg != null) d3.push(flat(kg, tc, [10, 4], "King tide " + kg.toFixed(2), 1.2));
-  d3.push({ label: "Tide table", data: tp, borderColor: tc, borderWidth: 1.3, borderDash: [4, 3], pointRadius: 0 });
-  d3.push({ label: "Measured", data: to, borderColor: tc, borderWidth: 2, pointRadius: 0 });
+  var tblc = document.documentElement.dataset.theme === "dark" ? "#8f96a3" : "#8a919c";
+  d3.push({ label: "Tide table", data: tp, borderColor: tblc, borderWidth: 1.2, pointRadius: 0 });
+  d3.push({ label: "Measured", data: to, borderColor: tc, borderWidth: 2.4, pointRadius: 0 });
+  if (tf.length) d3.push({ label: LK.text("lbl_expected"), data: tf, borderColor: tc, borderWidth: 3, borderDash: [0.1, 5], borderCapStyle: "round", pointRadius: 0 });
+  var estc = document.documentElement.dataset.theme === "dark" ? "#8f9aa6" : "#6f7984";   // --offln on the Tides page
+  if (te.length) d3.push({ label: LK.text("lbl_offset"), data: te, borderColor: estc, borderWidth: 1.75, borderDash: [0.1, 3.5], borderCapStyle: "round", pointRadius: 0 });
   mk("olC3", { type: "line", data: { datasets: d3 }, options: opts({ tide: T }, true, tlo, thi, thi - tlo > 6 ? 2 : 1, "ft") });
   // key: only what is on the graphs now
   var vis = function (b) { return b.t1 > t0 && b.t0 < t1; }, kt = [];
@@ -2575,6 +2592,13 @@ function drawSB(c, now, R, T) {
   if (T.some(function (b) { return b.king && vis(b); })) kt.push('<i style="background:rgba(126,87,194,.42)"></i>king tide');
   if (both.filter(vis).length) kt.push('<i style="border:2px solid #b45a00;background:transparent"></i>both');
   var kEl = document.getElementById("olKeyTop"); if (kEl) kEl.innerHTML = kt.join(" ");
+  // a key on each graph (staff 2026-11-19): the lines and bars drawn; flood levels, MHHW and the king tide are labeled on the graph
+  var ln = function (col, style, w, lab) { return '<span><i class="ln" style="border-top:' + (w || 2) + "px " + (style || "solid") + " " + col + '"></i>' + esc(lab) + "</span>"; };
+  var sq = function (col, lab) { return '<span><i style="background:' + col + '"></i>' + esc(lab) + "</span>"; };
+  var setK = function (id, h) { var e = document.getElementById(id); if (e) e.innerHTML = h; };
+  setK("olK1", ln(ink, "solid", 2.4, "Creek level") + ln(muted, "dashed", 2, "Flood levels"));
+  setK("olK2", (rainPast.length ? sq("#1e88e5", "Measured") : "") + (rainFc.length ? sq("rgba(30,136,229,.35)", "NWS forecast") : "") || ln(muted, "solid", 1, "No rain"));
+  setK("olK3", ln(tc, "solid", 2.4, "Measured") + (tf.length ? ln(tc, "dotted", 3, LK.text("lbl_expected")) : "") + (te.length ? ln(estc, "dotted", 2, "Table + offset") : "") + ln(tblc, "solid", 1.2, LK.text("lbl_tide_table")));
 }
 
 function fillSbAbout() {
@@ -2809,6 +2833,7 @@ function every(min, fn) { fn(); setInterval(fn, min * 60000); }
 every(ALERTS_EVERY_MIN, loadAlerts);
 every(AFD_EVERY_MIN, loadAFD);
 every(MODEL_EVERY_MIN, loadModel);
+if (window.TIDE_SEASON_ALA) window.TIDE_SEASON_ALA.onUpdate(function () { if (olShown()) renderOutlook(); });   // Alameda's offset arrived: redraw the outlook
 if (window.TIDE_SEASON) every(60, window.TIDE_SEASON.loadOffset);   // the recent offset (tide_offset.json, both gauges in one file)
 [window.TIDE_SEASON, window.TIDE_SEASON_COAST].forEach(function (T) {   // Redwood City and Monterey: tide table (6 months ahead, twice a day) and NOAA projection (hourly)
   if (!T) return;
