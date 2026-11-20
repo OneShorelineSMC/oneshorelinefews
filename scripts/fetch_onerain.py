@@ -328,25 +328,48 @@ def noaa_tide(station, now):
 STATUS_LOG_MAX = 5000   # rows kept in status_log.csv (newest last)
 
 
+RANK = {"none": 0, "offline": 0, "alert": 1, "ready": 2, "likely": 3}
+
+
+def public_key(st):
+    """The status the public pages show (creek_status.js publicStatus, CREEK_PUBLIC_LEVELS_ONLY = 1): flood levels and
+    rain triggers only; rain ratings and rising fast never raise it. Since 2026-11-20 the staff view shows it too."""
+    if not st:
+        return ""
+    lv, tl = st.get("level") or 0, (st.get("trigger") or {}).get("level") or 0
+    no_gauge = st.get("key") == "offline" or any(r.get("code") == "why_gauge_offline" for r in st.get("reasons") or [])
+    return ("likely" if lv >= 3 or tl >= 3 else "ready" if lv == 2 or tl == 2 else "alert" if lv == 1 or tl >= 1
+            else "offline" if no_gauge else "none")
+
+
+LOG_HEAD = "time,creek,from,to,level,rain_level,trend,reasons,public"
+
+
 def log_status_changes(result, previous_file, out_path):
-    """Append a row to status_log.csv (next to OUTPUT.json) whenever a creek's status changes, for staff review."""
-    old = {c["id"]: (c.get("status") or {}).get("key") for c in all_creeks(previous_file)}
+    """Append a row to status_log.csv (next to OUTPUT.json) whenever a creek's full status (rain ratings and rising fast
+    included) or its public status changes, for staff review: scripts/alert_review.py checks the full status's rain and
+    rising-fast alerts against the flood levels that followed. Rows from before 2026-11-20 have no public column."""
+    olds = {c["id"]: c.get("status") or {} for c in all_creeks(previous_file)}
+    old = {k: v.get("key") for k, v in olds.items()}
+    oldp = {k: public_key(v) for k, v in olds.items()}
     path = os.path.join(os.path.dirname(out_path) or ".", "status_log.csv")
     try:
         with open(path) as f:
             lines = f.read().splitlines()
     except OSError:
         lines = []
-    head = "time,creek,from,to,level,rain_level,trend,reasons"
-    if not lines or lines[0] != head:
-        lines = [head]
+    if lines and lines[0] == LOG_HEAD.rsplit(",", 1)[0]:   # the log before the public column: keep its rows
+        lines = [LOG_HEAD] + [l + "," for l in lines[1:]]
+    if not lines or lines[0] != LOG_HEAD:
+        lines = [LOG_HEAD]
     for c in all_creeks(result):
         st = c.get("status") or {}
-        if st.get("key") != old.get(c["id"]):
+        pk = public_key(st)
+        if st.get("key") != old.get(c["id"]) or pk != oldp.get(c["id"]):
             codes = " ".join(x["code"] for x in st.get("reasons", []))
             lines.append(",".join([result["generated"], c["id"], old.get(c["id"]) or "", st.get("key") or "",
                                    str(st.get("level", "")), str((st.get("rain") or {}).get("level", "")),
-                                   str((st.get("trend") or {}).get("trend") or ""), codes]))
+                                   str((st.get("trend") or {}).get("trend") or ""), codes, pk]))
     lines = [lines[0]] + lines[1:][-STATUS_LOG_MAX:]
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")
