@@ -81,7 +81,7 @@
   .ocard b.big { font-size: 22px; color: var(--ink); }
   .gd { display: grid; grid-template-columns: 1fr; gap: 6px 20px; }
   @media (min-width: 820px) { .gd { grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); } }
-  .gbox { position: relative; height: 220px; }
+  .gbox { position: relative; height: 220px; } .gbox.g2 { height: 190px; } .gname { margin: 0 0 2px; font-size: 13.5px; color: var(--muted); } .gname b { color: var(--ink); }
   .key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
   .key i { display: inline-block; width: 16px; vertical-align: middle; margin-right: 5px; }
   .empty { color: var(--muted); }
@@ -560,7 +560,7 @@ function levelText(s) {
 function showRest(s, d, tbl, lvt, quiet) {
   d.innerHTML = '<button type="button" class="exp" id="expBtn">Export event</button>' +
     "<h2>" + esc(s.name) + " · " + esc(when(s.start)) + " to " + esc(when(s.end).replace(/^\w+, \w+ \d+, /, "")) + (s.live ? liveChip(s) : "") + "</h2>" +
-    '<div class="gd"><div><div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div></div>' +
+    '<div class="gd"><div>' + graphBoxes(s) + "</div>" +
     "<div><p style='margin:0'><b style='font-size:22px;color:var(--ink)'>" + inch(sTotal(s)) + " in</b>" + sAt(s) + " in " + s.hours + " hours " + chip(sLevel(s)) + "</p>" + rareText(s) + lvt +
     (s.tide ? tideText(s.tide) : "") +
     (s.status ? "<p class='note'>Highest status: <b>" + esc(STATUS[s.status]) + "</b>" + (s.rising_fast ? " · rising fast" : "") + "</p>" : "") +
@@ -572,21 +572,52 @@ function showRest(s, d, tbl, lvt, quiet) {
   $("expBtn").onclick = function () { exportEvent(s); };
   if (!quiet) d.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+function graphBoxes(s) {
+  var li = levelIdx(s);
+  if (li.length < 2) return '<div class="gbox"><canvas id="chS" role="img" aria-label="Rain each hour and creek level during the storm"></canvas></div><div class="key" id="kS"></div>';
+  return li.map(function (i, n) { return '<p class="gname"' + (n ? ' style="margin-top:10px"' : "") + "><b>" + esc(s.levels[i].label) + "</b> · its own flood levels</p>" +
+    '<div class="gbox g2"><canvas id="chS' + i + '" role="img" aria-label="Rain each hour and the creek level at ' + esc(s.levels[i].label) + '"></canvas></div><div class="key" id="kS' + i + '"></div>'; }).join("");
+}
 function draw(s) {
   if (!window.Chart) return;
-  if (charts.s) charts.s.destroy();
-  charts.s = drawTo(s, $("chS"), $("kS"));
+  (charts.list || []).forEach(function (c) { c.destroy(); }); charts.list = [];
+  var li = levelIdx(s);
+  if (li.length < 2) charts.list.push(drawTo(s, $("chS"), $("kS")));
+  else li.forEach(function (i) { charts.list.push(drawTo(s, $("chS" + i), $("kS" + i), false, i)); });
+}
+// the export's graph: one picture; a creek with two gauges gets one panel per gauge, each with a title, stacked
+function exportPng(s) {
+  var li = levelIdx(s), parts = li.length < 2 ? [null] : li, W = 1100, Hh = li.length < 2 ? 520 : 400, imgs = [];
+  CSSO = LIGHT;
+  try {
+    parts.forEach(function (i) {
+      var box = document.createElement("div"); box.style.cssText = "position:fixed;left:-99999px;top:0;width:" + W + "px;height:" + Hh + "px";
+      var cv = document.createElement("canvas"); cv.width = W; cv.height = Hh; box.appendChild(cv); document.body.appendChild(box);
+      var ch = null; try { ch = drawTo(s, cv, null, true, i == null ? undefined : i); imgs.push({ c: ch.canvas, t: i == null ? "" : s.levels[i].label + " · its own flood levels", ch: ch, box: box }); } catch (e) { box.remove(); }
+    });
+    if (!imgs.length) return "";
+    if (imgs.length === 1) { var u = imgs[0].ch.toBase64Image("image/png"); return u; }
+    var sc = imgs[0].c.width / W, th = 34, out = document.createElement("canvas");
+    out.width = imgs[0].c.width; out.height = imgs.reduce(function (a, x) { return a + x.c.height + th * sc; }, 0);
+    var x = out.getContext("2d"), y = 0; x.fillStyle = "#fff"; x.fillRect(0, 0, out.width, out.height);
+    imgs.forEach(function (m) { x.fillStyle = LIGHT["--ink"]; x.font = "bold " + Math.round(17 * sc) + "px -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif";
+      x.fillText(m.t, 12 * sc, y + 24 * sc); y += th * sc; x.drawImage(m.c, 0, y); y += m.c.height; });
+    return out.toDataURL("image/png");
+  } finally { CSSO = null; imgs.forEach(function (m) { m.ch.destroy(); m.box.remove(); }); }
 }
 // exp: the export's copy, a fixed-size picture with its own legend and a white background
-function drawTo(s, cv, keyEl, exp) {
+// only: draw just this creek gauge (index into s.levels) with its own flood levels. A creek with two gauges gets one graph
+// each (Atherton: Alameda de las Pulgas and Upstream of Caltrain have different levels; staff 2026-11-19).
+function levelIdx(s) { var o = []; (s.levels || []).forEach(function (l, i) { if (l.series && l.series.length) o.push(i); }); return o; }
+function drawTo(s, cv, keyEl, exp, only) {
   var t0 = pt(s.start), H = function (t) { return (pt(t) - t0) / 36e5; }, sets = [], cols = [css("--rain"), css("--rain2")];
   s.rain.forEach(function (r, i) { sets.push({ type: "bar", label: r.label + " rain", data: (r.series || []).map(function (p) { return { x: H(p[0]) + 0.5, y: p[1] }; }),
     backgroundColor: cols[i % 2], yAxisID: "y", barPercentage: 1, categoryPercentage: 1, grouped: false, order: 3 }); });
   var lc = [css("--ink"), css("--muted")], dash = [[3, 3], [7, 4], [12, 4]], lvcol = [css("--lv1"), css("--lv2"), css("--lv3")];
   var xs = [0], peakY = 0;
   (s.levels || []).forEach(function (l, i) {
-    if (!l.series || !l.series.length) return;
-    sets.push({ type: "line", label: l.label + " level", data: l.series.map(function (p) { return { x: H(p[0]), y: p[1] }; }), borderColor: lc[i % 2], borderWidth: 2.2, pointRadius: 0, yAxisID: "y2", order: 0 });   // drawn on top (lowest order)
+    if (!l.series || !l.series.length || (only != null && i !== only)) return;
+    sets.push({ type: "line", label: l.label + " level", data: l.series.map(function (p) { return { x: H(p[0]), y: p[1] }; }), borderColor: only != null ? lc[0] : lc[i % 2], borderWidth: 2.2, pointRadius: 0, yAxisID: "y2", order: 0 });   // drawn on top (lowest order)
     xs.push(H(l.series[0][0]), H(l.series[l.series.length - 1][0])); peakY = Math.max(peakY, l.peak || 0);
     (l.thresholds || []).forEach(function (t) { if (t.value > peakY + 2.5 && t.level > 1) return;
       sets.push({ type: "line", label: t.name + " " + t.value + " ft", data: [{ x: -6, y: t.value }, { x: 1e3, y: t.value }], borderColor: lvcol[(t.level || 1) - 1], borderWidth: 1.5, borderDash: dash[(t.level || 1) - 1], pointRadius: 0, yAxisID: "y2", thr: true, order: 1 }); });
@@ -607,7 +638,8 @@ function drawTo(s, cv, keyEl, exp) {
     scales: { x: { type: "linear", min: x0, max: x1, ticks: { color: muted, maxRotation: 0, stepSize: x1 - x0 > 30 ? 6 : 3,
         callback: function (v) { var t = t0 + v * 36e5; return new Date(t).getUTCHours() === 0 ? fmt(t, { month: "short", day: "numeric" }) : fmt(t, { hour: "numeric" }); } }, grid: { color: line } },
       y: { beginAtZero: true, grace: "10%", position: "left", ticks: { color: muted }, grid: { color: line }, title: { display: true, text: "rain per hour (in)", color: muted } },
-      y2: { display: (s.levels || []).some(function (l) { return l.series && l.series.length; }), position: "right", grace: "10%", ticks: { color: muted }, grid: { display: false }, title: { display: true, text: "creek level (ft)", color: muted } },
+      y2: { display: (s.levels || []).some(function (l, i) { return l.series && l.series.length && (only == null || i === only); }), position: "right", grace: "10%", ticks: { color: muted }, grid: { display: false },
+        title: { display: true, text: "creek level (ft)", color: muted } },
       y3: { display: hasTide, position: "right", grace: "10%", ticks: { color: tc }, grid: { display: false }, title: { display: true, text: "tide (ft NAVD88)", color: tc } } } } });
   if (keyEl) keyEl.innerHTML = sets.map(function (x) { return "<span><i style='" + (x.type === "bar" ? "height:10px;background:" + x.backgroundColor : "border-top:2px " + (x.borderDash ? "dashed " : "solid ") + x.borderColor) + "'></i>" + esc(x.label) + "</span>"; }).join("");
   return chart;
@@ -735,11 +767,8 @@ function loadZip() {
 function exportEvent(s) {
   var w = window.open("", "_blank");
   if (w) w.document.write("<!doctype html><title>Preparing export…</title><p style='font:15px sans-serif;padding:20px'>Preparing the export…</p>");
-  // the graph, drawn with the light colors at a fixed size
-  var box = document.createElement("div"); box.style.cssText = "position:fixed;left:-99999px;top:0;width:1100px;height:520px";
-  var cv = document.createElement("canvas"); cv.width = 1100; cv.height = 520; box.appendChild(cv); document.body.appendChild(box);
-  CSSO = LIGHT; var ch = null, png = "";
-  try { ch = drawTo(s, cv, null, true); png = ch.toBase64Image("image/png"); } catch (e) {} finally { CSSO = null; if (ch) ch.destroy(); box.remove(); }
+  var png = "";   // the graph, drawn with the light colors at a fixed size
+  try { png = exportPng(s); } catch (e) {}
   var base = fileBase(s), files = { tables: tablesCsv(s), hourly: hourlyCsv(s) };
   var rpt = function (raw, zipUrl) {
     var url = function (t, type) { return URL.createObjectURL(new Blob([t], { type: type })); };
