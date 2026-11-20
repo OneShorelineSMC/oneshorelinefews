@@ -8,9 +8,11 @@
 <script>
   // The kiosk is the team's screen (staff, 2026-11-18): it opens in the staff view (?preview=1: the team board, the San
   // Bruno tab, every creek's status) without anyone adding it to the address. ?public=1 shows the public view instead.
+  // The San Bruno screen (?only=sanbruno) is public (the city publishes it; staff 2026-11-19), so it opens in the public
+  // view, the same status as the creek pages; add ?preview=1 for the staff status.
   (function () {
     var q = new URLSearchParams(location.search);
-    if (!q.has("preview") && q.get("public") !== "1") { q.set("preview", "1"); history.replaceState(null, "", location.pathname + "?" + q.toString() + location.hash); }
+    if (!q.has("preview") && q.get("public") !== "1" && q.get("only") !== "sanbruno") { q.set("preview", "1"); history.replaceState(null, "", location.pathname + "?" + q.toString() + location.hash); }
   })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
@@ -2501,7 +2503,7 @@ function renderOutlook() {
   // flood case
   var f = ov.length ? '<div class="olbox olhit"><div class="olv or">Flood-size rain + king tide</div><div class="olt"><b>' + esc(span(ov[0].t0, ov[0].t1)) + "</b>: flooding along the eastern avenues is possible.</div></div>"
     : '<div class="olbox"><div class="olt"><b>Watch for</b> flood-size rain during a king tide, outlined on the graph. Flooding can also happen at other times.</div></div>';
-  el.innerHTML = '<div class="olhead"><b>San Bruno Creek · outlook</b> <span>trial · last day and next 3 days</span><span class="olkey" id="olKeyTop"></span></div>' +
+  el.innerHTML = '<div class="olhead"><b>San Bruno Creek · outlook</b> <span>last day and next 3 days</span><span class="olkey" id="olKeyTop"></span></div>' +
     '<div class="olbody"><div class="olleft">' + r + t + f + '</div><div class="olright">' +
     '<div class="olg"><div class="olgt">First Avenue · creek level (ft)</div><div class="olc" style="flex:1.15"><canvas id="olC1"></canvas></div></div>' +
     '<div class="olg"><div class="olgt">Rain per hour (in) · measured, then NWS forecast</div><div class="olc" style="flex:.8"><canvas id="olC2"></canvas></div></div>' +
