@@ -322,7 +322,7 @@
     <div id="fcBox"></div>   <!-- the NWS rain forecast, above the graphs (staff, 2026-11-16) -->
     <div style="height:12px"></div>
     <div class="card" id="graphs"></div>
-    <details class="card fold" id="csNotes" style="display:none"><summary>Thresholds and notes</summary><div id="csNotesB"></div></details>
+    <details class="card fold" id="csNotes" style="display:none"><summary>Flood levels, data sources and notes</summary><div id="csNotesB"></div></details>
     <figure class="card cmap" id="cmap" hidden>
       <h2 class="cmh">Where this creek is</h2>
       <a id="cmapA" href="SiteMap.html"><img id="cmapI" alt="" width="420" height="320"></a>
@@ -562,12 +562,66 @@ function rrfsBars(RF, now, x1) {
   add(RF.R.products["60"], RF.e.p60, 60);
   return { avg: avg, max: max };
 }
+// Where this page's numbers come from (staff, 2026-11-20), at the end of "Flood levels, data sources and notes"
+function sourcesHtml(c, T) {
+  var li = [], gs = (c.stages || []).map(function (g) { return esc(g.label) + (g.number ? " (" + (/^\d+$/.test(String(g.number)) ? "OneRain " : "") + esc(g.number) + ")" : ""); });
+  var rs = (c.rain || []).concat(c.rain_support || []).map(function (g) { return esc(g.label) + (g.number ? " (" + esc(g.number) + ")" : ""); });
+  var storm = c.id === "sanbruno" || c.id === "belmont";
+  if (gs.length) li.push("<b>Creek level:</b> " + gs.join(", ") + ". Read from OneRain" + ((c.stages || []).some(function (g) { return !/^\d+$/.test(String(g.number || "")); }) ? " (USGS for USGS gauges)" : "") + " every 5 minutes" + (storm ? ", about every minute while it rains here" : "") + ".");
+  if (rs.length) li.push("<b>Rain:</b> " + rs.join(", ") + ", same timing." +
+    (window.CREEK_STATUS && CREEK_STATUS.staff ? " Heavy, Very heavy and Intense are the 1-, 2- and 5-year storms at each rain gauge (NOAA Atlas 14)." : ""));
+  if ((c.stages || []).some(function (g) { return (g.thresholds || []).length; }))
+    li.push('<b>Flood levels:</b> set by OneShoreline; where each one came from is in <a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/THRESHOLDS_BASIS.md" target="_blank" rel="noopener">THRESHOLDS_BASIS.md</a>.');
+  if (c.tide) li.push("<b>Bay tide:</b> NOAA tide gauge " + esc(T ? T.st.name : "") + " (" + esc(c.tide) + "): measured water, the tide table and NOAA's water level projection.");
+  if (c.forecast && c.forecast.grid) li.push("<b>Rain expected:</b> National Weather Service forecast (Bay Area office) for one point in the watershed" + (c.forecast.place ? " (" + esc(c.forecast.place) + ")" : "") + ", in 6-hour blocks.");
+  var RF = rrfsFor(c);
+  if (RF) {
+    var e = RF.e, pe = e.p60 || e.p15 || {}, run = rrfsRun(RF);
+    li.push("<b>RRFS model forecast (staff view only):</b> rain per hour out to about 3.5 days and per 15 minutes out to 18 hours from the Rapid Refresh Forecast System " +
+      "(NOAA's 3-km model that replaces the HRRR), posted for San Mateo County by AQPI at CW3E (Scripps, UC San Diego). Shown here as the average of " + pe.points +
+      " grid points " + (pe.how === "inside" ? "inside the " : pe.how === "nearest" ? "nearest to the " : "in and near the ") + esc(e.watershed ? e.watershed.toLowerCase().replace(/\b\w/g, function (x) { return x.toUpperCase(); }) + " watershed" : "watershed") +
+      " (latest run " + esc(run) + "). Amber shading: the average reaches the 1-year storm (Heavy) or more at the creek's main rain gauge" + (e.size && e.size.gauge ? " (" + esc(e.size.gauge) + ")" : "") +
+      " over any window from 15 minutes to 6 hours, by NOAA Atlas 14. A model forecast, not a measurement; it never changes the status. Every run is kept in rrfs_log.csv to check against the gauges after storms.");
+  }
+  return li.length ? "<p><b>Data sources</b></p><ul style=\"margin:4px 0 0;padding-left:20px\">" + li.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>" : "";
+}
+// The creek's main rain gauge (as scripts/nws_forecast.py): its rain gauge at a creek level gauge's site, else the first
+function mainRainIdx(st) {
+  var nums = (st.c.stages || []).map(function (g) { return String(g.number); });
+  var i = st.rains.map(function (r) { return nums.indexOf(String(r.g.number)) >= 0; }).indexOf(true);
+  return i < 0 ? 0 : i;
+}
+function rrfsKey() {
+  return ' <span class="nw" style="font-weight:400"><i aria-hidden="true" style="display:inline-block;width:10px;height:9px;background:rgba(126,87,194,0.45);border:1px solid #7e57c2;vertical-align:middle;margin:0 3px 0 6px"></i>RRFS forecast</span>' +
+    ' <span class="nw" style="font-weight:400"><i aria-hidden="true" style="display:inline-block;width:10px;height:9px;background:rgba(239,159,39,.45);vertical-align:middle;margin:0 3px 0 6px"></i>forecast Heavy or more</span>';
+}
+/* Amber bands behind a graph where the RRFS forecast reaches Heavy (1-year storm) or more: options.plugins.fcBands =
+   [{a, b (hours from now), level}]; darker for Very heavy and Intense (the same amber as the San Bruno screen's outlook) */
+var fcBands = {
+  id: "fcBands",
+  beforeDatasetsDraw: function (ch, args, opts) {
+    var list = ch.options.plugins.fcBands;
+    if (!Array.isArray(list) || !list.length) return;
+    var xs = ch.scales.x, ys = ch.scales.y, ctx = ch.ctx;
+    ctx.save();
+    list.forEach(function (bd) {
+      var a = Math.max(xs.left, xs.getPixelForValue(bd.a)), b = Math.min(xs.right, xs.getPixelForValue(bd.b));
+      if (b <= a) return;
+      ctx.fillStyle = "rgba(239,159,39," + (bd.level >= 2 ? 0.6 : 0.4) + ")";
+      ctx.fillRect(a, ys.top, b - a, ys.bottom - ys.top);
+    });
+    ctx.restore();
+  }
+};
 function rrfsRow(RF) {
   var e = RF.e, t = e.totals || {}, bits = [];
   if (t["6"] != null) bits.push(t["6"].toFixed(2) + " in next 6 hr · " + t["24"].toFixed(2) + " in · 24 hr · " + t["72"].toFixed(2) + " in · 3 days");
   var pk = [];
   if (e.peak60 && e.peak60.in > 0) pk.push("wettest hour " + e.peak60.in.toFixed(2) + " in, ending " + fmt(utcToPage(e.peak60.end), { weekday: "short", hour: "numeric" }));
   if (e.peak15 && e.peak15.in > 0) pk.push("wettest 15 min " + e.peak15.in.toFixed(2) + " in, ending " + fmt(utcToPage(e.peak15.end), { hour: "numeric", minute: "2-digit" }));
+  var HW = ["", "Heavy", "Very heavy", "Intense"];
+  (e.heavy || []).slice(0, 3).reverse().forEach(function (h) { pk.unshift("forecast " + HW[Math.min(3, h.level)] + " " + fmt(utcToPage(h.start), { weekday: "short", hour: "numeric", minute: "2-digit" }) +
+    " to " + fmt(utcToPage(h.end), { hour: "numeric", minute: "2-digit" }) + " (" + h.in.toFixed(2) + " in in " + (h.minutes < 60 ? h.minutes + " min" : h.minutes / 60 + " hr") + ")"); });
   var sz = e.size && e.size.years ? "about a " + (e.size.years >= 2 ? Math.round(e.size.years) : e.size.years) + "-year storm over " + (e.size.minutes < 60 ? e.size.minutes + " min" : e.size.minutes / 60 + " hr") + " if it holds" : "";
   var pts = (e.p60 || e.p15 || {}).points;
   return '<div class="cs-row cs-fc"><span class="cs-lbl">RRFS model <span class="cs-dim">(staff, beta)</span></span><span class="cs-val">' + esc(bits.join("") || "no hourly forecast") +
@@ -1229,7 +1283,8 @@ function drawCharts(st, now) {
   if (typeof Chart === "undefined" || document.body.classList.contains("about")) return;
   var c = st.c, T = D.tides[c.tide];
   var PVr = window.CREEK_STATUS && window.CREEK_STATUS.preview;   // status layer: OneRain-style rows (graph + reading tile)
-  var RF = rrfsFor(c), bid = c.id + (RF ? ":rrfs" : "");   // staff view: an RRFS forecast row under the rain graphs
+  // staff view: the RRFS forecast after "now" on the main rain gauge's graph (staff, 2026-11-20: one graph, measured then forecast)
+  var RF = rrfsFor(c), rfi = RF ? mainRainIdx(st) : -1, bid = c.id + (RF ? ":rrfs" + rfi : "");
   if (D.built !== bid && PVr) {
     Object.keys(D.charts).forEach(function (k) { D.charts[k].destroy(); }); D.charts = {};
     var g = '<div class="trange" id="trange"></div>';
@@ -1237,10 +1292,9 @@ function drawCharts(st, now) {
     g += '<div class="sgh" id="jLevel">Creek level</div>';
     st.stages.forEach(function (s, i) { g += row("chStage" + i, 170, "tlStage" + i, gaugeLink(s.g, esc(s.g.label)) + " · ft (gauge height)"); });
     g += '<div class="sgh" id="jRain">Rain</div>';
-    st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · " + rainUnit()); });
+    st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · " + rainUnit() + (i === rfi ? rrfsKey() : "")); });
     if (c.rain_running && c.rain_running.line) g += row("chRun", 90, "tlRun", esc(c.rain_running.label));
     g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul>';
-    if (RF) g += row("chRrfs", 90, "tlRrfs", "<b>RRFS forecast</b> · watershed average · " + rainUnit());
     if (c.tide) g += '<div class="sgh" id="tideTitle">Bay tide</div>' + row("chTide", 150, "tlTide", (T ? esc(T.st.name) : "Bay") + " · ft NAVD88");
     g += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = g;
@@ -1255,13 +1309,11 @@ function drawCharts(st, now) {
     });
     st.rains.forEach(function (r, i) {
       var col = st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5";
-      h += '<div class="gtitle"><span><b><i aria-hidden="true" style="display:inline-block;width:14px;border-top:3px solid ' + col + ';vertical-align:middle;margin-right:4px"></i>' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + "</span><span>" + (rainBinMin() === 15 ? "in/15 min" : "in/hr") + "</span></div>" +
+      h += '<div class="gtitle"><span><b><i aria-hidden="true" style="display:inline-block;width:14px;border-top:3px solid ' + col + ';vertical-align:middle;margin-right:4px"></i>' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + (i === rfi ? rrfsKey() : "") + "</span><span>" + (rainBinMin() === 15 ? "in/15 min" : "in/hr") + "</span></div>" +
         '<div class="gbox" style="height:64px"><canvas id="chRain' + i + '"></canvas></div>';
     });
     if (c.rain_running && c.rain_running.line) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span><i aria-hidden="true" style="display:inline-block;width:14px;border-top:2px dashed ' + runColor(c) + ';vertical-align:middle;margin-right:4px"></i>trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
       '<div class="gbox" style="height:80px"><canvas id="chRun"></canvas></div>';
-    if (RF) h += '<div class="gtitle"><span><b>RRFS forecast</b> · watershed average</span><span>' + (rainBinMin() === 15 ? "in/15 min" : "in/hr") + "</span></div>" +
-      '<div class="gbox" style="height:64px"><canvas id="chRrfs"></canvas></div>';
     if (c.tide) h += '<div class="gtitle"><span id="tideTitle">Tide (ft NAVD88)</span><span></span></div><div class="gbox" style="height:170px"><canvas id="chTide"></canvas></div>';
     h += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = h;
@@ -1318,7 +1370,7 @@ function drawCharts(st, now) {
   }
   function put(id, cfg) {
     if (D.charts[id]) { D.charts[id].data = cfg.data; D.charts[id].options = cfg.options; D.charts[id].update("none"); }
-    else D.charts[id] = new Chart($(id), { type: cfg.type || "line", data: cfg.data, options: cfg.options, plugins: [refMarks, nowLine] });
+    else D.charts[id] = new Chart($(id), { type: cfg.type || "line", data: cfg.data, options: cfg.options, plugins: [refMarks, nowLine, fcBands] });
   }
   // rain: hourly totals, one graph per gauge on the same scale
   function hourly(p) {   // every bin (an hour, or 15 min on the short ranges), dry ones as 0, so a bar is one bin wide at any zoom
@@ -1333,20 +1385,15 @@ function drawCharts(st, now) {
   var rTop = Math.ceil(rmax * 10) / 10;
   series.forEach(function (sr, i) {
     var o = base(false); o.scales.y = yScale(0, rTop, rTop / 2);
-    put("chRain" + i, { type: "bar", data: { datasets: [{ label: st.rains[i].g.label + " (in)", data: sr,
-      backgroundColor: st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5", barPercentage: 0.85, categoryPercentage: 1, minBarLength: 0 }] }, options: o });
+    var sets = [{ label: st.rains[i].g.label + " (in)", data: sr, grouped: false,   // measured and forecast bars never share a bin, so no side by side
+      backgroundColor: st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5", barPercentage: 0.85, categoryPercentage: 1, minBarLength: 0 }];
+    if (rfs && i === rfi) {   // RRFS watershed average after now, and amber where it reaches Heavy or more (rrfs.json "heavy")
+      sets.push({ label: "RRFS forecast, watershed average (in)", data: rfs.avg, grouped: false, backgroundColor: "rgba(126,87,194,0.45)", borderColor: "#7e57c2", borderWidth: 1,
+        barPercentage: 0.85, categoryPercentage: 1, minBarLength: 0 });
+      o.plugins.fcBands = (RF.e.heavy || []).map(function (h) { return { a: H(utcToPage(h.start)), b: H(utcToPage(h.end)), level: h.level }; });
+    }
+    put("chRain" + i, { type: "bar", data: { datasets: sets }, options: o });
   });
-  if (rfs) {   // RRFS: the watershed average as bars after now, the wettest grid point as a thin line
-    var fo = base(false); fo.scales.y = yScale(0, rTop, rTop / 2);
-    fo.plugins.tooltip.callbacks.label = function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " in"; };
-    put("chRrfs", { type: "bar", data: { datasets: [
-      { type: "line", label: "Wettest grid point", data: rfs.max, borderColor: "#7e57c2", borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0, order: 0 },
-      { label: "RRFS average", data: rfs.avg, backgroundColor: "rgba(126,87,194,0.55)", borderColor: "#7e57c2", borderWidth: 1, barPercentage: 0.85, categoryPercentage: 1, minBarLength: 0, order: 1 }] }, options: fo });
-    var tl = $("tlRrfs");
-    if (tl) { tl.className = "tile"; tl.innerHTML = '<span class="tv">' + (RF.e.totals ? RF.e.totals["6"].toFixed(2) : "–") + "<small> in</small></span>" +
-      '<span class="tx">next 6 hr (model)</span><span class="tx">24 hr <b>' + (RF.e.totals ? RF.e.totals["24"].toFixed(2) : "–") + "</b></span>" +
-      '<span class="tx">run ' + esc(rrfsRun(RF)) + "</span>"; }
-  }
   // running rain total (e.g. Belmont's 4-hour rain) with its trigger line
   if (c.rain_running && c.rain_running.line) {
     var rr = c.rain_running, rp = gpts(rr.gauge), run = [];
@@ -1420,7 +1467,7 @@ function drawCharts(st, now) {
   }
   if (PVk) {   // staff preview: the creek's intro, level meanings, triggers and gauge notes, folded under the graphs
     var gn = c.stages.filter(function (g) { return g.note; }).map(function (g) { return "<b>" + esc(g.label) + ":</b> " + esc(g.note); });
-    $("csNotesB").innerHTML = [esc(c.intro || "")].concat(notes, gn).filter(Boolean).map(function (x) { return "<p>" + x + "</p>"; }).join("");
+    $("csNotesB").innerHTML = [esc(c.intro || "")].concat(notes, gn).filter(Boolean).map(function (x) { return "<p>" + x + "</p>"; }).join("") + sourcesHtml(c, T);
     $("cnote").innerHTML = "";
   } else $("cnote").innerHTML = notes.join("<br>");
   if (PVr) fillTiles(st, now);
