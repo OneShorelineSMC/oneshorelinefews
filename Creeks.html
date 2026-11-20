@@ -389,10 +389,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261119a"></script>
-<script src="severity.js?v=20261119a"></script>
-<script src="creek_status.js?v=20261119a"></script>
-<script src="hero.js?v=20261119a"></script>
+<script src="lookups.js?v=20261120a"></script>
+<script src="severity.js?v=20261120a"></script>
+<script src="creek_status.js?v=20261120a"></script>
+<script src="hero.js?v=20261120a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -467,7 +467,14 @@ function loadCreek() {
     D.creek = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; D.creekFailed = false; render(); loadTides(); })
     .catch(function () { D.creekFailed = true; render(); });
 }
-function creekLoop() { loadWeek(); loadCreek().then(function () { setTimeout(creekLoop, LK.stormy && LK.stormy(D.creek) ? 60000 : 3 * 60000); }); }
+// RRFS model rain forecast for each creek (AQPI / CW3E; scripts/rrfs.py), staff view only (?preview=1; staff, 2026-11-20)
+var RRFS_URL = CREEK_DATA_URL.replace("creeks.json", "rrfs.json");
+function loadRrfs() {
+  if (!(window.CREEK_STATUS && CREEK_STATUS.staff) || (D.rrfsAt && Date.now() - D.rrfsAt < 10 * 60000)) return;
+  D.rrfsAt = Date.now();
+  getJSON(RRFS_URL + "?t=" + Date.now()).then(function (j) { if (j && j.creeks) { D.rrfs = j; render(); } }).catch(function () {});
+}
+function creekLoop() { loadWeek(); loadRrfs(); loadCreek().then(function () { setTimeout(creekLoop, LK.stormy && LK.stormy(D.creek) ? 60000 : 3 * 60000); }); }
 function noaa(station, product, begin, end) {
   return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product + "&station=" + station +
     "&begin_date=" + begin + "&end_date=" + end + "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
@@ -531,6 +538,42 @@ function pts(key) {
   return s ? s.points.map(function (p) { return { t: ptime(p), v: p[1] }; }).sort(function (a, b) { return a.t - b.t; }) : [];
 }
 // a gauge's readings for the graphs: the 7-day file before the 2-day one starts, when the range reaches back that far
+/* ---------- RRFS forecast (staff view) ---------- */
+function rrfsFor(c) {
+  var R = D.rrfs, e = R && R.creeks && R.creeks[c.id];
+  if (!(window.CREEK_STATUS && CREEK_STATUS.staff) || !e || !R.products) return null;
+  return { R: R, e: e };
+}
+function utcToPage(iso) { return Date.parse(iso) - Math.round((Date.now() - nowLocal()) / 9e5) * 9e5; }   // as ptime()
+function rrfsRun(RF) { var p = RF.R.products["15"] || RF.R.products["60"]; return p ? fmt(utcToPage(p.run), { weekday: "short", hour: "numeric", minute: "2-digit" }) : "?"; }
+// Bars in the graph's bin (15 min on the short ranges, from the 15-minute product where it reaches; hourly otherwise)
+function rrfsBars(RF, now, x1) {
+  var bin = rainBinMin(), H = function (t) { return (t - now) / 3600000; }, avg = [], max = [], upto = now;
+  function add(prod, pe, step) {
+    if (!prod || !pe) return;
+    prod.steps.forEach(function (s, k) {
+      var t = utcToPage(s), a = pe.avg[k], m = pe.max[k];
+      if (t <= upto || t - step * 60000 > x1 || a == null) return;
+      avg.push({ x: H(t) - step / 120, y: a }); max.push({ x: H(t) - step / 60, y: m == null ? a : m }, { x: H(t), y: m == null ? a : m });
+    });
+    if (prod.steps.length) upto = Math.max(upto, utcToPage(prod.steps[prod.steps.length - 1]));
+  }
+  if (bin === 15) add(RF.R.products["15"], RF.e.p15, 15);
+  add(RF.R.products["60"], RF.e.p60, 60);
+  return { avg: avg, max: max };
+}
+function rrfsRow(RF) {
+  var e = RF.e, t = e.totals || {}, bits = [];
+  if (t["6"] != null) bits.push(t["6"].toFixed(2) + " in next 6 hr · " + t["24"].toFixed(2) + " in · 24 hr · " + t["72"].toFixed(2) + " in · 3 days");
+  var pk = [];
+  if (e.peak60 && e.peak60.in > 0) pk.push("wettest hour " + e.peak60.in.toFixed(2) + " in, ending " + fmt(utcToPage(e.peak60.end), { weekday: "short", hour: "numeric" }));
+  if (e.peak15 && e.peak15.in > 0) pk.push("wettest 15 min " + e.peak15.in.toFixed(2) + " in, ending " + fmt(utcToPage(e.peak15.end), { hour: "numeric", minute: "2-digit" }));
+  var sz = e.size && e.size.years ? "about a " + (e.size.years >= 2 ? Math.round(e.size.years) : e.size.years) + "-year storm over " + (e.size.minutes < 60 ? e.size.minutes + " min" : e.size.minutes / 60 + " hr") + " if it holds" : "";
+  var pts = (e.p60 || e.p15 || {}).points;
+  return '<div class="cs-row cs-fc"><span class="cs-lbl">RRFS model <span class="cs-dim">(staff, beta)</span></span><span class="cs-val">' + esc(bits.join("") || "no hourly forecast") +
+    '<span class="cs-sm">' + esc(pk.concat(sz ? [sz] : []).join(" · ")) + (pk.length || sz ? " · " : "") +
+    esc("AQPI / CW3E, run " + rrfsRun(RF) + ", average of " + pts + " grid points") + "</span></span></div>";
+}
 function gpts(key) {
   var p = pts(key), w = PAST_HOURS > 44 && D.week && D.week.sensors && D.week.sensors[key];
   if (!w) return p;
@@ -1186,7 +1229,8 @@ function drawCharts(st, now) {
   if (typeof Chart === "undefined" || document.body.classList.contains("about")) return;
   var c = st.c, T = D.tides[c.tide];
   var PVr = window.CREEK_STATUS && window.CREEK_STATUS.preview;   // status layer: OneRain-style rows (graph + reading tile)
-  if (D.built !== c.id && PVr) {
+  var RF = rrfsFor(c), bid = c.id + (RF ? ":rrfs" : "");   // staff view: an RRFS forecast row under the rain graphs
+  if (D.built !== bid && PVr) {
     Object.keys(D.charts).forEach(function (k) { D.charts[k].destroy(); }); D.charts = {};
     var g = '<div class="trange" id="trange"></div>';
     function row(canvas, hgt, tile, title) { return '<div class="srow"><div><div class="gtitle"><span>' + title + '</span></div><div class="gbox" style="height:' + hgt + 'px"><canvas id="' + canvas + '"></canvas></div></div><div class="tile" id="' + tile + '"></div></div>'; }
@@ -1196,12 +1240,13 @@ function drawCharts(st, now) {
     st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · " + rainUnit()); });
     if (c.rain_running && c.rain_running.line) g += row("chRun", 90, "tlRun", esc(c.rain_running.label));
     g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul>';
+    if (RF) g += row("chRrfs", 90, "tlRrfs", "<b>RRFS forecast</b> · watershed average · " + rainUnit());
     if (c.tide) g += '<div class="sgh" id="tideTitle">Bay tide</div>' + row("chTide", 150, "tlTide", (T ? esc(T.st.name) : "Bay") + " · ft NAVD88");
     g += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = g;
-    D.built = c.id;
+    D.built = bid;
   }
-  if (D.built !== c.id) {   // build this creek's graph boxes
+  if (D.built !== bid) {   // build this creek's graph boxes
     Object.keys(D.charts).forEach(function (k) { D.charts[k].destroy(); }); D.charts = {};
     var h = '<div class="trange" id="trange"></div>';   // order: stage, rain, tide
     st.stages.forEach(function (s, i) {
@@ -1215,13 +1260,16 @@ function drawCharts(st, now) {
     });
     if (c.rain_running && c.rain_running.line) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span><i aria-hidden="true" style="display:inline-block;width:14px;border-top:2px dashed ' + runColor(c) + ';vertical-align:middle;margin-right:4px"></i>trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
       '<div class="gbox" style="height:80px"><canvas id="chRun"></canvas></div>';
+    if (RF) h += '<div class="gtitle"><span><b>RRFS forecast</b> · watershed average</span><span>' + (rainBinMin() === 15 ? "in/15 min" : "in/hr") + "</span></div>" +
+      '<div class="gbox" style="height:64px"><canvas id="chRrfs"></canvas></div>';
     if (c.tide) h += '<div class="gtitle"><span id="tideTitle">Tide (ft NAVD88)</span><span></span></div><div class="gbox" style="height:170px"><canvas id="chTide"></canvas></div>';
     h += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = h;
-    D.built = c.id;
+    D.built = bid;
   }
   var fb = $("fcBox"), fr = fb && window.CREEK_STATUS && CREEK_STATUS.forecast ? CREEK_STATUS.forecast(c) : "";   // NWS rain forecast (FORECAST_PUBLIC)
-  if (fb) fb.innerHTML = fr ? '<div class="cs-details cs-fcbox">' + fr + "</div>" : "";
+  var rl = RF ? rrfsRow(RF) : "";
+  if (fb) fb.innerHTML = fr || rl ? '<div class="cs-details cs-fcbox">' + fr + rl + "</div>" : "";
   var ink = css("--ink"), muted = css("--muted"), line = css("--line");
   var x0 = now - PAST_HOURS * 3600000, x1 = now + AHEAD_HOURS * 3600000, H = function (t) { return (t - now) / 3600000; };
   var narrow = window.innerWidth < 520;
@@ -1280,13 +1328,25 @@ function drawCharts(st, now) {
     return o;
   }
   var series = st.rains.map(function (r) { return hourly(gpts(r.g.key)); });
-  var rmax = Math.max(0.1, Math.max.apply(null, [].concat.apply([], series).map(function (p) { return p.y; }).concat([0])));
+  var rfs = RF ? rrfsBars(RF, now, x1) : null;
+  var rmax = Math.max(0.1, Math.max.apply(null, [].concat.apply([], series).concat(rfs ? rfs.avg : []).map(function (p) { return p.y; }).concat([0])));
   var rTop = Math.ceil(rmax * 10) / 10;
   series.forEach(function (sr, i) {
     var o = base(false); o.scales.y = yScale(0, rTop, rTop / 2);
     put("chRain" + i, { type: "bar", data: { datasets: [{ label: st.rains[i].g.label + " (in)", data: sr,
       backgroundColor: st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5", barPercentage: 0.85, categoryPercentage: 1, minBarLength: 0 }] }, options: o });
   });
+  if (rfs) {   // RRFS: the watershed average as bars after now, the wettest grid point as a thin line
+    var fo = base(false); fo.scales.y = yScale(0, rTop, rTop / 2);
+    fo.plugins.tooltip.callbacks.label = function (it) { return it.dataset.label + ": " + it.parsed.y.toFixed(2) + " in"; };
+    put("chRrfs", { type: "bar", data: { datasets: [
+      { type: "line", label: "Wettest grid point", data: rfs.max, borderColor: "#7e57c2", borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0, order: 0 },
+      { label: "RRFS average", data: rfs.avg, backgroundColor: "rgba(126,87,194,0.55)", borderColor: "#7e57c2", borderWidth: 1, barPercentage: 0.85, categoryPercentage: 1, minBarLength: 0, order: 1 }] }, options: fo });
+    var tl = $("tlRrfs");
+    if (tl) { tl.className = "tile"; tl.innerHTML = '<span class="tv">' + (RF.e.totals ? RF.e.totals["6"].toFixed(2) : "–") + "<small> in</small></span>" +
+      '<span class="tx">next 6 hr (model)</span><span class="tx">24 hr <b>' + (RF.e.totals ? RF.e.totals["24"].toFixed(2) : "–") + "</b></span>" +
+      '<span class="tx">run ' + esc(rrfsRun(RF)) + "</span>"; }
+  }
   // running rain total (e.g. Belmont's 4-hour rain) with its trigger line
   if (c.rain_running && c.rain_running.line) {
     var rr = c.rain_running, rp = gpts(rr.gauge), run = [];
@@ -1457,7 +1517,7 @@ $("discLink").addEventListener("click", function (e) {
 });
 
 /* ---------- refresh schedule (also refresh when the phone comes back to this page) ---------- */
-function refreshAll() { loadAlerts(); loadCreek(); }
+function refreshAll() { loadAlerts(); loadRrfs(); loadCreek(); }
 LK.onChange(function () { applyLookups(); render(); });   // edited lookups/ files
 cityInit();
 refreshAll();

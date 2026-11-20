@@ -800,7 +800,17 @@
     o.prev = null;
     return o;
   }
+  // Staff view, same status as the public pages (STAFF_STATUS_FULL = 0; staff, 2026-11-20: a status that differed from the
+  // public site confused people). The staff view keeps its extras: the other creeks (with the same flood-level status),
+  // the gauges' Heavy / Very heavy / Intense rain ratings, triggers and notes. The data job still works out the full
+  // status (rain ratings, rising fast) and logs both in status_log.csv, so they can be checked after storms (alert_review.json).
+  function staffLikePublic() { return STAFF && LK.num("CREEK_PUBLIC_LEVELS_ONLY") === 1 && LK.num("STAFF_STATUS_FULL") !== 1; }
   function prepare(data) {
+    if (data && !data._prepared && staffLikePublic()) {
+      data._prepared = true;
+      (data.creeks || []).concat(data.creeks_preview || []).forEach(function (c) { if (c.status) { c.status_full = c.status; c.status = publicStatus(c.status); } });
+      return data;
+    }
     if (!data || data._prepared || !levelsOnly()) return data;
     data._prepared = true;
     (data.creeks || []).forEach(function (c) { if (c.status) { c.status_full = c.status; c.status = publicStatus(c.status); } });
