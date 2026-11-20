@@ -1083,8 +1083,16 @@ var refMarks = {
     var o = c.options.plugins.refMarks || {}, xs = c.scales.x, ys = c.scales.y, ctx = c.ctx, placed = [], left = o.side === "left";
     var pts = [];
     c.data.datasets.forEach(function (d, i) {
-      if (d.refLabel || d.fill || !c.isDatasetVisible(i)) return;
-      c.getDatasetMeta(i).data.forEach(function (e) { if (e && isFinite(e.x) && isFinite(e.y)) pts.push(e); });
+      // every plotted line, filled ones too (the creek level is drawn filled; staff 2026-11-19: its peak hid behind the labels);
+      // only shading with no line of its own is left out. Points are added along each segment, so a long straight stretch counts too.
+      if (d.refLabel || !c.isDatasetVisible(i) || (d.fill && (!d.borderColor || d.borderColor === "transparent"))) return;
+      var prev = null;
+      c.getDatasetMeta(i).data.forEach(function (e) {
+        if (!e || !isFinite(e.x) || !isFinite(e.y)) { prev = null; return; }
+        if (prev) { var n = Math.min(200, Math.floor(Math.max(Math.abs(e.x - prev.x), Math.abs(e.y - prev.y)) / 3));
+          for (var k = 1; k < n; k++) pts.push({ x: prev.x + (e.x - prev.x) * k / n, y: prev.y + (e.y - prev.y) * k / n }); }
+        pts.push(e); prev = e;
+      });
     });
     function free(x, y, w, h) {
       for (var k = 0; k < pts.length; k++) { var p = pts[k]; if (p.x >= x - 3 && p.x <= x + w + 3 && p.y >= y - 3 && p.y <= y + h + 3) return false; }
