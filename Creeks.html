@@ -13,6 +13,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
   integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- stretch and squish the graphs' time scale: drag to slide, pinch or Ctrl+scroll to zoom (staff 2026-11-19) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.2.0/chartjs-plugin-zoom.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>if (window.Chart) Chart.defaults.font.size = 13;   /* graph labels readable on phones (Nov 10, 2026) */</script>
 <style>
   :root {
@@ -216,6 +219,15 @@
     .tile .tv { font-size: 24px; } }
   .gtitle { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-top: 6px; }
   .gbox { position: relative; }
+  .trange { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; font-size: 14px; }
+  .trange .trl { font-weight: 700; color: var(--ink); }
+  .trange .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .trange button { font: inherit; font-size: 14px; padding: 4px 10px; min-height: 32px; border: 0; background: var(--card, #fff); color: var(--ink); cursor: pointer; }
+  .trange .seg button + button { border-left: 1px solid var(--line); }
+  .trange button.on { background: var(--ink); color: var(--card, #fff); font-weight: 700; }
+  .trange .treset { border: 1px solid var(--line); border-radius: 8px; }
+  .trange .thint { color: var(--muted); font-size: 13px; }
+  .gbox canvas { touch-action: pan-y; }
   #key { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; color: var(--muted); margin-top: 8px; }
   #key i { display: inline-block; width: 16px; height: 0; margin-right: 4px; vertical-align: 3px; }
 
@@ -388,6 +400,10 @@
 var CREEK_DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks.json";
 var COUNTY_SAME = "006081";        // San Mateo County, for NWS alerts
 var PAST_HOURS = 36, AHEAD_HOURS = 12;
+// The graphs' time scale (staff 2026-11-19: an engineer wants to stretch and squish it). RANGES are the buttons, in hours back;
+// D.view is a zoomed or slid window {a, b} in clock ms, null when the graphs show the whole range and follow the clock.
+var RANGES = [[12, "12 hr"], [36, "36 hr"], [72, "3 days"], [168, "7 days"]];
+var WEEK_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks_7day.json";
 var LK = window.LOOKUPS;
 var GAUGE_QUIET_HOURS, GAUGE_QUIET_HOURS_INTERVAL, CREEK_DATA_LATE_MIN, MODEL_MAX_AGE_HOURS, MODEL_MIN_AHEAD_HOURS, OFFSET_HIGH_FT;
 function applyLookups() {
@@ -434,7 +450,8 @@ function getJSON(url, accept) {
 var $ = function (id) { return document.getElementById(id); };
 
 /* ---------- state ---------- */
-var D = { creek: null, tides: {}, alerts: null, charts: {}, sel: "all", built: null };
+var D = { creek: null, tides: {}, alerts: null, charts: {}, sel: "all", built: null, view: null, week: null };
+try { var _r = +localStorage.getItem("fewsRange"); if (RANGES.some(function (x) { return x[0] === _r; })) PAST_HOURS = _r; } catch (e) {}
 var hashCreek = location.hash.replace("#", "");
 if (hashCreek && hashCreek !== "about") D.sel = hashCreek;   // e.g. Creeks.html#belmont; no hash = All creeks
 
@@ -447,7 +464,7 @@ function loadCreek() {
     D.creek = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; D.creekFailed = false; render(); loadTides(); })
     .catch(function () { D.creekFailed = true; render(); });
 }
-function creekLoop() { loadCreek().then(function () { setTimeout(creekLoop, LK.stormy && LK.stormy(D.creek) ? 60000 : 3 * 60000); }); }
+function creekLoop() { loadWeek(); loadCreek().then(function () { setTimeout(creekLoop, LK.stormy && LK.stormy(D.creek) ? 60000 : 3 * 60000); }); }
 function noaa(station, product, begin, end) {
   return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product + "&station=" + station +
     "&begin_date=" + begin + "&end_date=" + end + "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
@@ -510,6 +527,56 @@ function pts(key) {
   var s = D.creek && D.creek.sensors && D.creek.sensors[key];
   return s ? s.points.map(function (p) { return { t: ptime(p), v: p[1] }; }).sort(function (a, b) { return a.t - b.t; }) : [];
 }
+// a gauge's readings for the graphs: the 7-day file before the 2-day one starts, when the range reaches back that far
+function gpts(key) {
+  var p = pts(key), w = PAST_HOURS > 44 && D.week && D.week.sensors && D.week.sensors[key];
+  if (!w) return p;
+  var first = p.length ? p[0].t : Infinity;
+  return w.points.map(function (q) { return { t: ptime(q), v: q[1] }; }).filter(function (q) { return q.t < first; }).sort(function (a, b) { return a.t - b.t; }).concat(p);
+}
+function loadWeek() {
+  if (PAST_HOURS <= 44 || (D.weekAt && Date.now() - D.weekAt < 10 * 60000)) return;
+  D.weekAt = Date.now();
+  fetch(WEEK_URL + "?t=" + Math.floor(Date.now() / 60000), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (j) { D.week = j; render(); }).catch(function () { D.weekAt = 0; });
+}
+function setRange(h) {
+  PAST_HOURS = h; D.view = null;
+  try { localStorage.setItem("fewsRange", h); } catch (e) {}
+  Object.keys(D.tides).forEach(function (id) { D.tides[id].at = 0; });   // reload the tide for the longer range
+  loadWeek(); loadTides(); render();
+}
+function resetZoom() { D.view = null; render(); }
+// zoom by a factor around the window's middle (k < 1 zooms in), or slide by part of the window (dir -1 earlier, +1 later)
+function zoomBy(k) {
+  if (!D.full) return;
+  var a = D.view ? D.view.a : D.full[0], b = D.view ? D.view.b : D.full[1], m = (a + b) / 2, h = Math.max(36e5, (b - a) * k) / 2;
+  a = Math.max(D.full[0], m - h); b = Math.min(D.full[1], m + h);
+  D.view = a <= D.full[0] + 6e4 && b >= D.full[1] - 6e4 ? null : { a: a, b: b }; render();
+}
+function slideBy(dir) {
+  if (!D.full || !D.view) return;
+  var w = D.view.b - D.view.a, a = D.view.a + dir * w / 2;
+  a = Math.max(D.full[0], Math.min(D.full[1] - w, a)); D.view = { a: a, b: a + w }; render();
+}
+function rangeBar() {
+  var el = $("trange"); if (!el) return;
+  var fine = !!(window.matchMedia && matchMedia("(pointer: fine)").matches), z = !!D.view, zoomOK = !!(window.Chart && Chart.registry && Chart.registry.plugins.get("zoom"));
+  var shown = z ? fmt(D.view.a, { weekday: "short", hour: "numeric", minute: "2-digit" }) + " to " + fmt(D.view.b, { weekday: "short", hour: "numeric", minute: "2-digit" }) : "";
+  el.innerHTML = '<span class="trl">Time</span><span class="seg" role="group" aria-label="How far back the graphs go">' +
+    RANGES.map(function (r) { return '<button type="button" data-range="' + r[0] + '"' + (r[0] === PAST_HOURS ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + ">" + r[1] + "</button>"; }).join("") + "</span>" +
+    '<span class="seg" role="group" aria-label="Stretch or squish the time scale"><button type="button" data-zoom="2" title="Squish: show more time" aria-label="Show more time">−</button>' +
+    '<button type="button" data-zoom="0.5" title="Stretch: show less time, in more detail" aria-label="Show less time">+</button></span>' +
+    (z ? '<span class="seg"><button type="button" data-slide="-1" aria-label="Earlier">◀</button><button type="button" data-slide="1" aria-label="Later">▶</button></span><button type="button" class="treset" data-reset="1">Reset</button>' : "") +
+    '<span class="thint">' + (z ? esc(shown) : fine && zoomOK ? "Drag a graph to slide it · Ctrl+scroll or pinch the trackpad to zoom" : "+ and − stretch and squish the time scale") + "</span>";
+}
+document.addEventListener("click", function (e) {
+  var b = e.target.closest && e.target.closest("#trange button"); if (!b) return;
+  if (b.dataset.range) setRange(+b.dataset.range);
+  else if (b.dataset.zoom) zoomBy(+b.dataset.zoom);
+  else if (b.dataset.slide) slideBy(+b.dataset.slide);
+  else if (b.dataset.reset) resetZoom();
+});
 function rainSum(p, from, to) { var s = 0; p.forEach(function (x) { if (x.t > from && x.t <= to) s += x.v; }); return s; }
 function stageLevel(g, v) { var l = null; (g.thresholds || []).forEach(function (t) { if (v >= t.value) l = t; }); return l; }
 function inkOn(l) { return l && l.level === 1 ? "#1a1a1a" : "#fff"; }
@@ -1036,6 +1103,7 @@ var nowLine = {
   id: "nowLine",
   afterDatasetsDraw: function (ch) {
     var xs = ch.scales.x, ys = ch.scales.y, px = xs.getPixelForValue(0), ctx = ch.ctx;
+    if (px < xs.left - 1 || px > xs.right + 1) return;   // "now" is outside a zoomed or slid window
     ctx.save(); ctx.strokeStyle = "#8a96a6"; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(px, ys.top); ctx.lineTo(px, ys.bottom); ctx.stroke(); ctx.restore();
   }
@@ -1107,7 +1175,7 @@ function drawCharts(st, now) {
   var PVr = window.CREEK_STATUS && window.CREEK_STATUS.preview;   // status layer: OneRain-style rows (graph + reading tile)
   if (D.built !== c.id && PVr) {
     Object.keys(D.charts).forEach(function (k) { D.charts[k].destroy(); }); D.charts = {};
-    var g = "";
+    var g = '<div class="trange" id="trange"></div>';
     function row(canvas, hgt, tile, title) { return '<div class="srow"><div><div class="gtitle"><span>' + title + '</span></div><div class="gbox" style="height:' + hgt + 'px"><canvas id="' + canvas + '"></canvas></div></div><div class="tile" id="' + tile + '"></div></div>'; }
     g += '<div class="sgh" id="jLevel">Creek level</div>';
     st.stages.forEach(function (s, i) { g += row("chStage" + i, 170, "tlStage" + i, gaugeLink(s.g, esc(s.g.label)) + " · ft (gauge height)"); });
@@ -1122,7 +1190,7 @@ function drawCharts(st, now) {
   }
   if (D.built !== c.id) {   // build this creek's graph boxes
     Object.keys(D.charts).forEach(function (k) { D.charts[k].destroy(); }); D.charts = {};
-    var h = "";   // order: stage, rain, tide
+    var h = '<div class="trange" id="trange"></div>';   // order: stage, rain, tide
     st.stages.forEach(function (s, i) {
       h += '<div class="gtitle"><span>' + esc(s.g.label) + " · stage (ft)</span><span></span></div>" +
         '<div class="gbox" style="height:' + (st.stages.length > 1 ? 150 : 170) + 'px"><canvas id="chStage' + i + '"></canvas></div>';
@@ -1143,14 +1211,30 @@ function drawCharts(st, now) {
   if (fb) fb.innerHTML = fr ? '<div class="cs-details cs-fcbox">' + fr + "</div>" : "";
   var ink = css("--ink"), muted = css("--muted"), line = css("--line");
   var x0 = now - PAST_HOURS * 3600000, x1 = now + AHEAD_HOURS * 3600000, H = function (t) { return (t - now) / 3600000; };
-  var narrow = window.innerWidth < 520, step = narrow ? 12 : 6;
+  var narrow = window.innerWidth < 520;
+  if (D.view && (D.view.b <= x0 || D.view.a >= x1)) D.view = null;   // the range changed under a zoomed window
+  var va = D.view ? Math.max(x0, D.view.a) : x0, vb = D.view ? Math.min(x1, D.view.b) : x1;
+  D.viewNow = now; D.full = [x0, x1];
+  // stretch and squish: every graph shares one time window; sliding or zooming one moves them all (staff 2026-11-19)
+  var fine = !!(window.matchMedia && matchMedia("(pointer: fine)").matches);   // phones keep page scrolling over the graphs; they use the buttons
+  function syncView(e) {
+    var ch = e.chart, a = now + ch.scales.x.min * 3600000, b = now + ch.scales.x.max * 3600000;
+    D.view = a <= x0 + 6e4 && b >= x1 - 6e4 ? null : { a: a, b: b };
+    Object.keys(D.charts).forEach(function (k) { var o = D.charts[k]; if (o === ch) return;
+      o.options.scales.x.min = ch.scales.x.min; o.options.scales.x.max = ch.scales.x.max; o.update("none"); });
+    rangeBar();
+  }
   function xScale(show) {
-    return { type: "linear", min: H(x0), max: H(x1), offset: false,
+    return { type: "linear", min: H(va), max: H(vb), offset: false,
       ticks: { display: show, autoSkip: false, maxRotation: 0, color: muted, font: { size: 13 },
-        callback: function (v) { var t = Math.round((now + v * 3600000) / 3600000) * 3600000;
-          return new Date(t).getUTCHours() === 0 ? fmt(t, { weekday: "short" }) : fmt(t, { hour: "numeric" }); } },
-      afterBuildTicks: function (ax) { var o = [], f = Math.ceil(x0 / (step * 3600000)) * step * 3600000;
-        for (var t = f; t <= x1; t += step * 3600000) o.push({ value: H(t) }); ax.ticks = o; },
+        callback: function (v) { var t = Math.round((now + v * 3600000) / 3600000) * 3600000, d = new Date(t);
+          if (d.getUTCHours() !== 0) return fmt(t, { hour: "numeric" });
+          return this.max - this.min > 100 ? fmt(t, { weekday: "short", day: "numeric" }) : fmt(t, { weekday: "short" }); } },
+      afterBuildTicks: function (ax) {   // a tick every 1 to 24 hours, by how much time the window shows
+        var span = ax.max - ax.min, room = narrow ? 5 : 9, steps = [1, 2, 3, 6, 12, 24, 48], st = steps.filter(function (x) { return span / x <= room; })[0] || 48;
+        var a = now + ax.min * 3600000, b = now + ax.max * 3600000, o = [];
+        for (var t = Math.ceil(a / (st * 3600000)) * st * 3600000; t <= b; t += st * 3600000) o.push({ value: H(t) });
+        ax.ticks = o; },
       grid: { offset: false, drawTicks: false, color: function (cx) { return cx.tick && new Date(now + cx.tick.value * 3600000).getUTCHours() === 0 ? "#b9c4d0" : line; } } };
   }
   function yScale(min, max, stepY) {
@@ -1161,7 +1245,11 @@ function drawCharts(st, now) {
     show = show || PVr;   // OneRain-style rows: every graph has its own time axis
     return { responsive: true, maintainAspectRatio: false, animation: false,
       interaction: { mode: "nearest", axis: "x", intersect: false },
-      plugins: { legend: { display: false }, tooltip: { callbacks: {
+      plugins: { legend: { display: false },
+        zoom: { limits: { x: { min: H(x0), max: H(x1), minRange: 1 } },
+          pan: { enabled: fine, mode: "x", onPanComplete: syncView },
+          zoom: { wheel: { enabled: fine, modifierKey: "ctrl" }, pinch: { enabled: false }, mode: "x", onZoomComplete: syncView } },
+        tooltip: { callbacks: {
         title: function (it) { var t = now + it[0].parsed.x * 3600000; return fmt(t, { weekday: "short" }) + " " + fTime(t); },
         label: function (it) { return (it.dataset.label || "") + ": " + it.parsed.y.toFixed(2); } } } },
       layout: { padding: { right: 6 } }, scales: { x: xScale(show) } };
@@ -1171,22 +1259,22 @@ function drawCharts(st, now) {
     else D.charts[id] = new Chart($(id), { type: cfg.type || "line", data: cfg.data, options: cfg.options, plugins: [refMarks, nowLine] });
   }
   // rain: hourly totals, one graph per gauge on the same scale
-  function hourly(p) {
+  function hourly(p) {   // every hour, dry ones as 0, so a bar is one hour wide at any zoom
     var b = {}; p.forEach(function (x) { if (x.t > x0 && x.t <= now) { var hh = Math.ceil(x.t / 3600000) * 3600000; b[hh] = (b[hh] || 0) + x.v; } });
-    return Object.keys(b).filter(function (k) { return b[k] > 0; }).map(function (k) { return { x: H(+k) - 0.5, y: b[k] }; });
+    var o = []; for (var hh = Math.ceil(x0 / 3600000) * 3600000 + 3600000; hh <= Math.ceil(now / 3600000) * 3600000; hh += 3600000) o.push({ x: H(hh) - 0.5, y: b[hh] || 0 });
+    return o;
   }
-  var series = st.rains.map(function (r) { return hourly(r.p); });
+  var series = st.rains.map(function (r) { return hourly(gpts(r.g.key)); });
   var rmax = Math.max(0.1, Math.max.apply(null, [].concat.apply([], series).map(function (p) { return p.y; }).concat([0])));
   var rTop = Math.ceil(rmax * 10) / 10;
   series.forEach(function (sr, i) {
-    var box = $("chRain" + i).parentNode, pxPerHr = Math.max(1, (box.clientWidth - 40) / (PAST_HOURS + AHEAD_HOURS));
     var o = base(false); o.scales.y = yScale(0, rTop, rTop / 2);
     put("chRain" + i, { type: "bar", data: { datasets: [{ label: st.rains[i].g.label + " (in)", data: sr,
-      backgroundColor: st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5", barThickness: Math.max(2, Math.floor(pxPerHr * 0.8)) }] }, options: o });
+      backgroundColor: st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5", barPercentage: 0.85, categoryPercentage: 1, minBarLength: 0 }] }, options: o });
   });
   // running rain total (e.g. Belmont's 4-hour rain) with its trigger line
   if (c.rain_running && c.rain_running.line) {
-    var rr = c.rain_running, rp = pts(rr.gauge), run = [];
+    var rr = c.rain_running, rp = gpts(rr.gauge), run = [];
     for (var tt = Math.ceil(x0 / 600000) * 600000; tt <= now; tt += 600000) run.push({ x: H(tt), y: rainSum(rp, tt - rr.minutes * 60000, tt) });
     var top = Math.ceil(Math.max(rr.line * 1.25, Math.max.apply(null, run.map(function (p) { return p.y; }).concat([0])) * 1.1) * 10) / 10;
     var qo = base(false); qo.scales.y = yScale(0, top, top / 2);
@@ -1197,8 +1285,8 @@ function drawCharts(st, now) {
   // stage for each gauge, with its thresholds
   st.stages.forEach(function (s, i) {
     var g = s.g, ths = g.thresholds || [];
-    var sp = s.p.filter(function (p) { return p.t >= x0 - 6 * 3600000; }).map(function (p) { return { x: H(p.t), y: p.v }; });
-    var ls = s.p.length ? s.p[s.p.length - 1] : null;
+    var sp0 = gpts(g.key), sp = sp0.filter(function (p) { return p.t >= x0 - 6 * 3600000; }).map(function (p) { return { x: H(p.t), y: p.v }; });
+    var ls = sp0.length ? sp0[sp0.length - 1] : null;
     if (ls && g.reports !== "interval" && now - ls.t < GAUGE_QUIET_HOURS * 3600000) sp.push({ x: 0, y: ls.v });   // level unchanged since last report
     var vmax = Math.max.apply(null, sp.map(function (p) { return p.y; }).concat([0]));
     var shown = ths.filter(function (t) { return t.level <= 3 || t.public_note || vmax > t.value * 0.75; });   // a level with an effect on the ground (Atherton's road spill) always shows
@@ -1234,6 +1322,7 @@ function drawCharts(st, now) {
       { label: LK.text("lbl_expected") + " (ft)", data: tf, borderColor: css("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2 }]
       .concat(isFinite(trl) ? [{ label: LK.text("tide_red_line_creek", { ft: LK.tideFt(trl, "9414523") }), refLabel: LK.text("tide_red_line_creek", { ft: trl.toFixed(1) + " ft" }), data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], borderColor: css("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, pointHoverRadius: 0 }] : []) }, options: tO });
   }
+  rangeBar();
   var seen = {}, key = "", PVk = window.CREEK_STATUS && window.CREEK_STATUS.preview;
   if (!PVk) c.stages.forEach(function (g) { (g.thresholds || []).forEach(function (t) { if (!seen[t.name]) { seen[t.name] = 1;
     key += "<span><i style='border-top:2px dashed " + t.color + "'></i>" + esc(t.name.replace(/^Flood | Flood Stage$/g, "")) + "</span>"; } }); });
