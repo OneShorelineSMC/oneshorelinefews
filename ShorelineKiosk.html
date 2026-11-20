@@ -549,17 +549,17 @@
   <div id="sbabout">
     <div class="sbcol">
       <h3>San Bruno Creek flood screen</h3>
-      <p>Live readings for San Bruno Creek: OneShoreline’s creek and rain gauge at First Avenue, NOAA’s Bay tide at Alameda and the National Weather Service rain forecast, updated about every 5 minutes. Provisional data, for information only. For warnings, follow the National Weather Service and San Mateo County.</p>
+      <p>Readings from OneShoreline’s creek and rain gauge at First Avenue, NOAA’s Bay tide at Alameda and the National Weather Service rain forecast, updated about every 5 minutes. The data is provisional. For warnings, follow the National Weather Service and San Mateo County.</p>
       <h4>How San Bruno Creek floods</h4>
-      <p>Flooding along the eastern avenues comes from a storm of about 5-year size or bigger, often a short, intense burst, arriving while the Bay is at a king tide or higher. The high Bay backs water up the creek (the First Avenue gauge rises and falls with the tide). Flooding can still happen without one.</p>
+      <p>The eastern avenues flood when a storm of about 5-year size or bigger, often a short, intense burst, arrives while the Bay is at a king tide or higher. The high Bay backs water up the creek, which is why the First Avenue gauge rises and falls with the tide. Flooding can happen at other times too.</p>
       <p class="sbfig" id="sbFive"></p>
       <p class="sbsrc">Sources: OneShoreline (OneRain) · NOAA 9414750 Alameda · NWS · NOAA Atlas 14 · OneShoreline <span data-text="contact_phone"></span></p>
     </div>
     <div class="sbcol">
-      <h4>Live conditions: three graphs, one timeline</h4>
-      <p><b>Creek level</b> at First Avenue, with dashed lines at its flood levels (<span id="sbLv"></span>). It rises with rain and also with the tide. <b>Rain per hour</b> at First Avenue: tall bars close together mean an intense burst, the kind that raises the creek fastest. <b>Bay tide</b> at Alameda, measured and the tide table: measured above the table means storms or wind are pushing the Bay higher. The panel beside them gives the latest readings; ⚠ <b>Not reporting</b> means a gauge has gone quiet.</p>
-      <h4>Outlook: the last day and next 3 days</h4>
-      <p>The same three graphs, with the National Weather Service rain forecast after now. Shading shows when flood conditions line up: <b class="sbam">amber</b> for <b>flood-size rain</b>, 6 hours of forecast rain at or above a 1-year storm<span id="sbOne"></span>, enough to hold 5-year bursts; <b class="sbbl">purple</b> for high tides (darker: king tide); <b class="sbor">orange outline</b> where they meet. The shading is a guide, not a forecast; flooding can happen without it.</p>
+      <h4>The live graphs</h4>
+      <p>The top graph is the creek level at First Avenue. Its dashed lines mark the flood levels (<span id="sbLv"></span>). The middle graph is rain per hour at First Avenue. Tall bars close together mean an intense burst, which raises the creek fastest. The bottom graph is the Bay tide at Alameda, measured and from the tide table; when the measured tide runs above the table, storms or wind are pushing the Bay higher. In the readings on the left, ⚠ Not reporting means a gauge has gone quiet.</p>
+      <h4>The outlook graphs</h4>
+      <p>The Outlook tab shows the same graphs for the last day and next 3 days, with the NWS rain forecast after now. <b class="sbam">Amber</b> shading marks flood-size rain: 6 hours of forecast rain at or above a 1-year storm<span id="sbOne"></span>, enough rain to hold the 5-year bursts. <b class="sbbl">Purple</b> marks high tides, darker for a king tide, and an <b class="sbor">orange outline</b> marks where they meet. The shading is a guide; the creek can flood without it.</p>
     </div>
   </div>
   <div id="about">
@@ -2500,7 +2500,7 @@ function renderOutlook() {
     (kings.length ? '<div class="olt m">Next king tides: ' + esc(kings.join(" · ")) + "</div>" : "") + "</div>";
   // flood case
   var f = ov.length ? '<div class="olbox olhit"><div class="olv or">Flood-size rain + king tide</div><div class="olt"><b>' + esc(span(ov[0].t0, ov[0].t1)) + "</b>: flooding along the eastern avenues is possible.</div></div>"
-    : '<div class="olbox"><div class="olt"><b>Watch for:</b> flood-size rain during a king tide (outlined on the graph). Flooding can still happen at other times.</div></div>';
+    : '<div class="olbox"><div class="olt"><b>Watch for</b> flood-size rain during a king tide, outlined on the graph. Flooding can also happen at other times.</div></div>';
   el.innerHTML = '<div class="olhead"><b>San Bruno Creek · outlook</b> <span>trial · last day and next 3 days</span><span class="olkey" id="olKeyTop"></span></div>' +
     '<div class="olbody"><div class="olleft">' + r + t + f + '</div><div class="olright">' +
     '<div class="olg"><div class="olgt">First Avenue · creek level (ft)</div><div class="olc" style="flex:1.15"><canvas id="olC1"></canvas></div></div>' +
@@ -2576,7 +2576,7 @@ function fillSbAbout() {
   var parts = [[15, "15 min"], [60, "1 hour"], [360, "6 hours"]].filter(function (x) { return five(x[0]); }).map(function (x) { return five(x[0]).toFixed(2) + " in in " + x[1]; });
   var o6 = fr && fr["360"] ? fr["360"]["1.0"] || fr["360"]["1"] : null;
   document.getElementById("sbOne").textContent = o6 ? " (" + o6.toFixed(2) + " in at First Avenue)" : "";
-  document.getElementById("sbFive").innerHTML = parts.length ? "<b>A 5-year storm at First Avenue</b> (NOAA Atlas 14): " + esc(parts.join(" · ")) + ". Compare with the rain graph on the Live tab." : "";
+  document.getElementById("sbFive").innerHTML = parts.length ? "<b>A 5-year storm at First Avenue</b> (NOAA Atlas 14): " + esc(parts.join(" · ")) + ". Compare with the rain graph on the Live conditions tab." : "";
 }
 function showTab(name) {
   if (name === "outlook" && !olStaff()) name = "about";
