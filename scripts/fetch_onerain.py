@@ -403,8 +403,9 @@ def add_signals(result, previous, now):
             if p and g.get("number"):
                 n = str(g["number"])
                 site_last[n] = max(site_last.get(n, p[-1][0]), p[-1][0])
-            if e and g in c["rain"] + c.get("rain_support", []) and g["key"] not in [k for k, _ in county]:
-                county.append((g["key"], p))
+            gid = str(g.get("number") or g["key"])   # one gauge listed under two creeks counts once (Pilarcitos Dam, Nov 19)
+            if e and g in c["rain"] + c.get("rain_support", []) and gid not in [k for k, _ in county]:
+                county.append((gid, p))
             if g in c["rain"] + c.get("rain_support", []) and str(g.get("number") or "").isdigit():
                 rain_sites.add(str(g["number"]))
     county = [p for _, p in county]
