@@ -548,10 +548,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261120b"></script>
-<script src="tide_season.js?v=20261120b"></script>
-<script src="severity.js?v=20261120b"></script>
-<script src="hero.js?v=20261120b"></script>
+<script src="lookups.js?v=20261120c"></script>
+<script src="tide_season.js?v=20261120c"></script>
+<script src="severity.js?v=20261120c"></script>
+<script src="hero.js?v=20261120c"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -747,9 +747,11 @@ function renderWaves() {
 /* ===================== CONFIG ===================== */
 // MHHW, the settings marked (lookups) and the wording come from the lookups/ folder through lookups.js (lookups/README.md)
 var LK = window.LOOKUPS;
-// Bayside (Redwood City 9414523) or, with ?side=coast, Coastside (Monterey 9413450, NOAA's nearest open-coast gauge with live readings)
+// Bayside (Redwood City 9414523); with ?side=ala, Alameda (9414750, the gauge FEWS uses for Colma and San Bruno creeks;
+// staff, 2026-11-20); with ?side=coast, Coastside (Monterey 9413450, NOAA's nearest open-coast gauge with live readings)
 var COAST = /[?&]side=coast\b/.test(location.search);
-var STATIONS = [LK.station(COAST ? "9413450" : "9414523")];   // MHHW (ft NAVD88) from lookups/tide_stations.csv
+var ALA = !COAST && /[?&]side=ala(meda)?\b/.test(location.search);   // Alameda: Bay wording, no flood level or 1-year tide set yet
+var STATIONS = [LK.station(COAST ? "9413450" : ALA ? "9414750" : "9414523")];   // MHHW (ft NAVD88) from lookups/tide_stations.csv
 var SIDE = COAST ? { name: "Coastside Tides", sub: "Pacific coast, San Mateo County", water: "ocean", tide: "Ocean tide" }
   : { name: "Bayside Tides", sub: "San Francisco Bay, San Mateo County", water: "Bay", tide: "Bay tide" };
 var COUNTY_SAME = "006081";        // San Mateo County, for NWS alerts
@@ -776,6 +778,10 @@ if (EMBED) document.body.classList.add("embed");
   document.title = SIDE.name + " – OneShoreline";
   $("h1").textContent = SIDE.name;
   var am = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (am) am.setAttribute("content", SIDE.name);
+  if (ALA) {
+    $("intro").setAttribute("data-text", "ala_intro");
+    var rka = document.querySelector('.ckey [data-text="tide_day_red"]'); if (rka) rka.parentNode.style.display = "none";   // no flood level at Alameda yet
+  }
   if (!COAST) return;
   $("intro").setAttribute("data-text", "coast_intro");
   Array.prototype.forEach.call(document.querySelectorAll('[data-text="noaa_forecast_note"]'), function (e) { e.setAttribute("data-text", e.getAttribute("data-text") + "_coast"); });
@@ -932,7 +938,7 @@ function headHtml(ups, st, now, s) {
     var b1 = "Peak <b>" + LK.tideHTML(hw.w.peak, st.id) + "</b> (" + esc(srcWord(hw.w.src)) + ") at " + esc(fTime(hw.w.peakT)) + " · flood level " + esc(LK.tideFt(hw.rl, st.id)) + ", provisional" +
       (hw.more ? " · " + hw.more + " more high tide" + (hw.more > 1 ? "s" : "") + " at flood level this week" : "");
     return '<span class="hi" aria-hidden="true">⚠</span>' + esc(LK.text("tide_head_red") + where) + ": " + esc(hw.when) +
-      '<span class="hd">' + b1 + "<br>" + (COAST ? "" : "Measured at Redwood City; levels are similar all along the county’s Bay shoreline. ") +
+      '<span class="hd">' + b1 + "<br>" + (COAST ? "" : ALA ? "Measured at Alameda, the NOAA gauge FEWS uses for Colma and San Bruno creeks. " : "Measured at Redwood City; levels are similar all along the county’s Bay shoreline. ") +
       "<b>" + esc(LK.text("tide_red_what")) + "</b></span>";
   }
   var first = ups[0], on = first.start <= now;
@@ -1002,7 +1008,8 @@ function afdFresh() { return AFD.lines && AFD.issued && Date.now() - new Date(AF
 $("cards").innerHTML = S.map(function (s, i) {
   return '<div class="card tcard" id="st' + i + '">' +
     '<div class="th"><span class="tgauge"><span class="tn">' + esc(s.st.name) + '</span>' +
-    '<span class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html" aria-label="Bayside Tides"' + (COAST ? "" : ' aria-current="page"') + '>Bay</a>' +
+    '<span class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html" aria-label="Bayside Tides, Redwood City"' + (COAST || ALA ? "" : ' aria-current="page"') + '>Redwood City</a>' +
+    '<a href="Tides.html?side=ala" aria-label="Bayside Tides, Alameda"' + (ALA ? ' aria-current="page"' : "") + ">Alameda</a>" +
     '<a href="Tides.html?side=coast" aria-label="Coastside Tides"' + (COAST ? ' aria-current="page"' : "") + ">Coast</a></span></span>" +
     '<span class="lbl">NOAA ' + noaaA(s.st.id) + " · ft NAVD88</span></div>" +
     '<div class="head unknown"><div class="hm">Loading tides…</div></div>' +
@@ -1016,7 +1023,7 @@ $("cards").innerHTML = S.map(function (s, i) {
     '<button type="button" data-h="mhhw" aria-pressed="' + (LK.heightMode() !== "navd") + '">Above average</button><button type="button" data-h="navd" aria-pressed="' + (LK.heightMode() === "navd") + '">NAVD88</button></div></div></div>' +
     '<div class="days"></div><p class="estn"></p>' +
     // Bayside only (staff, 2026-11-12): how Redwood City compares with San Francisco and with the rest of the county's Bay shoreline
-    (COAST ? "" : '<p class="sfn">' + esc(LK.text("tide_bay_sf_note")) + " " + esc(LK.text("tide_bay_stretch_note")) + "</p>") +
+    (COAST || ALA ? "" : '<p class="sfn">' + esc(LK.text("tide_bay_sf_note")) + " " + esc(LK.text("tide_bay_stretch_note")) + "</p>") +
     '<div class="gbox"><canvas id="ch' + i + '" role="img" aria-label="Graph of the tide for the next 7 days. The same heights are listed day by day above."></canvas></div>' +
     '<div class="key"></div>' +
     "</div>" +
@@ -1511,11 +1518,11 @@ function tsToday() {
 function tsAdd(iso, n) { return new Date(Date.parse(iso + "T00:00:00Z") + n * 86400000).toISOString().slice(0, 10); }
 function tsFmt(iso, o) { return new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", Object.assign({ timeZone: "UTC" }, o)); }
 function tsDay(iso) { return tsFmt(iso, { weekday: "short" }) + " " + tsFmt(iso, { month: "short", day: "numeric" }); }
-var TSN = COAST ? window.TIDE_SEASON_COAST : window.TIDE_SEASON;   // Monterey or Redwood City high tides, King Tides and calendar
+var TSN = COAST ? window.TIDE_SEASON_COAST : ALA ? window.TIDE_SEASON_ALA : window.TIDE_SEASON;   // Monterey, Alameda or Redwood City high tides and calendar
 // ---- This season so far, from the tide tracker (written hourly by the data job). Shown only when its numbers are in.
 var TRK = null, TRK_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/tide_tracker.json";
 function seasonStats(trk) {
-  var el = $("sstats"), sid = COAST ? "9413450" : "9414523";
+  var el = $("sstats"), sid = STATIONS[0].id;
   var st = trk && (trk.stations || []).filter(function (x) { return x.id === sid; })[0];
   if (!st || !st.days || !st.history || !st.history.pace) { el.classList.add("hide"); return; }
   var esc2 = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); };
@@ -1756,12 +1763,12 @@ function renderCalendar() {
   }
   $("ofkey").classList.toggle("hide", !anyOf);
   $("astkey").classList.toggle("hide", !anyAst);
-  $("astkeyt").textContent = LK.text("tide_day_astro", { ft: TSN.ft(TSN.king()) });
+  $("astkeyt").textContent = isFinite(TSN.king()) ? LK.text("tide_day_astro", { ft: TSN.ft(TSN.king()) }) : "";
   $("ofkeyt").textContent = anyOf ? LK.text("tide_offset_cal_key", { water: SIDE.water }) : "";
   $("nrkey").classList.toggle("hide", !anyNr);
   $("nrkeyt").textContent = anyNr ? LK.text("tide_near_key", { ft: LK.num("TIDE_NEAR_FT").toFixed(1) }) : "";
   if (!document.querySelector('.mgrid .d[tabindex="0"]')) { var f0 = document.querySelector(".mgrid .d"); if (f0) f0.tabIndex = 0; }
-  $("calsrc").innerHTML = noaaLinks(esc(LK.text(COAST ? "tide_cal_source_short_coast" : "tide_cal_source_short", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()), units: LK.tideUnits(TSN.station) })));
+  $("calsrc").innerHTML = noaaLinks(esc(LK.text(COAST ? "tide_cal_source_short_coast" : ALA ? "tide_cal_source_short_ala" : "tide_cal_source_short", { red: TSN.ft(TSN.red()), mhhw: TSN.mhhw().toFixed(2), king: TSN.ft(TSN.king()), units: LK.tideUnits(TSN.station) })));
 }
 // Keyboard: Enter or Space acts like a tap on anything marked role="button" (calendar days, the King Tide card, the alert bar)
 document.addEventListener("keydown", function (e) {
