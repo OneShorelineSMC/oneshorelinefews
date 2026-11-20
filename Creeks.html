@@ -402,7 +402,10 @@ var COUNTY_SAME = "006081";        // San Mateo County, for NWS alerts
 var PAST_HOURS = 36, AHEAD_HOURS = 12;
 // The graphs' time scale (staff 2026-11-19: an engineer wants to stretch and squish it). RANGES are the buttons, in hours back;
 // D.view is a zoomed or slid window {a, b} in clock ms, null when the graphs show the whole range and follow the clock.
-var RANGES = [[12, "12 hr"], [36, "36 hr"], [72, "3 days"], [168, "7 days"]];
+// [hours back, hours ahead, label]: short ranges look ahead less, so the window stays mostly on what happened (3 and 6 hr: staff 2026-11-19)
+var RANGES = [[3, 1, "3 hr"], [6, 2, "6 hr"], [12, 4, "12 hr"], [36, 12, "36 hr"], [72, 12, "3 days"], [168, 12, "7 days"]];
+function rainBinMin() { return PAST_HOURS <= 6 ? 15 : 60; }   // rain bars: 15-minute totals on the short ranges, hourly otherwise
+function rainUnit() { return rainBinMin() === 15 ? "rain per 15 min (in)" : "rain per hour (in)"; }
 var WEEK_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/creeks_7day.json";
 var LK = window.LOOKUPS;
 var GAUGE_QUIET_HOURS, GAUGE_QUIET_HOURS_INTERVAL, CREEK_DATA_LATE_MIN, MODEL_MAX_AGE_HOURS, MODEL_MIN_AHEAD_HOURS, OFFSET_HIGH_FT;
@@ -451,7 +454,7 @@ var $ = function (id) { return document.getElementById(id); };
 
 /* ---------- state ---------- */
 var D = { creek: null, tides: {}, alerts: null, charts: {}, sel: "all", built: null, view: null, week: null };
-try { var _r = +localStorage.getItem("fewsRange"); if (RANGES.some(function (x) { return x[0] === _r; })) PAST_HOURS = _r; } catch (e) {}
+try { var _r = +localStorage.getItem("fewsRange"); RANGES.forEach(function (x) { if (x[0] === _r) { PAST_HOURS = x[0]; AHEAD_HOURS = x[1]; } }); } catch (e) {}
 var hashCreek = location.hash.replace("#", "");
 if (hashCreek && hashCreek !== "about") D.sel = hashCreek;   // e.g. Creeks.html#belmont; no hash = All creeks
 
@@ -541,7 +544,9 @@ function loadWeek() {
     .then(function (j) { D.week = j; render(); }).catch(function () { D.weekAt = 0; });
 }
 function setRange(h) {
-  PAST_HOURS = h; D.view = null;
+  var r = RANGES.filter(function (x) { return x[0] === h; })[0] || RANGES[3];
+  var unit = rainUnit(); PAST_HOURS = r[0]; AHEAD_HOURS = r[1]; D.view = null;
+  if (rainUnit() !== unit) D.built = null;   // the rain graphs' titles change with the bar size
   try { localStorage.setItem("fewsRange", h); } catch (e) {}
   Object.keys(D.tides).forEach(function (id) { D.tides[id].at = 0; });   // reload the tide for the longer range
   loadWeek(); loadTides(); render();
@@ -550,7 +555,7 @@ function resetZoom() { D.view = null; render(); }
 // zoom by a factor around the window's middle (k < 1 zooms in), or slide by part of the window (dir -1 earlier, +1 later)
 function zoomBy(k) {
   if (!D.full) return;
-  var a = D.view ? D.view.a : D.full[0], b = D.view ? D.view.b : D.full[1], m = (a + b) / 2, h = Math.max(36e5, (b - a) * k) / 2;
+  var a = D.view ? D.view.a : D.full[0], b = D.view ? D.view.b : D.full[1], m = (a + b) / 2, h = Math.max(18e5, (b - a) * k) / 2;
   a = Math.max(D.full[0], m - h); b = Math.min(D.full[1], m + h);
   D.view = a <= D.full[0] + 6e4 && b >= D.full[1] - 6e4 ? null : { a: a, b: b }; render();
 }
@@ -564,7 +569,7 @@ function rangeBar() {
   var fine = !!(window.matchMedia && matchMedia("(pointer: fine)").matches), z = !!D.view, zoomOK = !!(window.Chart && Chart.registry && Chart.registry.plugins.get("zoom"));
   var shown = z ? fmt(D.view.a, { weekday: "short", hour: "numeric", minute: "2-digit" }) + " to " + fmt(D.view.b, { weekday: "short", hour: "numeric", minute: "2-digit" }) : "";
   el.innerHTML = '<span class="trl">Time</span><span class="seg" role="group" aria-label="How far back the graphs go">' +
-    RANGES.map(function (r) { return '<button type="button" data-range="' + r[0] + '"' + (r[0] === PAST_HOURS ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + ">" + r[1] + "</button>"; }).join("") + "</span>" +
+    RANGES.map(function (r) { return '<button type="button" data-range="' + r[0] + '"' + (r[0] === PAST_HOURS ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + ">" + r[2] + "</button>"; }).join("") + "</span>" +
     '<span class="seg" role="group" aria-label="Stretch or squish the time scale"><button type="button" data-zoom="2" title="Squish: show more time" aria-label="Show more time">−</button>' +
     '<button type="button" data-zoom="0.5" title="Stretch: show less time, in more detail" aria-label="Show less time">+</button></span>' +
     (z ? '<span class="seg"><button type="button" data-slide="-1" aria-label="Earlier">◀</button><button type="button" data-slide="1" aria-label="Later">▶</button></span><button type="button" class="treset" data-reset="1">Reset</button>' : "") +
@@ -1180,7 +1185,7 @@ function drawCharts(st, now) {
     g += '<div class="sgh" id="jLevel">Creek level</div>';
     st.stages.forEach(function (s, i) { g += row("chStage" + i, 170, "tlStage" + i, gaugeLink(s.g, esc(s.g.label)) + " · ft (gauge height)"); });
     g += '<div class="sgh" id="jRain">Rain</div>';
-    st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · rain per hour (in)"); });
+    st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · " + rainUnit()); });
     if (c.rain_running && c.rain_running.line) g += row("chRun", 90, "tlRun", esc(c.rain_running.label));
     g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul>';
     if (c.tide) g += '<div class="sgh" id="tideTitle">Bay tide</div>' + row("chTide", 150, "tlTide", (T ? esc(T.st.name) : "Bay") + " · ft NAVD88");
@@ -1197,7 +1202,7 @@ function drawCharts(st, now) {
     });
     st.rains.forEach(function (r, i) {
       var col = st.rains.length > 1 ? RAIN_COLORS[i] : "#1e88e5";
-      h += '<div class="gtitle"><span><b><i aria-hidden="true" style="display:inline-block;width:14px;border-top:3px solid ' + col + ';vertical-align:middle;margin-right:4px"></i>' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + "</span><span>in/hr</span></div>" +
+      h += '<div class="gtitle"><span><b><i aria-hidden="true" style="display:inline-block;width:14px;border-top:3px solid ' + col + ';vertical-align:middle;margin-right:4px"></i>' + esc(r.g.label) + "</b> rain" + (r.g.where ? " · " + esc(r.g.where) : "") + "</span><span>" + (rainBinMin() === 15 ? "in/15 min" : "in/hr") + "</span></div>" +
         '<div class="gbox" style="height:64px"><canvas id="chRain' + i + '"></canvas></div>';
     });
     if (c.rain_running && c.rain_running.line) h += '<div class="gtitle"><span>' + esc(c.rain_running.label) + '</span><span><i aria-hidden="true" style="display:inline-block;width:14px;border-top:2px dashed ' + runColor(c) + ';vertical-align:middle;margin-right:4px"></i>trigger ' + c.rain_running.line.toFixed(2) + " in</span></div>" +
@@ -1227,11 +1232,12 @@ function drawCharts(st, now) {
   function xScale(show) {
     return { type: "linear", min: H(va), max: H(vb), offset: false,
       ticks: { display: show, autoSkip: false, maxRotation: 0, color: muted, font: { size: 13 },
-        callback: function (v) { var t = Math.round((now + v * 3600000) / 3600000) * 3600000, d = new Date(t);
+        callback: function (v) { var t = Math.round((now + v * 3600000) / 9e5) * 9e5, d = new Date(t);
+          if (d.getUTCMinutes()) return fmt(t, { hour: "numeric", minute: "2-digit" });
           if (d.getUTCHours() !== 0) return fmt(t, { hour: "numeric" });
           return this.max - this.min > 100 ? fmt(t, { weekday: "short", day: "numeric" }) : fmt(t, { weekday: "short" }); } },
       afterBuildTicks: function (ax) {   // a tick every 1 to 24 hours, by how much time the window shows
-        var span = ax.max - ax.min, room = narrow ? 5 : 9, steps = [1, 2, 3, 6, 12, 24, 48], st = steps.filter(function (x) { return span / x <= room; })[0] || 48;
+        var span = ax.max - ax.min, room = narrow ? 5 : 9, steps = [0.25, 0.5, 1, 2, 3, 6, 12, 24, 48], st = steps.filter(function (x) { return span / x <= room; })[0] || 48;
         var a = now + ax.min * 3600000, b = now + ax.max * 3600000, o = [];
         for (var t = Math.ceil(a / (st * 3600000)) * st * 3600000; t <= b; t += st * 3600000) o.push({ value: H(t) });
         ax.ticks = o; },
@@ -1246,7 +1252,7 @@ function drawCharts(st, now) {
     return { responsive: true, maintainAspectRatio: false, animation: false,
       interaction: { mode: "nearest", axis: "x", intersect: false },
       plugins: { legend: { display: false },
-        zoom: { limits: { x: { min: H(x0), max: H(x1), minRange: 1 } },
+        zoom: { limits: { x: { min: H(x0), max: H(x1), minRange: 0.5 } },
           pan: { enabled: fine, mode: "x", onPanComplete: syncView },
           zoom: { wheel: { enabled: fine, modifierKey: "ctrl" }, pinch: { enabled: false }, mode: "x", onZoomComplete: syncView } },
         tooltip: { callbacks: {
@@ -1259,9 +1265,10 @@ function drawCharts(st, now) {
     else D.charts[id] = new Chart($(id), { type: cfg.type || "line", data: cfg.data, options: cfg.options, plugins: [refMarks, nowLine] });
   }
   // rain: hourly totals, one graph per gauge on the same scale
-  function hourly(p) {   // every hour, dry ones as 0, so a bar is one hour wide at any zoom
-    var b = {}; p.forEach(function (x) { if (x.t > x0 && x.t <= now) { var hh = Math.ceil(x.t / 3600000) * 3600000; b[hh] = (b[hh] || 0) + x.v; } });
-    var o = []; for (var hh = Math.ceil(x0 / 3600000) * 3600000 + 3600000; hh <= Math.ceil(now / 3600000) * 3600000; hh += 3600000) o.push({ x: H(hh) - 0.5, y: b[hh] || 0 });
+  function hourly(p) {   // every bin (an hour, or 15 min on the short ranges), dry ones as 0, so a bar is one bin wide at any zoom
+    var bm = rainBinMin() * 60000, b = {};
+    p.forEach(function (x) { if (x.t > x0 && x.t <= now) { var hh = Math.ceil(x.t / bm) * bm; b[hh] = (b[hh] || 0) + x.v; } });
+    var o = []; for (var hh = Math.ceil(x0 / bm) * bm + bm; hh <= Math.ceil(now / bm) * bm; hh += bm) o.push({ x: H(hh) - bm / 7.2e6, y: b[hh] || 0 });
     return o;
   }
   var series = st.rains.map(function (r) { return hourly(gpts(r.g.key)); });
