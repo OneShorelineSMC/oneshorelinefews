@@ -21,6 +21,8 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="lookups.js?v=20261120c"></script>
+<script src="tide_season.js?v=20261120c"></script>
 <style>
   :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
     --meas: #1e88e5; --tidetbl: #4a4f55; --mhhw: #5f6b78; --red: #c0392b; --minor: #a35f00; --oneyear: #003B5C; --band: rgba(30,136,229,.13); --med: #8a96a3;
@@ -93,6 +95,8 @@
   .mini h3 { font-size: 14.5px; margin: 0; color: var(--ink); display: flex; justify-content: space-between; gap: 8px; }
   .mini h3 span { font-weight: 400; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
   .mini .cb { position: relative; height: 120px; margin-top: 4px; }
+  .mini .tb { position: relative; height: 78px; margin-top: 2px; }
+  .mini .tt { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
   .mini .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; min-height: 1.3em; }
   .mini.hot { border-color: #ef9f27; box-shadow: inset 3px 0 0 #ef9f27; }
   #sum { min-width: 900px; }   /* scrolls sideways on a phone instead of squeezing each row tall */
@@ -141,6 +145,14 @@
       <span><i class="sw" style="background:var(--fc);border:1px solid var(--fcline)"></i>watershed average</span>
       <span><i class="sw" style="background:none;border-top:2px dashed var(--fcline);border-radius:0;height:0;width:16px"></i>wettest grid point</span>
       <span><i class="sw" style="background:var(--amber)"></i>forecast Heavy or more</span>
+    </div>
+    <div class="lg">
+      <span>Bayside creeks, the tide at their NOAA gauge (ft NAVD88):</span>
+      <span><i class="sw" style="background:none;border-top:1.5px solid #8a96a3;border-radius:0;height:0;width:16px"></i>tide table</span>
+      <span><i class="sw" style="background:none;border-top:3px dotted #0A5587;border-radius:0;height:0;width:16px"></i>NOAA projection</span>
+      <span><i class="sw" style="background:none;border-top:3px dotted #9aa3ad;border-radius:0;height:0;width:16px"></i>estimate after it (table + recent offset)</span>
+      <span><i class="sw" style="background:none;border-top:2px dashed #5f6b78;border-radius:0;height:0;width:16px"></i>MHHW</span>
+      <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>Redwood City flood level</span>
     </div>
     <div class="grid2" id="minis"></div>
   </div>
@@ -236,7 +248,11 @@ function renderMinis() {
   ids.forEach(function (id) { var pe = C[id]["p" + P]; if (pe) pe.max.forEach(function (v, k) { if (v != null && steps[k] > now) top = Math.max(top, v); }); });
   top = Math.max(P === "15" ? 0.05 : 0.1, Math.ceil(top * 20) / 20);
   var box = $("minis");
-  if (box.dataset.ids !== ids.join()) { box.innerHTML = ids.map(function (id) { return '<div class="mini" id="m_' + id + '"><h3>' + esc(C[id].name) + '<span id="t_' + id + '"></span></h3><div class="cb"><canvas id="c_' + id + '" role="img"></canvas></div><div class="s" id="s_' + id + '"></div></div>'; }).join(""); box.dataset.ids = ids.join(); }
+  if (box.dataset.ids !== ids.join() + Object.keys(TIDE_OF).join()) {
+    Object.keys(charts).forEach(function (k) { charts[k].destroy(); }); charts = {};
+    Object.keys(tcharts).forEach(function (k) { tcharts[k].destroy(); }); tcharts = {}; box.innerHTML = ids.map(function (id) { return '<div class="mini" id="m_' + id + '"><h3>' + esc(C[id].name) + '<span id="t_' + id + '"></span></h3><div class="cb"><canvas id="c_' + id + '" role="img"></canvas></div>' +
+      (TIDE_OF[id] ? '<div class="tt" id="tt_' + id + '"></div><div class="tb"><canvas id="tc_' + id + '" role="img"></canvas></div>' : "") +
+      '<div class="s" id="s_' + id + '"></div></div>'; }).join(""); box.dataset.ids = ids.join() + Object.keys(TIDE_OF).join(); }
   var grid = css("--line"), muted = css("--muted");
   ids.forEach(function (id) {
     var e = C[id], pe = e["p" + P] || { avg: [], max: [] }, avg = [], mx = [], own = 0;
@@ -261,7 +277,75 @@ function renderMinis() {
       { type: "line", data: mx, borderColor: css("--fcline"), borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0 }] };
     if (charts[id]) { charts[id].data = data; charts[id].options = opts; charts[id].update(); }
     else charts[id] = new Chart($("c_" + id), { type: "bar", data: data, options: opts, plugins: [bandPlugin] });
+    drawTide(id, x0, x1, P === "15", grid, muted);
   });
+}
+
+/* ---------- the tide under each bayside creek (staff, 2026-11-20): the tide table, NOAA's projection (corrected by its
+   recent record, lookups.js fixModel) and after it the estimate (tide table + the recent offset, easing; tide_season.js
+   addAt), as on the Tides page. Station per creek: lookups/creeks.csv tide_station. */
+var TIDE_OF = {}, TIDES = {}, tcharts = {};
+var TS_OF = { "9414523": "TIDE_SEASON", "9414750": "TIDE_SEASON_ALA", "9413450": "TIDE_SEASON_COAST" };
+function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
+function localOff() { return Math.round(((window.TIDE_SEASON ? TIDE_SEASON.now() : Date.now()) - Date.now()) / 9e5) * 9e5; }   // Pacific wall clock minus UTC
+function noaa(st, product, b, e) {
+  return "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=" + product + "&station=" + st + "&begin_date=" + b + "&end_date=" + e +
+    "&datum=NAVD&time_zone=lst_ldt&units=english&format=json&application=OneShorelineFEWS";
+}
+function ymd(ms) { return new Date(ms).toISOString().slice(0, 10).replace(/-/g, ""); }
+function loadTide(st) {
+  var T = TIDES[st] = TIDES[st] || {};
+  if (T.loading || (T.at && Date.now() - T.at < 15 * 60000)) return;
+  T.loading = true;
+  var nl = Date.now() + localOff(), pts = function (a) { return (a || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; }).filter(function (p) { return !isNaN(p.v); }); };
+  var ts = window[TS_OF[st]];
+  Promise.all([
+    fetch(noaa(st, "predictions", ymd(nl - 864e5), ymd(nl + 5 * 864e5))).then(function (r) { return r.json(); }).then(function (j) { T.pred = pts(j.predictions); }),
+    fetch(noaa(st, "ofs_water_level", ymd(nl - 864e5), ymd(nl + 3 * 864e5))).then(function (r) { return r.json(); })
+      .then(function (j) { var p = pts(j.data || j.predictions), L = window.LOOKUPS; return L && L.fixModel ? L.fixModel(p, st) : p; })
+      .then(function (p) { T.ofs = p; }).catch(function () { T.ofs = []; }),
+    ts && ts.loadOffset ? ts.loadOffset() : null
+  ]).then(function () { T.at = Date.now(); }).catch(function () {}).then(function () { T.loading = false; if (D) renderMinis(); });
+}
+function drawTide(id, x0, x1, short, grid, muted) {
+  var st = TIDE_OF[id], cv = $("tc_" + id);
+  if (!st || !cv) return;
+  var T = TIDES[st], LKm = window.LOOKUPS, info = LKm && LKm.station ? LKm.station(st) : { name: st, mhhw: null };
+  $("tt_" + id).textContent = "Tide · " + (info.name || st) + (T && T.pred ? "" : " (loading…)");
+  if (!T || !T.pred) { loadTide(st); return; }
+  var off = localOff(), real = function (t) { return t - off; }, nowL = Date.now() + off, ts = window[TS_OF[st]];
+  var tp = T.pred.filter(function (p) { return real(p.t) >= x0 - 36e5 && real(p.t) <= x1; }).map(function (p) { return { x: real(p.t), y: p.v }; });
+  var fc = (T.ofs || []).filter(function (p) { return p.t >= nowL - 18e5; }), fcEnd = fc.length ? fc[fc.length - 1].t : nowL;
+  var tf = fc.filter(function (p) { return real(p.t) <= x1; }).map(function (p) { return { x: real(p.t), y: p.v }; });
+  var te = [];
+  if (ts && ts.addAt) T.pred.forEach(function (p) { if (p.t > fcEnd && real(p.t) <= x1 && real(p.t) >= x0) { var a = ts.addAt(p.t, nowL); if (a != null && isFinite(a)) te.push({ x: real(p.t), y: p.v + a }); } });
+  var mh = info.mhhw, red = st === "9414523" && LKm && LKm.num ? LKm.num("TIDE_RED_FT_RWC") : NaN;
+  var ys = tp.concat(tf, te).map(function (p) { return p.y; }).concat(mh != null ? [mh] : []);
+  var lo = Math.floor(Math.min.apply(null, ys)), hi = Math.ceil(Math.max.apply(null, ys.concat(isFinite(red) && red - Math.max.apply(null, ys) < 1.5 ? [red] : [])) + 0.2);
+  var line = function (y, c, dash, w) { return { type: "line", data: [{ x: x0, y: y }, { x: x1, y: y }], borderColor: c, borderDash: dash, borderWidth: w, pointRadius: 0 }; };
+  var sets = [
+    { type: "line", data: tp, borderColor: "#8a96a3", borderWidth: 1.25, pointRadius: 0, tension: 0.3 },
+    { type: "line", data: tf, borderColor: "#0A5587", borderWidth: 2.5, borderDash: [0.1, 4], borderCapStyle: "round", pointRadius: 0, tension: 0.3 },
+    { type: "line", data: te, borderColor: "#9aa3ad", borderWidth: 2.5, borderDash: [0.1, 4], borderCapStyle: "round", pointRadius: 0, tension: 0.3 }];
+  if (mh != null) sets.push(line(mh, "#5f6b78", [5, 4], 1.25));
+  if (isFinite(red) && red <= hi) sets.push(line(red, "#c0392b", [8, 3, 2, 3], 1.5));
+  var o = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+    plugins: { legend: { display: false }, tooltip: { filter: function (it) { return it.datasetIndex < 3; }, callbacks: {
+      title: function (it) { return when(new Date(it[0].parsed.x).toISOString()); },
+      label: function (it) { return ["Tide table ", "NOAA projection ", "Estimate "][it.datasetIndex] + it.parsed.y.toFixed(1) + " ft"; } } } },
+    scales: { x: { type: "linear", min: x0, max: x1, grid: { color: grid }, ticks: { display: false } },
+      y: { min: lo, max: hi, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 3, font: { size: 10.5 }, callback: function (v) { return v + " ft"; } } } } };
+  cv.setAttribute("aria-label", "Tide at " + (info.name || st) + ": tide table, NOAA projection and estimate over the same hours");
+  if (tcharts[id]) { tcharts[id].data = { datasets: sets }; tcharts[id].options = o; tcharts[id].update(); }
+  else tcharts[id] = new Chart(cv, { type: "line", data: { datasets: sets }, options: o });
+}
+function loadTideStations() {
+  var LKm = window.LOOKUPS;
+  if (!LKm || !LKm.csv) return;
+  (LKm.ready || Promise.resolve()).then(function () { return LKm.csv("creeks.csv"); }).then(function (rows) {
+    rows.forEach(function (r) { if (r.creek && r.tide_station) TIDE_OF[r.creek] = r.tide_station; });
+    if (D) renderMinis();
+  }).catch(function () {});
 }
 
 // the map: the county grid colored by its forecast total, each creek's points ringed
@@ -311,6 +395,7 @@ function load() {
     .catch(function (e) { $("runs").textContent = "The forecast couldn't load (" + e.message + "). It tries again in 5 minutes."; });
 }
 load();
+loadTideStations();
 setInterval(load, 5 * 60000);
 </script>
 </body>
