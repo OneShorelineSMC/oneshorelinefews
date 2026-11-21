@@ -99,6 +99,10 @@
   .mini .tt { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
   .mini .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; min-height: 1.3em; }
   .mini.hot { border-color: #ef9f27; box-shadow: inset 3px 0 0 #ef9f27; }
+  .mini { scroll-margin-top: 70px; }
+  .mini.pick { outline: 3px solid #0A5587; outline-offset: 2px; }
+  .jump { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-size: 14px; }
+  .jump select { font: inherit; font-size: 15px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); max-width: 100%; }
   #sum, #wsTable { min-width: 900px; }
   #wsTable tr.grp td { background: var(--bg); font-weight: 700; color: var(--ink); font-size: 13px; }   /* scrolls sideways on a phone instead of squeezing each row tall */
   #map { height: 480px; border-radius: 10px; margin-top: 10px; }
@@ -129,6 +133,8 @@
     <p style="margin:0">The RRFS model's rain forecast for each creek's watershed: the average of the model's grid points in the watershed.
       A model forecast, not a measurement; it never changes a creek's status, and it isn't shown on the public pages or the kiosks.</p>
     <p class="meta" id="runs">Loading…</p>
+    <div class="jump"><label for="jumpSel"><b>Go to a creek's graph</b></label>
+      <select id="jumpSel"><option value="">Choose a creek…</option></select></div>
     <div class="warn" id="warn"></div>
   </div>
 
@@ -244,12 +250,29 @@ function render() {
     }).join("");
   renderMinis();
   renderWs();
+  fillJump();
   renderMap();
 }
 
 // ---- watersheds without a creek gauge: table, wettest first within each area; the top 3 of each area (and any with forecast
 // Heavy) until "Show all"
 var WSALL = false;
+// The creek picker at the top (staff, 2026-11-21): jumps to that creek's (or watershed's) graph and outlines it a moment
+function fillJump() {
+  var sel = $("jumpSel"), C = D.creeks || {}, G = wsGraphs(), keep = sel.value;
+  var h = '<option value="">Choose a creek…</option><optgroup label="FEWS creeks">' +
+    Object.keys(C).map(function (id) { return '<option value="' + esc(id) + '">' + esc(C[id].name) + "</option>"; }).join("") + "</optgroup>";
+  var gk = Object.keys(G);
+  if (gk.length) h += '<optgroup label="Without a creek gauge">' + gk.map(function (id) { return '<option value="' + esc(id) + '">' + esc(wsLabel(G[id])) + "</option>"; }).join("") + "</optgroup>";
+  if (sel.dataset.h !== h) { sel.innerHTML = h; sel.dataset.h = h; sel.value = keep; }
+}
+$("jumpSel").onchange = function () {
+  var el = $("m_" + this.value);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.classList.add("pick");
+  setTimeout(function () { el.classList.remove("pick"); }, 2500);
+};
 function renderWs() {
   var W = D.watersheds || {}, keys = Object.keys(W);
   $("wsCard").hidden = !keys.length;
@@ -381,7 +404,8 @@ function miniSet(boxId, C, P, top) {
     $("m_" + id).classList.toggle("hot", bands.some(function (b) { return b.b > now && b.a < x1; }));
     var tot = 0; avg.forEach(function (p) { tot += p.y; });
     $("t_" + id).textContent = inch(tot) + " in";
-    $("s_" + id).textContent = (e.heavy || []).length ? "Forecast " + HW[Math.min(3, e.heavy[0].level)] + " " + when(e.heavy[0].start) : (pe.points ? pe.points + " grid points" : "");
+    var nextH = (e.heavy || []).filter(function (h) { return Date.parse(h.end) > now; })[0];   // a stretch already over isn't news
+    $("s_" + id).textContent = nextH ? "Forecast " + HW[Math.min(3, nextH.level)] + " " + when(nextH.start) : (pe.points ? pe.points + " grid points" : "");
     $("c_" + id).setAttribute("aria-label", (ws ? wsLabel(e) : e.name) + ": forecast " + inch(tot) + " in over the period shown");
     var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
       plugins: { legend: { display: false }, bands: bands, tideHi: ws ? null : tideHigh(id, x0, x1), tooltip: { callbacks: {
