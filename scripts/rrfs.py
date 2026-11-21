@@ -275,6 +275,128 @@ def creek_freq(c, sensors):
     return {int(m): {float(a): d for a, d in v.items()} for m, v in (freq.get("minutes") or {}).items()}, g
 
 
+def forecast_area(e, products, point, sheds, now):
+    """Fills e with one area's forecast (a creek's watershed, or an ungauged watershed): per product the average and the
+    wettest grid point per step and the points used ("p60" / "p15"), the wettest hour and 15 minutes, and the totals for
+    the next 6, 24 and 72 hours. Returns (windows, by_step) for the ratings."""
+    windows, by_step = {}, {}
+    for key, (run, steps, grid) in products.items():
+        a = assign(grid, {"x": point}, sheds)["x"]
+        avg, mx = series(grid, a["idx"], len(steps))
+        sm = int(key)
+        e["p" + key] = {"avg": avg, "max": mx, "points": len(a["idx"]), "how": a["how"],
+                        "pts": [[round(grid[i][1], 4), round(grid[i][2], 4)] for i in a["idx"]]}   # lon, lat (RainForecast.html map)
+        by_step[sm] = (steps, avg)
+        for m in SIZE_MIN:
+            if (sm == 15 and m <= 60) or (sm == 60 and m > 60):
+                windows[m] = window_max(steps, avg, sm, m, now)
+        pk = window_max(steps, avg, sm, sm, now)
+        if pk:
+            e["peak" + key] = {"in": round(pk[0], 2), "end": iso(pk[1])}
+        if key == "60":
+            e["totals"] = {str(h): round(total(steps, avg, now, now + dt.timedelta(hours=h)), 2) for h in (6, 24, 72)}
+    return windows, by_step
+
+
+# ---------------------------------------------------------------- watersheds without a creek gauge (staff, 2026-11-20)
+# The County watersheds of 0.5 sq mi or more that no FEWS creek covers (lookups/ungauged_watersheds.csv, from the
+# white paper "Ungauged creeks: rain-only status?", Oct 2026). Forecast only: there is nothing measured in most of them.
+# Their ratings use NOAA Atlas 14 at a point inside each watershed (that file's lat / lon), fetched once from NOAA's
+# rainfall frequency server and kept in atlas14_watersheds.json beside the output (a few watersheds per run).
+
+PFDS_PER_RUN = 8
+PFDS_MIN = {"15-min": 15, "30-min": 30, "60-min": 60, "3-hr": 180, "6-hr": 360, "12-hr": 720, "24-hr": 1440, "2-day": 2880}
+
+
+def load_ungauged(path=os.path.join(ROOT, "lookups", "ungauged_watersheds.csv")):
+    """[{"watershed", "place", "group", "area", "lat", "lon", "cap", "graph"}] in file order; [] without the file."""
+    out = []
+    try:
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            rows = list(csv.DictReader(f))
+    except OSError:
+        return out
+    for r in rows:
+        r = {k.strip().lower(): (v or "").strip() for k, v in r.items() if k}
+        try:
+            out.append({"watershed": r["watershed"].upper(), "place": r.get("place", ""), "group": r.get("group", ""),
+                        "area": float(r.get("area_sq_mi") or 0), "lat": float(r["lat"]), "lon": float(r["lon"]),
+                        "cap": int(r.get("rating_max_min") or 360), "graph": r.get("graph", "").lower() == "yes"})
+        except (KeyError, ValueError):
+            continue
+    return out
+
+
+def pfds(lat, lon):
+    """NOAA Atlas 14 depths (in) at a point: {minutes: {ari_years: depth}} (scripts/fetch_atlas14.py's request)."""
+    sys.path.insert(0, HERE)
+    import fetch_atlas14 as A
+    volume, rlat, rlon, aris, rows = A.parse(A.fetch(lat, lon))
+    out = {}
+    for dur, vals in rows:
+        m = PFDS_MIN.get(dur.replace(" ", ""))
+        if m:
+            out[m] = {float(a): v for a, v in zip(aris, vals)}
+    if not out:
+        raise ValueError("no table")
+    return out
+
+
+def watershed_freq(cache_path, wss, fetcher=pfds, per_run=PFDS_PER_RUN):
+    """Atlas 14 for each watershed's point, from the cache; fetches up to per_run missing ones. ({name: by_min}, problems)."""
+    try:
+        with open(cache_path) as f:
+            cache = json.load(f)
+    except (OSError, ValueError):
+        cache = {}
+    problems, n = [], 0
+    for w in wss:
+        c = cache.get(w["watershed"])
+        if c and abs(c["lat"] - w["lat"]) < 1e-4 and abs(c["lon"] - w["lon"]) < 1e-4:
+            continue
+        if n >= per_run:
+            break
+        n += 1
+        try:
+            mins = fetcher(w["lat"], w["lon"])
+            cache[w["watershed"]] = {"lat": w["lat"], "lon": w["lon"], "minutes": {str(m): {str(a): d for a, d in t.items()} for m, t in mins.items()}}
+        except Exception as e:  # noqa: BLE001 - tried again next run
+            problems.append(f"Atlas 14 for {w['watershed']}: {type(e).__name__}: {e}"[:160])
+    if n:
+        with open(cache_path, "w") as f:
+            json.dump(cache, f, separators=(",", ":"))
+    freq = {k: {int(m): {float(a): d for a, d in t.items()} for m, t in v["minutes"].items()} for k, v in cache.items()}
+    missing = [w["watershed"] for w in wss if w["watershed"] not in freq]
+    if missing:
+        problems.append(f"Atlas 14 still to fetch for {len(missing)} watersheds (no ratings for them yet)")
+    return freq, problems
+
+
+def build_ungauged(products, wss, sheds, freq, now):
+    """The "watersheds" part of rrfs.json: forecast, totals, peaks and ratings for each; the time series only for the
+    ones marked graph = yes (the others are a table row and a shade on the map)."""
+    sys.path.insert(0, HERE)
+    from creek_signals import storm_years
+    out = {}
+    for w in wss:
+        e = {"name": w["watershed"], "place": w["place"], "group": w["group"], "area_sq_mi": w["area"], "graph": w["graph"]}
+        windows, by_step = forecast_area(e, products, {"lat": w["lat"], "lon": w["lon"], "watersheds": [w["watershed"]]}, sheds, now)
+        by_min = freq.get(w["watershed"])
+        if by_min:
+            sz = storm_size(windows, by_min, storm_years, w["cap"])
+            if sz:
+                sz.update(gauge=None, number=None)
+                e["size"] = sz
+            e["heavy"] = heavy_spans(by_step, by_min, storm_years, now, w["cap"])
+        for key in ("p60", "p15"):
+            if key in e:
+                e[key].pop("pts", None)
+                if not w["graph"]:
+                    e[key] = {k: e[key][k] for k in ("points", "how")} | ({"avg": e[key]["avg"]} if key == "p60" else {})
+        out[w["watershed"]] = e
+    return out
+
+
 def build(products, creeks_file, points, sheds, now):
     """products: {"60"|"15": (run, steps, grid)}. Returns the "creeks" part of rrfs.json."""
     sys.path.insert(0, HERE)
@@ -286,22 +408,7 @@ def build(products, creeks_file, points, sheds, now):
     for cid in sorted(points, key=lambda k: [c["id"] for c in creeks].index(k) if k in names else 99):
         c = names.get(cid, {"id": cid})
         e = {"name": c.get("name") or cid, "watershed": "; ".join(points[cid]["watersheds"])}
-        windows, by_step = {}, {}
-        for key, (run, steps, grid) in products.items():
-            a = assign(grid, {cid: points[cid]}, sheds)[cid]
-            avg, mx = series(grid, a["idx"], len(steps))
-            sm = int(key)
-            e["p" + key] = {"avg": avg, "max": mx, "points": len(a["idx"]), "how": a["how"],
-                            "pts": [[round(grid[i][1], 4), round(grid[i][2], 4)] for i in a["idx"]]}   # lon, lat (RainForecast.html map)
-            by_step[sm] = (steps, avg)
-            for m in SIZE_MIN:
-                if (sm == 15 and m <= 60) or (sm == 60 and m > 60):
-                    windows[m] = window_max(steps, avg, sm, m, now)
-            pk = window_max(steps, avg, sm, sm, now)
-            if pk:
-                e["peak" + key] = {"in": round(pk[0], 2), "end": iso(pk[1])}
-            if key == "60":
-                e["totals"] = {str(h): round(total(steps, avg, now, now + dt.timedelta(hours=h)), 2) for h in (6, 24, 72)}
+        windows, by_step = forecast_area(e, products, points[cid], sheds, now)
         by_min, g = creek_freq(c, sensors)
         if by_min:
             from nws_forecast import rating_max_min
@@ -347,7 +454,7 @@ def append_log(path, products, creeks, now, keep_days=LOG_DAYS):
             continue
         for cid, e in creeks.items():
             p = e.get("p" + key) or {}
-            for t, a, m in zip(steps, p.get("avg") or [], p.get("max") or []):
+            for t, a, m in zip(steps, p.get("avg") or [], p.get("max") or p.get("avg") or []):
                 if a or m:
                     lines.append(f"{iso(run)},{key},{cid},{iso(t)},{a or 0:g},{m or 0:g}")
                     added += 1
@@ -363,7 +470,7 @@ def append_log(path, products, creeks, now, keep_days=LOG_DAYS):
 
 # ---------------------------------------------------------------- main
 
-def main(argv, fetch=get, now=None):
+def main(argv, fetch=get, now=None, pfds_fetch=None):
     path = argv[1]
     min_age = float(argv[argv.index("--min-age") + 1]) if "--min-age" in argv else 0
     creeks_path = argv[argv.index("--creeks") + 1] if "--creeks" in argv else os.path.join(os.path.dirname(path) or ".", "creeks.json")
@@ -407,6 +514,10 @@ def main(argv, fetch=get, now=None):
     if missing:
         problems.append("watersheds not found in data/watersheds.geojson: " + ", ".join(missing))
     creeks = build(products, creeks_file, points, sheds, now)
+    wss = load_ungauged()
+    wfreq, wprob = watershed_freq(os.path.join(os.path.dirname(path) or ".", "atlas14_watersheds.json"), wss, pfds_fetch or pfds)
+    problems += wprob
+    watersheds = build_ungauged(products, wss, sheds, wfreq, now) if wss else {}
     result = {
         "generated_utc": iso(now),
         "source": "AQPI / CW3E RRFS rain forecast (QPF), San Mateo County grid points",
@@ -415,6 +526,7 @@ def main(argv, fetch=get, now=None):
                      for k, (r, s, g) in products.items()},
         "creeks": creeks,
         "grid": grid_totals(products, now),
+        "watersheds": watersheds,
         "problems": problems,
     }
     # keep a product that failed this time from the previous file (only while its run is under 30 hours old)
@@ -429,7 +541,9 @@ def main(argv, fetch=get, now=None):
                         e[k] = pc[k]
     with open(path, "w") as f:
         json.dump(result, f, separators=(",", ":"))
-    n = append_log(os.path.join(os.path.dirname(path) or ".", "rrfs_log.csv"), products, creeks, now)
+    # the log: the creeks, and the hourly forecast for the watersheds without a gauge (the 15-minute one for those with a graph)
+    n = append_log(os.path.join(os.path.dirname(path) or ".", "rrfs_log.csv"), products,
+                   dict(creeks, **{"ws:" + k: v for k, v in watersheds.items()}), now)
     for k, (r, s, g) in products.items():
         print(f"rrfs {k}-min: run {iso(r)}, {len(s)} steps to {iso(s[-1])}, {len(g)} grid points")
     for cid, e in creeks.items():

@@ -97,6 +97,19 @@ check("heavy: each stretch with its level, window and start/end; the 15-minute p
 check("heavy: nothing below the 1-year storm", R.heavy_spans({60: (h_steps, [0.2] * 6)}, by_min, storm_years, T0) == [])
 check("heavy: past steps are left out", R.heavy_spans({60: (h_steps, [0.0, 0.6, 0, 0, 0, 0])}, by_min, storm_years, T0 + dt.timedelta(hours=3)) == [])
 
+# watersheds without a creek gauge: Atlas 14 from a fake server (the real one isn't reached in tests)
+CALLS = []
+def fake_pfds(lat, lon):
+    CALLS.append((lat, lon))
+    return {15: {1.0: 0.25, 2.0: 0.3, 5.0: 0.4}, 60: {1.0: 0.5, 2.0: 0.6, 5.0: 0.8}, 180: {1.0: 0.9, 2.0: 1.1, 5.0: 1.4},
+            360: {1.0: 1.2, 2.0: 1.5, 5.0: 1.9}, 1440: {1.0: 2.0, 2.0: 2.5, 5.0: 3.2}}
+R.pfds = fake_pfds
+wss = R.load_ungauged()
+check("ungauged: the lookup lists 48 watersheds, 10 with a graph, none a FEWS creek's",
+      len(wss) == 48 and sum(w["graph"] for w in wss) == 10 and not any(w["watershed"] in ("SAN BRUNO CREEK", "COLMA CREEK") for w in wss))
+check("ungauged: every watershed is in data/watersheds.geojson and its point is inside it",
+      all(any(R.in_shape(w["lon"], w["lat"], g) for g in sheds.get(w["watershed"], [])) for w in wss))
+
 tmp = tempfile.mkdtemp()
 try:
     creeks_file = {}
@@ -124,11 +137,20 @@ try:
     check("output: average never above the wettest point", all(a_ <= m for a_, m in zip(sb["p60"]["avg"], sb["p60"]["max"]) if a_ is not None))
     if creeks_file.get("sensors"):
         check("output: storm size against Atlas 14 at the main gauge", "size" in sb and sb["size"]["number"] in ("41102", 41102))
+    ws = d["watersheds"]
+    check("ungauged: 8 Atlas 14 lookups on the first run, the rest to come, noted", len(CALLS) == 8 and any("still to fetch" in p for p in d["problems"]))
+    sp = ws["SAN PEDRO CREEK"]
+    check("ungauged: San Pedro Creek (graph) has its series, totals and group; a table-only one keeps hourly averages only",
+          sp["group"] == "Coastside north" and sp["place"] == "Pacifica" and "max" in sp["p60"] and "totals" in sp
+          and set(ws["BOLSA POINT"]["p60"]) == {"points", "how", "avg"} and set(ws["BOLSA POINT"]["p15"]) == {"points", "how"})
+    rated = [k for k, v in ws.items() if "heavy" in v]
+    check("ungauged: rated where Atlas 14 is cached", len(rated) == 8)
     log = open(os.path.join(tmp, "rrfs_log.csv")).read().splitlines()
     check("log: header and rows with rain only", log[0] == R.LOG_HEAD and all(float(l.split(",")[5]) > 0 for l in log[1:]))
     n = len(log)
     R.main(["rrfs.py", out], fetch=lambda u: files[u], now=NOW + dt.timedelta(minutes=30))
     check("log: the same run isn't logged twice", len(open(os.path.join(tmp, "rrfs_log.csv")).read().splitlines()) == n)
+    check("ungauged: the next run fetches 8 more Atlas 14 points", len(CALLS) == 16)
     R.main(["rrfs.py", out, "--min-age", "20"], fetch=lambda u: (_ for _ in ()).throw(AssertionError("fetched")), now=NOW + dt.timedelta(minutes=40))
     check("--min-age: a recent file is kept without fetching", json.load(open(out))["generated_utc"] == "2026-11-20T16:20Z")
 
