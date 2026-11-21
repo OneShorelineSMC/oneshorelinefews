@@ -389,10 +389,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261121a"></script>
-<script src="severity.js?v=20261121a"></script>
-<script src="creek_status.js?v=20261121a"></script>
-<script src="hero.js?v=20261121a"></script>
+<script src="lookups.js?v=20261121b"></script>
+<script src="severity.js?v=20261121b"></script>
+<script src="creek_status.js?v=20261121b"></script>
+<script src="hero.js?v=20261121b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -464,7 +464,9 @@ if (hashCreek && hashCreek !== "about") D.sel = hashCreek;   // e.g. Creeks.html
 function loadCreek() {
   return (LK.getData ? LK.getData("creeks.json", LK.stormy(D.creek)) : getJSON(CREEK_DATA_URL + "?t=" + Date.now())).then(function (j) {
     if (LK.newer && !LK.newer(j, D.creek)) return;   // never step back to an older file
-    D.creek = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; D.creekFailed = false; render(); loadTides(); })
+    D.creek = window.CREEK_STATUS ? CREEK_STATUS.prepare(j) : j; D.creekFailed = false;
+    (D.creek.creeks || []).forEach(function (c) { c.tide = LK.tideId(c); });   // San Bruno: its blended tide "sb" (lookups.js)
+    render(); loadTides(); })
     .catch(function () { D.creekFailed = true; render(); });
 }
 // RRFS model rain forecast for each creek (AQPI / CW3E; scripts/rrfs.py), staff view only (?preview=1; staff, 2026-11-20)
@@ -487,13 +489,26 @@ function loadTides(force) {
     loadTide(id);
   });
 }
+// San Bruno Creek's blended tide ("sb", staff 2026-11-21): the three NOAA gauges loaded as usual, then blended
+// (lookups.js LK.sbCompose: San Francisco, Alameda and Redwood City weighted by distance)
+function loadSB() {
+  var B = LK.sbTide(), T = D.tides.sb = D.tides.sb || { st: LK.station("sb") };
+  return Promise.all(B.ids.map(function (id) { return loadTide(id); })).then(function () {
+    var X = LK.sbCompose(B.ids.map(function (id) { return D.tides[id]; }));
+    T.st = LK.station("sb"); T.pred = X.pred; T.obs = X.obs; T.ofs = X.ofs; T.tOfs = X.tOfs;
+    T.at = Math.min.apply(null, B.ids.map(function (id) { return D.tides[id].at || 0; }));
+    render();
+  });
+}
 function loadTide(id) {
+  if (id === "sb") return loadSB();
   var T = D.tides[id] = D.tides[id] || { st: LK.station(id) };
-  if (T.loading || (T.at && Date.now() - T.at < 5 * 60000)) { render(); return Promise.resolve(); }
+  if (T.loading) return T.p;
+  if (T.at && Date.now() - T.at < 5 * 60000) { render(); return Promise.resolve(); }
   T.loading = true;
   var now = nowLocal(), b = ymd(now - (PAST_HOURS + 6) * 3600000), e = ymd(now + (AHEAD_HOURS + 24) * 3600000);
   var toPts = function (arr) { return (arr || []).map(function (p) { return { t: parseLocal(p.t), v: parseFloat(p.v) }; }).filter(function (p) { return !isNaN(p.v); }); };
-  return Promise.all([
+  T.p = Promise.all([
     getJSON(noaa(id, "predictions", b, e)).then(function (j) { T.pred = toPts(j.predictions); }),
     getJSON(noaa(id, "water_level", b, ymd(now))).then(function (j) { T.obs = toPts(j.data); }).catch(function () { T.obs = T.obs || []; }),
     // NOAA model forecast (SFBOFS water level guidance at this station, ft NAVD88); optional, the graph works without it
@@ -501,6 +516,7 @@ function loadTide(id) {
       return LK.fixModel(toPts(j.data || j.predictions), id);   // corrected by its recent record (lookups.js)
     }).then(function (p) { if (p.length) { T.ofs = p; T.tOfs = Date.now(); } }).catch(function () {})
   ]).then(function () { T.at = Date.now(); }).catch(function () {}).then(function () { T.loading = false; render(); });
+  return T.p;
 }
 /* ---------- the alert at the top: National Weather Service, the Bay tide at the flood level, the creeks (hero.js) ---------- */
 
@@ -579,7 +595,9 @@ function sourcesHtml(c, T) {
     (window.CREEK_STATUS && CREEK_STATUS.staff ? " Heavy, Very heavy and Intense are the 1-, 2- and 5-year storms at each rain gauge (NOAA Atlas 14)." : ""));
   if ((c.stages || []).some(function (g) { return (g.thresholds || []).length; }))
     li.push('<b>Flood levels:</b> set by OneShoreline; where each one came from is in <a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/THRESHOLDS_BASIS.md" target="_blank" rel="noopener">THRESHOLDS_BASIS.md</a>.');
-  if (c.tide) li.push("<b>Bay tide:</b> NOAA tide gauge " + esc(T ? T.st.name : "") + " (" + esc(c.tide) + "): measured water, the tide table and NOAA's water level projection.");
+  if (c.tide === "sb") { var SB = LK.sbTide(); li.push("<b>Bay tide:</b> " + esc(LK.text("sb_tide_note")) + " Weights: " + SB.ids.map(function (id, k) { return esc(LK.station(id).name) + " (" + id + ") " + Math.round(SB.w[k] * 100) + "%"; }).join(", ") +
+    ". Measured water, the tide table and NOAA's water level projection, each blended. Flood threshold " + (SB.flood != null ? SB.flood.toFixed(1) + " ft NAVD88" : "–") + " (provisional): last January's King Tide at San Bruno."); }
+  else if (c.tide) li.push("<b>Bay tide:</b> NOAA tide gauge " + esc(T ? T.st.name : "") + " (" + esc(c.tide) + "): measured water, the tide table and NOAA's water level projection.");
   if (c.forecast && c.forecast.grid) li.push("<b>Rain expected:</b> National Weather Service forecast (Bay Area office) for one point in the watershed" + (c.forecast.place ? " (" + esc(c.forecast.place) + ")" : "") + ", in 6-hour blocks.");
   var RF = rrfsFor(c);
   if (RF) {
@@ -947,7 +965,7 @@ function render() {
   $("rainBox").lastElementChild.style.display = c.tide ? "" : "none";
   $("rainBox").style.gridTemplateColumns = c.tide ? "" : "1fr";
   var T = D.tides[c.tide], tl = tideNow(T, now);
-  $("tideLbl").textContent = (T ? T.st.name : "Bay") + " tide (measured)";
+  $("tideLbl").textContent = (T ? T.st.name : c.tide ? LK.station(c.tide).name : "Bay") + " tide (measured)";
   if (tl) {
     $("tide").textContent = tl.v.toFixed(2);
     var pv = predAt(T, tl.t), d = pv == null ? null : tl.v - pv;
@@ -1302,7 +1320,7 @@ function drawCharts(st, now) {
     st.rains.forEach(function (r, i) { g += row("chRain" + i, 90, "tlRain" + i, "<b>" + gaugeLink(r.g, esc(r.g.label)) + "</b> · " + rainUnit() + (i === rfi ? rrfsKey() : "")); });
     if (c.rain_running && c.rain_running.line) g += row("chRun", 90, "tlRun", esc(c.rain_running.label));
     g += '<ul class="trgs" id="trgs" aria-label="Flooding-likely triggers"></ul>';
-    if (c.tide) g += '<div class="sgh" id="tideTitle">Bay tide</div>' + row("chTide", 150, "tlTide", (T ? esc(T.st.name) : "Bay") + " · ft NAVD88");
+    if (c.tide) g += '<div class="sgh" id="tideTitle">Bay tide</div>' + row("chTide", 150, "tlTide", esc(T ? T.st.name : LK.station(c.tide).name) + " · ft NAVD88");
     g += '<div id="key"></div><div class="cnote" id="cnote"></div>';
     $("graphs").innerHTML = g;
     D.built = bid;
@@ -1439,7 +1457,8 @@ function drawCharts(st, now) {
     // model forecast only if it is from the last 12 h and reaches at least 6 h ahead (same rule as the kiosk)
     var fcOK = T.ofs && T.ofs.length && Date.now() - T.tOfs < MODEL_MAX_AGE_HOURS * 3600000 && T.ofs[T.ofs.length - 1].t >= now + MODEL_MIN_AHEAD_HOURS * 3600000;
     var tf = fcOK ? T.ofs.filter(function (p) { return p.t >= now - 30 * 60000 && p.t <= x1; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
-    var trl = T.st.id === "9414523" ? LK.num("TIDE_RED_FT_RWC") : Infinity;   // flood level line, Redwood City only
+    var trl = T.st.id === "9414523" ? LK.num("TIDE_RED_FT_RWC") : T.st.id === "sb" ? LK.num("TIDE_FLOOD_FT_SB") : Infinity;   // flood level line: Redwood City; San Bruno's flood threshold
+    var trT = function (ft) { return LK.text(T.st.id === "sb" ? "sb_tide_threshold" : "tide_red_line_creek", { ft: ft }); };
     var tys = tp.concat(to, tf).map(function (p) { return p.y; }).concat([T.st.mhhw], isFinite(trl) ? [trl] : []);
     var tO = base(true); tO.scales.y = yScale(2 * Math.floor((Math.min.apply(null, tys) - 0.3) / 2), Math.ceil(Math.max.apply(null, tys) + 0.3), 2);
     tO.plugins.refMarks = { side: "left" };
@@ -1449,7 +1468,7 @@ function drawCharts(st, now) {
       { label: LK.text("lbl_tide_table") + " (ft)", data: tp, borderColor: css("--tidetbl"), borderWidth: 1, pointRadius: 0, tension: 0.3 },
       { label: "Measured (ft)", data: to, borderColor: "#1e88e5", borderWidth: 3, pointRadius: 0, tension: 0.2 },
       { label: LK.text("lbl_expected") + " (ft)", data: tf, borderColor: css("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2 }]
-      .concat(isFinite(trl) ? [{ label: LK.text("tide_red_line_creek", { ft: LK.tideFt(trl, "9414523") }), refLabel: LK.text("tide_red_line_creek", { ft: trl.toFixed(1) + " ft" }), data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], borderColor: css("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, pointHoverRadius: 0 }] : []) }, options: tO });
+      .concat(isFinite(trl) ? [{ label: trT(LK.tideFt(trl, T.st.id)), refLabel: trT(trl.toFixed(1) + " ft"), data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], borderColor: css("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, pointHoverRadius: 0 }] : []) }, options: tO });
   }
   rangeBar();
   var seen = {}, key = "", PVk = window.CREEK_STATUS && window.CREEK_STATUS.preview;
@@ -1458,7 +1477,7 @@ function drawCharts(st, now) {
   $("key").innerHTML = !c.tide ? key : key + "<span><i style='border-top:3px solid #1e88e5'></i>Measured tide</span>" +
     (T && T.ofs && T.ofs.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") + "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>" +
     (T ? "<span><i style='border-top:2px dashed var(--mhhw)'></i>MHHW " + T.st.mhhw.toFixed(2) + " ft</span>" : "") +
-    (T && T.st.id === "9414523" ? "<span><svg width='16' height='4' aria-hidden='true' style='vertical-align:middle;margin-right:3px'><line x1='0' y1='2' x2='16' y2='2' style='stroke:var(--red)' stroke-width='3' stroke-dasharray='7 2 2 2'/></svg>" + esc(LK.text("tide_red_line_creek", { ft: LK.tideFt(LK.num("TIDE_RED_FT_RWC"), "9414523") })) + "</span>" : "");
+    (T && (T.st.id === "9414523" || T.st.id === "sb") ? "<span><svg width='16' height='4' aria-hidden='true' style='vertical-align:middle;margin-right:3px'><line x1='0' y1='2' x2='16' y2='2' style='stroke:var(--red)' stroke-width='3' stroke-dasharray='7 2 2 2'/></svg>" + esc(T.st.id === "sb" ? LK.text("sb_tide_threshold", { ft: LK.tideFt(LK.num("TIDE_FLOOD_FT_SB"), "sb") }) : LK.text("tide_red_line_creek", { ft: LK.tideFt(LK.num("TIDE_RED_FT_RWC"), "9414523") })) + "</span>" : "");
   var notes = [];
   if (readingsOnly(c)) { if (!PVk) notes.push(esc(LK.text("more_creeks_note"))); }   // creeks.csv notes are for staff; with the status layer the note sits at the top
   else if (c.note) notes.push(esc(c.note));

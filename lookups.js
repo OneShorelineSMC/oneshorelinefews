@@ -281,6 +281,9 @@
     tide_red_day: "At flood level",
     tide_red_line: "Flood level, {ft} (provisional)",
     tide_red_line_creek: "Bay shoreline overtopping, {ft} (provisional)",
+    sb_tide_name: "San Bruno blended",
+    sb_tide_note: "Blended tide: no NOAA gauge sits at San Bruno, so this is NOAA\u2019s San Francisco, Alameda and Redwood City gauges weighted by distance, the same way San Bruno\u2019s tide flood threshold was set.",
+    sb_tide_threshold: "Flood threshold, {ft} (provisional)",
     tide_king_ref: "King Tide (1-year tide), {ft}",
     tide_expected_ft: "NOAA projects {ft}",
     tide_table_ft: "{ft} in the tide table",
@@ -673,6 +676,18 @@
     });
     return out;
   }
+  /* Pages use the station id "sb" for San Bruno Creek's blended tide (staff 2026-11-21): LK.station("sb") / LK.mhhw("sb")
+     give its name and blended MHHW, tideId(creek) gives "sb" for San Bruno and the creek's NOAA gauge otherwise, and
+     sbCompose(parts) blends the three gauges' loaded series ({pred, obs, ofs, tOfs, highs}, in SB_IDS order) into one.
+     creeks.csv keeps Alameda as San Bruno's tide_station for the data job, which uses no tide for San Bruno. */
+  function tideId(c) { return c && c.id === "sanbruno" && c.tide ? "sb" : c ? c.tide : null; }
+  function sbStation() { return { id: "sb", name: L.text("sb_tide_name") || "San Bruno blended", mhhw: sbTide().mhhw, blend: true }; }
+  function sbCompose(parts) {
+    var w = sbTide().w, col = function (k) { return parts.map(function (p) { return p && p[k]; }); };
+    var ofsOK = parts.every(function (p) { return p && p.ofs && p.ofs.length; });
+    return { pred: blend(col("pred"), w), obs: blend(col("obs"), w), highs: blendHighs(col("highs"), w),
+      ofs: ofsOK ? blend(col("ofs"), w) : null, tOfs: ofsOK ? Math.min.apply(null, col("tOfs").map(function (t) { return t || 0; })) : 0 };
+  }
   function sbTide() {
     var raw = SB_KEYS.map(function (k) { var w = L.num(k); return w >= 0 ? w : 0; }), sum = raw.reduce(function (a, b) { return a + b; }, 0);
     var w = sum > 0 ? raw.map(function (x) { return x / sum; }) : [1 / 3, 1 / 3, 1 / 3];
@@ -682,12 +697,12 @@
   }
 
   L = window.LOOKUPS = {
-    getData: getData, stormy: stormy, blend: blend, blendHighs: blendHighs, sbTide: sbTide, newer: newer, fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
+    getData: getData, stormy: stormy, blend: blend, blendHighs: blendHighs, sbTide: sbTide, sbCompose: sbCompose, tideId: tideId, newer: newer, fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
     tideAlt: tideAlt, tideUnit: tideUnit, tideUnits: tideUnits, heightMode: heightMode, setHeightMode: setHeightMode,
     problems: [], loaded: false,
     num: function (k) { return k in cur.settings ? cur.settings[k] : NaN; },
-    station: function (id) { return cur.tides[id] || { id: id, name: id, mhhw: null }; },
-    mhhw: function (id) { return (cur.tides[id] || {}).mhhw; },
+    station: function (id) { return id === "sb" ? sbStation() : cur.tides[id] || { id: id, name: id, mhhw: null }; },
+    mhhw: function (id) { return id === "sb" ? sbTide().mhhw : (cur.tides[id] || {}).mhhw; },
     // Plain text with {name} filled in; callers escape it before putting it in HTML (or use textContent)
     text: function (k, vars) {
       var s = k in cur.text ? cur.text[k] : "";

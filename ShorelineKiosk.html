@@ -553,11 +553,11 @@
   <div id="sbabout">
     <div class="sbcol">
       <h3>San Bruno Creek flood screen</h3>
-      <p>Readings from OneShoreline’s creek and rain gauge at First Avenue, NOAA’s Bay tide at Alameda and the National Weather Service rain forecast, updated about every 5 minutes. The data is provisional. For warnings, follow the National Weather Service and San Mateo County.</p>
+      <p>Readings from OneShoreline’s creek and rain gauge at First Avenue, a blended Bay tide from NOAA’s San Francisco, Alameda and Redwood City gauges (none sits at San Bruno), and the National Weather Service rain forecast, updated about every 5 minutes. The data is provisional. For warnings, follow the National Weather Service and San Mateo County.</p>
       <h4>How San Bruno Creek floods</h4>
       <p>The eastern avenues flood when a storm of about 5-year size or bigger, often a short, intense burst, arrives while the Bay is at a king tide or higher. The high Bay backs water up the creek, which is why the First Avenue gauge rises and falls with the tide. Flooding can happen at other times too.</p>
       <p class="sbfig" id="sbFive"></p>
-      <p class="sbsrc">Sources: OneShoreline (OneRain) · NOAA 9414750 Alameda · NWS · NOAA Atlas 14 · OneShoreline <span data-text="contact_phone"></span></p>
+      <p class="sbsrc">Sources: OneShoreline (OneRain) · NOAA 9414290 San Francisco, 9414750 Alameda, 9414523 Redwood City (blended by distance) · NWS · NOAA Atlas 14 · OneShoreline <span data-text="contact_phone"></span></p>
     </div>
     <div class="sbcol">
       <h4>The live graphs</h4>
@@ -624,19 +624,20 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261121a"></script>
-<script src="tide_season.js?v=20261121a"></script>
-<script src="creek_status.js?v=20261121a"></script>
-<script src="severity.js?v=20261121a"></script>
-<script src="hero.js?v=20261121a"></script>
+<script src="lookups.js?v=20261121b"></script>
+<script src="tide_season.js?v=20261121b"></script>
+<script src="creek_status.js?v=20261121b"></script>
+<script src="severity.js?v=20261121b"></script>
+<script src="hero.js?v=20261121b"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
 // files, not this page (see lookups/README.md). The rest below are kiosk display settings.
 var LK = window.LOOKUPS;
 var STATIONS = [LK.station("9414523"),   // MHHW in ft NAVD88 from lookups/tide_stations.csv
-                LK.station("9414750"),   // Alameda: used only by the Creeks tab (San Bruno, Colma)
-                LK.station("9413450")];  // Monterey: the Coastside Tides tab (NOAA's nearest open-coast gauge with live readings)
+                LK.station("9414750"),   // Alameda: the Creeks tab (Colma; San Bruno's blend)
+                LK.station("9413450"),   // Monterey: the Coastside Tides tab (NOAA's nearest open-coast gauge with live readings)
+                LK.station("9414290")];  // San Francisco: San Bruno's blended tide only (staff 2026-11-21)
 var TIDE_STATION = "9414523";      // the tides tab's station: Redwood City (Bayside Tides) or Monterey (Coastside Tides); see setSide()
 var COAST = false;                 // true while the Coastside Tides tab is showing
 var COUNTY_SAME = "006081";        // San Mateo County
@@ -677,7 +678,8 @@ var SITES_EVERY_MIN = 5;           // how often the kiosk checks for new site da
 var SITE_QUIET_HOURS;              // (lookups) a site is "not reporting" when none of its sensors has reported for this long
 // About tab QR codes: url_contact and url_smc_alert in lookups/display_text.csv
 // Flood level (red) at the Redwood City gauge: TIDE_RED_FT_RWC in settings.csv (provisional 8.5 ft NAVD88); other gauges have none yet
-function redFor(st) { return st.id === "9414523" ? LK.num("TIDE_RED_FT_RWC") : Infinity; }
+function redFor(st) { return st.id === "9414523" ? LK.num("TIDE_RED_FT_RWC") : st.id === "sb" ? LK.num("TIDE_FLOOD_FT_SB") : Infinity; }   // San Bruno: its flood threshold
+function redText(st, ft) { return LK.text(st.id === "sb" ? "sb_tide_threshold" : "tide_red_line_creek", { ft: ft }); }
 function applyLookups() {
   OFFSET_RECENT_HIGHS = LK.num("OFFSET_RECENT_HIGHS"); OFFSET_NOTE_FT = LK.num("OFFSET_NOTE_FT"); OFFSET_HIGH_FT = LK.num("OFFSET_HIGH_FT");
   MODEL_MAX_AGE_HOURS = LK.num("MODEL_MAX_AGE_HOURS"); MODEL_MIN_AHEAD_HOURS = LK.num("MODEL_MIN_AHEAD_HOURS");
@@ -1669,7 +1671,26 @@ function inkOn(l) { return l && l.level === 1 ? "#1a1a1a" : "#fff"; }
 // A level color used as a fill under white text: the Watch orange is darkened a little so white text reaches 4.5:1
 function fillOf(col) { return String(col).toLowerCase() === "#e07b00" ? "#b45a00" : col; }
 function textCol(l) { return l.level === 1 ? "#8a6d00" : l.color; }   // readable on a white panel
-function tideFor(c) { return c.tide ? S.filter(function (s) { return s.st.id === c.tide; })[0] || null : null; }   // null: no Bay tide for this creek
+function tideFor(c) {   // null: no Bay tide for this creek
+  if (!c.tide) return null;
+  if (LK.tideId(c) === "sb") return sbTideS();
+  return S.filter(function (s) { return s.st.id === c.tide; })[0] || null;
+}
+/* San Bruno Creek's blended tide (staff 2026-11-21): San Francisco, Alameda and Redwood City weighted by distance
+   (lookups.js LK.sbCompose), shaped like a station in S and rebuilt when any of the three gauges' data changes */
+var SBT = { key: "", s: null };
+function sbTideS() {
+  var B = LK.sbTide(), P = B.ids.map(function (id) { return S.filter(function (s) { return s.st.id === id; })[0]; });
+  if (P.some(function (p) { return !p; })) return null;
+  var key = P.map(function (p) { return [p.tPred, p.tObs, p.tOfs || 0].join(","); }).join("|") + "|" + B.w.join(",");
+  if (SBT.key !== key) {
+    var X = LK.sbCompose(P);
+    SBT.s = { st: LK.station("sb"), pred: X.pred, obs: X.obs, highs: X.highs, ofs: X.ofs, tOfs: X.tOfs, wins: [],
+      tPred: Math.min.apply(null, P.map(function (p) { return p.tPred || 0; })), tObs: Math.min.apply(null, P.map(function (p) { return p.tObs || 0; })) };
+    SBT.key = key;
+  }
+  return SBT.s;
+}
 
 /* Everything the screen needs about one creek, right now */
 function creekState(c, now) {
@@ -2093,7 +2114,7 @@ function showCreekInfo() {
   if (c.note) html += "<p style='margin-top:10px'>" + esc(c.note) + "</p>";
   c.stages.forEach(function (g) { if (g.note) html += "<p><b>" + esc(g.label) + ":</b> " + esc(g.note) + "</p>"; });
   html += '<div id="dnote">Levels are on OneShoreline’s creek gauges, not National Weather Service alerts. Thresholds are approximate. ' +
-    "Rain gauges: " + c.rain.map(function (g) { return esc(g.label) + " (" + esc(g.where) + ")"; }).join(", ") + ". Tide: NOAA station " + esc(c.tide) + ".</div>";
+    "Rain gauges: " + c.rain.map(function (g) { return esc(g.label) + " (" + esc(g.where) + ")"; }).join(", ") + (c.tide === "sb" || LK.tideId(c) === "sb" ? ". Tide: " + esc(LK.text("sb_tide_note")) : ". Tide: NOAA station " + esc(c.tide) + ".") + "</div>";
   openDetail(c.name + " – thresholds and notes", html);
 }
 
@@ -2337,7 +2358,7 @@ function drawCreekCharts(st, now) {
       { data: tp, borderColor: cssVar("--tidetbl"), borderWidth: 1, pointRadius: 0, tension: 0.3, fill: false },
       { data: to, borderColor: "#1e88e5", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false },
       { data: tf, borderColor: cssVar("--fcline"), borderDash: [0.1, 5], borderCapStyle: "round", borderWidth: 3, pointRadius: 0, tension: 0.2, fill: false }
-    ].concat(isFinite(trl) ? [{ data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], refLabel: LK.text("tide_red_line_creek", { ft: trl.toFixed(1) + " ft" }), borderColor: cssVar("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false }] : []) }, options: topt });
+    ].concat(isFinite(trl) ? [{ data: [{ x: H(x0), y: trl }, { x: H(x1), y: trl }], refLabel: redText(tS.st, trl.toFixed(1) + " ft"), borderColor: cssVar("--red"), borderWidth: 3, borderDash: [10, 3, 2, 3], pointRadius: 0, fill: false }] : []) }, options: topt });
   document.getElementById("cTideKey").innerHTML = "<span><i style='border-top:3px solid #1e88e5'></i>Measured</span>" +
     (tf.length ? "<span><i style='border-top:3px dotted var(--fcline)'></i>" + esc(LK.text("lbl_expected")) + "</span>" : "") +
     "<span><i style='border-top:1.5px solid var(--tidetbl)'></i>" + esc(LK.text("lbl_tide_table")) + "</span>";   // MHHW and the flood level are labeled on their lines
@@ -2567,7 +2588,7 @@ function renderOutlook() {
   var dd = function (x) { return fmt(x[0] * 864e5, { month: "short", day: "numeric" }) + (x[1] > x[0] ? "–" + fmt(x[1] * 864e5, new Date(x[1] * 864e5).getUTCMonth() === new Date(x[0] * 864e5).getUTCMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }) : ""); };
   var fd = sbFloodDays(now, X).filter(function (x) { return x[1] * 864e5 >= now - 864e5; }).slice(0, 2).map(dd);
   var ft = function (v) { return v == null ? "–" : v.toFixed(1) + " ft"; };
-  var t = '<div class="olbox"><div class="ollbl">Bay tide · San Bruno blend</div>' +
+  var t = '<div class="olbox"><div class="ollbl">Bay tide · San Bruno blended</div>' +
     (kt.length ? '<div class="olv pu">At flood threshold</div><div class="olt"><b>' + esc(fmt(kt[0].t, { weekday: "short" }) + " " + fTime(kt[0].t)) + "</b>: " + kt[0].v.toFixed(1) + " ft" + srcTxt[kt[0].src] + "</div>"
       : '<div class="olv">Below flood threshold</div>' + (hi ? '<div class="olt">Highest high: <b>' + hi.v.toFixed(1) + " ft</b> " + esc(fmt(hi.t, { weekday: "short" }) + " " + fTime(hi.t)) + srcTxt[hi.src] + "</div>" : "")) +
     (lo && pr && lo.v - pr.v >= 0.5 ? '<div class="olt"><b>Running ' + (lo.v - pr.v).toFixed(1) + " ft above the table</b></div>" : "") +
@@ -2580,7 +2601,7 @@ function renderOutlook() {
     '<div class="olbody"><div class="olleft">' + r + t + f + '</div><div class="olright">' +
     '<div class="olg"><div class="olgt"><span>First Avenue · creek level (ft)</span><span class="olk" id="olK1"></span></div><div class="olc" style="flex:1.15"><canvas id="olC1"></canvas></div></div>' +
     '<div class="olg"><div class="olgt"><span>Rain per hour (in)</span><span class="olk" id="olK2"></span></div><div class="olc" style="flex:.8"><canvas id="olC2"></canvas></div></div>' +
-    '<div class="olg"><div class="olgt"><span>San Bruno tide (blend)</span><span class="olk" id="olK3"></span></div><div class="olc" style="flex:1.05"><canvas id="olC3"></canvas></div></div>' +
+    '<div class="olg"><div class="olgt"><span>San Bruno blended tide</span><span class="olk" id="olK3"></span></div><div class="olc" style="flex:1.05"><canvas id="olC3"></canvas></div></div>' +
     "</div></div>";
   drawSB(sb, now, R, T);
 }
