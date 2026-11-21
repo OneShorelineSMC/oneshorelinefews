@@ -35,6 +35,7 @@
    
     TIDE_RED_FT_RWC: [8.5, 6, 15], PROJ_BIAS_CORRECT: [1, 0, 1], PROJ_BIAS_MAX_FT: [0.75, 0, 3], PROJ_BIAS_DAYS: [14, 5, 60], TIDE_NEAR_FT: [0.3, 0, 1], TIDE_SCENARIOS_SHOW: [1, 0, 1], WAVES_BIG_FT: [15, 8, 40], WAVES_STALE_HOURS: [12, 2, 72], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
     MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1], CREEK_PUBLIC_LEVELS_ONLY: [1, 0, 1], CREEK_PUBLIC_RISING_FAST: [1, 0, 1], STAFF_STATUS_FULL: [0, 0, 1], RAIN_RATING_MAX_MIN: [360, 15, 2880],
+    SB_TIDE_W_SF: [0.32, 0, 1], SB_TIDE_W_ALA: [0.36, 0, 1], SB_TIDE_W_RWC: [0.32, 0, 1], TIDE_FLOOD_FT_SB: [8.9, 6, 15], TIDE_MAX_FT_SB: [9.8, 6, 15],
     // NWS rain forecast on creek cards (scripts/nws_forecast.py); the data job uses FORECAST_EVERY_MIN and FORECAST_KEEP_HOURS too
     FORECAST_PUBLIC: [1, 0, 1], FORECAST_SHOW_IN: [0.25, 0, 5], FORECAST_KEEP_HOURS: [12, 1, 48], FORECAST_EVERY_MIN: [60, 15, 360],
     RAIN_NOW_MIN: [60, 15, 180], RAIN_NOW_IN: [0.01, 0.01, 0.5],
@@ -47,6 +48,7 @@
   var TIDES = {
     "9414523": { id: "9414523", name: "Redwood City", mhhw: 7.02 },
     "9414750": { id: "9414750", name: "Alameda", mhhw: 6.37 },
+    "9414290": { id: "9414290", name: "San Francisco", mhhw: 5.90 },
     "9413450": { id: "9413450", name: "Monterey", mhhw: 5.48 }   // Coastside Tides
   };
   var TEXT = {
@@ -634,8 +636,53 @@
   function stormy(d) { return !!(d && d.fast_mode && d.fast_mode.length); }
   function newer(a, b) { return !b || !a || String(a.generated || "") >= String(b.generated || ""); }   // a is at least as new as b
 
+  /* San Bruno Creek's Bay tide (staff 2026-11-21): no NOAA gauge sits at San Bruno, so its tide is the three nearest
+     gauges weighted by distance, the way its flood threshold (8.9 ft, last January's King Tide) was worked out: San
+     Francisco 9414290, Alameda 9414750 and Redwood City 9414523, SB_TIDE_W_SF / _ALA / _RWC (scaled to add up to 1).
+     Checked on Jan 3, 2026: the measured tides blended this way peak at 8.93 ft at 11:00 AM. blend() pairs the gauges'
+     6-minute series time by time (within tolMin minutes; every gauge needed); blendHighs() pairs each high tide with the
+     others' nearest one (within 2.5 hours) and blends height and time. THRESHOLDS_BASIS.md §4f. */
+  var SB_IDS = ["9414290", "9414750", "9414523"], SB_KEYS = ["SB_TIDE_W_SF", "SB_TIDE_W_ALA", "SB_TIDE_W_RWC"];
+  function nearest(b, t, tol) {
+    var lo = 0, hi = b.length - 1;
+    while (lo < hi) { var m = (lo + hi) >> 1; if (b[m].t < t) lo = m + 1; else hi = m; }
+    var q = [b[lo], b[lo - 1]].filter(Boolean).sort(function (x, y) { return Math.abs(x.t - t) - Math.abs(y.t - t); })[0];
+    return q && Math.abs(q.t - t) <= tol ? q : null;
+  }
+  function blend(arrs, ws, tolMin) {
+    var tol = (tolMin || 3) * 60000;
+    if (!arrs.length || arrs.some(function (a) { return !a || !a.length; })) return [];
+    var out = [];
+    arrs[0].forEach(function (p) {
+      var v = 0;
+      for (var k = 0; k < arrs.length; k++) { var q = k ? nearest(arrs[k], p.t, tol) : p; if (!q) return; v += ws[k] * q.v; }
+      out.push({ t: p.t, v: v });
+    });
+    return out;
+  }
+  function blendHighs(arrs, ws) {
+    if (!arrs.length || arrs.some(function (a) { return !a || !a.length; })) return [];
+    var out = [];
+    arrs[0].forEach(function (p) {
+      var t = 0, v = 0;
+      for (var k = 0; k < arrs.length; k++) {
+        var q = null; if (k) arrs[k].forEach(function (x) { if (Math.abs(x.t - p.t) <= 9e6 && (!q || Math.abs(x.t - p.t) < Math.abs(q.t - p.t))) q = x; }); else q = p;
+        if (!q) return; t += ws[k] * q.t; v += ws[k] * q.v;
+      }
+      out.push({ t: Math.round(t), v: v, type: "H" });
+    });
+    return out;
+  }
+  function sbTide() {
+    var raw = SB_KEYS.map(function (k) { var w = L.num(k); return w >= 0 ? w : 0; }), sum = raw.reduce(function (a, b) { return a + b; }, 0);
+    var w = sum > 0 ? raw.map(function (x) { return x / sum; }) : [1 / 3, 1 / 3, 1 / 3];
+    var ms = SB_IDS.map(function (id) { return L.mhhw(id); }), f = L.num("TIDE_FLOOD_FT_SB"), m = L.num("TIDE_MAX_FT_SB");
+    return { ids: SB_IDS.slice(), w: w, mhhw: ms.some(function (x) { return x == null; }) ? null : ms.reduce(function (a, x, k) { return a + w[k] * x; }, 0),
+      flood: isNaN(f) ? null : f, max: isNaN(m) ? null : m };
+  }
+
   L = window.LOOKUPS = {
-    getData: getData, stormy: stormy, newer: newer, fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
+    getData: getData, stormy: stormy, blend: blend, blendHighs: blendHighs, sbTide: sbTide, newer: newer, fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
     tideAlt: tideAlt, tideUnit: tideUnit, tideUnits: tideUnits, heightMode: heightMode, setHeightMode: setHeightMode,
     problems: [], loaded: false,
     num: function (k) { return k in cur.settings ? cur.settings[k] : NaN; },

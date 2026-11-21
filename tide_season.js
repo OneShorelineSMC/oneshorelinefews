@@ -315,4 +315,6 @@
   // Alameda, San Bruno Creek's tide gauge (staff 2026-11-19): only the recent offset and its easing (addAt), for the estimate
   // after the NOAA projection on the San Bruno outlook. Nothing here loads its tide table or calendar.
   window.TIDE_SEASON_ALA = make({ station: "9414750", red: null, king: null });
+  // San Francisco, the third gauge in San Bruno Creek's tide (staff 2026-11-21): the same, offset and easing only
+  window.TIDE_SEASON_SF = make({ station: "9414290", red: null, king: null });
 })();

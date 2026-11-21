@@ -21,8 +21,8 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="lookups.js?v=20261120c"></script>
-<script src="tide_season.js?v=20261120c"></script>
+<script src="lookups.js?v=20261121a"></script>
+<script src="tide_season.js?v=20261121a"></script>
 <style>
   :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
     --meas: #1e88e5; --tidetbl: #4a4f55; --mhhw: #5f6b78; --red: #c0392b; --minor: #a35f00; --oneyear: #003B5C; --band: rgba(30,136,229,.13); --med: #8a96a3;
@@ -154,12 +154,12 @@
       <span><i class="sw" style="background:var(--amber)"></i>forecast Heavy or more</span>
     </div>
     <div class="lg">
-      <span>Bayside creeks, the tide at their NOAA gauge (ft NAVD88):</span>
+      <span>Bayside creeks, the tide at their NOAA gauge (San Bruno: San Francisco, Alameda and Redwood City weighted by distance; ft NAVD88):</span>
       <span><i class="sw" style="background:none;border-top:1.5px solid #8a96a3;border-radius:0;height:0;width:16px"></i>tide table</span>
       <span><i class="sw" style="background:none;border-top:3px dotted #0A5587;border-radius:0;height:0;width:16px"></i>NOAA projection</span>
       <span><i class="sw" style="background:none;border-top:3px dotted #9aa3ad;border-radius:0;height:0;width:16px"></i>estimate after it (table + recent offset)</span>
       <span><i class="sw" style="background:none;border-top:2px dashed #5f6b78;border-radius:0;height:0;width:16px"></i>MHHW</span>
-      <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>Redwood City flood level</span>
+      <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>flood level (Redwood City) or flood threshold (San Bruno, provisional)</span>
       <span><svg width="34" height="10" aria-hidden="true" style="vertical-align:-1px;margin-right:4px"><path d="M2 1v8M2 5h30M32 1v8" stroke="#1e6fc8" stroke-width="1.5" fill="none"/><circle cx="17" cy="5" r="3" fill="#1e6fc8"/></svg>tide above MHHW, under both graphs (dot = the high tide; point at or tap a mark for its times)</span>
     </div>
     <div class="grid2" id="minis"></div>
@@ -428,7 +428,7 @@ function miniSet(boxId, C, P, top) {
    recent record, lookups.js fixModel) and after it the estimate (tide table + the recent offset, easing; tide_season.js
    addAt), as on the Tides page. Station per creek: lookups/creeks.csv tide_station. */
 var TIDE_OF = {}, TIDES = {}, tcharts = {};
-var TS_OF = { "9414523": "TIDE_SEASON", "9414750": "TIDE_SEASON_ALA", "9413450": "TIDE_SEASON_COAST" };
+var TS_OF = { "9414523": "TIDE_SEASON", "9414750": "TIDE_SEASON_ALA", "9414290": "TIDE_SEASON_SF", "9413450": "TIDE_SEASON_COAST" };
 function parseLocal(s) { var a = s.split(/[- :]/).map(Number); return Date.UTC(a[0], a[1] - 1, a[2], a[3], a[4] || 0); }
 function localOff() { return Math.round(((window.TIDE_SEASON ? TIDE_SEASON.now() : Date.now()) - Date.now()) / 9e5) * 9e5; }   // Pacific wall clock minus UTC
 function noaa(st, product, b, e) {
@@ -450,9 +450,32 @@ function loadTide(st) {
     ts && ts.loadOffset ? ts.loadOffset() : null
   ]).then(function () { T.at = Date.now(); }).catch(function () {}).then(function () { T.loading = false; if (D) renderMinis(); });
 }
-// The tide lines for a creek over x0..x1 (ms): the table, NOAA's projection, the estimate after it; null until loaded
+// The tide lines for a creek over x0..x1 (ms): the table, NOAA's projection, the estimate after it; null until loaded.
+// San Bruno Creek ("sb", staff 2026-11-21): San Francisco, Alameda and Redwood City weighted by distance (lookups.js
+// LK.sbTide), the way its flood threshold was worked out: each gauge's projection-then-estimate blended time by time,
+// the projection only where all three have one. A gauge without a recent offset yet is left out of the estimate.
 function tideLines(id, x0, x1) {
-  var st = TIDE_OF[id], T = TIDES[st];
+  if (TIDE_OF[id] === "sb") return sbLines(x0, x1);
+  return stLines(TIDE_OF[id], x0, x1);
+}
+function sbLines(x0, x1) {
+  var L = window.LOOKUPS; if (!L || !L.blend) return null;
+  var B = L.sbTide(), S3 = B.ids.map(function (st) { return stLines(st, x0, x1); });
+  if (S3.some(function (x) { return !x; })) return null;
+  var P = function (arr, src) { return arr.map(function (p) { return { t: p.x, v: p.y, src: src }; }); };
+  var best = S3.map(function (S) { return P(S.tf, "f").concat(P(S.te, "e")).sort(function (u, v) { return u.t - v.t; }); });
+  // time by time over the longest series: every gauge that has a point then (a gauge whose estimate is missing is left
+  // out and the others' shares scaled up); projection only where all three gauges have theirs
+  var tf = [], te = [], base = best.slice().sort(function (u, v) { return v.length - u.length; })[0];
+  base.forEach(function (p0) {
+    var v = 0, ws = 0, nf = 0;
+    best.forEach(function (b, k) { var q = b.filter(function (p) { return Math.abs(p.t - p0.t) <= 18e4; })[0]; if (q) { v += B.w[k] * q.v; ws += B.w[k]; if (q.src === "f") nf++; } });
+    if (ws > 0) (nf === best.length ? tf : te).push({ x: p0.t, y: v / ws });
+  });
+  return { tp: L.blend(S3.map(function (S) { return P(S.tp); }), B.w).map(function (x) { return { x: x.t, y: x.v }; }), tf: tf, te: te };
+}
+function stLines(st, x0, x1) {
+  var T = TIDES[st];
   if (!st || !T || !T.pred) return null;
   var off = localOff(), real = function (t) { return t - off; }, nowL = Date.now() + off, ts = window[TS_OF[st]];
   var tp = T.pred.filter(function (p) { return real(p.t) >= x0 - 36e5 && real(p.t) <= x1; }).map(function (p) { return { x: real(p.t), y: p.v }; });
@@ -464,7 +487,7 @@ function tideLines(id, x0, x1) {
 }
 // The hours the tide is expected above MHHW (the projection, then the estimate; the table where neither reaches), with each peak
 function tideHigh(id, x0, x1) {
-  var L = tideLines(id, x0, x1), LKm = window.LOOKUPS, mh = LKm && LKm.mhhw ? LKm.mhhw(TIDE_OF[id]) : null;
+  var L = tideLines(id, x0, x1), LKm = window.LOOKUPS, mh = !LKm ? null : TIDE_OF[id] === "sb" ? (LKm.sbTide ? LKm.sbTide().mhhw : null) : LKm.mhhw ? LKm.mhhw(TIDE_OF[id]) : null;
   if (!L || mh == null) return null;
   var f0 = L.tf.length ? L.tf[0].x : Infinity, f1 = L.tf.length ? L.tf[L.tf.length - 1].x : -Infinity, e0 = L.te.length ? L.te[0].x : Infinity;
   var tag = function (arr, src) { return arr.map(function (p) { return { x: p.x, y: p.y, src: src }; }); };
@@ -481,11 +504,13 @@ function tideHigh(id, x0, x1) {
 function drawTide(id, x0, x1, short, grid, muted) {
   var st = TIDE_OF[id], cv = $("tc_" + id);
   if (!st || !cv) return;
-  var T = TIDES[st], LKm = window.LOOKUPS, info = LKm && LKm.station ? LKm.station(st) : { name: st, mhhw: null };
-  $("tt_" + id).textContent = "Tide · " + (info.name || st) + (T && T.pred ? "" : " (loading…)");
-  if (!T || !T.pred) { loadTide(st); return; }
-  var Ln = tideLines(id, x0, x1), tp = Ln.tp, tf = Ln.tf, te = Ln.te;
-  var mh = info.mhhw, red = st === "9414523" && LKm && LKm.num ? LKm.num("TIDE_RED_FT_RWC") : NaN;
+  var sb = st === "sb", LKm = window.LOOKUPS, B = sb && LKm && LKm.sbTide ? LKm.sbTide() : null;
+  var info = sb ? { name: "San Bruno blend", mhhw: B ? B.mhhw : null } : LKm && LKm.station ? LKm.station(st) : { name: st, mhhw: null };
+  var Ln = tideLines(id, x0, x1);
+  $("tt_" + id).textContent = "Tide · " + (info.name || st) + (Ln ? "" : " (loading…)") + (sb && B && B.flood != null ? " · flood threshold " + B.flood.toFixed(1) + " ft (provisional)" : "");
+  if (!Ln) { (sb && B ? B.ids : [st]).forEach(loadTide); return; }
+  var tp = Ln.tp, tf = Ln.tf, te = Ln.te;
+  var mh = info.mhhw, red = sb ? (B && B.flood != null ? B.flood : NaN) : st === "9414523" && LKm && LKm.num ? LKm.num("TIDE_RED_FT_RWC") : NaN;
   var ys = tp.concat(tf, te).map(function (p) { return p.y; }).concat(mh != null ? [mh] : []);
   var lo = Math.floor(Math.min.apply(null, ys)), hi = Math.ceil(Math.max.apply(null, ys.concat(isFinite(red) && red - Math.max.apply(null, ys) < 1.5 ? [red] : [])) + 0.2);
   var line = function (y, c, dash, w) { return { type: "line", data: [{ x: x0, y: y }, { x: x1, y: y }], borderColor: c, borderDash: dash, borderWidth: w, pointRadius: 0 }; };
@@ -511,7 +536,7 @@ function loadTideStations() {
   var LKm = window.LOOKUPS;
   if (!LKm || !LKm.csv) return;
   (LKm.ready || Promise.resolve()).then(function () { return LKm.csv("creeks.csv"); }).then(function (rows) {
-    rows.forEach(function (r) { if (r.creek && r.tide_station) TIDE_OF[r.creek] = r.tide_station; });
+    rows.forEach(function (r) { if (r.creek && r.tide_station) TIDE_OF[r.creek] = r.creek === "sanbruno" ? "sb" : r.tide_station; });   // San Bruno: the blend
     if (D) renderMinis();
   }).catch(function () {});
 }

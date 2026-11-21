@@ -563,7 +563,7 @@
       <h4>The live graphs</h4>
       <p>The top graph is the creek level at First Avenue. Its dashed lines mark the flood levels (<span id="sbLv"></span>). The middle graph is rain per hour at First Avenue. Tall bars close together mean an intense burst, which raises the creek fastest. The bottom graph is the Bay tide at Alameda, measured and from the tide table; when the measured tide runs above the table, storms or wind are pushing the Bay higher. In the readings on the left, ⚠ Not reporting means a gauge has gone quiet.</p>
       <h4>The outlook graphs</h4>
-      <p>The Outlook tab shows the same graphs for the last day and next 3 days, with the NWS rain forecast after now. <b class="sbam">Amber</b> shading marks flood-size rain: 6 hours of forecast rain at or above a 1-year storm<span id="sbOne"></span>, enough rain to hold the 5-year bursts. <b class="sbbl">Purple</b> marks high tides, darker for a king tide, and an <b class="sbor">orange outline</b> marks where they meet. The shading is a guide; the creek can flood without it.</p>
+      <p>The Outlook tab shows the same graphs for the last day and next 3 days, with the NWS rain forecast after now. <b class="sbam">Amber</b> shading marks flood-size rain: 6 hours of forecast rain at or above a 1-year storm<span id="sbOne"></span>, enough rain to hold the 5-year bursts. Its tide graph is San Bruno’s tide: the San Francisco, Alameda and Redwood City gauges weighted by distance, the way its flood threshold was worked out. <b class="sbbl">Purple</b> marks high tides, darker where a high reaches the flood threshold (8.9 ft NAVD88, provisional: last January’s King Tide at San Bruno), and an <b class="sbor">orange outline</b> marks where flood-size rain meets one. The shading is a guide; the creek can flood without it.</p>
     </div>
   </div>
   <div id="about">
@@ -624,11 +624,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261120c"></script>
-<script src="tide_season.js?v=20261120c"></script>
-<script src="creek_status.js?v=20261120c"></script>
-<script src="severity.js?v=20261120c"></script>
-<script src="hero.js?v=20261120c"></script>
+<script src="lookups.js?v=20261121a"></script>
+<script src="tide_season.js?v=20261121a"></script>
+<script src="creek_status.js?v=20261121a"></script>
+<script src="severity.js?v=20261121a"></script>
+<script src="hero.js?v=20261121a"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -2371,9 +2371,11 @@ if (ONLY) {   // one-creek screen: Live · Outlook · About
      6-hour storm at the creek's main rain gauge (NOAA Atlas 14) = "flood-size rain" (no lighter band: "below flood risk"
      read as safe; staff 2026-11-17). Bursts within it can reach 5-year size, which is what floods San Bruno Creek.
    - tide: 1.5 hours either side of each high tide above MHHW at the creek's tide gauge; darker at the king tide level
-     (KING_TIDE_FT_RWC at Redwood City; other Bay gauges the same height above their MHHW).
-   - both: flood-size rain during a king tide, outlined. */
-var OL = { tides: {}, kings: null, ala: null, alaObs: null, chart: null }, OL_PAST = 24, OL_AHEAD = 72, H6 = 6 * 3600000;
+     (KING_TIDE_FT_RWC at Redwood City; other Bay gauges the same height above their MHHW). San Bruno Creek (staff
+     2026-11-21): its own tide, San Francisco, Alameda and Redwood City weighted by distance (LK.sbTide), darker where the
+     expected high reaches its flood threshold (TIDE_FLOOD_FT_SB, provisional, 8.9 ft: last January's King Tide).
+   - both: flood-size rain during a king tide (San Bruno: a flood-threshold tide), outlined. */
+var OL = { tides: {}, kings: null, g: {}, chart: null }, OL_PAST = 24, OL_AHEAD = 72, H6 = 6 * 3600000;
 function olStaff() { return !!ONLY || !!(window.CREEK_STATUS && CREEK_STATUS.staff); }
 function olShown() { return currentTab === "outlook"; }
 function olOff(now) { return Math.round((now - Date.now()) / 9e5) * 9e5; }   // Pacific clock minus UTC (nowLocal() drops the seconds)
@@ -2390,14 +2392,64 @@ function loadOutlook() {
     getJSON(noaa({ id: id }, "predictions", ymd(now - 2 * 864e5), ymd(now + 4 * 864e5), "&interval=hilo"))
       .then(function (j) { OL.tides[id] = toPts(j.predictions).filter(function (p) { return p.type === "H"; }); }).catch(function () {}).then(redraw);
   });
-  getJSON(noaa({ id: "9414750" }, "predictions", ymd(now - 2 * 864e5), ymd(now + 4 * 864e5))).then(function (j) { OL.ala = toPts(j.predictions); }).catch(function () {}).then(redraw);
-  getJSON(noaa({ id: "9414750" }, "water_level", ymd(now - 2 * 864e5), ymd(now))).then(function (j) { OL.alaObs = toPts(j.data); }).catch(function () {}).then(redraw);
-  getJSON(noaa({ id: "9414523" }, "predictions", ymd(now), ymd(now + 150 * 864e5), "&interval=hilo")).then(function (j) {
-    var k = LK.num("KING_TIDE_FT_RWC"), days = [];
-    toPts(j.predictions).forEach(function (p) { if (p.type === "H" && p.v >= k) { var d = Math.floor(p.t / 864e5); if (days.indexOf(d) < 0) days.push(d); } });
-    var runs = []; days.forEach(function (d) { var r = runs[runs.length - 1]; if (r && d - r[1] <= 1) r[1] = d; else runs.push([d, d]); });
-    OL.kings = runs;
-  }).catch(function () {}).then(redraw);
+  // San Bruno's tide is a blend of San Francisco, Alameda and Redwood City (staff 2026-11-21): each gauge's tide table,
+  // measured tide and high tides (the next 3 days, and the next weeks for the coming flood-threshold days)
+  LK.sbTide().ids.forEach(function (id) {
+    var g = OL.g[id] = OL.g[id] || {};
+    getJSON(noaa({ id: id }, "predictions", ymd(now - 2 * 864e5), ymd(now + 4 * 864e5))).then(function (j) { g.pred = toPts(j.predictions); }).catch(function () {}).then(redraw);
+    getJSON(noaa({ id: id }, "water_level", ymd(now - 2 * 864e5), ymd(now))).then(function (j) { g.obs = toPts(j.data); }).catch(function () {}).then(redraw);
+    getJSON(noaa({ id: id }, "predictions", ymd(now - 2 * 864e5), ymd(now + (LK.num("BAY_OFFSET_AHEAD_DAYS") || 42) * 864e5), "&interval=hilo"))
+      .then(function (j) { g.hi = toPts(j.predictions).filter(function (p) { return p.type === "H"; }); }).catch(function () {}).then(redraw);
+    // NOAA projection: Alameda and Redwood City come with the Bay Tides and creek graphs (S); San Francisco is fetched here
+    if (!S.some(function (x) { return x.st.id === id; }))
+      getJSON(noaa({ id: id }, "ofs_water_level", ymd(now - 864e5), ymd(now + 3 * 864e5)))
+        .then(function (r) { return LK.fixModel((r.data || r.predictions || []).map(function (x) { return { t: parseLocal(x.t), v: parseFloat(x.v) }; }).filter(function (x) { return !isNaN(x.v); }), id); })
+        .then(function (q) { if (q.length) { g.ofs = q; g.tOfs = Date.now(); } }).catch(function () {}).then(redraw);
+  });
+}
+/* San Bruno Creek's tide (staff 2026-11-21): San Francisco, Alameda and Redwood City weighted by distance (lookups.js
+   LK.sbTide / LK.blend), the way its 8.9 ft flood threshold was worked out. sbSeries gives the tide table, measured tide,
+   NOAA projection (only where all three gauges have one) and the estimate (each gauge's table + its recent offset,
+   easing; a gauge without an offset yet is left out and the others' shares scaled up); sbExpect the best height for one
+   high tide: measured (past), projection, else estimate, else table. */
+var SB_TS = { "9414290": "TIDE_SEASON_SF", "9414750": "TIDE_SEASON_ALA", "9414523": "TIDE_SEASON" };
+function sbModel(id, now) {
+  var s = S.filter(function (x) { return x.st.id === id; })[0] || { ofs: (OL.g[id] || {}).ofs, tOfs: (OL.g[id] || {}).tOfs || 0 };
+  return modelOK(s, now) ? s.ofs : null;
+}
+function sbSeries(now) {
+  var B = LK.sbTide(), w = B.w, G = B.ids.map(function (id) { return OL.g[id] || {}; });
+  var col = function (k) { return G.map(function (g) { return g[k]; }); };
+  var ms = B.ids.map(function (id) { return sbModel(id, now); });
+  var ts = B.ids.map(function (id) { return window[SB_TS[id]]; }), on = ts.map(function (T) { return !!(T && T.offset()); });
+  var won = w.reduce(function (a, x, k) { return a + (on[k] ? x : 0); }, 0);
+  var add = function (t) {
+    var v = 0; for (var k = 0; k < ts.length; k++) { if (!on[k]) continue; var a = ts[k].addAt(t, now); if (a == null) return null; v += w[k] / won * a; } return v;
+  };
+  return { B: B, now: now, tp: LK.blend(col("pred"), w), to: LK.blend(col("obs"), w), tf: ms.every(Boolean) ? LK.blend(ms, w) : [],
+    add: won > 0 ? add : null, partial: won > 0 && won < 0.999, highs: LK.blendHighs(col("hi"), w) };
+}
+function sbExpect(h, X) {
+  var tf = X.tf, ob = X.to;
+  if (h.t + 90 * 60000 <= X.now && ob.length && ob[0].t <= h.t - 90 * 60000) {   // already past: the measured peak
+    var o = null; ob.forEach(function (p) { if (Math.abs(p.t - h.t) <= 90 * 60000 && (!o || p.v > o.v)) o = p; }); if (o) return { t: o.t, v: o.v, src: "obs" };
+  }
+  if (tf.length && h.t + 90 * 60000 <= tf[tf.length - 1].t && h.t - 90 * 60000 >= tf[0].t) {
+    var m = null; tf.forEach(function (p) { if (Math.abs(p.t - h.t) <= 90 * 60000 && (!m || p.v > m.v)) m = p; }); if (m) return { t: m.t, v: m.v, src: "proj" };
+  }
+  var a = X.add ? X.add(h.t) : null;
+  return a != null ? { t: h.t, v: h.v + a, src: "est" } : { t: h.t, v: h.v, src: "table" };
+}
+// the coming days whose estimate reaches the flood threshold, as runs of days [[day, day], ...] (days since 1970, Pacific)
+function sbFloodDays(now, X) {
+  var k = X.B.flood, days = [];
+  if (k == null) return [];
+  X.highs.forEach(function (h) {
+    if (h.t < now - 2 * 3600000) return;
+    var e = sbExpect(h, X); if (e.v >= k) { var d = Math.floor(e.t / 864e5); if (days.indexOf(d) < 0) days.push(d); }
+  });
+  var runs = []; days.forEach(function (d) { var r = runs[runs.length - 1]; if (r && d - r[1] <= 1) r[1] = d; else runs.push([d, d]); });
+  return runs;
 }
 function mainRain(c) {
   var own = (c.rain || []).length ? c.rain : c.rain_support || [], nums = (c.stages || []).map(function (g) { return String(g.number); });
@@ -2416,13 +2468,19 @@ function rainBlocks(c, now) {
   return { blocks: out, one: one, g: g };
 }
 function tideBands(c, now) {
+  if (c.id === "sanbruno") {   // the blended tide; dark where the expected high reaches the flood threshold
+    var X = sbSeries(now), sm = X.B.mhhw, sk = X.B.flood;
+    return X.highs.map(function (h) { var e = sbExpect(h, X); return { t0: h.t - 1.5 * 3600000, t1: h.t + 1.5 * 3600000, t: e.t, v: e.v, table: h.v, src: e.src, king: sk != null && e.v >= sk }; })
+      .filter(function (x) { return sm != null && Math.max(x.v, x.table) >= sm && x.t > now - (OL_PAST + 2) * 3600000 && x.t < now + (OL_AHEAD + 2) * 3600000; });
+  }
   if (!c.tide || !OL.tides[c.tide]) return [];
   var m = LK.station(c.tide).mhhw, k = kingFor(c.tide);
   return OL.tides[c.tide].filter(function (p) { return m != null && p.v >= m && p.t > now - (OL_PAST + 2) * 3600000 && p.t < now + (OL_AHEAD + 2) * 3600000; })
     .map(function (p) { return { t0: p.t - 1.5 * 3600000, t1: p.t + 1.5 * 3600000, t: p.t, v: p.v, king: k != null && p.v >= k }; });
 }
 // San Bruno floods when a storm of about 5-year size meets a king tide or higher; without the tide its drainage mostly
-// copes (staff, 2026-11-17). So the outline marks flood-size rain during a king-tide-level high only.
+// copes (staff, 2026-11-17). So the outline marks flood-size rain during a high at the flood threshold only (8.9 ft,
+// last January's King Tide; staff 2026-11-21).
 function overlaps(rb, tb) {
   var o = []; rb.forEach(function (b) { if (b.r < 1) return; tb.forEach(function (x) { if (!x.king) return; var a = Math.max(b.t0, x.t0), z = Math.min(b.t1, x.t1); if (z > a) o.push({ t0: a, t1: z, b: b, x: x }); }); }); return o;
 }
@@ -2432,14 +2490,14 @@ function sbSentence(c, now) {
   var R = rainBlocks(c, now), T = tideBands(c, now).filter(function (x) { return x.t > now; }), fut = R.blocks.filter(function (b) { return !b.past && b.t1 > now; });
   var top = fut.slice().sort(function (a, b) { return b.r - a.r; })[0], s = [], ov = overlaps(fut, T);
   if (!R.one) s.push("No storm sizes for its rain gauge.");
-  else if (top && top.r >= 1) s.push("<b>" + span(top.t0, top.t1) + ": flood-size rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours)." + (ov.length || !T.some(function (x) { return x.king; }) ? "" : " No king tide then."));
+  else if (top && top.r >= 1) s.push("<b>" + span(top.t0, top.t1) + ": flood-size rain forecast</b> (" + top.in.toFixed(2) + " in in 6 hours)." + (ov.length || !T.some(function (x) { return x.king; }) ? "" : " The tide isn't at the flood threshold then."));
   else s.push(top && top.in >= 0.05 ? "Most rain forecast in 6 hours: " + top.in.toFixed(2) + " in, " + span(top.t0, top.t1) + "." : "Little or no rain forecast.");   // no "no flood-size rain" (staff 2026-11-19)
   var kt = T.filter(function (x) { return x.king; });
-  s.push(kt.length ? "King-tide-level high " + kt.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fTime(x.t); }).join(", ") + "." : "No king tides this week.");
-  // the Bay running above the tide table (storm surge, wind): measured minus predicted at Alameda, last hour
-  var ob = (OL.alaObs || []).filter(function (p) { return p.t > now - 3600000; }), lo = ob[ob.length - 1], pr = lo && (OL.ala || []).filter(function (p) { return Math.abs(p.t - lo.t) <= 360000; })[0];
+  s.push(kt.length ? "High tide at the flood threshold " + kt.map(function (x) { return fmt(x.t, { weekday: "short" }) + " " + fTime(x.t); }).join(", ") + "." : "No high tides at the flood threshold in the next 3 days.");
+  // the Bay running above the tide table (storm surge, wind): measured minus predicted, San Bruno blend, last hour
+  var X = sbSeries(now), ob = X.to.filter(function (p) { return p.t > now - 3600000; }), lo = ob[ob.length - 1], pr = lo && X.tp.filter(function (p) { return Math.abs(p.t - lo.t) <= 360000; })[0];
   if (lo && pr && lo.v - pr.v >= 0.5) s.push("The Bay is running " + (lo.v - pr.v).toFixed(1) + " ft above the tide table.");
-  if (ov.length) s.push("<b>Flood-size rain during a king tide " + span(ov[0].t0, ov[0].t1) + ": flooding along the eastern avenues is possible.</b>");
+  if (ov.length) s.push("<b>Flood-size rain during a flood-threshold tide " + span(ov[0].t0, ov[0].t1) + ": flooding along the eastern avenues is possible.</b>");
   else s.push("Local flooding can still happen.");   // never reads as all clear (staff, 2026-11-17)
   return s.join(" ");
 }
@@ -2478,8 +2536,8 @@ var olBands = {
 };
 // The San Bruno outlook laid out like its Live conditions page (staff, 2026-11-18): readouts on the left (the forecast
 // rain, the Bay tide, the flood case), and three stacked graphs on the right on one time axis (the creek at First
-// Avenue, rain per hour measured then forecast, the Bay tide). Amber: flood-size rain; purple: high tide (darker: king
-// tide); orange outline: flood-size rain during a king tide.
+// Avenue, rain per hour measured then forecast, San Bruno's blended Bay tide). Amber: flood-size rain; purple: high tide
+// (darker: at the flood threshold); orange outline: flood-size rain during a flood-threshold tide.
 function renderOutlook() {
   var el = document.getElementById("outlook");
   if (!el || !C.data) { if (el) el.innerHTML = '<div class="olnote">Loading…</div>'; return; }
@@ -2501,26 +2559,28 @@ function renderOutlook() {
   }
   r += "</div>";
   // tide readout
-  // the highest coming high tide: the NOAA projection's peak where it reaches (as on the Tides page), else the tide table
-  var sa = S.filter(function (x) { return x.st.id === "9414750"; })[0], pj = sa && modelOK(sa, now) ? sa.ofs : null;
-  var hiOf = function (x) { if (pj && x.t + 90 * 60000 <= pj[pj.length - 1].t) { var m = null; pj.forEach(function (p) { if (Math.abs(p.t - x.t) <= 90 * 60000 && (!m || p.v > m.v)) m = p; }); if (m) return { t: m.t, v: m.v, proj: true }; } return x; };
-  var hi = T.filter(function (x) { return x.t > now; }).map(hiOf).sort(function (a, b) { return b.v - a.v; })[0], kt = T.filter(function (x) { return x.king && x.t > now; });
-  var ob = (OL.alaObs || []).filter(function (p) { return p.t > now - 3600000; }), lo = ob[ob.length - 1], pr = lo && (OL.ala || []).filter(function (p) { return Math.abs(p.t - lo.t) <= 360000; })[0];
-  var kings = (OL.kings || []).filter(function (x) { return x[1] * 864e5 >= now - 864e5; }).slice(0, 2).map(function (x) {
-    return fmt(x[0] * 864e5, { month: "short", day: "numeric" }) + (x[1] > x[0] ? "–" + fmt(x[1] * 864e5, new Date(x[1] * 864e5).getUTCMonth() === new Date(x[0] * 864e5).getUTCMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }) : ""); });
-  var t = '<div class="olbox"><div class="ollbl">Bay tide · Alameda</div>' +
-    (kt.length ? '<div class="olv pu">King tide</div><div class="olt"><b>' + esc(fmt(kt[0].t, { weekday: "short" }) + " " + fTime(kt[0].t)) + "</b>: " + kt[0].v.toFixed(1) + " ft</div>"
-      : '<div class="olv">No king tide</div>' + (hi ? '<div class="olt">Highest high: <b>' + hi.v.toFixed(1) + " ft</b> " + esc(fmt(hi.t, { weekday: "short" }) + " " + fTime(hi.t)) + (hi.proj ? " (NOAA projection)" : "") + "</div>" : "")) +
+  // the highest coming high tide: the NOAA projection's peak where it reaches (as on the Tides page), then the estimate
+  // (table + offset), else the tide table; San Bruno's blended tide (staff 2026-11-21)
+  var X = sbSeries(now), B = X.B, srcTxt = { obs: " (measured)", proj: " (NOAA projection)", est: " (table + offset)", table: " (tide table)" };
+  var hi = T.filter(function (x) { return x.t > now; }).sort(function (a, b) { return b.v - a.v; })[0], kt = T.filter(function (x) { return x.king && x.t > now; });
+  var ob = X.to.filter(function (p) { return p.t > now - 3600000; }), lo = ob[ob.length - 1], pr = lo && X.tp.filter(function (p) { return Math.abs(p.t - lo.t) <= 360000; })[0];
+  var dd = function (x) { return fmt(x[0] * 864e5, { month: "short", day: "numeric" }) + (x[1] > x[0] ? "–" + fmt(x[1] * 864e5, new Date(x[1] * 864e5).getUTCMonth() === new Date(x[0] * 864e5).getUTCMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }) : ""); };
+  var fd = sbFloodDays(now, X).filter(function (x) { return x[1] * 864e5 >= now - 864e5; }).slice(0, 2).map(dd);
+  var ft = function (v) { return v == null ? "–" : v.toFixed(1) + " ft"; };
+  var t = '<div class="olbox"><div class="ollbl">Bay tide · San Bruno blend</div>' +
+    (kt.length ? '<div class="olv pu">At flood threshold</div><div class="olt"><b>' + esc(fmt(kt[0].t, { weekday: "short" }) + " " + fTime(kt[0].t)) + "</b>: " + kt[0].v.toFixed(1) + " ft" + srcTxt[kt[0].src] + "</div>"
+      : '<div class="olv">Below flood threshold</div>' + (hi ? '<div class="olt">Highest high: <b>' + hi.v.toFixed(1) + " ft</b> " + esc(fmt(hi.t, { weekday: "short" }) + " " + fTime(hi.t)) + srcTxt[hi.src] + "</div>" : "")) +
     (lo && pr && lo.v - pr.v >= 0.5 ? '<div class="olt"><b>Running ' + (lo.v - pr.v).toFixed(1) + " ft above the table</b></div>" : "") +
-    (kings.length ? '<div class="olt m">Next king tides: ' + esc(kings.join(" · ")) + "</div>" : "") + "</div>";
+    '<div class="olt m">Flood threshold ' + ft(B.flood) + " (provisional)</div>" +
+    (X.add && fd.length ? '<div class="olt m">Next at threshold: ' + esc(fd.join(" · ")) + "</div>" : "") + "</div>";
   // flood case
-  var f = ov.length ? '<div class="olbox olhit"><div class="olv or">Flood-size rain + king tide</div><div class="olt"><b>' + esc(span(ov[0].t0, ov[0].t1)) + "</b>: flooding along the eastern avenues is possible.</div></div>"
-    : '<div class="olbox"><div class="olt"><b>Watch for</b> flood-size rain during a king tide, outlined on the graph. Flooding can also happen at other times.</div></div>';
+  var f = ov.length ? '<div class="olbox olhit"><div class="olv or">Flood-size rain + flood-threshold tide</div><div class="olt"><b>' + esc(span(ov[0].t0, ov[0].t1)) + "</b>: flooding along the eastern avenues is possible.</div></div>"
+    : '<div class="olbox"><div class="olt"><b>Watch for</b> flood-size rain during a flood-threshold tide, outlined on the graph. Flooding can also happen at other times.</div></div>';
   el.innerHTML = '<div class="olhead"><b>San Bruno Creek · outlook</b> <span>last day and next 3 days</span><span class="olkey" id="olKeyTop"></span></div>' +
     '<div class="olbody"><div class="olleft">' + r + t + f + '</div><div class="olright">' +
     '<div class="olg"><div class="olgt"><span>First Avenue · creek level (ft)</span><span class="olk" id="olK1"></span></div><div class="olc" style="flex:1.15"><canvas id="olC1"></canvas></div></div>' +
     '<div class="olg"><div class="olgt"><span>Rain per hour (in)</span><span class="olk" id="olK2"></span></div><div class="olc" style="flex:.8"><canvas id="olC2"></canvas></div></div>' +
-    '<div class="olg"><div class="olgt"><span>Alameda tide (ft NAVD88)</span><span class="olk" id="olK3"></span></div><div class="olc" style="flex:1.05"><canvas id="olC3"></canvas></div></div>' +
+    '<div class="olg"><div class="olgt"><span>San Bruno tide (blend)</span><span class="olk" id="olK3"></span></div><div class="olc" style="flex:1.05"><canvas id="olC3"></canvas></div></div>' +
     "</div></div>";
   drawSB(sb, now, R, T);
 }
@@ -2539,17 +2599,16 @@ function drawSB(c, now, R, T) {
   var rainPast = Object.keys(hr).filter(function (k) { return hr[k] > 0; }).map(function (k) { return { x: H(+k) - 0.5, y: hr[k] }; });
   var rainFc = []; R.blocks.forEach(function (b) { if (b.past || !b.in) return; for (var t = Math.max(b.t0, now); t < Math.min(b.t1, t1); t += 3600000) rainFc.push({ x: H(t) + 0.5, y: b.in / 6 }); });
   var rtop = Math.max(0.1, Math.ceil(Math.max.apply(null, rainPast.concat(rainFc).map(function (p) { return p.y; }).concat([0])) * 10) / 10);
-  var tp = (OL.ala || []).filter(function (p) { return p.t >= t0 && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v }; });
-  var to = (OL.alaObs || []).filter(function (p) { return p.t >= t0; }).map(function (p) { return { x: H(p.t), y: p.v }; });
-  // NOAA projection (the same water level forecast as the Tides page, ~2 days ahead), after the measured level (staff 2026-11-19)
-  var sa = S.filter(function (x) { return x.st.id === "9414750"; })[0], lastObs = (OL.alaObs || []).length ? OL.alaObs[OL.alaObs.length - 1].t : now - 18e5;
-  var tf = sa && modelOK(sa, now) ? sa.ofs.filter(function (p) { return p.t >= lastObs && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v }; }) : [];
-  OL.proj = tf.length ? { end: sa.ofs[sa.ofs.length - 1].t, pts: sa.ofs } : null;
-  // after the projection (or from now without one): the tide table plus Alameda's recent offset, easing, as on the Tides
-  // page for Redwood City (tide_season.js TIDE_SEASON_ALA; staff 2026-11-19)
-  var TA = window.TIDE_SEASON_ALA, oa = TA && TA.offset(), est0 = tf.length ? OL.proj.end : Math.max(now, lastObs);
-  var te = oa ? (OL.ala || []).filter(function (p) { return p.t >= est0 && p.t <= t1; }).map(function (p) { return { x: H(p.t), y: p.v + TA.addAt(p.t, now) }; }) : [];
-  var mh = LK.station("9414750").mhhw, kg = kingFor("9414750"), tys = tp.concat(to, tf, te).map(function (p) { return p.y; }).concat(mh != null ? [mh] : [], kg != null ? [kg] : []);
+  // San Bruno's tide, San Francisco, Alameda and Redwood City blended (staff 2026-11-21; LK.sbTide): tide table, measured,
+  // the NOAA projection after the measured level (staff 2026-11-19; only where all three gauges have one), then the tide
+  // table plus each gauge's recent offset, easing, as on the Tides page (tide_season.js TIDE_SEASON_SF / _ALA / TIDE_SEASON)
+  var X = sbSeries(now), XY = function (a, lo, hi) { return a.filter(function (p) { return p.t >= lo && p.t <= hi; }).map(function (p) { return { x: H(p.t), y: p.v }; }); };
+  var tp = XY(X.tp, t0, t1), to = XY(X.to, t0, Infinity), lastObs = X.to.length ? X.to[X.to.length - 1].t : now - 18e5;
+  var tf = XY(X.tf, lastObs, t1);
+  OL.proj = tf.length ? { end: X.tf[X.tf.length - 1].t, pts: X.tf } : null;
+  var est0 = tf.length ? OL.proj.end : Math.max(now, lastObs);
+  var te = X.add ? X.tp.filter(function (p) { return p.t >= est0 && p.t <= t1; }).map(function (p) { var a = X.add(p.t); return { x: H(p.t), y: p.v + (a || 0) }; }) : [];
+  var mh = X.B.mhhw, kg = X.B.flood, tys = tp.concat(to, tf, te).map(function (p) { return p.y; }).concat(mh != null ? [mh] : [], kg != null ? [kg] : []);
   var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 1.7) : 8;   // room above the top line for its label
   var flat = function (v, col, dash, lab, w) { return { label: lab, data: [{ x: H(t0), y: v }, { x: H(t1), y: v }], borderColor: col, borderWidth: w || 1.5, borderDash: dash, pointRadius: 0, pointHoverRadius: 0, olLabel: lab }; };
   var x = function (show) {
@@ -2577,7 +2636,7 @@ function drawSB(c, now, R, T) {
   // 3. the Bay tide, with high tides shaded
   var d3 = [];
   if (mh != null) d3.push(flat(mh, tc, [2, 3], "MHHW " + mh.toFixed(2), 1.2));
-  if (kg != null) d3.push(flat(kg, tc, [10, 4], "King tide " + kg.toFixed(2), 1.2));
+  if (kg != null) d3.push(flat(kg, tc, [10, 4], "Flood threshold " + kg.toFixed(2) + " (provisional)", 1.2));
   var tblc = document.documentElement.dataset.theme === "dark" ? "#8f96a3" : "#8a919c";
   d3.push({ label: "Tide table", data: tp, borderColor: tblc, borderWidth: 1.2, pointRadius: 0 });
   d3.push({ label: "Measured", data: to, borderColor: tc, borderWidth: 2.4, pointRadius: 0 });
@@ -2589,10 +2648,10 @@ function drawSB(c, now, R, T) {
   var vis = function (b) { return b.t1 > t0 && b.t0 < t1; }, kt = [];
   if (R.blocks.some(function (b) { return b.r >= 1 && vis(b); })) kt.push('<i style="background:rgba(239,159,39,.45)"></i>flood-size rain');
   if (T.some(function (b) { return !b.king && vis(b); })) kt.push('<i style="background:rgba(126,87,194,.18)"></i>high tide');
-  if (T.some(function (b) { return b.king && vis(b); })) kt.push('<i style="background:rgba(126,87,194,.42)"></i>king tide');
+  if (T.some(function (b) { return b.king && vis(b); })) kt.push('<i style="background:rgba(126,87,194,.42)"></i>flood-threshold tide');
   if (both.filter(vis).length) kt.push('<i style="border:2px solid #b45a00;background:transparent"></i>both');
   var kEl = document.getElementById("olKeyTop"); if (kEl) kEl.innerHTML = kt.join(" ");
-  // a key on each graph (staff 2026-11-19): the lines and bars drawn; flood levels, MHHW and the king tide are labeled on the graph
+  // a key on each graph (staff 2026-11-19): the lines and bars drawn; flood levels, MHHW and the tide flood threshold are labeled on the graph
   var ln = function (col, style, w, lab) { return '<span><i class="ln" style="border-top:' + (w || 2) + "px " + (style || "solid") + " " + col + '"></i>' + esc(lab) + "</span>"; };
   var sq = function (col, lab) { return '<span><i style="background:' + col + '"></i>' + esc(lab) + "</span>"; };
   var setK = function (id, h) { var e = document.getElementById(id); if (e) e.innerHTML = h; };
