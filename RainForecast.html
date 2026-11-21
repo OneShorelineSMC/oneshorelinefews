@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>RRFS rain forecast · OneShoreline staff</title>
+<!-- Staff page (2026-11-20): the RRFS model rain forecast for every creek's watershed side by side, and a map of the
+     county grid with the points each creek uses. Linked from staff.html only; never on the kiosks or the public pages.
+     Data: rrfs.json on the data branch, written every 20 minutes by scripts/rrfs.py from AQPI / CW3E's San Mateo County
+     files (method in that script's notes). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w=="
+  crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
+    --meas: #1e88e5; --tidetbl: #4a4f55; --mhhw: #5f6b78; --red: #c0392b; --minor: #a35f00; --oneyear: #003B5C; --band: rgba(30,136,229,.13); --med: #8a96a3;
+    --warnbg: #fff4e5; --warnink: #7a3d00; --sel: #e8f1fa; --hit: #fde8e6; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --meas: #4ea3f0; --tidetbl: #a7b0ba; --mhhw: #9aa8b8; --red: #f47c79; --minor: #ffa726; --oneyear: #e6edf5; --band: rgba(78,163,240,.18); --med: #7d8b9b;
+    --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; --hit: #3a1f1f; } }
+  :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --meas: #4ea3f0; --tidetbl: #a7b0ba; --mhhw: #9aa8b8; --red: #f47c79; --minor: #ffa726; --oneyear: #e6edf5; --band: rgba(78,163,240,.18); --med: #7d8b9b;
+    --warnbg: #3a2a12; --warnink: #ffd59a; --sel: #1d3247; --hit: #3a1f1f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap, main { max-width: 1100px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header img { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; }
+  header a { color: #fff; }
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  main { padding: 12px 16px 40px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+  h2 { font-size: 16px; color: var(--ink); margin: 0 0 6px; }
+  .note { font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
+  .meta { font-size: 13.5px; color: var(--muted); margin: 6px 0 0; }
+  .warn { background: var(--warnbg); color: var(--warnink); border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 14px; }
+  .warn:empty { display: none; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; background: #fff; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .seg button { font: inherit; font-size: 14px; border: 1.5px solid var(--line); background: var(--card); color: var(--link); border-radius: 999px; padding: 5px 12px; cursor: pointer; min-height: 34px; }
+  .seg button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .seg button:focus-visible, .btn:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .tile { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+  .tile .k { font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+  .tile .v { font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1.2; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .tile .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .tile.hit { background: var(--hit); }
+  .chartbox { position: relative; height: 340px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-top: 0; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #months td:first-child, #events td:first-child, #proj td:first-child { white-space: nowrap; }
+  .sm { display: block; font-size: 12.5px; color: var(--muted); }
+  .up { color: var(--red); font-weight: 600; }
+  ul.plain { margin: 6px 0 0; padding-left: 20px; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details p, details li { font-size: 14px; }
+  code { font-size: 12.5px; }
+  a { color: var(--link); }
+  /* the public pages' bottom bar (staff, 2026-10-31), with Staff tools on */
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
+    border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }   /* above the map's zoom buttons */
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } }
+  nav a.on { color: var(--ink); font-weight: bold; }
+  @media print { nav { display: none; } body { padding-bottom: 0; } }
+
+  /* RRFS page */
+  :root { --fc: rgba(126,87,194,.55); --fcline: #7e57c2; --amber: rgba(239,159,39,.40); --amber2: rgba(239,159,39,.62); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; margin-top: 10px; }
+  .mini { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px 6px; }
+  .mini h3 { font-size: 14.5px; margin: 0; color: var(--ink); display: flex; justify-content: space-between; gap: 8px; }
+  .mini h3 span { font-weight: 400; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .mini .cb { position: relative; height: 120px; margin-top: 4px; }
+  .mini .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; min-height: 1.3em; }
+  .mini.hot { border-color: #ef9f27; box-shadow: inset 3px 0 0 #ef9f27; }
+  #sum { min-width: 900px; }   /* scrolls sideways on a phone instead of squeezing each row tall */
+  #map { height: 480px; border-radius: 10px; margin-top: 10px; }
+  @media (max-width: 640px) { #map { height: 380px; } }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+  .lg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; align-items: center; }
+  .hl { background: var(--warnbg); color: var(--warnink); border-radius: 6px; padding: 0 5px; white-space: nowrap; }
+  .leaflet-control-attribution a { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="nav.css?v=20261108b">
+</head>
+<body>
+<header><div class="wrap">
+  <img src="img/oneshoreline-mark-white.png" alt="">
+  <div><h1>RRFS rain forecast <span class="tag">BETA</span></h1><div class="org"><a href="staff.html">Staff tools</a> · OneShoreline Flood Early Warning</div></div>
+  <div class="h911">In an emergency, call 911.</div>
+</div></header>
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="staff.html"><span class="i" aria-hidden="true">🧰</span>Staff tools</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+<main>
+  <div class="card">
+    <p style="margin:0">The RRFS model's rain forecast for each creek's watershed: the average of the model's grid points in the watershed.
+      A model forecast, not a measurement; it never changes a creek's status, and it isn't shown on the public pages or the kiosks.</p>
+    <p class="meta" id="runs">Loading…</p>
+    <div class="warn" id="warn"></div>
+  </div>
+
+  <div class="card">
+    <h2>Next 6 hours, 24 hours and 3 days</h2>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Forecast by creek (scrolls sideways)"><table id="sum"></table></div>
+    <p class="note">Forecast Heavy = the watershed average reaches the 1-year storm (NOAA Atlas 14) at the creek's main rain gauge over any window
+      from 15 minutes to 6 hours (24 hours for the coastal creeks and San Francisquito). Storm size: the rarest such window in the forecast.</p>
+  </div>
+
+  <div class="card">
+    <h2>Each watershed, hour by hour</h2>
+    <div class="seg" role="group" aria-label="Time span">
+      <button type="button" id="v15" aria-pressed="false">Next 18 hr · 15 min</button>
+      <button type="button" id="v60" aria-pressed="true">Next 3.5 days · hourly</button>
+    </div>
+    <div class="seg" role="group" aria-label="Scale" style="margin-top:6px">
+      <button type="button" id="sSame" aria-pressed="true">Same scale for all</button>
+      <button type="button" id="sOwn" aria-pressed="false">Each its own scale</button>
+    </div>
+    <div class="lg">
+      <span><i class="sw" style="background:var(--fc);border:1px solid var(--fcline)"></i>watershed average</span>
+      <span><i class="sw" style="background:none;border-top:2px dashed var(--fcline);border-radius:0;height:0;width:16px"></i>wettest grid point</span>
+      <span><i class="sw" style="background:var(--amber)"></i>forecast Heavy or more</span>
+    </div>
+    <div class="grid2" id="minis"></div>
+  </div>
+
+  <div class="card">
+    <h2>The grid points</h2>
+    <p style="margin:0;font-size:14px">Every RRFS grid point in the county, colored by its forecast for the <b id="mapHrs">next 24 hours</b>.
+      Ringed points are the ones a creek uses. Dashed outlines: the County's watersheds.</p>
+    <div class="seg" role="group" aria-label="Map total">
+      <button type="button" id="m6" aria-pressed="false">Next 6 hr</button>
+      <button type="button" id="m24" aria-pressed="true">Next 24 hr</button>
+    </div>
+    <div id="map" role="region" aria-label="Map of the RRFS grid points"></div>
+    <div class="lg" id="mapKey"></div>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>Where this comes from, and how the grid points were picked</summary>
+      <ul class="plain">
+        <li><b>The model:</b> RRFS (Rapid Refresh Forecast System), NOAA's 3-km model that replaces the HRRR. AQPI at CW3E (Scripps, UC San Diego)
+          posts it for San Mateo County: rain in each hour out to about 3.5 days (from the run every 6 hours) and in each 15 minutes out to
+          about 18 hours (hourly runs). Units aren't stated in the files; they match inches against the NWS forecast and our gauges.</li>
+        <li><b>Grid points for each creek:</b> every grid point inside the creek's County watershed (C/CAG boundaries; the creek is matched
+          to its watershed in <code>lookups/forecast_points.csv</code>). The forecast is the plain average of those points. A watershed with
+          fewer than 2 points inside also takes the nearest points to its forecast point; Butano, which shares a watershed with Pescadero,
+          uses the 2 points nearest its own forecast point.</li>
+        <li><b>Ratings:</b> NOAA Atlas 14 at the creek's main rain gauge: Heavy = 1-year storm, Very heavy = 2-year, Intense = 5-year.
+          Atlas 14 is a point value and the forecast an average, so the ratings lean a little low.</li>
+        <li><b>Checking it:</b> every run is kept in <a href="https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/rrfs_log.csv" download>rrfs_log.csv</a>
+          (60 days) to compare with the gauges after storms. Rules: <code>scripts/rrfs.py</code>.</li>
+      </ul>
+    </details>
+  </div>
+</main>
+
+<script>
+var DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/rrfs.json";
+var TZ = "America/Los_Angeles", D = null, VIEW = "60", SAME = true, MAPH = 24, charts = {}, map = null, gridLayer = null;
+var HW = ["", "Heavy", "Very heavy", "Intense"];
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function when(iso, o) { return new Date(iso).toLocaleString("en-US", Object.assign({ timeZone: TZ }, o || { weekday: "short", hour: "numeric", minute: "2-digit" })); }
+function inch(v) { return v == null ? "–" : v.toFixed(2); }
+function win(m) { return m < 60 ? m + " min" : (m / 60) + " hr"; }
+function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function title(s) { return String(s || "").toLowerCase().replace(/\b\w/g, function (x) { return x.toUpperCase(); }); }
+
+function render() {
+  if (!D) return;
+  var P = D.products || {}, C = D.creeks || {}, ids = Object.keys(C);
+  $("runs").innerHTML = ["60", "15"].filter(function (k) { return P[k]; }).map(function (k) {
+    return (k === "60" ? "Hourly forecast" : "15-minute forecast") + ": run " + esc(when(P[k].run)) + ", to " + esc(when(P[k].steps[P[k].steps.length - 1]));
+  }).join(" · ") + " · checked " + esc(when(D.generated_utc));
+  $("warn").textContent = (D.problems || []).length ? "Problems on the last check: " + D.problems.join("; ") : "";
+  // summary table
+  $("sum").innerHTML = "<tr><th>Creek</th><th>Grid points</th><th class='n'>6 hr</th><th class='n'>24 hr</th><th class='n'>3 days</th><th>Wettest hour</th><th>Wettest 15 min</th><th>Forecast Heavy or more</th></tr>" +
+    ids.map(function (id) {
+      var e = C[id], t = e.totals || {}, pe = e.p60 || e.p15 || {};
+      var hv = (e.heavy || []).map(function (h) { return '<span class="hl">' + esc(HW[Math.min(3, h.level)]) + "</span> " + esc(when(h.start)) + "–" + esc(when(h.end, { hour: "numeric", minute: "2-digit" })) +
+        " (" + inch(h.in) + " in in " + win(h.minutes) + ")"; }).join("<br>");
+      return "<tr><td><b>" + esc(e.name) + "</b><span class='sm'>" + esc(title(e.watershed) || "nearest points") + "</span></td>" +
+        "<td>" + pe.points + (pe.how === "inside" ? " inside" : pe.how === "nearest" ? " nearest" : " in and near") + "</td>" +
+        "<td class='n'>" + inch(t["6"]) + "</td><td class='n'>" + inch(t["24"]) + "</td><td class='n'>" + inch(t["72"]) + "</td>" +
+        "<td>" + (e.peak60 && e.peak60.in > 0 ? inch(e.peak60.in) + " in, " + esc(when(e.peak60.end, { weekday: "short", hour: "numeric" })) : "–") + "</td>" +
+        "<td>" + (e.peak15 && e.peak15.in > 0 ? inch(e.peak15.in) + " in, " + esc(when(e.peak15.end)) : "–") + "</td>" +
+        "<td>" + (hv || "<span class='sm' style='display:inline'>none</span>") +
+          (e.size && e.size.years ? "<span class='sm'>about a " + (e.size.years >= 2 ? Math.round(e.size.years) : e.size.years) + "-year storm over " + win(e.size.minutes) + " at " + esc(e.size.gauge) + "</span>" : "") + "</td></tr>";
+    }).join("");
+  renderMinis();
+  renderMap();
+}
+
+// one small bar graph per watershed, on a shared time axis
+var bandPlugin = { id: "bands", beforeDatasetsDraw: function (ch) {
+  var bs = ch.options.plugins.bands; if (!bs || !bs.length) return;
+  var xs = ch.scales.x, ys = ch.scales.y, c = ch.ctx; c.save();
+  bs.forEach(function (b) { var a = Math.max(xs.left, xs.getPixelForValue(b.a)), z = Math.min(xs.right, xs.getPixelForValue(b.b));
+    if (z > a) { c.fillStyle = b.level >= 2 ? css("--amber2") : css("--amber"); c.fillRect(a, ys.top, z - a, ys.bottom - ys.top); } });
+  c.restore(); } };
+function renderMinis() {
+  var P = D.products[VIEW] ? VIEW : (D.products["60"] ? "60" : "15"), prod = D.products[P], C = D.creeks, ids = Object.keys(C), now = Date.now();
+  $("v15").disabled = !D.products["15"]; $("v60").disabled = !D.products["60"];
+  var steps = prod.steps.map(function (s) { return Date.parse(s); }), x0 = now, x1 = steps[steps.length - 1], sm = prod.step_min * 60000;
+  var top = 0;
+  ids.forEach(function (id) { var pe = C[id]["p" + P]; if (pe) pe.max.forEach(function (v, k) { if (v != null && steps[k] > now) top = Math.max(top, v); }); });
+  top = Math.max(P === "15" ? 0.05 : 0.1, Math.ceil(top * 20) / 20);
+  var box = $("minis");
+  if (box.dataset.ids !== ids.join()) { box.innerHTML = ids.map(function (id) { return '<div class="mini" id="m_' + id + '"><h3>' + esc(C[id].name) + '<span id="t_' + id + '"></span></h3><div class="cb"><canvas id="c_' + id + '" role="img"></canvas></div><div class="s" id="s_' + id + '"></div></div>'; }).join(""); box.dataset.ids = ids.join(); }
+  var grid = css("--line"), muted = css("--muted");
+  ids.forEach(function (id) {
+    var e = C[id], pe = e["p" + P] || { avg: [], max: [] }, avg = [], mx = [], own = 0;
+    steps.forEach(function (t, k) { if (t - sm < now) return; var a = pe.avg[k], m = pe.max[k];
+      if (a != null) avg.push({ x: t - sm / 2, y: a }); if (m != null) { mx.push({ x: t - sm, y: m }, { x: t, y: m }); own = Math.max(own, m); } });
+    var yTop = SAME ? top : Math.max(P === "15" ? 0.02 : 0.05, Math.ceil(own * 40) / 40);
+    var bands = (e.heavy || []).map(function (h) { return { a: Date.parse(h.start), b: Date.parse(h.end), level: h.level }; });
+    $("m_" + id).classList.toggle("hot", bands.some(function (b) { return b.b > now && b.a < x1; }));
+    var tot = 0; avg.forEach(function (p) { tot += p.y; });
+    $("t_" + id).textContent = inch(tot) + " in";
+    $("s_" + id).textContent = (e.heavy || []).length ? "Forecast " + HW[Math.min(3, e.heavy[0].level)] + " " + when(e.heavy[0].start) : (pe.points ? pe.points + " grid points" : "");
+    $("c_" + id).setAttribute("aria-label", e.name + ": forecast " + inch(tot) + " in over the period shown");
+    var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
+      plugins: { legend: { display: false }, bands: bands, tooltip: { callbacks: {
+        title: function (it) { return when(new Date(it[0].parsed.x + (it[0].datasetIndex === 0 ? sm / 2 : 0)).toISOString()) + " (end)"; },
+        label: function (it) { return (it.datasetIndex === 0 ? "Average " : "Wettest point ") + it.parsed.y.toFixed(2) + " in"; } } } },
+      scales: { x: { type: "linear", min: x0, max: x1, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 6, font: { size: 11 },
+          callback: function (v) { return new Date(v).toLocaleString("en-US", P === "15" ? { timeZone: TZ, hour: "numeric" } : { timeZone: TZ, weekday: "short", hour: "numeric" }); } } },
+        y: { min: 0, max: yTop, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 3, font: { size: 11 } } } } };
+    var data = { datasets: [
+      { type: "bar", data: avg, backgroundColor: css("--fc"), borderColor: css("--fcline"), borderWidth: 1, barPercentage: 0.9, categoryPercentage: 1, grouped: false },
+      { type: "line", data: mx, borderColor: css("--fcline"), borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0 }] };
+    if (charts[id]) { charts[id].data = data; charts[id].options = opts; charts[id].update(); }
+    else charts[id] = new Chart($("c_" + id), { type: "bar", data: data, options: opts, plugins: [bandPlugin] });
+  });
+}
+
+// the map: the county grid colored by its forecast total, each creek's points ringed
+var STEPS = [[0.01, "#eef3f8"], [0.1, "#c9d8ea"], [0.25, "#9bb8db"], [0.5, "#7e57c2"], [1, "#5b2c9e"], [2, "#3b1470"]];
+function color(v) { var c = "#f6f8fa"; STEPS.forEach(function (s) { if (v >= s[0]) c = s[1]; }); return c; }
+function renderMap() {
+  if (!window.L) return;
+  if (!D.grid) { $("map").textContent = "The map shows after the next forecast check (within 20 minutes)."; return; }
+  if (!map) {
+    $("map").textContent = "";
+    map = L.map("map", { scrollWheelZoom: false });
+    map.fitBounds(L.latLngBounds(D.grid.pts.map(function (p) { return [p[1], p[0]]; })), { padding: [10, 10] });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 15, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Forecast: AQPI / CW3E RRFS' }).addTo(map);
+    fetch("data/watersheds.geojson").then(function (r) { return r.json(); }).then(function (gj) {
+      L.geoJSON(gj, { style: { color: "#2f6b3a", weight: 1.3, opacity: 0.8, fillOpacity: 0, dashArray: "5 4" }, interactive: false }).addTo(map);
+      if (gridLayer) gridLayer.bringToFront();
+    }).catch(function () {});
+  }
+  if (gridLayer) map.removeLayer(gridLayer);
+  gridLayer = L.layerGroup();
+  var used = {};
+  Object.keys(D.creeks).forEach(function (id) { var pe = D.creeks[id].p60 || D.creeks[id].p15; (pe && pe.pts || []).forEach(function (p) { var k = p[0] + "," + p[1]; (used[k] = used[k] || []).push(D.creeks[id].name); }); });
+  var col = MAPH === 6 ? 2 : 3;
+  D.grid.pts.forEach(function (p) {
+    var k = p[0] + "," + p[1], u = used[k], v = p[col];
+    L.circleMarker([p[1], p[0]], { radius: u ? 7 : 5, color: u ? "#003B5C" : "#8a96a3", weight: u ? 2 : 0.6, fillColor: color(v), fillOpacity: 0.9 })
+      .bindTooltip(inch(v) + " in, next " + MAPH + " hr" + (u ? "<br>Used for " + esc(u.join(", ")) : ""), { sticky: true }).addTo(gridLayer);
+  });
+  gridLayer.addTo(map);
+  $("mapHrs").textContent = "next " + MAPH + " hours";
+  $("mapKey").innerHTML = "<span>inches:</span>" + [["< 0.01", "#f6f8fa"]].concat(STEPS.map(function (s) { return [s[0] + "+", s[1]]; })).map(function (s) {
+    return '<span><i class="sw" style="background:' + s[1] + ';border:1px solid #8a96a3"></i>' + s[0] + "</span>"; }).join("") +
+    '<span><i class="sw" style="background:#fff;border:2px solid #003B5C;border-radius:50%"></i>used by a creek</span>';
+}
+
+function press(a, b) { a.setAttribute("aria-pressed", "true"); b.setAttribute("aria-pressed", "false"); }
+$("v15").onclick = function () { VIEW = "15"; press($("v15"), $("v60")); renderMinis(); };
+$("v60").onclick = function () { VIEW = "60"; press($("v60"), $("v15")); renderMinis(); };
+$("sSame").onclick = function () { SAME = true; press($("sSame"), $("sOwn")); renderMinis(); };
+$("sOwn").onclick = function () { SAME = false; press($("sOwn"), $("sSame")); renderMinis(); };
+$("m6").onclick = function () { MAPH = 6; press($("m6"), $("m24")); renderMap(); };
+$("m24").onclick = function () { MAPH = 24; press($("m24"), $("m6")); renderMap(); };
+
+function load() {
+  fetch(DATA_URL + "?t=" + Math.floor(Date.now() / 120000), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (j) { D = j; render(); })
+    .catch(function (e) { $("runs").textContent = "The forecast couldn't load (" + e.message + "). It tries again in 5 minutes."; });
+}
+load();
+setInterval(load, 5 * 60000);
+</script>
+</body>
+</html>

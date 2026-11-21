@@ -633,7 +633,7 @@ function rrfsRow(RF) {
   var pts = (e.p60 || e.p15 || {}).points;
   return '<div class="cs-row cs-fc"><span class="cs-lbl">RRFS model <span class="cs-dim">(staff, beta)</span></span><span class="cs-val">' + esc(bits.join("") || "no hourly forecast") +
     '<span class="cs-sm">' + esc(pk.concat(sz ? [sz] : []).join(" · ")) + (pk.length || sz ? " · " : "") +
-    esc("AQPI / CW3E, run " + rrfsRun(RF) + ", average of " + pts + " grid points") + "</span></span></div>";
+    esc("AQPI / CW3E, run " + rrfsRun(RF) + ", average of " + pts + " grid points") + ' · <a href="RainForecast.html">all watersheds</a></span></span></div>';
 }
 function gpts(key) {
   var p = pts(key), w = PAST_HOURS > 44 && D.week && D.week.sensors && D.week.sensors[key];
