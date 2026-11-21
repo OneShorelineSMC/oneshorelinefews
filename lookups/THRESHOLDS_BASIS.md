@@ -136,7 +136,8 @@ All tide heights on the pages are **ft NAVD88**. NOAA station datums (current Na
 | Station | MHHW (ft NAVD88) | Basis | Status | Checked by / on |
 |---|---|---|---|---|
 | Redwood City 9414523 | 7.02 | NOAA datums: MHHW 8.20 ft MLLW; NAVD88 is 1.18 ft above MLLW | From source, not yet signed off | |
-| Alameda 9414750 | 6.37 | NOAA datums for 9414750 | **Verify against the NOAA datums page** | |
+| Alameda 9414750 | 6.37 | NOAA datums for 9414750 (metadata API, epoch 1983–2001: MHHW 9.93 and NAVD88 3.56 ft above station datum; checked Nov 21, 2026) | From source, not yet signed off | |
+| San Francisco 9414290 (San Bruno tide blend, §4f) | 5.90 | NOAA datums for 9414290 (metadata API, epoch 1983–2001: MHHW 11.82 and NAVD88 5.92 ft above station datum; checked Nov 21, 2026) | From source, not yet signed off | |
 | Monterey 9413450 (Coastside Tides) | 5.48 | NOAA datums API, epoch 1983–2001 (checked Oct 16): MHHW 8.72 and NAVD88 3.24 ft above station datum; MHHW 5.34 ft MLLW; MLLW is 0.14 ft above NAVD88; HAT 7.21 ft NAVD88. NOAA West Coast OFS (WCOFS) station, so the NOAA projection is available | From source, not yet signed off | |
 
 **MHHW is a placeholder threshold.** It is the "average high tide" line on every tide graph, the threshold for
@@ -407,6 +408,52 @@ and Monterey (all ft NAVD88).
 - **Close to the flood level** (`TIDE_NEAR_FT` = 0.3 ft): coming days whose projection, estimate or tide table comes within 0.3 ft below 8.5 ft get a solid orange ring and a line above the flood-level list. It marks the start of a high-tide stretch, as NWS frames it, without calling flooding.
 - **NOAA projection corrected by its record** (`PROJ_BIAS_CORRECT`, `PROJ_BIAS_MAX_FT` 0.75, `PROJ_BIAS_DAYS` 14): each day's projected highest water (made the evening before) against what was measured. Oct 31 to Nov 9, 2026: Redwood City +0.57 ft, Alameda +0.43, San Francisco +0.37 (projection high), Monterey -0.90 (low, beyond the limit, so the coast page doesn't use the projection).
 - Why our flood-level start date can trail NWS's: on Nov 20, 2026 the Redwood City tide table high is 6.64 ft NAVD88, 1.86 ft below 8.5 ft; the Bay ran at most 1.45 ft above the tide table at high tide this season. NWS's own thresholds and gauges, not our offset, explain most of the gap.
+### 4f. San Bruno Creek's tide: three gauges weighted by distance, and its flood threshold (Nov 21, 2026; provisional)
+
+No NOAA gauge sits at San Bruno. San Bruno Creek's flood threshold for the tide was worked out from the three nearest
+gauges, so the San Bruno outlook (kiosk Outlook tab, staff) and the San Bruno tide graph on the Rain forecast page
+blend the same three, **weighted by distance** (1 / distance from the First Avenue gauge, 37.6227, −122.4067):
+
+| Gauge | Distance | Weight (`settings.csv`) | MHHW (ft NAVD88) | Jan 3, 2026 measured peak |
+|---|---|---|---|---|
+| San Francisco 9414290 | 21.1 km | 0.32 (`SB_TIDE_W_SF`) | 5.90 | 8.44 at 10:24 AM |
+| Alameda 9414750 | 19.1 km | 0.36 (`SB_TIDE_W_ALA`) | 6.37 | 8.97 at 10:54 AM |
+| Redwood City 9414523 | 21.5 km | 0.32 (`SB_TIDE_W_RWC`) | 7.02 | 9.72 at 11:36 AM |
+
+The gauges are blended **time by time**, not peak by peak: each gauge peaks at a different time, so averaging the three
+peaks (9.03 ft) runs higher than the water at any one moment. Blended time by time, the measured tides on Jan 3, 2026
+(last January's King Tide) peak at **8.93 ft at 11:00 AM**, matching the 8.9 ft flood threshold. Even weights give the
+same; a two-gauge blend of Alameda and Redwood City cannot (it never goes below Alameda's 8.97, and 50/50 gives 9.30).
+The weights are scaled to add up to 1.
+
+The blend covers the tide table, the measured tide, the NOAA projection (only where all three gauges have one), the
+estimate after it (each gauge's table plus its recent offset, easing, §4b; a gauge without an offset yet is left out and
+the others' shares scaled up) and MHHW (0.32 × 5.90 + 0.36 × 6.37 + 0.32 × 7.02 = **6.43 ft NAVD88**). High tides are
+paired with the other gauges' nearest highs (within 2.5 hours). San Francisco's MHHW is from NOAA's datums (epoch
+1983–2001, metadata API, checked Nov 21, 2026: MHHW 11.82 and NAVD88 5.92 ft above station datum); the same check
+confirmed Alameda's 6.37. Its recent offset comes from `tide_offset.json`, which picks the gauge up from
+`tide_stations.csv` on the data job's next run.
+
+| Level | ft NAVD88 | Basis | Setting | Status |
+|---|---|---|---|---|
+| **Flood threshold** | 8.9 | Peak of last January's King Tide at San Bruno, from the San Francisco, Alameda and Redwood City gauges weighted by distance (staff, Nov 21, 2026; reproduced above). San Bruno's creek flood levels are based on it | `TIDE_FLOOD_FT_SB` | **Provisional** |
+| **Max tide** | 9.8 | SFO Shoreline Protection Program study; equals the highest tide on record in the area (1983) | `TIDE_MAX_FT_SB` | Reference only (no color or alert) |
+
+On the outlook, a high tide is dark purple when its expected height reaches the flood threshold: the measured peak for
+highs already past, then the NOAA projection, then the estimate (table + offset), else the tide table. Flood-size rain
+during one is outlined. The tide graph draws the threshold as "Flood threshold 8.90 (provisional)", the name used for
+the other provisional level (Redwood City's `TIDE_RED_FT_RWC`). The tide table alone rarely reaches 8.9; most
+flood-threshold tides come from the Bay running above the table.
+
+Where it shows (Nov 21, 2026): every San Bruno Creek tide view, labeled "San Bruno blended" with a note that no NOAA
+gauge sits at San Bruno: the Creeks page (graph, tide tile, sources note), the kiosk Live conditions tab and its About
+text (the public San Bruno screen), the kiosk Creeks tab and Outlook tab (staff), and the Rain forecast page. Pages use
+the station id `sb` for it (lookups.js `LK.station("sb")`, `LK.tideId`, `LK.sbCompose`). `creeks.csv` keeps Alameda
+(9414750) as San Bruno's `tide_station` because the data job needs a single NOAA gauge there; it uses no tide for San
+Bruno (no tide-gated rain trigger), except the Storm Tracker's "storms above the average high tide" count, which is
+still Alameda's. If any gauge's measured tide is missing, the blended measured line has a gap rather than a two-gauge
+stand-in.
+
 ## 5. Page logic settings — `settings.csv`
 
 | Setting | Value | Basis | Status | Checked by / on |
@@ -643,4 +690,5 @@ public until it has been checked against a winter of big-wave days and the slope
 |---|---|---|---|
 | Oct 16, 2026 | Summer (OneShoreline) | Creek status layer made public on the home page, Creeks page and kiosk (`STATUS_PUBLIC` = 1; set 0 to return to staff-only). Creeks other than Colma, San Bruno, Belmont and Atherton carry a "Methodology under review" tag. The checklist items above are still open | settings.csv, display_text.csv, creek_status.js |
 | Oct 16, 2026 | Summer (OneShoreline) | Colma Creek at Orange Memorial Park is tidal (`col_stage` `tidal` no → yes). Its rapidly-rising check now needs ≥ 0.10 in rain in 3 hr, Heavy rain + a rising tide at Alameda makes it Stay alert, and its card adds the rising-tide line. The dry-weather check (Oct 12–14) saw ≤ 0.04 ft of tidal movement; storm-time backwater is still to be measured. | `creek_gauges.csv`, `gauge_facts.csv` |
+| Nov 21, 2026 | Summer (OneShoreline) | San Bruno Creek tide: San Francisco, Alameda and Redwood City weighted by distance (`SB_TIDE_W_SF` 0.32, `_ALA` 0.36, `_RWC` 0.32), checked against Jan 3, 2026 (8.93 ft); on the San Bruno outlook and Rain forecast page. Flood threshold 8.9 ft NAVD88 (`TIDE_FLOOD_FT_SB`, provisional, last January's King Tide) replaces the king-tide line there; max tide 9.8 ft (`TIDE_MAX_FT_SB`, reference). San Francisco 9414290 added to tide_stations.csv (MHHW 5.90). §4f | settings.csv, tide_stations.csv, lookups.js, tide_season.js, ShorelineKiosk.html, RainForecast.html |
 | | | | |
