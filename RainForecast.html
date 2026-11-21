@@ -95,7 +95,7 @@
   .mini h3 { font-size: 14.5px; margin: 0; color: var(--ink); display: flex; justify-content: space-between; gap: 8px; }
   .mini h3 span { font-weight: 400; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
   .mini .cb { position: relative; height: 120px; margin-top: 4px; }
-  .mini .tb { position: relative; height: 78px; margin-top: 2px; }
+  .mini .tb { position: relative; height: 104px; margin-top: 2px; }
   .mini .tt { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
   .mini .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; min-height: 1.3em; }
   .mini.hot { border-color: #ef9f27; box-shadow: inset 3px 0 0 #ef9f27; }
@@ -154,6 +154,7 @@
       <span><i class="sw" style="background:none;border-top:3px dotted #9aa3ad;border-radius:0;height:0;width:16px"></i>estimate after it (table + recent offset)</span>
       <span><i class="sw" style="background:none;border-top:2px dashed #5f6b78;border-radius:0;height:0;width:16px"></i>MHHW</span>
       <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>Redwood City flood level</span>
+      <span><svg width="34" height="10" aria-hidden="true" style="vertical-align:-1px;margin-right:4px"><path d="M2 1v8M2 5h30M32 1v8" stroke="#1e6fc8" stroke-width="1.5" fill="none"/><circle cx="17" cy="5" r="3" fill="#1e6fc8"/></svg>tide above MHHW, under both graphs (dot = the high tide; point at or tap a mark for its times)</span>
     </div>
     <div class="grid2" id="minis"></div>
   </div>
@@ -289,6 +290,61 @@ var bandPlugin = { id: "bands", beforeDatasetsDraw: function (ch) {
   bs.forEach(function (b) { var a = Math.max(xs.left, xs.getPixelForValue(b.a)), z = Math.min(xs.right, xs.getPixelForValue(b.b));
     if (z > a) { c.fillStyle = b.level >= 2 ? css("--amber2") : css("--amber"); c.fillRect(a, ys.top, z - a, ys.bottom - ys.top); } });
   c.restore(); } };
+/* High tide on the same graph as the rain (staff, 2026-11-20): options.plugins.tideHi = [{a, b, peak}] (ms), the hours the
+   tide is expected above MHHW, drawn as a bar with whiskers in a thin row just under the plot (above the time labels):
+   |———●———| from rising above MHHW to falling below it, the dot at the high tide. Nothing over the data itself: a strip
+   or column there read as rain. Same row under the tide graph. */
+var TIDE_ROW = 12;   // px kept free under the plot for the row
+/* Time labels (staff, 2026-11-20): a gridline and label at each midnight ("Sat 21") on the 3.5-day view, every 3 hours on
+   the 18-hour view ("3 PM", the day name at midnight), so each high-tide mark sits clearly inside a day. */
+function dayTicks(short) {
+  return function (ax) {
+    var off = localOff(), step = short ? 3 * 3600000 : 86400000, t0 = ax.min + off;
+    var first = Math.ceil(t0 / step) * step, out = [];
+    for (var t = first; t - off <= ax.max; t += step) out.push({ value: t - off });
+    ax.ticks = out;
+  };
+}
+function tickLabel(short) {
+  return function (v) {
+    var d = new Date(v), h = Number(d.toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hour12: false })) % 24;
+    if (!short || h === 0) return d.toLocaleString("en-US", { timeZone: TZ, weekday: "short" }) + " " + d.toLocaleString("en-US", { timeZone: TZ, day: "numeric" });
+    return d.toLocaleString("en-US", { timeZone: TZ, hour: "numeric" });
+  };
+}
+// The words for one high tide: hover (title) and tap (the line above the tide graph)
+function tideText(w) {
+  var day = function (t) { return new Date(t).toLocaleString("en-US", { timeZone: TZ, weekday: "short" }); },
+      clock = function (t) { return new Date(t).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }); };
+  return "High tide " + w.v.toFixed(1) + " ft at " + clock(w.peak) + " " + day(w.peak) + " (" + w.src + ") · above MHHW " +
+    clock(w.a) + "–" + clock(w.b) + (day(w.a) !== day(w.b) ? " " + day(w.b) : "");
+}
+function tideHover(ch, id) {   // the high-tide mark under the pointer, if any
+  return function (ev) {
+    var ws = ch.options.plugins.tideHi || [], xs = ch.scales.x, ys = ch.scales.y, r = ch.canvas.getBoundingClientRect();
+    var x = ev.clientX - r.left, y = ev.clientY - r.top, hit = null;
+    if (y >= ys.bottom - 2 && y <= ys.bottom + TIDE_ROW + 4) ws.forEach(function (w) {
+      if (x >= xs.getPixelForValue(w.a) - 6 && x <= xs.getPixelForValue(w.b) + 6) hit = w; });
+    ch.canvas.title = hit ? tideText(hit) : "";
+    ch.canvas.style.cursor = hit ? "pointer" : "";
+    if (ev.type === "click" && hit && $("tt_" + id)) $("tt_" + id).textContent = tideText(hit);
+  };
+}
+function hookTide(ch, id) { if (ch.canvas.dataset.th) return; ch.canvas.dataset.th = 1; var f = tideHover(ch, id); ch.canvas.addEventListener("mousemove", f); ch.canvas.addEventListener("click", f); }
+var tidePlugin = { id: "tideHi", afterDraw: function (ch) {
+  var ws = ch.options.plugins.tideHi; if (!ws || !ws.length) return;
+  var xs = ch.scales.x, ys = ch.scales.y, c = ch.ctx, y = ys.bottom + TIDE_ROW / 2 + 1, col = "#1e6fc8"; c.save();
+  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1.5;
+  ws.forEach(function (w) {
+    var a = xs.getPixelForValue(w.a), z = xs.getPixelForValue(w.b), px = xs.getPixelForValue(w.peak);
+    if (z < xs.left || a > xs.right) return;
+    var a1 = Math.max(xs.left, a), z1 = Math.min(xs.right, z);
+    c.beginPath(); c.moveTo(a1, y); c.lineTo(z1, y); c.stroke();
+    if (a >= xs.left) { c.beginPath(); c.moveTo(a, y - 3.5); c.lineTo(a, y + 3.5); c.stroke(); }
+    if (z <= xs.right) { c.beginPath(); c.moveTo(z, y - 3.5); c.lineTo(z, y + 3.5); c.stroke(); }
+    if (px >= xs.left && px <= xs.right) { c.beginPath(); c.arc(px, y, 3, 0, 2 * Math.PI); c.fill(); }
+  });
+  c.restore(); } };
 // The watersheds without a creek gauge that get a graph (graph = yes in lookups/ungauged_watersheds.csv), keyed for element ids
 function wsGraphs() {
   var W = D.watersheds || {}, out = {};
@@ -328,17 +384,18 @@ function miniSet(boxId, C, P, top) {
     $("s_" + id).textContent = (e.heavy || []).length ? "Forecast " + HW[Math.min(3, e.heavy[0].level)] + " " + when(e.heavy[0].start) : (pe.points ? pe.points + " grid points" : "");
     $("c_" + id).setAttribute("aria-label", (ws ? wsLabel(e) : e.name) + ": forecast " + inch(tot) + " in over the period shown");
     var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
-      plugins: { legend: { display: false }, bands: bands, tooltip: { callbacks: {
+      plugins: { legend: { display: false }, bands: bands, tideHi: ws ? null : tideHigh(id, x0, x1), tooltip: { callbacks: {
         title: function (it) { return when(new Date(it[0].parsed.x + (it[0].datasetIndex === 0 ? sm / 2 : 0)).toISOString()) + " (end)"; },
         label: function (it) { return (it.datasetIndex === 0 ? "Average " : "Wettest point ") + it.parsed.y.toFixed(2) + " in"; } } } },
-      scales: { x: { type: "linear", min: x0, max: x1, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 6, font: { size: 11 },
-          callback: function (v) { return new Date(v).toLocaleString("en-US", P === "15" ? { timeZone: TZ, hour: "numeric" } : { timeZone: TZ, weekday: "short", hour: "numeric" }); } } },
-        y: { min: 0, max: yTop, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 3, font: { size: 11 } } } } };
+      scales: { x: { type: "linear", min: x0, max: x1, offset: false, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 6, font: { size: 11 }, padding: ws ? 3 : 3 + TIDE_ROW, align: "inner",   // inner: the end labels don't squeeze the plot, so it lines up with the tide graph
+          callback: tickLabel(P === "15") }, afterBuildTicks: dayTicks(P === "15") },
+        y: { min: 0, max: yTop, grid: { color: grid }, afterFit: function (ax) { ax.width = 44; }, ticks: { color: muted, maxTicksLimit: 3, font: { size: 11 } } } } };
     var data = { datasets: [
       { type: "bar", data: avg, backgroundColor: css("--fc"), borderColor: css("--fcline"), borderWidth: 1, barPercentage: 0.9, categoryPercentage: 1, grouped: false },
       { type: "line", data: mx, borderColor: css("--fcline"), borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0 }] };
     if (charts[id]) { charts[id].data = data; charts[id].options = opts; charts[id].update(); }
-    else charts[id] = new Chart($("c_" + id), { type: "bar", data: data, options: opts, plugins: [bandPlugin] });
+    else charts[id] = new Chart($("c_" + id), { type: "bar", data: data, options: opts, plugins: [bandPlugin, tidePlugin] });
+    if (!ws) hookTide(charts[id], id);
     if (!ws) drawTide(id, x0, x1, P === "15", grid, muted);
   });
 }
@@ -369,18 +426,41 @@ function loadTide(st) {
     ts && ts.loadOffset ? ts.loadOffset() : null
   ]).then(function () { T.at = Date.now(); }).catch(function () {}).then(function () { T.loading = false; if (D) renderMinis(); });
 }
-function drawTide(id, x0, x1, short, grid, muted) {
-  var st = TIDE_OF[id], cv = $("tc_" + id);
-  if (!st || !cv) return;
-  var T = TIDES[st], LKm = window.LOOKUPS, info = LKm && LKm.station ? LKm.station(st) : { name: st, mhhw: null };
-  $("tt_" + id).textContent = "Tide · " + (info.name || st) + (T && T.pred ? "" : " (loading…)");
-  if (!T || !T.pred) { loadTide(st); return; }
+// The tide lines for a creek over x0..x1 (ms): the table, NOAA's projection, the estimate after it; null until loaded
+function tideLines(id, x0, x1) {
+  var st = TIDE_OF[id], T = TIDES[st];
+  if (!st || !T || !T.pred) return null;
   var off = localOff(), real = function (t) { return t - off; }, nowL = Date.now() + off, ts = window[TS_OF[st]];
   var tp = T.pred.filter(function (p) { return real(p.t) >= x0 - 36e5 && real(p.t) <= x1; }).map(function (p) { return { x: real(p.t), y: p.v }; });
   var fc = (T.ofs || []).filter(function (p) { return p.t >= nowL - 18e5; }), fcEnd = fc.length ? fc[fc.length - 1].t : nowL;
   var tf = fc.filter(function (p) { return real(p.t) <= x1; }).map(function (p) { return { x: real(p.t), y: p.v }; });
   var te = [];
   if (ts && ts.addAt) T.pred.forEach(function (p) { if (p.t > fcEnd && real(p.t) <= x1 && real(p.t) >= x0) { var a = ts.addAt(p.t, nowL); if (a != null && isFinite(a)) te.push({ x: real(p.t), y: p.v + a }); } });
+  return { tp: tp, tf: tf, te: te };
+}
+// The hours the tide is expected above MHHW (the projection, then the estimate; the table where neither reaches), with each peak
+function tideHigh(id, x0, x1) {
+  var L = tideLines(id, x0, x1), LKm = window.LOOKUPS, mh = LKm && LKm.mhhw ? LKm.mhhw(TIDE_OF[id]) : null;
+  if (!L || mh == null) return null;
+  var f0 = L.tf.length ? L.tf[0].x : Infinity, f1 = L.tf.length ? L.tf[L.tf.length - 1].x : -Infinity, e0 = L.te.length ? L.te[0].x : Infinity;
+  var tag = function (arr, src) { return arr.map(function (p) { return { x: p.x, y: p.y, src: src }; }); };
+  var best = tag(L.tp.filter(function (p) { return p.x < f0 && p.x < e0 && p.x >= x0; }), "tide table").concat(tag(L.tf, "NOAA projection"), tag(L.te.filter(function (p) { return p.x > f1; }), "estimate"))
+    .sort(function (a, b) { return a.x - b.x; });
+  var out = [], cur = null;
+  best.forEach(function (p) {
+    if (p.y > mh) { if (!cur) cur = { a: p.x, b: p.x, peak: p.x, v: p.y, src: p.src }; cur.b = p.x; if (p.y > cur.v) { cur.v = p.y; cur.peak = p.x; cur.src = p.src; } }
+    else if (cur) { out.push(cur); cur = null; }
+  });
+  if (cur) out.push(cur);
+  return out;
+}
+function drawTide(id, x0, x1, short, grid, muted) {
+  var st = TIDE_OF[id], cv = $("tc_" + id);
+  if (!st || !cv) return;
+  var T = TIDES[st], LKm = window.LOOKUPS, info = LKm && LKm.station ? LKm.station(st) : { name: st, mhhw: null };
+  $("tt_" + id).textContent = "Tide · " + (info.name || st) + (T && T.pred ? "" : " (loading…)");
+  if (!T || !T.pred) { loadTide(st); return; }
+  var Ln = tideLines(id, x0, x1), tp = Ln.tp, tf = Ln.tf, te = Ln.te;
   var mh = info.mhhw, red = st === "9414523" && LKm && LKm.num ? LKm.num("TIDE_RED_FT_RWC") : NaN;
   var ys = tp.concat(tf, te).map(function (p) { return p.y; }).concat(mh != null ? [mh] : []);
   var lo = Math.floor(Math.min.apply(null, ys)), hi = Math.ceil(Math.max.apply(null, ys.concat(isFinite(red) && red - Math.max.apply(null, ys) < 1.5 ? [red] : [])) + 0.2);
@@ -392,14 +472,16 @@ function drawTide(id, x0, x1, short, grid, muted) {
   if (mh != null) sets.push(line(mh, "#5f6b78", [5, 4], 1.25));
   if (isFinite(red) && red <= hi) sets.push(line(red, "#c0392b", [8, 3, 2, 3], 1.5));
   var o = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
-    plugins: { legend: { display: false }, tooltip: { filter: function (it) { return it.datasetIndex < 3; }, callbacks: {
+    plugins: { legend: { display: false }, tideHi: tideHigh(id, x0, x1), tooltip: { filter: function (it) { return it.datasetIndex < 3; }, callbacks: {
       title: function (it) { return when(new Date(it[0].parsed.x).toISOString()); },
       label: function (it) { return ["Tide table ", "NOAA projection ", "Estimate "][it.datasetIndex] + it.parsed.y.toFixed(1) + " ft"; } } } },
-    scales: { x: { type: "linear", min: x0, max: x1, grid: { color: grid }, ticks: { display: false } },
-      y: { min: lo, max: hi, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 3, font: { size: 10.5 }, callback: function (v) { return v + " ft"; } } } } };
+    scales: { x: { type: "linear", min: x0, max: x1, offset: false, grid: { color: grid }, ticks: { color: muted, maxTicksLimit: 6, font: { size: 11 }, padding: 3 + TIDE_ROW, align: "inner",
+        callback: tickLabel(short) }, afterBuildTicks: dayTicks(short) },
+      y: { min: lo, max: hi, grid: { color: grid }, afterFit: function (ax) { ax.width = 44; }, ticks: { color: muted, maxTicksLimit: 3, font: { size: 10.5 }, callback: function (v) { return v + " ft"; } } } } };   // same axis width as the rain graph, so the hours line up
   cv.setAttribute("aria-label", "Tide at " + (info.name || st) + ": tide table, NOAA projection and estimate over the same hours");
   if (tcharts[id]) { tcharts[id].data = { datasets: sets }; tcharts[id].options = o; tcharts[id].update(); }
-  else tcharts[id] = new Chart(cv, { type: "line", data: { datasets: sets }, options: o });
+  else tcharts[id] = new Chart(cv, { type: "line", data: { datasets: sets }, options: o, plugins: [tidePlugin] });
+  hookTide(tcharts[id], id);
 }
 function loadTideStations() {
   var LKm = window.LOOKUPS;
