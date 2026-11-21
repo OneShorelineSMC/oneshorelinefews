@@ -291,7 +291,8 @@ def build(products, creeks_file, points, sheds, now):
             a = assign(grid, {cid: points[cid]}, sheds)[cid]
             avg, mx = series(grid, a["idx"], len(steps))
             sm = int(key)
-            e["p" + key] = {"avg": avg, "max": mx, "points": len(a["idx"]), "how": a["how"]}
+            e["p" + key] = {"avg": avg, "max": mx, "points": len(a["idx"]), "how": a["how"],
+                            "pts": [[round(grid[i][1], 4), round(grid[i][2], 4)] for i in a["idx"]]}   # lon, lat (RainForecast.html map)
             by_step[sm] = (steps, avg)
             for m in SIZE_MIN:
                 if (sm == 15 and m <= 60) or (sm == 60 and m > 60):
@@ -312,6 +313,17 @@ def build(products, creeks_file, points, sheds, now):
             e["heavy"] = heavy_spans(by_step, by_min, storm_years, now, cap)
         out[cid] = e
     return out
+
+
+def grid_totals(products, now):
+    """Every county grid point with its forecast for the next 6 and 24 hours (hourly product; for the staff page's map):
+    {"pts": [[lon, lat, in_6h, in_24h], ...], "run": ...}. The 15-minute product's points are the same grid."""
+    if "60" not in products:
+        return None
+    run, steps, grid = products["60"]
+    def tot(vals, h):
+        return round(sum(v for t, v in zip(steps, vals) if v is not None and now < t <= now + dt.timedelta(hours=h)), 3)
+    return {"run": iso(run), "pts": [[round(lon, 4), round(lat, 4), tot(v, 6), tot(v, 24)] for _, lon, lat, v in grid]}
 
 
 # ---------------------------------------------------------------- log
@@ -402,6 +414,7 @@ def main(argv, fetch=get, now=None):
         "products": {k: {"run": iso(r), "step_min": int(k), "steps": [iso(t) for t in s], "grid_points": len(g)}
                      for k, (r, s, g) in products.items()},
         "creeks": creeks,
+        "grid": grid_totals(products, now),
         "problems": problems,
     }
     # keep a product that failed this time from the previous file (only while its run is under 30 hours old)

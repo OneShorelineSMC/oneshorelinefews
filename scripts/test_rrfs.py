@@ -119,6 +119,8 @@ try:
     check("output: wettest 15 minutes", sb["peak15"] == {"in": 0.1, "end": "2026-11-20T16:30Z"})
     if creeks_file.get("sensors"):
         check("output: heavy stretches listed for each creek with Atlas 14", isinstance(sb.get("heavy"), list))
+    check("output: each creek's grid points and the county grid with 6- and 24-hour totals (staff page map)",
+          len(sb["p60"]["pts"]) == sb["p60"]["points"] and len(d["grid"]["pts"]) == len(lattice()) and len(d["grid"]["pts"][0]) == 4)
     check("output: average never above the wettest point", all(a_ <= m for a_, m in zip(sb["p60"]["avg"], sb["p60"]["max"]) if a_ is not None))
     if creeks_file.get("sensors"):
         check("output: storm size against Atlas 14 at the main gauge", "size" in sb and sb["size"]["number"] in ("41102", 41102))
