@@ -283,7 +283,7 @@
     tide_red_line_creek: "Bay shoreline overtopping, {ft} (provisional)",
     sb_tide_name: "San Bruno blended",
     sb_tide_note: "Blended tide: no NOAA gauge sits at San Bruno, so this is NOAA\u2019s San Francisco, Alameda and Redwood City gauges weighted by distance, the same way San Bruno\u2019s tide flood threshold was set.",
-    sb_tide_threshold: "Flood threshold, {ft} (provisional)",
+    sb_tide_threshold: "Flood-risk tide, {ft}",
     tide_king_ref: "King Tide (1-year tide), {ft}",
     tide_expected_ft: "NOAA projects {ft}",
     tide_table_ft: "{ft} in the tide table",

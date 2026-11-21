@@ -21,8 +21,8 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg=="
   crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="lookups.js?v=20261121b"></script>
-<script src="tide_season.js?v=20261121b"></script>
+<script src="lookups.js?v=20261121c"></script>
+<script src="tide_season.js?v=20261121c"></script>
 <style>
   :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
     --meas: #1e88e5; --tidetbl: #4a4f55; --mhhw: #5f6b78; --red: #c0392b; --minor: #a35f00; --oneyear: #003B5C; --band: rgba(30,136,229,.13); --med: #8a96a3;
@@ -163,7 +163,7 @@
       <span><i class="sw" style="background:none;border-top:3px dotted #0A5587;border-radius:0;height:0;width:16px"></i>estimate after it (table + recent offset)</span>
       <span><i class="sw" style="background:none;border-top:1.5px solid #9aa6b2;border-radius:0;height:0;width:16px"></i>tide table</span>
       <span><i class="sw" style="background:none;border-top:2px dashed #5f6b78;border-radius:0;height:0;width:16px"></i>MHHW (average high tide)</span>
-      <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>flood level (Redwood City) or flood threshold (San Bruno, provisional)</span>
+      <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>flood level (Redwood City) or flood-risk tide (San Bruno: a 5-year storm or smaller can flood the creek; provisional)</span>
       <span><i class="sw" style="background:#0A5587;border-radius:50%;width:7px;height:7px"></i>high tide above MHHW, with its time</span>
       <span><i class="sw" style="background:none;border:2.5px solid #d35400;border-radius:0;width:12px;height:8px"></i>Heavy rain or more while the tide is above MHHW</span>
     </div>
@@ -449,7 +449,7 @@ function miniSet(boxId, C, P, top) {
 // The few lines under each graph: when Heavy rain meets a high tide, then the Heavy stretches, then the high tides
 function story(e, heavy, highs, both, T, wet, P, now, x1) {
   var out = [], lv = function (h) { return HW[Math.min(3, h.level)] || "Heavy"; }, sbF = T && T.flood;
-  var tw = function (w) { return w.v.toFixed(1) + " ft at " + clk(w.peak) + (sbF != null && w.v >= sbF ? ", at the flood threshold" : ""); };
+  var tw = function (w) { return w.v.toFixed(1) + " ft at " + clk(w.peak) + (sbF != null && w.v >= sbF ? ", a flood-risk tide" : ""); };
   if (T) {
     if (!T.ok) out.push('<span class="m">Tide loading…</span>');
     else if (both.length) out.push('<b class="hit">Heavy rain on a high tide:</b> ' + both.map(function (x) {
@@ -544,7 +544,7 @@ function tideSets(id, x0, x1) {
   var st = TIDE_OF[id], sb = st === "sb", LKm = window.LOOKUPS, B = sb && LKm && LKm.sbTide ? LKm.sbTide() : null;
   var info = sb ? { name: LKm.text("sb_tide_name") || "San Bruno blended", mhhw: B ? B.mhhw : null } : LKm && LKm.station ? LKm.station(st) : { name: st, mhhw: null };
   var Ln = tideLines(id, x0, x1), red = sb ? (B && B.flood != null ? B.flood : NaN) : st === "9414523" && LKm && LKm.num ? LKm.num("TIDE_RED_FT_RWC") : NaN;
-  var head = "Tide (right axis) · " + (info.name || st) + (sb && B && B.flood != null ? " · flood threshold " + B.flood.toFixed(1) + " ft (provisional)" : "");
+  var head = "Tide (right axis) · " + (info.name || st) + (sb && B && B.flood != null ? " · flood-risk tide " + B.flood.toFixed(1) + " ft" : "");
   if ($("tt_" + id)) $("tt_" + id).textContent = head + (Ln ? "" : " (loading…)");
   if (!Ln || info.mhhw == null) { (sb && B ? B.ids : [st]).forEach(loadTide); return { ok: false, highs: [], sets: [] }; }
   var tp = Ln.tp, tf = Ln.tf, te = Ln.te, mh = info.mhhw;

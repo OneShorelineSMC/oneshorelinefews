@@ -389,10 +389,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261121b"></script>
-<script src="severity.js?v=20261121b"></script>
-<script src="creek_status.js?v=20261121b"></script>
-<script src="hero.js?v=20261121b"></script>
+<script src="lookups.js?v=20261121c"></script>
+<script src="severity.js?v=20261121c"></script>
+<script src="creek_status.js?v=20261121c"></script>
+<script src="hero.js?v=20261121c"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Creeks, gauges and flood thresholds come from the data file (lookups/creeks.csv, creek_gauges.csv, thresholds.csv).
@@ -596,7 +596,7 @@ function sourcesHtml(c, T) {
   if ((c.stages || []).some(function (g) { return (g.thresholds || []).length; }))
     li.push('<b>Flood levels:</b> set by OneShoreline; where each one came from is in <a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/THRESHOLDS_BASIS.md" target="_blank" rel="noopener">THRESHOLDS_BASIS.md</a>.');
   if (c.tide === "sb") { var SB = LK.sbTide(); li.push("<b>Bay tide:</b> " + esc(LK.text("sb_tide_note")) + " Weights: " + SB.ids.map(function (id, k) { return esc(LK.station(id).name) + " (" + id + ") " + Math.round(SB.w[k] * 100) + "%"; }).join(", ") +
-    ". Measured water, the tide table and NOAA's water level projection, each blended. Flood threshold " + (SB.flood != null ? SB.flood.toFixed(1) + " ft NAVD88" : "–") + " (provisional): last January's King Tide at San Bruno."); }
+    ". Measured water, the tide table and NOAA's water level projection, each blended. Flood-risk tide: " + (SB.flood != null ? SB.flood.toFixed(1) + " ft NAVD88" : "–") + " or more, when a storm of 5-year size or smaller can flood the creek (provisional; the height of last January's King Tide at San Bruno)."); }
   else if (c.tide) li.push("<b>Bay tide:</b> NOAA tide gauge " + esc(T ? T.st.name : "") + " (" + esc(c.tide) + "): measured water, the tide table and NOAA's water level projection.");
   if (c.forecast && c.forecast.grid) li.push("<b>Rain expected:</b> National Weather Service forecast (Bay Area office) for one point in the watershed" + (c.forecast.place ? " (" + esc(c.forecast.place) + ")" : "") + ", in 6-hour blocks.");
   var RF = rrfsFor(c);
