@@ -10,7 +10,8 @@
 #                   flows and rain (SanFrancisquito.html, preview); only once the CONTRAIL_USER / CONTRAIL_PASSWORD variables are set
 #   road_closures.json - road closures from flooding and storms in San Mateo County (Caltrans and city posts), logged for the water year (StormTracker.html)
 #   alert_review.json + alert_review.csv - each rain or rising-fast alert (full status above the public one) checked against the flood levels that followed (StormTracker.html)
-#   rrfs.json + rrfs_log.csv - the RRFS model rain forecast (AQPI / CW3E) for each creek's watershed, staff view only (Creeks.html?preview=1)
+#   rrfs.json + rrfs_log.csv - the RRFS model rain forecast (AQPI / CW3E) for each creek's watershed and the watersheds without a creek gauge, staff view only (Creeks.html?preview=1, RainForecast.html)
+#   atlas14_watersheds.json - NOAA Atlas 14 at a point in each watershed without a creek gauge (fetched once, a few per run)
 #   outlet_tides.json + outlet_tides_log.csv - NOAA's Bay model (SFBOFS) at each creek outlet, staff beta (OutletTides.html)
 #   sites.json    - every public site: location, latest readings, last 24 hours (SiteMap.html, kiosk "Map" tab)
 #   community_flood_reports.json + community_flood_reports/*.jpg - flood reports APPROVED BY STAFF in ArcGIS (SiteMap.html), every 15 minutes;
@@ -68,6 +69,7 @@ jobs:
             git show FETCH_HEAD:waves.json > out/waves.json 2>/dev/null || true
             git show FETCH_HEAD:rrfs.json > out/rrfs.json 2>/dev/null || true
             git show FETCH_HEAD:rrfs_log.csv > out/rrfs_log.csv 2>/dev/null || true
+            git show FETCH_HEAD:atlas14_watersheds.json > out/atlas14_watersheds.json 2>/dev/null || true
             git show FETCH_HEAD:road_closures.json > out/road_closures.json 2>/dev/null || true
             git show FETCH_HEAD:sfcjpa.json > out/sfcjpa.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
@@ -160,7 +162,7 @@ jobs:
         # creek's watershed, for the Creeks page staff view (?preview=1); never the kiosks, never a creek's status. Each new
         # run is logged in rrfs_log.csv to check against the gauges after storms. A problem here never stops the creek data.
         continue-on-error: true
-        timeout-minutes: 3
+        timeout-minutes: 6
         run: python scripts/rrfs.py out/rrfs.json --creeks out/creeks.json --min-age 20
 
       - name: Flood reports approved by staff (every 15 minutes)
@@ -184,7 +186,7 @@ jobs:
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
             $( [ -s tide_tracker.json ] && echo tide_tracker.json ) $( [ -s tide_tracker_history.json ] && echo tide_tracker_history.json ) \
-            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s rrfs.json ] && echo rrfs.json ) $( [ -s rrfs_log.csv ] && echo rrfs_log.csv ) $( [ -s alert_review.json ] && echo alert_review.json alert_review.csv ) $( [ -s road_closures.json ] && echo road_closures.json ) $( [ -s sfcjpa.json ] && echo sfcjpa.json ) \
+            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s rrfs.json ] && echo rrfs.json ) $( [ -s rrfs_log.csv ] && echo rrfs_log.csv ) $( [ -s atlas14_watersheds.json ] && echo atlas14_watersheds.json ) $( [ -s alert_review.json ] && echo alert_review.json alert_review.csv ) $( [ -s road_closures.json ] && echo road_closures.json ) $( [ -s sfcjpa.json ] && echo sfcjpa.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
