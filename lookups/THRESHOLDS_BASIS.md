@@ -439,10 +439,13 @@ confirmed Alameda's 6.37. Its recent offset comes from `tide_offset.json`, which
 | **Flood threshold** | 8.9 | Peak of last January's King Tide at San Bruno, from the San Francisco, Alameda and Redwood City gauges weighted by distance (staff, Nov 21, 2026; reproduced above). San Bruno's creek flood levels are based on it | `TIDE_FLOOD_FT_SB` | **Provisional** |
 | **Max tide** | 9.8 | SFO Shoreline Protection Program study; equals the highest tide on record in the area (1983) | `TIDE_MAX_FT_SB` | Reference only (no color or alert) |
 
+**Public wording (Nov 21, 2026):** on the kiosk, Creeks page and Rain forecast page this level is called a **flood-risk
+tide**: the high tide at which a storm of 5-year size or smaller can flood the creek (combined rain and tide flooding).
+Settings and code keep the name flood threshold (`TIDE_FLOOD_FT_SB`; display text `sb_tide_threshold`).
+
 On the outlook, a high tide is dark purple when its expected height reaches the flood threshold: the measured peak for
 highs already past, then the NOAA projection, then the estimate (table + offset), else the tide table. Flood-size rain
-during one is outlined. The tide graph draws the threshold as "Flood threshold 8.90 (provisional)", the name used for
-the other provisional level (Redwood City's `TIDE_RED_FT_RWC`). The tide table alone rarely reaches 8.9; most
+during one is outlined. The tide graphs draw it as "Flood-risk tide 8.9 ft". The tide table alone rarely reaches 8.9; most
 flood-threshold tides come from the Bay running above the table.
 
 Where it shows (Nov 21, 2026): every San Bruno Creek tide view, labeled "San Bruno blended" with a note that no NOAA
