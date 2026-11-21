@@ -99,7 +99,8 @@
   .mini .tt { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
   .mini .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; min-height: 1.3em; }
   .mini.hot { border-color: #ef9f27; box-shadow: inset 3px 0 0 #ef9f27; }
-  #sum { min-width: 900px; }   /* scrolls sideways on a phone instead of squeezing each row tall */
+  #sum, #wsTable { min-width: 900px; }
+  #wsTable tr.grp td { background: var(--bg); font-weight: 700; color: var(--ink); font-size: 13px; }   /* scrolls sideways on a phone instead of squeezing each row tall */
   #map { height: 480px; border-radius: 10px; margin-top: 10px; }
   @media (max-width: 640px) { #map { height: 380px; } }
   .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
@@ -164,10 +165,21 @@
       from 15 minutes to 6 hours (24 hours for the coastal creeks and San Francisquito). Storm size: the rarest such window in the forecast.</p>
   </div>
 
+  <div class="card" id="wsCard" hidden>
+    <h2>Watersheds without a creek gauge</h2>
+    <p style="margin:0;font-size:14px">The same forecast for the <span id="wsN">48</span> County watersheds of half a square mile or more that no FEWS creek covers.
+      Rain forecast only: nothing measures these creeks, so this says how much rain is expected, not how high a creek will get.
+      Ratings use NOAA Atlas 14 at a point in each watershed.</p>
+    <div class="grid2" id="wsMinis"></div>
+    <div class="tablewrap" tabindex="0" role="region" aria-label="Watersheds without a creek gauge (scrolls sideways)" style="margin-top:12px"><table id="wsTable"></table></div>
+    <div class="seg"><button type="button" id="wsAll" aria-pressed="false">Show all</button></div>
+    <p class="note" id="wsNote"></p>
+  </div>
+
   <div class="card">
     <h2>The grid points</h2>
-    <p style="margin:0;font-size:14px">Every RRFS grid point in the county, colored by its forecast for the <b id="mapHrs">next 24 hours</b>.
-      Ringed points are the ones a creek uses. Dashed outlines: the County's watersheds.</p>
+    <p style="margin:0;font-size:14px">Each County watershed shaded by its forecast for the <b id="mapHrs">next 24 hours</b> (the average of its grid points),
+      with every RRFS grid point on top. Ringed points are the ones a FEWS creek uses.</p>
     <div class="seg" role="group" aria-label="Map total">
       <button type="button" id="m6" aria-pressed="false">Next 6 hr</button>
       <button type="button" id="m24" aria-pressed="true">Next 24 hr</button>
@@ -230,7 +242,44 @@ function render() {
           (e.size && e.size.years ? "<span class='sm'>about a " + (e.size.years >= 2 ? Math.round(e.size.years) : e.size.years) + "-year storm over " + win(e.size.minutes) + " at " + esc(e.size.gauge) + "</span>" : "") + "</td></tr>";
     }).join("");
   renderMinis();
+  renderWs();
   renderMap();
+}
+
+// ---- watersheds without a creek gauge: table, wettest first within each area; the top 3 of each area (and any with forecast
+// Heavy) until "Show all"
+var WSALL = false;
+function renderWs() {
+  var W = D.watersheds || {}, keys = Object.keys(W);
+  $("wsCard").hidden = !keys.length;
+  if (!keys.length) return;
+  $("wsN").textContent = keys.length;
+  var groups = [], by = {};
+  keys.forEach(function (k) { var g = W[k].group || "Other"; if (!by[g]) { by[g] = []; groups.push(g); } by[g].push(W[k]); });
+  var tot = function (e) { return (e.totals || {})["24"] || 0; }, shown = 0;
+  var rows = groups.map(function (g) {
+    var list = by[g].slice().sort(function (a, b) { return tot(b) - tot(a); });
+    var vis = list.filter(function (e, i) { return WSALL || i < 3 || (e.heavy || []).length; });
+    shown += vis.length;
+    return "<tr class='grp'><td colspan='8'>" + esc(g) + " <span class='sm' style='display:inline;font-weight:400'>· " + list.length + " watersheds</span></td></tr>" +
+      vis.map(function (e) {
+        var t = e.totals || {}, pe = e.p60 || e.p15 || {};
+        var hv = (e.heavy || []).map(function (h) { return '<span class="hl">' + esc(HW[Math.min(3, h.level)]) + "</span> " + esc(when(h.start)) + "–" + esc(when(h.end, { hour: "numeric", minute: "2-digit" })) +
+          " (" + inch(h.in) + " in in " + win(h.minutes) + ")"; }).join("<br>");
+        return "<tr><td><b>" + esc(title(e.name)) + "</b>" + (e.place ? "<span class='sm'>" + esc(e.place) + "</span>" : "") + "</td>" +
+          "<td class='n'>" + (e.area_sq_mi || 0).toFixed(1) + " sq mi</td>" +
+          "<td>" + (pe.points || 0) + (pe.how === "inside" ? " inside" : pe.how === "nearest" ? " nearest" : " in and near") + "</td>" +
+          "<td class='n'>" + inch(t["6"]) + "</td><td class='n'>" + inch(t["24"]) + "</td><td class='n'>" + inch(t["72"]) + "</td>" +
+          "<td>" + (e.peak60 && e.peak60.in > 0 ? inch(e.peak60.in) + " in, " + esc(when(e.peak60.end, { weekday: "short", hour: "numeric" })) : "–") + "</td>" +
+          "<td>" + (hv || (e.heavy ? "<span class='sm' style='display:inline'>none</span>" : "<span class='sm' style='display:inline'>not rated yet</span>")) +
+            (e.size && e.size.years ? "<span class='sm'>about a " + (e.size.years >= 2 ? Math.round(e.size.years) : e.size.years) + "-year storm over " + win(e.size.minutes) + "</span>" : "") + "</td></tr>";
+      }).join("");
+  }).join("");
+  $("wsTable").innerHTML = "<tr><th>Watershed</th><th class='n'>Area</th><th>Grid points</th><th class='n'>6 hr</th><th class='n'>24 hr</th><th class='n'>3 days</th><th>Wettest hour</th><th>Forecast Heavy or more</th></tr>" + rows;
+  $("wsAll").textContent = WSALL ? "Show the top 3 in each area" : "Show all " + keys.length + " (" + (keys.length - shown) + " more)";
+  $("wsAll").setAttribute("aria-pressed", WSALL ? "true" : "false");
+  $("wsAll").hidden = !WSALL && shown === keys.length;
+  $("wsNote").textContent = "Watersheds from lookups/ungauged_watersheds.csv (area, town, which get a graph). Forecast Heavy = the watershed average reaches the 1-year storm at its point over any window from 15 minutes to 6 hours (24 hours for the larger south coast creeks). The forecast is checked against nothing measured here; every run is kept in rrfs_log.csv (as ws:NAME).";
 }
 
 // one small bar graph per watershed, on a shared time axis
@@ -240,22 +289,35 @@ var bandPlugin = { id: "bands", beforeDatasetsDraw: function (ch) {
   bs.forEach(function (b) { var a = Math.max(xs.left, xs.getPixelForValue(b.a)), z = Math.min(xs.right, xs.getPixelForValue(b.b));
     if (z > a) { c.fillStyle = b.level >= 2 ? css("--amber2") : css("--amber"); c.fillRect(a, ys.top, z - a, ys.bottom - ys.top); } });
   c.restore(); } };
+// The watersheds without a creek gauge that get a graph (graph = yes in lookups/ungauged_watersheds.csv), keyed for element ids
+function wsGraphs() {
+  var W = D.watersheds || {}, out = {};
+  Object.keys(W).forEach(function (k) { if (W[k].graph) out["w" + k.replace(/[^A-Za-z0-9]/g, "_")] = W[k]; });
+  return out;
+}
+function wsLabel(e) { return title(e.name) + (e.place ? " · " + e.place : ""); }
 function renderMinis() {
-  var P = D.products[VIEW] ? VIEW : (D.products["60"] ? "60" : "15"), prod = D.products[P], C = D.creeks, ids = Object.keys(C), now = Date.now();
+  var P = D.products[VIEW] ? VIEW : (D.products["60"] ? "60" : "15"), prod = D.products[P], now = Date.now();
   $("v15").disabled = !D.products["15"]; $("v60").disabled = !D.products["60"];
-  var steps = prod.steps.map(function (s) { return Date.parse(s); }), x0 = now, x1 = steps[steps.length - 1], sm = prod.step_min * 60000;
-  var top = 0;
-  ids.forEach(function (id) { var pe = C[id]["p" + P]; if (pe) pe.max.forEach(function (v, k) { if (v != null && steps[k] > now) top = Math.max(top, v); }); });
+  var sets = [["minis", D.creeks || {}], ["wsMinis", wsGraphs()]];
+  var steps = prod.steps.map(function (s) { return Date.parse(s); }), top = 0;
+  sets.forEach(function (st) { Object.keys(st[1]).forEach(function (id) { var pe = st[1][id]["p" + P]; if (pe && pe.max) pe.max.forEach(function (v, k) { if (v != null && steps[k] > now) top = Math.max(top, v); }); }); });
   top = Math.max(P === "15" ? 0.05 : 0.1, Math.ceil(top * 20) / 20);
-  var box = $("minis");
-  if (box.dataset.ids !== ids.join() + Object.keys(TIDE_OF).join()) {
-    Object.keys(charts).forEach(function (k) { charts[k].destroy(); }); charts = {};
-    Object.keys(tcharts).forEach(function (k) { tcharts[k].destroy(); }); tcharts = {}; box.innerHTML = ids.map(function (id) { return '<div class="mini" id="m_' + id + '"><h3>' + esc(C[id].name) + '<span id="t_' + id + '"></span></h3><div class="cb"><canvas id="c_' + id + '" role="img"></canvas></div>' +
-      (TIDE_OF[id] ? '<div class="tt" id="tt_' + id + '"></div><div class="tb"><canvas id="tc_' + id + '" role="img"></canvas></div>' : "") +
-      '<div class="s" id="s_' + id + '"></div></div>'; }).join(""); box.dataset.ids = ids.join() + Object.keys(TIDE_OF).join(); }
+  sets.forEach(function (st) { miniSet(st[0], st[1], P, top); });
+}
+function miniSet(boxId, C, P, top) {
+  var prod = D.products[P], ids = Object.keys(C), now = Date.now(), ws = boxId !== "minis";
+  var steps = prod.steps.map(function (s) { return Date.parse(s); }), x0 = now, x1 = steps[steps.length - 1], sm = prod.step_min * 60000;
+  var box = $(boxId);
+  if (!box) return;
+  if (box.dataset.ids !== ids.join() + (ws ? "" : Object.keys(TIDE_OF).join())) {
+    ids.forEach(function (k) { if (charts[k]) { charts[k].destroy(); delete charts[k]; } if (tcharts[k]) { tcharts[k].destroy(); delete tcharts[k]; } });
+    box.innerHTML = ids.map(function (id) { return '<div class="mini" id="m_' + id + '"><h3>' + esc(ws ? wsLabel(C[id]) : C[id].name) + '<span id="t_' + id + '"></span></h3><div class="cb"><canvas id="c_' + id + '" role="img"></canvas></div>' +
+      (!ws && TIDE_OF[id] ? '<div class="tt" id="tt_' + id + '"></div><div class="tb"><canvas id="tc_' + id + '" role="img"></canvas></div>' : "") +
+      '<div class="s" id="s_' + id + '"></div></div>'; }).join(""); box.dataset.ids = ids.join() + (ws ? "" : Object.keys(TIDE_OF).join()); }
   var grid = css("--line"), muted = css("--muted");
   ids.forEach(function (id) {
-    var e = C[id], pe = e["p" + P] || { avg: [], max: [] }, avg = [], mx = [], own = 0;
+    var e = C[id], pe = e["p" + P] && e["p" + P].avg ? e["p" + P] : { avg: [], max: [] }, avg = [], mx = [], own = 0;
     steps.forEach(function (t, k) { if (t - sm < now) return; var a = pe.avg[k], m = pe.max[k];
       if (a != null) avg.push({ x: t - sm / 2, y: a }); if (m != null) { mx.push({ x: t - sm, y: m }, { x: t, y: m }); own = Math.max(own, m); } });
     var yTop = SAME ? top : Math.max(P === "15" ? 0.02 : 0.05, Math.ceil(own * 40) / 40);
@@ -264,7 +326,7 @@ function renderMinis() {
     var tot = 0; avg.forEach(function (p) { tot += p.y; });
     $("t_" + id).textContent = inch(tot) + " in";
     $("s_" + id).textContent = (e.heavy || []).length ? "Forecast " + HW[Math.min(3, e.heavy[0].level)] + " " + when(e.heavy[0].start) : (pe.points ? pe.points + " grid points" : "");
-    $("c_" + id).setAttribute("aria-label", e.name + ": forecast " + inch(tot) + " in over the period shown");
+    $("c_" + id).setAttribute("aria-label", (ws ? wsLabel(e) : e.name) + ": forecast " + inch(tot) + " in over the period shown");
     var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
       plugins: { legend: { display: false }, bands: bands, tooltip: { callbacks: {
         title: function (it) { return when(new Date(it[0].parsed.x + (it[0].datasetIndex === 0 ? sm / 2 : 0)).toISOString()) + " (end)"; },
@@ -277,7 +339,7 @@ function renderMinis() {
       { type: "line", data: mx, borderColor: css("--fcline"), borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0 }] };
     if (charts[id]) { charts[id].data = data; charts[id].options = opts; charts[id].update(); }
     else charts[id] = new Chart($("c_" + id), { type: "bar", data: data, options: opts, plugins: [bandPlugin] });
-    drawTide(id, x0, x1, P === "15", grid, muted);
+    if (!ws) drawTide(id, x0, x1, P === "15", grid, muted);
   });
 }
 
@@ -351,6 +413,19 @@ function loadTideStations() {
 // the map: the county grid colored by its forecast total, each creek's points ringed
 var STEPS = [[0.01, "#eef3f8"], [0.1, "#c9d8ea"], [0.25, "#9bb8db"], [0.5, "#7e57c2"], [1, "#5b2c9e"], [2, "#3b1470"]];
 function color(v) { var c = "#f6f8fa"; STEPS.forEach(function (s) { if (v >= s[0]) c = s[1]; }); return c; }
+// each County watershed's forecast total: a FEWS creek's (its watershed names in rrfs.json) or a watershed without a gauge
+var wsLayer = null;
+function wsValue(name) {
+  var n = String(name || "").toUpperCase(), k = MAPH === 6 ? "6" : "24", W = D.watersheds || {}, C = D.creeks || {};
+  if (W[n] && W[n].totals) return { v: W[n].totals[k], who: title(n) + (W[n].place ? " · " + W[n].place : "") + " (no creek gauge)" };
+  for (var id in C) if ((C[id].watershed || "").split("; ").indexOf(n) >= 0 && C[id].totals) return { v: C[id].totals[k], who: C[id].name };
+  return null;
+}
+function wsStyle(f) {
+  var x = wsValue(f.properties && f.properties.name);
+  return { color: "#2f6b3a", weight: 1.2, opacity: 0.8, dashArray: "5 4", fillColor: x ? color(x.v) : "#ffffff", fillOpacity: x ? 0.55 : 0 };
+}
+function wsTip(name) { var x = wsValue(name); return esc(title(name)) + (x ? "<br>" + esc(x.who) + ": " + inch(x.v) + " in, next " + MAPH + " hr" : "<br>small watershed, not listed"); }
 function renderMap() {
   if (!window.L) return;
   if (!D.grid) { $("map").textContent = "The map shows after the next forecast check (within 20 minutes)."; return; }
@@ -360,7 +435,7 @@ function renderMap() {
     map.fitBounds(L.latLngBounds(D.grid.pts.map(function (p) { return [p[1], p[0]]; })), { padding: [10, 10] });
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 15, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · Forecast: AQPI / CW3E RRFS' }).addTo(map);
     fetch("data/watersheds.geojson").then(function (r) { return r.json(); }).then(function (gj) {
-      L.geoJSON(gj, { style: { color: "#2f6b3a", weight: 1.3, opacity: 0.8, fillOpacity: 0, dashArray: "5 4" }, interactive: false }).addTo(map);
+      wsLayer = L.geoJSON(gj, { style: wsStyle, onEachFeature: function (f, l) { l.bindTooltip(function () { return wsTip(f.properties.name); }, { sticky: true }); } }).addTo(map);
       if (gridLayer) gridLayer.bringToFront();
     }).catch(function () {});
   }
@@ -371,10 +446,11 @@ function renderMap() {
   var col = MAPH === 6 ? 2 : 3;
   D.grid.pts.forEach(function (p) {
     var k = p[0] + "," + p[1], u = used[k], v = p[col];
-    L.circleMarker([p[1], p[0]], { radius: u ? 7 : 5, color: u ? "#003B5C" : "#8a96a3", weight: u ? 2 : 0.6, fillColor: color(v), fillOpacity: 0.9 })
+    L.circleMarker([p[1], p[0]], { radius: u ? 6 : 4, color: u ? "#003B5C" : "#8a96a3", weight: u ? 2 : 0.6, fillColor: color(v), fillOpacity: 0.9 })
       .bindTooltip(inch(v) + " in, next " + MAPH + " hr" + (u ? "<br>Used for " + esc(u.join(", ")) : ""), { sticky: true }).addTo(gridLayer);
   });
   gridLayer.addTo(map);
+  if (wsLayer) wsLayer.setStyle(wsStyle);
   $("mapHrs").textContent = "next " + MAPH + " hours";
   $("mapKey").innerHTML = "<span>inches:</span>" + [["< 0.01", "#f6f8fa"]].concat(STEPS.map(function (s) { return [s[0] + "+", s[1]]; })).map(function (s) {
     return '<span><i class="sw" style="background:' + s[1] + ';border:1px solid #8a96a3"></i>' + s[0] + "</span>"; }).join("") +
@@ -386,6 +462,7 @@ $("v15").onclick = function () { VIEW = "15"; press($("v15"), $("v60")); renderM
 $("v60").onclick = function () { VIEW = "60"; press($("v60"), $("v15")); renderMinis(); };
 $("sSame").onclick = function () { SAME = true; press($("sSame"), $("sOwn")); renderMinis(); };
 $("sOwn").onclick = function () { SAME = false; press($("sOwn"), $("sSame")); renderMinis(); };
+$("wsAll").onclick = function () { WSALL = !WSALL; renderWs(); };
 $("m6").onclick = function () { MAPH = 6; press($("m6"), $("m24")); renderMap(); };
 $("m24").onclick = function () { MAPH = 24; press($("m24"), $("m6")); renderMap(); };
 
