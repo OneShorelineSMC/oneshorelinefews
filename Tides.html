@@ -326,7 +326,7 @@
   #season.king .chip { background: #6A3D8F; } #season.red .chip { background: #c62828; }
   #season.red { border: 3px solid #c62828; }
   #calfc { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--soft, #eef2f6); font-size: 13.5px; line-height: 1.4; }
-  #calfc.hide, #fckey.hide, #ofkey.hide, #astkey.hide, #offabout.hide, #outl.hide { display: none; }
+  #calfc.hide, #fckey.hide, #ofkey.hide, #olkey.hide, #astkey.hide, #offabout.hide, #outl.hide { display: none; }
   #calfc b { color: var(--ink); }
   #season .st { flex: 1; min-width: 0; font-size: 14.5px; line-height: 1.3; }
   #season .st b { color: var(--ink); }
@@ -427,6 +427,8 @@
   .mgrid .d.r, .mgrid .d.r:not(.past) { background: var(--sv-advisory-tint); color: var(--sv-advisory-ink); box-shadow: inset 0 0 0 2px var(--sv-advisory-stripe); }
   .mgrid .d.past.r { box-shadow: none; }
   .mgrid .d.of:not(.past) { border-color: var(--sv-advisory-stripe); }
+  /* flood level likely (staff 2026-11-21): the estimate well above the flood level within a week: orange fill, dashed edge */
+  .mgrid .d.ol:not(.past) { background: var(--sv-advisory-tint); color: var(--sv-advisory-ink); font-weight: 700; border: 2px dashed var(--sv-advisory-stripe); }
   /* Calendar marks, each one distinct (staff, 2026-10-26):
        flood level (tide table or NOAA projection) = orange tint, solid orange edge, "!" badge in the corner;
        NOAA projection (next 2 days) = dotted dark outline (also on a flood-level day: dark dots outside the orange edge);
@@ -514,6 +516,7 @@
       <span><i style="outline:2px solid var(--ink);outline-offset:-2px"></i>Today</span>
       <span><i style="outline:4px double var(--ink);outline-offset:-4px"></i>Selected</span>
       <span id="fckey" class="hide"><i style="border:2px dotted var(--ink);box-sizing:border-box"></i><span data-text="tide_day_expected"></span></span>
+      <span id="olkey" class="hide"><i style="background:var(--sv-advisory-tint);border:2px dashed var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="olkeyt"></span></span>
       <span id="ofkey" class="hide"><i style="border:2px dashed var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="ofkeyt"></span></span>
       <span id="nrkey" class="hide"><i style="border:2px solid var(--sv-advisory-stripe);box-sizing:border-box"></i><span id="nrkeyt"></span></span></div></details>
     <div id="calfc" class="hide"></div>
@@ -548,10 +551,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261121d"></script>
-<script src="tide_season.js?v=20261121d"></script>
-<script src="severity.js?v=20261121d"></script>
-<script src="hero.js?v=20261121d"></script>
+<script src="lookups.js?v=20261121e"></script>
+<script src="tide_season.js?v=20261121e"></script>
+<script src="severity.js?v=20261121e"></script>
+<script src="hero.js?v=20261121e"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -1133,10 +1136,11 @@ function render() {
       var add = top.src === "pred" && top.t > fe ? (TSN && TSN.station === st.id ? TSN.addAt(top.t, now) : off ? off.ft : null) : null;
       var est = add != null ? top.v + add : null; if (est != null) ofDays++;
       var val = est != null ? est : top.v, over = val > st.mhhw, maybe = est != null && !isRed && est >= redFor(st);
+      var likely = maybe && LK.estLikely(est, redFor(st), top.t, now);   // well above the flood level within a week: "Flood level likely"
       var srcSr = top.src === "fcst" ? " (NOAA projection)" : top.src === "measured" ? " (measured)" : est != null ? " (estimate: tide table " + LK.tideRel(top.v, st.id) + " plus " + add.toFixed(1) + " ft)" : " (tide table)";
-      h += '<div class="day' + (isRed ? " red" : over ? " over" : "") + (maybe ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + (est != null ? "≈" : "") + esc(LK.tideShort(val, st.id).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + esc(LK.tideUnit(val, st.id)) + "</span></span>" +
+      h += '<div class="day' + (isRed || likely ? " red" : over ? " over" : "") + (maybe ? " maybe" : "") + (short && dd >= 3 ? " x" : "") + '"><span class="dn">' + name + '</span><span class="dv">' + (est != null ? "≈" : "") + esc(LK.tideShort(val, st.id).replace(/ ft$/, "")) + '<span class="du"> ft</span><span class="dvl">' + esc(LK.tideUnit(val, st.id)) + "</span></span>" +
         '<span class="dt">' + fTime(top.t) + '<span class="dxw">' + esc(srcSr) + '</span><span class="dnv">' + esc(LK.tideAlt(val, st.id)) + "</span></span>" +
-        '<span class="dx">' + (isRed ? "Flood level" : maybe ? "Possible flood level" : over ? "Higher than usual" : '<span class="nrm">Normal</span>') +
+        '<span class="dx">' + (isRed ? "Flood level" : likely ? esc(LK.text("tide_likely_day")) : maybe ? esc(LK.text("tide_maybe_day")) : over ? "Higher than usual" : '<span class="nrm">Normal</span>') +
         // Coastside: a tag on each day inside an NWS surf product (staff, 2026-11-13)
         (COAST && SURF && a0 < SURF.end && a0 + 864e5 > SURF.start ? '<span class="dsurf sv-ink sv-' + SURF.level + '">' + esc(SURF.word) + "</span>" : "") + "</span></div>";
     }
@@ -1631,7 +1635,7 @@ function calLabel(day, today) {
   var h = TSN.dayHighs()[day], x = TSN.expected()[day], v = x ? x.v : h ? h.v : null, lv = TSN.level(v), e = estReach(day), out = [];
   out.push(tsFmt(day, { weekday: "long", month: "long", day: "numeric" }) + (day === today ? ", today" : day < today ? ", past" : ""));
   if (lv === 2) out.push(LK.text("tide_day_red").replace(/ \(.*\)$/, ""));
-  else if (e && day >= today) out.push("Possible flood level");
+  else if (e && day >= today) out.push(LK.text(e.t != null && LK.estLikely(e.v, TSN.red(), e.t, nowLocal()) && ofReach(day) ? "tide_likely_day" : "tide_maybe_day"));
   else if (nearLevel(day)) out.push(LK.text("tide_near_day", { ft: LK.tideFt(nearLevel(day).v, TSN.station, 2) + (nearLevel(day).est ? " (estimate)" : "") }));
   else if (lv === 1) out.push(LK.text("tide_day_amber"));
   if (x) out.push("NOAA projection " + TSN.ft(x.v));
@@ -1656,7 +1660,7 @@ function renderCalendar() {
   var months = [], m0 = new Date(S0.from);
   for (var k = 0; k <= TSN.months; k++) months.push(new Date(Date.UTC(m0.getUTCFullYear(), m0.getUTCMonth() + k, 1)).toISOString().slice(0, 10));
   closeDay(false);   // take the summary box out before the months are rebuilt
-  var anyOf = false, anyNr = false;
+  var anyOf = false, anyOl = false, anyNr = false;
   $("months").innerHTML = months.map(function (mm) {
     var first = new Date(mm + "T12:00:00Z"), pad = first.getUTCDay(), h = "";
     h += '<div class="mon"><h3>' + esc(tsFmt(mm, { month: "long", year: "numeric" })) + '</h3><div class="mgrid">' +
@@ -1668,7 +1672,9 @@ function renderCalendar() {
       if (lv === 2) c += " r"; else if (lv === 1) c += " a";
       if (ad[day]) { c += " ast"; anyAst = true; }   // astronomical high tide (the 1-year tide in the tide table)
       if (xp) c += " xp";
-      if (ofReach(day) || (sod[day] && lv < 2)) { c += " of"; anyOf = true; }   // estimate (≤ 6 weeks) or seasonal outlook
+      var olr = ofReach(day);
+      if (olr && LK.estLikely(olr.v, TSN.red(), olr.t, nowLocal())) { c += " ol"; anyOl = true; }   // flood level likely: the estimate well above it within a week
+      else if (olr || (sod[day] && lv < 2)) { c += " of"; anyOf = true; }   // estimate (≤ 6 weeks) or seasonal outlook
       else if (lv < 2 && nearLevel(day)) { c += " nr"; anyNr = true; }   // close to the flood level
       if (day < today) c += " past";
       if (day === today) c += " today";
@@ -1762,6 +1768,8 @@ function renderCalendar() {
     }
   }
   $("ofkey").classList.toggle("hide", !anyOf);
+  $("olkey").classList.toggle("hide", !anyOl);
+  $("olkeyt").textContent = anyOl ? LK.text("tide_likely_cal_key", { margin: LK.num("TIDE_LIKELY_MARGIN_FT").toFixed(1), days: LK.num("TIDE_LIKELY_DAYS") }) : "";
   $("astkey").classList.toggle("hide", !anyAst);
   $("astkeyt").textContent = isFinite(TSN.king()) ? LK.text("tide_day_astro", { ft: TSN.ft(TSN.king()) }) : "";
   $("ofkeyt").textContent = anyOf ? LK.text("tide_offset_cal_key", { water: SIDE.water }) : "";

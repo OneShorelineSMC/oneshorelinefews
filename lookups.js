@@ -33,7 +33,7 @@
     RAIN_SEVERE_CONFIRM_GAUGES: [2, 1, 5], RAIN_SILENT_MIN: [60, 15, 720], TREND_WINDOW_MIN: [30, 5, 240], TREND_MAX_WINDOW_MIN: [120, 15, 360], TREND_STEADY_FT_PER_HR: [0.1, 0.01, 2], TIDE_RISING_LOOKAHEAD_HOURS: [3, 0.5, 12], BE_READY_FROM_RAIN: [1, 0, 1],
     // flood reports (scripts/fetch_community_flood_reports.py, CommunityFloodReports.html, SiteMap.html)
    
-    TIDE_RED_FT_RWC: [8.5, 6, 15], PROJ_BIAS_CORRECT: [1, 0, 1], PROJ_BIAS_MAX_FT: [0.75, 0, 3], PROJ_BIAS_DAYS: [14, 5, 60], TIDE_NEAR_FT: [0.3, 0, 1], TIDE_SCENARIOS_SHOW: [1, 0, 1], WAVES_BIG_FT: [15, 8, 40], WAVES_STALE_HOURS: [12, 2, 72], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
+    TIDE_RED_FT_RWC: [8.5, 6, 15], PROJ_BIAS_CORRECT: [1, 0, 1], PROJ_BIAS_MAX_FT: [0.75, 0, 3], PROJ_BIAS_DAYS: [14, 5, 60], TIDE_NEAR_FT: [0.3, 0, 1], TIDE_LIKELY_MARGIN_FT: [0.6, 0, 3], TIDE_LIKELY_DAYS: [7, 0, 42], TIDE_SCENARIOS_SHOW: [1, 0, 1], WAVES_BIG_FT: [15, 8, 40], WAVES_STALE_HOURS: [12, 2, 72], KING_TIDE_FT_RWC: [8.3, 6, 15], KING_TIDE_FT_MRY: [6.87, 4, 12], TIDE_EXPECTED_HOURS: [48, 6, 72], TIDE_WEATHER_NOTE_FT: [0.25, 0.05, 3],
     MORE_CREEKS_PUBLIC: [1, 0, 1], STATUS_PUBLIC: [1, 0, 1], CREEK_PUBLIC_LEVELS_ONLY: [1, 0, 1], CREEK_PUBLIC_RISING_FAST: [1, 0, 1], STAFF_STATUS_FULL: [0, 0, 1], RAIN_RATING_MAX_MIN: [360, 15, 2880],
     SB_TIDE_W_SF: [0.32, 0, 1], SB_TIDE_W_ALA: [0.36, 0, 1], SB_TIDE_W_RWC: [0.32, 0, 1], TIDE_FLOOD_FT_SB: [8.9, 6, 15], TIDE_MAX_FT_SB: [9.8, 6, 15],
     // NWS rain forecast on creek cards (scripts/nws_forecast.py); the data job uses FORECAST_EVERY_MIN and FORECAST_KEEP_HOURS too
@@ -314,6 +314,8 @@
     tide_near_day: "Close to the flood level: about {ft}",
     tide_steady_start: "If the {water} stays as high as it is now (about {off} ft above the tide table at high tide, not easing), flood-level tides could start {date}{n}.",
     tide_maybe_day: "Possible flood level",
+    tide_likely_day: "Flood level likely",
+    tide_likely_cal_key: "Orange fill, dashed edge: flood level likely (estimate {margin} ft or more above it, next {days} days)",
     tide_offset_later: "If the {water} stays {off} ft higher than the tide table (its average at high tide over the past two weeks): {list}",
     tide_offset_assume: "It assumes the {water} stays that high. It isn’t a forecast, and storms can add more.",
     shore_intro: "Low spots along San Mateo County’s Bay shoreline where very high tides can come over the edge, and whether the tides in the coming days and weeks are high enough to reach them.",
@@ -688,6 +690,15 @@
     return { pred: blend(col("pred"), w), obs: blend(col("obs"), w), highs: blendHighs(col("highs"), w),
       ofs: ofsOK ? blend(col("ofs"), w) : null, tOfs: ofsOK ? Math.min.apply(null, col("tOfs").map(function (t) { return t || 0; })) : 0 };
   }
+  /* An estimate (tide table + the recent offset) far enough above the flood level, soon enough, is "Flood level likely"
+     rather than "Possible flood level" (staff 2026-11-21): TIDE_LIKELY_MARGIN_FT above the level, within TIDE_LIKELY_DAYS.
+     Checked on this season at Redwood City (Oct 1 - Nov 21, 2026): 3 to 6 days ahead, the estimate missed the measured
+     high by 0.3 ft typically and 0.6 ft at most; every day estimated 0.5 ft or more above 8.5 ft reached it, against
+     about 70% of those estimated 0 to 0.5 ft above. THRESHOLDS_BASIS.md §4b. */
+  function estLikely(v, red, t, now) {
+    var m = L.num("TIDE_LIKELY_MARGIN_FT"), d = L.num("TIDE_LIKELY_DAYS");
+    return v != null && isFinite(red) && v >= red + (isNaN(m) ? 0.6 : m) && t - now <= (isNaN(d) ? 7 : d) * 864e5;
+  }
   function sbTide() {
     var raw = SB_KEYS.map(function (k) { var w = L.num(k); return w >= 0 ? w : 0; }), sum = raw.reduce(function (a, b) { return a + b; }, 0);
     var w = sum > 0 ? raw.map(function (x) { return x / sum; }) : [1 / 3, 1 / 3, 1 / 3];
@@ -697,7 +708,7 @@
   }
 
   L = window.LOOKUPS = {
-    getData: getData, stormy: stormy, blend: blend, blendHighs: blendHighs, sbTide: sbTide, sbCompose: sbCompose, tideId: tideId, newer: newer, fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
+    getData: getData, stormy: stormy, blend: blend, blendHighs: blendHighs, sbTide: sbTide, sbCompose: sbCompose, tideId: tideId, estLikely: estLikely, newer: newer, fixModel: fixModel, modelBias: modelBias, tideRel: tideRel, tideFt: tideFt, tideHTML: tideHTML, tideShort: tideShort, tideNavd: navd, tideAbove: relOf,
     tideAlt: tideAlt, tideUnit: tideUnit, tideUnits: tideUnits, heightMode: heightMode, setHeightMode: setHeightMode,
     problems: [], loaded: false,
     num: function (k) { return k in cur.settings ? cur.settings[k] : NaN; },
