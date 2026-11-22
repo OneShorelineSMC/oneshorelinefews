@@ -203,14 +203,17 @@ def update_sfo(out, now, fetch=None, every=SFO_EVERY_MIN, log=print):
     from zoneinfo import ZoneInfo
     pac, utc = ZoneInfo("America/Los_Angeles"), dt.timezone.utc
     rec = out["ledger"].setdefault("sfo:" + SFO_STATION, {"kind": "rain", "h": {}})
-    back = dt.timedelta(hours=12) if rec.get("h") or out.get("sfo_fetched") else dt.timedelta(days=6)
+    # SFO's wind each hour, [degrees from, mph] (staff 2026-11-21: does First Avenue get more rain than SFO when storms come
+    # through the San Bruno Gap? bayside_compare.py)
+    wrec = out["ledger"].setdefault("sfowind:" + SFO_STATION, {"kind": "wind", "h": {}})
+    back = dt.timedelta(hours=12) if (rec.get("h") or out.get("sfo_fetched")) and wrec.get("h") else dt.timedelta(days=6)
     start = (now - back).replace(tzinfo=pac).astimezone(utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
         j = (fetch or TT.get_json)("%s/stations/%s/observations?start=%s" % (NWS_API, SFO_STATION, start))
     except Exception as e:  # noqa: BLE001 - NWS down: keep what we have
         log("  SFO: %s" % str(e)[:120])
         return ["SFO: %s" % str(e)[:120]]
-    hours = {}
+    hours, wind = {}, {}
     for f in (j or {}).get("features") or []:
         pr = f.get("properties") or {}
         t, q = pr.get("timestamp"), pr.get("precipitationLastHour") or {}
@@ -223,13 +226,49 @@ def update_sfo(out, now, fetch=None, every=SFO_EVERY_MIN, log=print):
         v = q.get("value")
         mm = str(q.get("unitCode", "")).endswith("mm")
         hours[h] = round((v / 25.4 if mm else v), 3) if isinstance(v, (int, float)) else hours.get(h, 0.0)
+        wd, ws = (pr.get("windDirection") or {}).get("value"), pr.get("windSpeed") or {}
+        if isinstance(wd, (int, float)) and isinstance(ws.get("value"), (int, float)):
+            u = str(ws.get("unitCode", ""))
+            mph = ws["value"] * (0.621371 if u.endswith("km_h-1") else 2.23694 if u.endswith("m_s-1") else 1.150779 if "kn" in u else 1)
+            wind[h] = [int(round(wd)) % 360, round(mph, 1)]
     for h, v in hours.items():
         if v and v > 0:
             rec["h"][hkey(h)] = v
         else:
             rec["h"].pop(hkey(h), None)
+    for h, w in wind.items():
+        wrec["h"][hkey(h)] = w
+    update_sfo_cli(out, fetch, log)
     out["sfo_fetched"] = now.strftime("%Y-%m-%d %H:%M")
     return []
+
+
+def update_sfo_cli(out, fetch=None, log=print, n=None):
+    """SFO's official daily rain from the NWS Daily Climate Report (CLI) into out["sfo_cli"] {date: inches} (staff
+    2026-11-21: the hourly observations miss some hours, so SFO's storm totals ran low, Nov 18: 2.28 in from the hours
+    against 2.79 official). A report for a day that has ended ("YESTERDAY") replaces the same-day one ("TODAY"); T
+    (trace) is 0. Problems leave it as it was."""
+    import re
+    cli = out.setdefault("sfo_cli", {})
+    final = out.setdefault("sfo_cli_final", [])
+    n = n or (4 if cli else 30)   # the first read goes back about two weeks (NWS keeps the recent reports)
+    try:
+        lst = (fetch or TT.get_json)("%s/products/types/CLI/locations/SFO" % NWS_API)
+        for it in ((lst or {}).get("@graph") or [])[:n]:
+            t = ((fetch or TT.get_json)(it["@id"]) or {}).get("productText") or ""
+            d = re.search(r"CLIMATE SUMMARY FOR ([A-Z]+) (\d+) (\d{4})", t)
+            p = re.search(r"PRECIPITATION \(IN\)[\s\S]*?(YESTERDAY|TODAY)\s+([0-9.]+|T)\b", t)
+            if not d or not p:
+                continue
+            day = dt.datetime.strptime("%s %s %s" % d.groups(), "%B %d %Y").strftime("%Y-%m-%d")
+            if day in final and p.group(1) == "TODAY":
+                continue
+            cli[day] = 0.0 if p.group(2) == "T" else float(p.group(2))
+            if p.group(1) == "YESTERDAY" and day not in final:
+                final.append(day)
+        out["sfo_cli_final"] = sorted(final)[-60:]
+    except Exception as e:  # noqa: BLE001 - NWS down: keep what we have
+        log("  SFO CLI: %s" % str(e)[:120])
 
 
 def sfo_for(start, end, ledger):
@@ -532,7 +571,7 @@ def update_days(days, ledger, creeks, sensors, now):
     first = (now - dt.timedelta(days=KEEP_DAYS - 1)).strftime("%Y-%m-%d")   # the oldest record day may be partial
     for key, by_day in covered.items():
         kind = ledger[key]["kind"]
-        if kind == "tidepred":
+        if kind in ("tidepred", "wind"):
             continue
         tgt = days.setdefault("rain" if kind == "rain" else "tide" if kind == "tide" else "level", {}).setdefault(key, {})
         for d, vals in by_day.items():
@@ -575,6 +614,8 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
     creeks = (creeks_json.get("creeks") or []) + (creeks_json.get("creeks_preview") or [])
     merge_ledger(out["ledger"], sensors, now)
     out["sfo_fetched"] = prev.get("sfo_fetched")
+    out["sfo_cli"] = {d: v for d, v in (prev.get("sfo_cli") or {}).items() if d >= wy0.isoformat()}
+    out["sfo_cli_final"] = [d for d in prev.get("sfo_cli_final", []) if d >= wy0.isoformat()]
     if tides:
         out["tide_problems"] = update_tides(out, {tide_station(c) for c in creeks}, now, fetch) or prev.get("tide_problems") or []
         update_sfo(out, now, fetch)

@@ -54,5 +54,27 @@ out4 = B.build(dict(tracker, ledger=led4), CREEKS, FREQ, B.parse_t("2026-11-16 1
 x = [r for r in sorted(out4["storms"], key=lambda q: q["start"])[0]["gauges"] if r["key"] == "sfo:KSFO"][0]
 check("SFO missing before its record began", x.get("missing") is True)
 
+# SFO's wind: the direction weighted by rain, and First Avenue against SFO split by wind
+led5 = led(r2={"2026-11-22 10:00": 0.6, "2026-11-22 11:00": 0.2}, **{"sfo:KSFO": {"2026-11-22 10:00": 0.3, "2026-11-22 11:00": 0.1},
+           "sfowind:KSFO": {"2026-11-22 10:00": [230, 20], "2026-11-22 11:00": [150, 10]}})
+out5 = B.build(dict(tracker, ledger=led5), CREEKS, FREQ, B.parse_t("2026-11-23 12:00"))
+e5 = out5["storms"][0]
+check("wind weighted by rain: about SW, through the gap", e5["wind"]["from"] in ("SW", "SSW") and e5["wind"]["gap"] and e5["wind"]["hours"] == 2)
+check("First Avenue vs SFO: 2x", e5["vs_sfo"] == 2.0 and out5["season"]["vs_sfo"]["gap"] == {"storms": 1, "median": 2.0})
+check("no wind record: no wind", B.storm_wind({}, ["r1"], B.parse_t("2026-11-22 10:00"), B.parse_t("2026-11-22 11:00")) is None)
+
+# SFO scaled to its official daily total (the hourly observations miss hours)
+tr6 = dict(tracker, ledger=led5, sfo_cli={"2026-11-22": 0.8})
+e6 = B.build(tr6, CREEKS, FREQ, B.parse_t("2026-11-23 12:00"))["storms"][0]
+s6 = [r for r in e6["gauges"] if r["key"] == "sfo:KSFO"][0]
+check("SFO scaled to the official day total", s6["total"] == 0.8 and s6["official"] is True and e6["vs_sfo"] == 1.0)
+# a storm kept from before the scaling is redone once
+old = B.build(dict(tracker, ledger=led5), CREEKS, FREQ, B.parse_t("2026-11-23 12:00"))
+for x in old["storms"]:
+    for r in x["gauges"]:
+        r.pop("official", None)
+e7 = B.build(tr6, CREEKS, FREQ, B.parse_t("2026-11-23 12:00"), prev=old)["storms"][0]
+check("kept storm redone with the official total", [r for r in e7["gauges"] if r["key"] == "sfo:KSFO"][0]["total"] == 0.8 and e7["vs_sfo"] == 1.0)
+
 print("\nAll passed" if not fails else f"\n{len(fails)} FAILED")
 sys.exit(1 if fails else 0)

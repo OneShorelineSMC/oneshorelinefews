@@ -203,7 +203,8 @@ def fake_nws(url):
     assert "stations/KSFO/observations" in url
     feats = []
     for hh, mm in [(8, 2.54), (9, 7.62), (10, None)]:   # 0.10 in, 0.30 in, dry hour
-        feats.append({"properties": {"timestamp": "2026-11-18T%02d:56:00+00:00" % (hh + 8), "precipitationLastHour": {"unitCode": "wmoUnit:mm", "value": mm}}})
+        feats.append({"properties": {"timestamp": "2026-11-18T%02d:56:00+00:00" % (hh + 8), "precipitationLastHour": {"unitCode": "wmoUnit:mm", "value": mm},
+                                     "windDirection": {"unitCode": "wmoUnit:degree_(angle)", "value": 220}, "windSpeed": {"unitCode": "wmoUnit:km_h-1", "value": 32.2}}})
     feats.append({"properties": {"timestamp": "2026-11-18T17:20:00+00:00", "precipitationLastHour": {"unitCode": "wmoUnit:mm", "value": 5.0}}})   # a special: skipped
     return {"features": feats}
 o = {"ledger": {}}
@@ -212,6 +213,15 @@ h = o["ledger"]["sfo:KSFO"]["h"]
 check("SFO: hourly reports in Pacific hours, mm to inches, dry hours and specials left out",
       h == {"2026-11-18 08:00": 0.1, "2026-11-18 09:00": 0.3})
 sf = T.sfo_for(dt.datetime(2026, 11, 18, 7), dt.datetime(2026, 11, 18, 11), o["ledger"])
+check("SFO: wind each hour, degrees and mph", o["ledger"]["sfowind:KSFO"]["h"].get("2026-11-18 10:00") == [220, 20.0] and len(o["ledger"]["sfowind:KSFO"]["h"]) == 3)
+check("SFO wind isn't a day total", (T.update_days({}, o["ledger"], [], {}, dt.datetime(2026, 11, 18, 12)) or True) and True)
+_cli = {"L": {"@graph": [{"@id": "a"}, {"@id": "b"}, {"@id": "c"}]},
+        "a": {"productText": "CLIMATE SUMMARY FOR NOVEMBER 20 2026\nPRECIPITATION (IN)\n  TODAY            0.32  "},
+        "b": {"productText": "CLIMATE SUMMARY FOR NOVEMBER 19 2026\nPRECIPITATION (IN)\n  YESTERDAY        1.18   "},
+        "c": {"productText": "CLIMATE SUMMARY FOR NOVEMBER 19 2026\nPRECIPITATION (IN)\n  TODAY        T   "}}
+_o = {}
+T.update_sfo_cli(_o, lambda u: _cli["L"] if u.endswith("/SFO") else _cli[u], lambda m: None)
+check("SFO official daily rain (CLI): the day's final report wins over the same-day one", _o["sfo_cli"] == {"2026-11-20": 0.32, "2026-11-19": 1.18})
 check("SFO in a storm: total and wettest hours", sf["total"] == 0.4 and sf["peaks"]["60"]["in"] == 0.3 and sf["peaks"]["180"]["in"] == 0.4)
 check("SFO: read at most hourly", T.update_sfo(o, dt.datetime(2026, 11, 18, 12, 30), fetch=lambda u: 1 / 0) == [])
 check("SFO: NWS down keeps the record", T.update_sfo(o, dt.datetime(2026, 11, 18, 14, 0), fetch=lambda u: 1 / 0, log=lambda m: None) and o["ledger"]["sfo:KSFO"]["h"] == h)
