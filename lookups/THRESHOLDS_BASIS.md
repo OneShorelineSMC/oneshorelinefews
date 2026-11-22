@@ -272,6 +272,17 @@ standing for the winter (a staff override could be added), and showing a Bay run
 - **Caution:** October 2026 was already above the highest monthly departure on record at San Francisco (+0.95 ft above trend, March 1983), so all three paths extrapolate. A peer's tracker using the same approach found November 2026 running at its high scenario. The Tides page says which path the Bay is following now (the whole-day offset against each path's level for today).
 - Data mirrors used for the back-test: NOAA monthly means at 9414290 and CPC's ONI; the data job reads both from NOAA directly.
 
+**"Flood level likely" vs "Possible flood level" (Nov 21, 2026; provisional).** After the NOAA projection, a day whose
+estimate reaches the flood level says **Flood level likely** (orange fill, dashed edge) when the estimate is
+`TIDE_LIKELY_MARGIN_FT` (0.6 ft) or more above it and the day is within `TIDE_LIKELY_DAYS` (7); otherwise it stays
+**Possible flood level** (dashed outline only). Days the tide table or the NOAA projection already put at the flood level
+are unchanged ("Flood level"), and the home page banner and hero still use only the NOAA projection. Basis: this season at
+Redwood City (Oct 1 to Nov 21, 2026, `tide_tracker.json`), the tide table plus the past week's average skew surge
+predicted each day's highest water 3 to 6 days ahead with a typical miss of 0.3 ft (bias about 0) and a largest miss of
+0.6 ft low. Every day estimated 0.5 ft or more above 8.5 ft reached it (1 to 3 days per lead time), against about 70% of
+days estimated 0 to 0.5 ft above. One steady El Niño season with the Bay running 1 to 1.5 ft high: recheck the margin
+after a storm-driven swing in the offset.
+
 ### 4c. Shoreline spots: BCDC Adapting to Rising Tides levels against the NOAA projection (Oct 21, 2026; staff preview, draft)
 
 - **Oct 22: low points from BCDC's shoreline overtopping layer (replaces the flood-area method below).** The flood areas
