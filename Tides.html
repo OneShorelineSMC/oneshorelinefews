@@ -551,10 +551,10 @@
 </main>
 
 
-<script src="lookups.js?v=20261121e"></script>
-<script src="tide_season.js?v=20261121e"></script>
-<script src="severity.js?v=20261121e"></script>
-<script src="hero.js?v=20261121e"></script>
+<script src="lookups.js?v=20261121f"></script>
+<script src="tide_season.js?v=20261121f"></script>
+<script src="severity.js?v=20261121f"></script>
+<script src="hero.js?v=20261121f"></script>
 <script>
 var STAFF = /[?&]preview=1\b/.test(location.search);   // staff view (staff.html links Tides.html?preview=1)
 /* ---------- helpers (NOAA and OneRain give local clock times; kept as plain clock times) ---------- */
@@ -753,7 +753,9 @@ var LK = window.LOOKUPS;
 // Bayside (Redwood City 9414523); with ?side=ala, Alameda (9414750, the gauge FEWS uses for Colma Creek and, blended, for San Bruno Creek;
 // staff, 2026-11-20); with ?side=coast, Coastside (Monterey 9413450, NOAA's nearest open-coast gauge with live readings)
 var COAST = /[?&]side=coast\b/.test(location.search);
-var ALA = !COAST && /[?&]side=ala(meda)?\b/.test(location.search);   // Alameda: Bay wording, no flood level or 1-year tide set yet
+// Alameda is staff only (staff 2026-11-21: a second Bay tab with no flood level confused the public page); public visitors
+// to ?side=ala get Redwood City
+var ALA = !COAST && STAFF && /[?&]side=ala(meda)?\b/.test(location.search);   // Alameda: Bay wording, no flood level or 1-year tide set yet
 var STATIONS = [LK.station(COAST ? "9413450" : ALA ? "9414750" : "9414523")];   // MHHW (ft NAVD88) from lookups/tide_stations.csv
 var SIDE = COAST ? { name: "Coastside Tides", sub: "Pacific coast, San Mateo County", water: "ocean", tide: "Ocean tide" }
   : { name: "Bayside Tides", sub: "San Francisco Bay, San Mateo County", water: "Bay", tide: "Bay tide" };
@@ -1011,9 +1013,9 @@ function afdFresh() { return AFD.lines && AFD.issued && Date.now() - new Date(AF
 $("cards").innerHTML = S.map(function (s, i) {
   return '<div class="card tcard" id="st' + i + '">' +
     '<div class="th"><span class="tgauge"><span class="tn">' + esc(s.st.name) + '</span>' +
-    '<span class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html" aria-label="Bayside Tides, Redwood City"' + (COAST || ALA ? "" : ' aria-current="page"') + '>Redwood City</a>' +
-    '<a href="Tides.html?side=ala" aria-label="Bayside Tides, Alameda"' + (ALA ? ' aria-current="page"' : "") + ">Alameda</a>" +
-    '<a href="Tides.html?side=coast" aria-label="Coastside Tides"' + (COAST ? ' aria-current="page"' : "") + ">Coast</a></span></span>" +
+    '<span class="side" role="navigation" aria-label="Tide pages"><a href="Tides.html' + (STAFF ? "?preview=1" : "") + '" aria-label="Bayside Tides, Redwood City"' + (COAST || ALA ? "" : ' aria-current="page"') + '>Redwood City</a>' +
+    (STAFF ? '<a href="Tides.html?side=ala&amp;preview=1" aria-label="Bayside Tides, Alameda (staff)"' + (ALA ? ' aria-current="page"' : "") + ">Alameda</a>" : "") +
+    '<a href="Tides.html?side=coast' + (STAFF ? "&amp;preview=1" : "") + '" aria-label="Coastside Tides"' + (COAST ? ' aria-current="page"' : "") + ">Coast</a></span></span>" +
     '<span class="lbl">NOAA ' + noaaA(s.st.id) + " · ft NAVD88</span></div>" +
     '<div class="head unknown"><div class="hm">Loading tides…</div></div>' +
     '<div class="nextk" role="button" tabindex="0"></div>' +
@@ -1146,7 +1148,9 @@ function render() {
     }
     q(".days").innerHTML = h;
     var en = q(".estn"), o0 = TSN && TSN.station === st.id ? TSN.offset() : null;
-    en.innerHTML = ofDays && o0 ? "≈ = estimate: the tide table plus how high the " + esc(SIDE.water) + ' has been running. <a href="#explain" class="towords">What the words mean ›</a>' : "";
+    // * and ≈ (staff 2026-11-21): after NOAA's 2-day projection the day is an estimate; "Flood level*" when it is well above the
+    // flood level within a week (LK.estLikely), "Possible flood level*" when only just over or later
+    en.innerHTML = ofDays && o0 ? "* and ≈ = estimate. NOAA's projection covers about 2 days; after that it's the tide table plus how high the " + esc(SIDE.water) + " has been running lately (" + o0.ft.toFixed(1) + ' ft), assuming it stays that high. <a href="#explain" class="towords">What the words mean ›</a>' : "";
     q(".days").classList.toggle("short", short);
 
     // Next King Tide beyond this week (the King Tide card above covers this week): one line under the headline
