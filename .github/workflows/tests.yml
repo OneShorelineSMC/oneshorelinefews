@@ -85,6 +85,8 @@ jobs:
         run: python scripts/test_rrfs.py
       - name: RRFS forecast vs the rain gauges (Storm Tracker review)
         run: python scripts/test_rrfs_review.py
+      - name: Bayside rain compared storm by storm (Storm Tracker)
+        run: python scripts/test_bayside_compare.py
       - name: Review of the rain and rising-fast alerts (status_log.csv public column)
         run: python scripts/test_alert_review.py
       - name: Home page severity scale, section order and colors
