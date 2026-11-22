@@ -186,7 +186,9 @@
     <p class="note" id="bayWind"></p>
     <details style="margin-top:8px" open><summary style="cursor:pointer">Each storm, newest first</summary>
       <div class="tablewrap" tabindex="0" role="region" aria-label="Bayside rain by storm (scrolls sideways)"><table id="bayList"></table></div></details>
-    <p class="note">A gauge that went quiet reads as dry; the season summary above lists each gauge's reporting. Rules: <code>scripts/bayside_compare.py</code>.</p>
+    <p class="note">These totals count only the rain inside these Bayside storms, from the start of the hourly record. The season totals
+      elsewhere on this page count every day since the Storm Tracker began (Oct 29), including rain before the hourly record
+      and stray tips outside a storm, so they run higher. A gauge that went quiet reads as dry; the season summary above lists each gauge's reporting. Rules: <code>scripts/bayside_compare.py</code>.</p>
     </details>
   </div>
 
@@ -964,7 +966,10 @@ function renderBay(B) {
     (S.focus_median_ratio != null ? ", with typically " + S.focus_median_ratio.toFixed(1) + "× the others' average" : "") +
     (S.vs_sfo && S.vs_sfo.all && S.vs_sfo.all.storms ? ", and " + S.vs_sfo.all.median.toFixed(2) + "× SFO airport's" : "") + ". Too few storms to call it a pattern yet; tap for each storm.";
   var lv = function (r) { return r.level == null ? "" : r.level ? " · " + WORD[Math.min(3, r.level)] + " (" + (r.minutes / 60) + " hr)" : ""; };
-  $("baySeason").innerHTML = "<tr><th>Gauge</th><th class='n'>Rain in these storms (in)</th><th class='n'>Storms it was the wettest</th></tr>" +
+  // these are the Bayside storms only, since the hourly record began; the Season totals card above counts every day since
+  // the Storm Tracker began, storms or not, so its totals run higher (staff 2026-11-21)
+  var since = B.since ? day(B.since.slice(0, 10)) : "";
+  $("baySeason").innerHTML = "<tr><th>Gauge</th><th class='n'>Rain in these Bayside storms" + (since ? " since " + esc(since) : "") + " (in)</th><th class='n'>Storms it was the wettest</th></tr>" +
     gs.map(function (g) { var x = (S.gauges || {})[g.key] || {}; return "<tr" + (g.key === fk ? " style='font-weight:700'" : "") + "><td>" + esc(g.name + " · " + g.label) + "</td><td class='n'>" +
       (x.total != null ? x.total.toFixed(2) : "–") + (function () { var n = (B.storms || []).filter(function (e) { return e.gauges.some(function (r) { return r.key === g.key && r.missing; }); }).length;
         return n ? "<span class='sm' style='display:block'>" + n + " storm" + (n === 1 ? "" : "s") + " with no record left out</span>" : ""; })() + "</td><td class='n'>" + (g.creek ? (x.wettest || 0) : "<span class='sm' style='display:inline'>not counted</span>") + "</td></tr>"; }).join("");
