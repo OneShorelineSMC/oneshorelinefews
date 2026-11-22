@@ -101,6 +101,11 @@
   .mini .nar div + div { margin-top: 2px; }
   .mini .nar .hit { color: #b34700; }
   .mini .nar .m { color: var(--muted); }
+  .mini .nar table.ht { border-collapse: collapse; margin-top: 3px; font-size: 12px; width: 100%; }
+  .mini .nar table.ht th { text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); padding: 2px 8px 2px 0; }
+  .mini .nar table.ht td { padding: 2px 8px 2px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .mini .nar table.ht .n { text-align: right; white-space: nowrap; }
+  .mini .nar table.ht tr.at td { color: #b0281a; font-weight: 600; }
   .mini.hot { border-color: #ef9f27; box-shadow: inset 3px 0 0 #ef9f27; }
   .mini { scroll-margin-top: 70px; }
   .mini.pick { outline: 3px solid #0A5587; outline-offset: 2px; }
@@ -500,7 +505,16 @@ function story(e, heavy, highs, both, T, wet, P, now, x1, avg, sm) {
   out.push(heavy.length ? "<b>Heavy or more:</b> " + heavy.map(function (h) { return esc(span(Math.max(h.a, now), h.b)) + " (" + lv(h) + ")"; }).join("; ") + "."
     : "No Heavy rain forecast" + (wet && wet.v >= 0.005 ? "; wettest " + (P === "15" ? "15 min" : "hour") + " " + inch(wet.v) + " in, " + esc(dayW(wet.t) + " " + clk(wet.t)) : "") + ".");
   var rl = rainLine(e, avg, sm, P); if (rl) out.push(rl);
-  if (T && T.ok) out.push(highs.length ? "<b>High tides above average high tide (MHHW " + T.mhhw.toFixed(2) + " ft):</b> " + highs.map(function (w) { return esc(span(w.a, w.b)) + ", peak " + esc(tw(w)); }).join("; ") + "."
+  /* High tides above MHHW as a small table (staff, 2026-11-22): when, peak, how it compares with the tide of concern,
+     and any Heavy rain during it. */
+  if (T && T.ok) out.push(highs.length ? "<b>High tides above average high tide (MHHW " + T.mhhw.toFixed(2) + " ft):</b>" +
+    "<table class='ht'><tr><th>Above average</th><th class='n'>Peak</th>" + (T.red != null ? "<th class='n'>vs " + T.red.toFixed(1) + " ft " + T.redName + "</th>" : "") + "<th>Heavy rain</th></tr>" +
+    highs.map(function (w) {
+      var hr = both.filter(function (x) { return x.w === w; }), at = T.red != null && w.v >= T.red;
+      return "<tr" + (at ? " class='at'" : "") + "><td>" + esc(span(w.a, w.b)) + "</td><td class='n'>" + w.v.toFixed(1) + " ft, " + esc(clk(w.peak)) + "</td>" +
+        (T.red != null ? "<td class='n'>" + (at ? "at or above" : (T.red - w.v).toFixed(1) + " ft below") + "</td>" : "") +
+        "<td>" + (hr.length ? esc(hr.map(function (x) { return span(x.a, x.b).replace(/^\w+ /, ""); }).join(", ")) : "–") + "</td></tr>";
+    }).join("") + "</table>"
     : "No high tide above average high tide (MHHW " + T.mhhw.toFixed(2) + " ft) in this period.");
   return out.map(function (x) { return "<div>" + x + "</div>"; }).join("");
 }
