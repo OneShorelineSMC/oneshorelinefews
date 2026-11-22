@@ -571,7 +571,7 @@
       <h3>About this screen</h3>
       <p><b>Bayside Tides:</b> NOAA's Redwood City gauge. Cards show each day's highest tide (NOAA projection for about 2 days, then the
         tide table); blue = above MHHW, the average daily high (higher than usual), red = the provisional flood level. The line under the
-        The National Weather Service row names a tide expected to reach the flood level.
+        National Weather Service row names a tide expected to reach the flood level.
         <span data-text="tide_bay_sf_note"></span> <span data-text="tide_bay_stretch_note"></span></p>
       <p><b>Coastside Tides:</b> the same for the ocean at NOAA's Monterey gauge, the nearest with live readings on the open coast south of
         San Francisco. No coastside flood level yet. Waves are not included and can push water much farther up a beach.</p>
@@ -624,11 +624,11 @@
   </div>
 </div>
 
-<script src="lookups.js?v=20261121c"></script>
-<script src="tide_season.js?v=20261121c"></script>
-<script src="creek_status.js?v=20261121c"></script>
-<script src="severity.js?v=20261121c"></script>
-<script src="hero.js?v=20261121c"></script>
+<script src="lookups.js?v=20261121d"></script>
+<script src="tide_season.js?v=20261121d"></script>
+<script src="creek_status.js?v=20261121d"></script>
+<script src="severity.js?v=20261121d"></script>
+<script src="hero.js?v=20261121d"></script>
 <script>
 /* ===================== CONFIG ===================== */
 // Settings marked (lookups), MHHW and the wording come from the lookups/ folder through lookups.js; edit those
@@ -979,7 +979,7 @@ function renderTides() {
   // (staff, 2026-10-26: the same state and words as the web pages' tide cards, hero.js tideState)
   var hd = $t("thead"), hm = $t("thm");
   if (!s.pred) {
-    hd.className = "sv-card sv-offline"; hm.textContent = s.predFailed ? "Can't reach NOAA tide data — retrying" : "Loading tides…";
+    hd.className = "sv-card sv-offline"; hm.textContent = s.predFailed ? "Can't reach NOAA tide data. Retrying." : "Loading tides…";
   } else {
     var ts = HERO.tideState({ D: { pred: s.pred, obs: s.obs, ofs: modelOK(s, now) ? s.ofs : null }, mhhw: st.mhhw, red: redFor(st),
       water: st.id === "9414523" ? "Bay" : "ocean", nws: A.list || [], now: now });
@@ -1794,7 +1794,7 @@ function selectedCreek() {
 function renderCreek() {
   var now = nowLocal(), el = function (id) { return document.getElementById(id); };
   if (!C.data || !creeks().length) {
-    el("cleft").innerHTML = '<div class="cbox"><div class="csub">' + (C.failed ? "Creek data unavailable — retrying" : "Loading…") + "</div></div>";
+    el("cleft").innerHTML = '<div class="cbox"><div class="csub">' + (C.failed ? "Creek data unavailable. Retrying." : "Loading…") + "</div></div>";
     return;
   }
   var states = creeks().map(function (c) { return creekState(c, now); });
@@ -2811,7 +2811,7 @@ function renderMap() {
   if (!M.map) return;
   var side = document.getElementById("mside");
   if (!M.data) {
-    side.innerHTML = '<div class="mh">OneRain sites</div><div class="msub">' + (M.failed ? "⚠ Site data unavailable — check network" : "Loading…") + "</div>";
+    side.innerHTML = '<div class="mh">OneRain sites</div><div class="msub">' + (M.failed ? "⚠ Site data unavailable. Check the network." : "Loading…") + "</div>";
     return;
   }
   var now = nowLocal();
