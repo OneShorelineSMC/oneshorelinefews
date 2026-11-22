@@ -98,6 +98,10 @@
   @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } }
   nav a.on { color: var(--ink); font-weight: bold; }
   @media print { nav { display: none; } body { padding-bottom: 0; } }
+  summary.rollup { cursor: pointer; list-style: none; }
+  summary.rollup::-webkit-details-marker { display: none; }
+  summary.rollup h2::before { content: "\25B8"; display: inline-block; width: 1.1em; color: var(--muted); transition: transform .15s; }
+  details[open] > summary.rollup h2::before { transform: rotate(90deg); }
 </style>
 <link rel="stylesheet" href="nav.css?v=20261108b">
 </head>
@@ -153,15 +157,20 @@
   </div>
 
   <div class="card" id="alertCard" hidden>
-    <h2>Rain and rising-fast alerts: were they on point? <span class="sm" style="display:inline;font-weight:400" id="alertSince"></span></h2>
-    <p class="note" style="margin-top:0">Until Nov 20 the staff view also raised a creek's status for heavy rain (NOAA Atlas 14 ratings) and for a creek rising fast.
+    <details id="alertDet">
+    <summary class="rollup"><h2 style="display:inline">Rain and rising-fast alerts: were they on point? <span class="sm" style="display:inline;font-weight:400" id="alertSince"></span></h2>
+      <span class="note" style="display:block;margin-top:4px">OneShoreline staff are evaluating additional warning metrics to improve lead time. This tracks how well those
+      potential metrics would have worked. Tap to see the results.</span></summary>
+    <p class="note">Until Nov 20 the staff view also raised a creek's status for heavy rain (NOAA Atlas 14 ratings) and for a creek rising fast.
       Since then staff and public pages show the same status, from flood levels and rain triggers. The data job still works out those rain and rising-fast
-      alerts in the background. Below, each one is checked against the creek's flood levels: <b>followed</b> = the creek reached that status by its flood
-      levels within <span id="alertHrs">3</span> hours (lead = how much earlier the alert came); <b>not followed</b> = it didn't.</p>
+      alerts in the background, as candidate early warnings: none of them changes a status. Below, each one is checked against the creek's flood levels:
+      <b>followed</b> = the creek reached that status by its flood levels within <span id="alertHrs">3</span> hours (lead = how much earlier the alert came);
+      <b>not followed</b> = it didn't.</p>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Alert review by creek (scrolls sideways)"><table id="alertTable"></table></div>
     <details style="margin-top:8px"><summary style="cursor:pointer">Every alert, newest first</summary>
       <div class="tablewrap" tabindex="0" role="region" aria-label="Alerts (scrolls sideways)"><table id="alertList"></table></div></details>
     <p class="note" id="alertNote"></p>
+    </details>
   </div>
 
   <div class="card" id="fcCard" hidden>
