@@ -180,8 +180,10 @@
     <p class="note">A Bayside storm runs from the first wet hour at any of these gauges until <span id="bayDry">6</span> dry hours at all of them, and counts with at least
       0.10 in at one. Every gauge is read over the same hours, so the totals compare directly. Ratings are NOAA Atlas 14 at each gauge for the wettest 1 or 6 hours
       (Heavy, Very heavy, Intense); SFO airport (NWS) is an independent gauge about 1.5 miles from First Avenue, so it shows whether San Bruno's gauge reads
-      high, and isn't rated. <b>vs others</b> = San Bruno's total against the other creek gauges' average (1.5 = 50% more). Compared going forward, from the start of the hourly record.</p>
+      high, and isn't rated; its hourly rain is scaled each day to the official total in the NWS Daily Climate Report, because the hourly
+      observations miss some hours. Wind at SFO is averaged over the storm's wet hours, weighted by the rain. <b>vs others</b> = San Bruno's total against the other creek gauges' average (1.5 = 50% more). Compared going forward, from the start of the hourly record.</p>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Bayside rain by gauge, this season (scrolls sideways)"><table id="baySeason"></table></div>
+    <p class="note" id="bayWind"></p>
     <details style="margin-top:8px" open><summary style="cursor:pointer">Each storm, newest first</summary>
       <div class="tablewrap" tabindex="0" role="region" aria-label="Bayside rain by storm (scrolls sideways)"><table id="bayList"></table></div></details>
     <p class="note">A gauge that went quiet reads as dry; the season summary above lists each gauge's reporting. Rules: <code>scripts/bayside_compare.py</code>.</p>
@@ -959,24 +961,32 @@ function renderBay(B) {
   $("bayDry").textContent = (B.rules && B.rules.dry_hours) || 6;
   var S = B.season || {}, gs = B.gauges || [], fk = (gs.filter(function (g) { return g.creek === B.focus; })[0] || {}).key;
   if (S.storms) $("bayLine").textContent = "San Bruno was the wettest Bayside creek gauge in " + S.focus_wettest + " of " + S.storms + " storm" + (S.storms === 1 ? "" : "s") +
-    (S.focus_median_ratio != null ? ", with typically " + S.focus_median_ratio.toFixed(1) + "× the others' average" : "") + ". Too few storms to call it a pattern yet; tap for each storm.";
+    (S.focus_median_ratio != null ? ", with typically " + S.focus_median_ratio.toFixed(1) + "× the others' average" : "") +
+    (S.vs_sfo && S.vs_sfo.all && S.vs_sfo.all.storms ? ", and " + S.vs_sfo.all.median.toFixed(2) + "× SFO airport's" : "") + ". Too few storms to call it a pattern yet; tap for each storm.";
   var lv = function (r) { return r.level == null ? "" : r.level ? " · " + WORD[Math.min(3, r.level)] + " (" + (r.minutes / 60) + " hr)" : ""; };
   $("baySeason").innerHTML = "<tr><th>Gauge</th><th class='n'>Rain in these storms (in)</th><th class='n'>Storms it was the wettest</th></tr>" +
     gs.map(function (g) { var x = (S.gauges || {})[g.key] || {}; return "<tr" + (g.key === fk ? " style='font-weight:700'" : "") + "><td>" + esc(g.name + " · " + g.label) + "</td><td class='n'>" +
       (x.total != null ? x.total.toFixed(2) : "–") + (function () { var n = (B.storms || []).filter(function (e) { return e.gauges.some(function (r) { return r.key === g.key && r.missing; }); }).length;
         return n ? "<span class='sm' style='display:block'>" + n + " storm" + (n === 1 ? "" : "s") + " with no record left out</span>" : ""; })() + "</td><td class='n'>" + (g.creek ? (x.wettest || 0) : "<span class='sm' style='display:inline'>not counted</span>") + "</td></tr>"; }).join("");
   $("bayList").innerHTML = (B.storms || []).length ? "<tr><th>Storm</th><th class='n'>Hours</th>" + gs.map(function (g) { return "<th class='n'>" + esc(g.name) + "</th>"; }).join("") +
-    "<th class='n'>San Bruno rank</th><th class='n'>vs others</th></tr>" +
+    "<th class='n'>San Bruno rank</th><th class='n'>vs others</th><th class='n'>First Ave ÷ SFO</th><th>Wind at SFO</th></tr>" +
     B.storms.map(function (e) {
       var by = {}; e.gauges.forEach(function (r) { by[r.key] = r; });
       var top = Math.max.apply(null, e.gauges.filter(function (r) { return r.creek; }).map(function (r) { return r.total; }));
-      return "<tr><td>" + esc(when(e.start)) + (e.closed ? "" : " <span class='sm' style='display:inline'>(open)</span>") + "</td><td class='n'>" + e.hours + "</td>" +
+      return "<tr><td style='white-space:nowrap'>" + esc(when(e.start).replace(/^\w+, /, "")) + (e.closed ? "" : " <span class='sm' style='display:inline'>(open)</span>") + "</td><td class='n'>" + e.hours + "</td>" +
         gs.map(function (g) { var r = by[g.key]; if (!r) return "<td class='n'>–</td>";
           if (r.missing) return "<td class='n'><span class='sm' style='display:inline'>no record</span></td>";
           return "<td class='n'" + (r.creek && r.total === top && top > 0 ? " style='font-weight:700'" : "") + " title='" + esc("wettest hour " + r.p1.toFixed(2) + " in" + (r.p1_at ? " ending " + r.p1_at.slice(11) : "") + ", wettest 6 hours " + r.p6.toFixed(2) + " in") + "'>" +
             r.total.toFixed(2) + "<span class='sm' style='display:block'>1 hr " + r.p1.toFixed(2) + esc(lv(r)) + "</span></td>"; }).join("") +
-        "<td class='n'>" + (e.rank ? e.rank + " of " + e.of : "–") + "</td><td class='n'>" + (e.ratio != null ? e.ratio.toFixed(2) + "×" : "–") + "</td></tr>"; }).join("")
+        "<td class='n'>" + (e.rank ? e.rank + " of " + e.of : "–") + "</td><td class='n'>" + (e.ratio != null ? e.ratio.toFixed(2) + "×" : "–") + "</td>" +
+        "<td class='n'>" + (e.vs_sfo != null ? e.vs_sfo.toFixed(2) + "×" : "–") + "</td><td style='white-space:nowrap'>" + (e.wind ? esc(e.wind.from + " " + e.wind.deg + "°, " + Math.round(e.wind.mph) + " mph") +
+          (e.wind.gap ? "<span class='sm' style='display:block'>through the gap</span>" : "") : "<span class='sm' style='display:inline'>no record</span>") + "</td></tr>"; }).join("")
     : "<tr><td><span class='empty'>No Bayside storms yet.</span></td></tr>";
+  // First Avenue against SFO, by wind: a gauge that reads high does so whatever the wind; rain piling up where storms come
+  // through the San Bruno Gap shows mostly in south-southwest to west flow (staff 2026-11-21)
+  var V = S.vs_sfo || {}, gf = (B.rules && B.rules.gap_from) || [195, 285], f = function (x) { return x && x.storms ? x.median.toFixed(2) + "× (" + x.storms + " storm" + (x.storms === 1 ? "" : "s") + ")" : "no storms yet"; };
+  $("bayWind").innerHTML = "<b>First Avenue ÷ SFO, typical:</b> wind through the gap (from " + gf[0] + "° to " + gf[1] + "°, south-southwest to west): " + esc(f(V.gap)) +
+    " · other winds: " + esc(f(V.other)) + ". The same ratio in every kind of storm points to the gauge; a higher one only through the gap points to the terrain and real rain.";
 }
 function loadBay() {
   fetch(BAY_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
