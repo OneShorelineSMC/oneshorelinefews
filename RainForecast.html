@@ -155,7 +155,8 @@
       <span>Rain, left axis (inches per hour or 15 min):</span>
       <span><i class="sw" style="background:var(--fc);border:1px solid var(--fcline)"></i>watershed average</span>
       <span><i class="sw" style="background:none;border-top:2px dashed var(--fcline);border-radius:0;height:0;width:16px"></i>wettest grid point</span>
-      <span><i class="sw" style="background:var(--amber2);height:7px;border-radius:4px"></i>strip: forecast Heavy or more</span>
+      <span><i class="sw" style="background:#efa23a;border:1px solid #a35a00"></i>Heavy</span>
+      <span><i class="sw" style="background:#d9661f;border:1px solid #a35a00"></i>Very heavy or more</span>
     </div>
     <div class="lg">
       <span>Tide, right axis (ft NAVD88; San Bruno: San Francisco, Alameda and Redwood City blended by distance):</span>
@@ -165,7 +166,7 @@
       <span><i class="sw" style="background:none;border-top:2px dashed #5f6b78;border-radius:0;height:0;width:16px"></i>MHHW (average high tide)</span>
       <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>flood level (Redwood City) or flood-risk tide (San Bruno: a 5-year storm or smaller can flood the creek; provisional)</span>
       <span><i class="sw" style="background:#0A5587;border-radius:50%;width:7px;height:7px"></i>high tide above MHHW, with its time</span>
-      <span><i class="sw" style="background:#b0281a;height:7px;border-radius:4px"></i>strip: Heavy rain or more while the tide is above MHHW</span>
+      <span><i class="sw" style="background:#b0281a;border:1px solid #7d1a10"></i>rain bar: Heavy or more while the tide is above MHHW</span>
     </div>
     <div class="grid2" id="minis"></div>
   </div>
@@ -320,8 +321,7 @@ var bandPlugin = { id: "bands", beforeDatasetsDraw: function (ch) {
   c.restore(); } };
 /* Rain and tide on one graph (staff, 2026-11-21: what matters is WHEN heavy rain lands on a high tide). Rain bars on the
    left axis, kept to the lower half of the plot; the tide on the right axis, kept to the upper part, so the two never
-   cross. Between them a timing strip: amber where Heavy or more is forecast, red where that falls while the tide is above
-   MHHW (the coincidence).
+   cross. Bars amber in Heavy hours, dark red where Heavy falls on a tide above MHHW (barCol).
    Time labels every 6 hours (every 3 on the 18-hour view): "6a", "noon", "6p", the day at midnight. */
 var RAIN_SHARE = 0.48, TIDE_SHARE = 0.42;   // rain uses the lower 48% of the plot, the tide the upper 42%
 function hourOf(v) { return Number(new Date(v).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hour12: false })) % 24; }
@@ -351,30 +351,21 @@ function span(a, b) {
   var sameAP = clk(a).slice(-2) === clk(b).slice(-2);
   return dayW(a) + " " + clk(a, !sameAP) + "–" + clk(b);
 }
+/* Rain bars colored by the forecast (staff, 2026-11-22: shading and outlines read as extra rain bars): purple, amber in
+   the hours of a Heavy window, deep orange in Very heavy or more, dark red where Heavy or more falls while the tide is
+   above MHHW. ctx.raw = {x: step middle, y}. */
+function barCol(heavy, both, edge) {
+  return function (ctx) {
+    var x = ctx.raw && ctx.raw.x, inW = function (b) { return x >= b.a && x < b.b; };
+    var hit = both.some(inW), h = null; heavy.forEach(function (b) { if (inW(b) && (!h || b.level > h.level)) h = b; });
+    if (hit) return edge ? "#7d1a10" : "#b0281a";
+    if (h) return edge ? "#a35a00" : (h.level >= 2 ? "#d9661f" : "#efa23a");
+    return edge ? css("--fcline") : css("--fc");
+  };
+}
 var bandPlugin = { id: "bands", afterDatasetsDraw: function (ch) {
   var o = ch.options.plugins.bands; if (!o) return;
   var xs = ch.scales.x, ys = ch.scales.y, c = ch.ctx; c.save();
-  /* Timing strip (staff, 2026-11-22: full-height shading and the orange box read as rain bars). A thin horizontal strip in
-     the empty band between the tide (upper part) and the rain (lower part): amber where Heavy rain or more is forecast,
-     red where it falls while the tide is above MHHW, labeled. Horizontal, so it can't be mistaken for a rain bar. */
-  var h = ys.bottom - ys.top, sh = 7;   // with a tide: the gap between tide and rain; without: along the top edge
-  var sy = ch.scales.y2 ? ys.top + h * (1 - RAIN_SHARE - (1 - RAIN_SHARE - TIDE_SHARE) / 2) - sh / 2 : ys.top + 2;
-  function strip(list, col) {
-    (list || []).forEach(function (b) { var a = Math.max(xs.left, xs.getPixelForValue(b.a)), z = Math.min(xs.right, xs.getPixelForValue(b.b));
-      if (z > a) { var w = Math.max(6, z - a); c.fillStyle = typeof col === "function" ? col(b) : col; c.beginPath();
-        if (c.roundRect) c.roundRect(a, sy, w, sh, 3.5); else c.rect(a, sy, w, sh); c.fill(); } });
-  }
-  strip(o.heavy, function (b) { return b.level >= 2 ? css("--amber2") : css("--amber"); });
-  strip(o.both, "#b0281a");
-  (o.both || []).slice(0, 1).forEach(function (b) {
-    var a = Math.max(xs.left, xs.getPixelForValue(b.a)), z = Math.min(xs.right, xs.getPixelForValue(b.b));
-    if (z <= a) return;
-    c.font = "600 10.5px system-ui, -apple-system, Segoe UI, Roboto, sans-serif"; c.fillStyle = "#b0281a"; c.textBaseline = "bottom";
-    var tx = "heavy rain on a high tide", wd = c.measureText(tx).width, x = (a + z) / 2;
-    c.textAlign = x + wd / 2 > xs.right ? "right" : x - wd / 2 < xs.left ? "left" : "center";
-    c.fillText(tx, c.textAlign === "right" ? z : c.textAlign === "left" ? a : x, sy - 2);
-  });
-  c.textBaseline = "alphabetic";
   // high tides above MHHW: a dot at each peak with its time
   var lastX = -1e9;
   (o.peaks || []).forEach(function (w) {
@@ -424,11 +415,13 @@ function miniSet(boxId, C, P, top) {
     var heavy = (e.heavy || []).map(function (h) { return { a: Date.parse(h.start), b: Date.parse(h.end), level: h.level }; }).filter(function (h) { return h.b > now && h.a < x1; });
     $("m_" + id).classList.toggle("hot", heavy.length > 0);
     var tot = 0; avg.forEach(function (p) { tot += p.y; });
-    $("t_" + id).textContent = inch(tot) + " in";
+    var hrs = Math.round((x1 - now) / 3600000);
+    $("t_" + id).textContent = inch(tot) + " in, next " + hrs + " hr";
+    $("t_" + id).title = "Forecast rain over the period shown (the next " + hrs + " hours), averaged over the watershed";
     // the tide (bayside creeks): lines on the right axis, the hours above MHHW and where Heavy rain falls in them
     var T = hasT(id) ? tideSets(id, x0, x1) : null, highs = T ? T.highs : [], both = [];
     heavy.forEach(function (h) { highs.forEach(function (w) { var a = Math.max(h.a, w.a), b = Math.min(h.b, w.b); if (b > a) both.push({ a: a, b: b, h: h, w: w }); }); });
-    $("n_" + id).innerHTML = story(e, heavy, highs, both, T, wet, P, now, x1);
+    $("n_" + id).innerHTML = story(e, heavy, highs, both, T, wet, P, now, x1, avg, sm);
     $("c_" + id).setAttribute("aria-label", (ws ? wsLabel(e) : e.name) + ": forecast " + inch(tot) + " in over the period shown" + (T && T.ok ? ", with the tide" : ""));
     var rainAt = function (x) { var b = null; avg.forEach(function (p) { if (Math.abs(p.x - x) <= sm / 2) b = p; }); return b; };
     var tideAt = function (x) { if (!T || !T.ok) return null; var b = null; T.best.forEach(function (p) { if (!b || Math.abs(p.x - x) < Math.abs(b.x - x)) b = p; }); return b && Math.abs(b.x - x) <= 9e5 ? b : null; };
@@ -446,7 +439,7 @@ function miniSet(boxId, C, P, top) {
           afterBuildTicks: function (ax) { ax.ticks = [0, yTop / 2, yTop].map(function (v) { return { value: v }; }); },
           ticks: { color: "#6b4fa8", font: { size: 10.5 }, callback: function (v) { return (v ? String(+v.toFixed(3)).replace(/^0\./, ".") : "0") + '"'; } } } } };
     var data = { datasets: [
-      { type: "bar", yAxisID: "y", data: avg, backgroundColor: css("--fc"), borderColor: css("--fcline"), borderWidth: 1, barPercentage: 0.9, categoryPercentage: 1, grouped: false, order: 3 },
+      { type: "bar", yAxisID: "y", data: avg, backgroundColor: barCol(heavy, both, false), borderColor: barCol(heavy, both, true), borderWidth: 1, barPercentage: 0.9, categoryPercentage: 1, grouped: false, order: 3 },
       { type: "line", yAxisID: "y", data: mx, borderColor: css("--fcline"), borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0, order: 2 }] };
     if (T && T.ok) {
       var tr = T.hi - T.lo, tmax = T.hi + tr * 0.14;   // headroom for the high-tide times
@@ -460,7 +453,31 @@ function miniSet(boxId, C, P, top) {
   });
 }
 // The few lines under each graph: when Heavy rain meets a high tide, then the Heavy stretches, then the high tides
-function story(e, heavy, highs, both, T, wet, P, now, x1) {
+/* How much and for how long (staff, 2026-11-22): the most rain in 15 min (15-minute view), 1, 3 and 6 hours, each with
+   its time, from the watershed average; the total and when the rain falls; the forecast storm size when it reaches a
+   1-year storm. avg = [{x: step middle, y: in}], sm = step length (ms). */
+function rainLine(e, avg, sm, P) {
+  if (!avg || !avg.length) return "";
+  var stepMin = sm / 60000, parts = [], tot = 0, wet = avg.filter(function (p) { return p.y >= 0.01; });
+  avg.forEach(function (p) { tot += p.y; });
+  if (tot < 0.01) return "Little or no rain forecast.";
+  (P === "15" ? [15, 60, 180, 360] : [60, 180, 360]).forEach(function (m) {
+    var n = Math.round(m / stepMin); if (n < 1 || n > avg.length) return;
+    var best = null;
+    for (var i = 0; i + n <= avg.length; i++) {
+      if (avg[i + n - 1].x - avg[i].x > (n - 0.5) * sm) continue;   // only unbroken runs of steps
+      var sum = 0; for (var k = i; k < i + n; k++) sum += avg[k].y;
+      if (!best || sum > best.v) best = { v: sum, a: avg[i].x - sm / 2, b: avg[i + n - 1].x + sm / 2 };
+    }
+    if (best && best.v >= 0.01 && (!parts.length || best.v > parts[parts.length - 1].v + 0.005))
+      parts.push({ v: best.v, txt: inch(best.v) + " in in " + win(m) + " (" + esc(span(best.a, best.b)) + ")" });
+  });
+  var out = "<b>Most intense:</b> " + parts.map(function (x) { return x.txt; }).join("; ") + ". ";
+  out += "<b>Total</b> " + inch(tot) + " in" + (wet.length ? ", falling " + esc(span(wet[0].x - sm / 2, wet[wet.length - 1].x + sm / 2)) : "") + ".";
+  if (e.size && e.size.years) out += " About a " + (e.size.years >= 2 ? Math.round(e.size.years) : e.size.years) + "-year storm over " + win(e.size.minutes) + ".";
+  return out;
+}
+function story(e, heavy, highs, both, T, wet, P, now, x1, avg, sm) {
   var out = [], lv = function (h) { return HW[Math.min(3, h.level)] || "Heavy"; }, sbF = T && T.flood;
   var tw = function (w) { return w.v.toFixed(1) + " ft at " + clk(w.peak) + (sbF != null && w.v >= sbF ? ", a flood-risk tide" : ""); };
   if (T) {
@@ -471,6 +488,7 @@ function story(e, heavy, highs, both, T, wet, P, now, x1) {
   }
   out.push(heavy.length ? "<b>Heavy or more:</b> " + heavy.map(function (h) { return esc(span(Math.max(h.a, now), h.b)) + " (" + lv(h) + ")"; }).join("; ") + "."
     : "No Heavy rain forecast" + (wet && wet.v >= 0.005 ? "; wettest " + (P === "15" ? "15 min" : "hour") + " " + inch(wet.v) + " in, " + esc(dayW(wet.t) + " " + clk(wet.t)) : "") + ".");
+  var rl = rainLine(e, avg, sm, P); if (rl) out.push(rl);
   if (T && T.ok) out.push(highs.length ? "<b>High tides above average high tide (MHHW " + T.mhhw.toFixed(2) + " ft):</b> " + highs.map(function (w) { return esc(span(w.a, w.b)) + ", peak " + esc(tw(w)); }).join("; ") + "."
     : "No high tide above average high tide (MHHW " + T.mhhw.toFixed(2) + " ft) in this period.");
   return out.map(function (x) { return "<div>" + x + "</div>"; }).join("");
