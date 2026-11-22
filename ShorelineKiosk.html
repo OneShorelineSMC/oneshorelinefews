@@ -2557,12 +2557,17 @@ var olBands = {
       if (!d.olLabel) return; var s = ch.scales[d.yAxisID || "y"]; if (!s) return;
       var y = s.getPixelForValue(d.data[0].y), w = ctx.measureText(d.olLabel).width + 6;
       if (y < s.top || y > s.bottom) return;
-      var y0 = y, clash = function (yy) { return used.some(function (u) { return Math.abs(u - yy) < 14; }); };
-      for (var k = 0; k < 6 && clash(y); k++) y -= 14;   // two lines close together: the label moves up
-      if (y - 7 < a.top) { y = Math.max(y0, a.top + 7); for (k = 0; k < 6 && clash(y); k++) y += 14; }   // no room above: inside the plot, below
-      used.push(y);
-      ctx.globalAlpha = 0.9; ctx.fillStyle = cssVar("--panel"); ctx.fillRect(a.right - w - 2, y - 7, w, 14); ctx.globalAlpha = 1;
-      ctx.fillStyle = d.borderColor; ctx.fillText(d.olLabel, a.right - 5, y);
+      // the label sits just above its line (below it at the top of the plot), at the right end; if it would overlap a
+      // label already drawn, it moves left of that one, so neither covers the other's line (staff 2026-11-21)
+      y = y - 9 < a.top + 7 ? y + 9 : y - 9;
+      var xr = a.right - 3, hit = true;
+      for (var k = 0; k < 4 && hit; k++) {
+        hit = false;
+        used.forEach(function (u) { if (Math.abs(u.y - y) < 14 && xr - w < u.x1 && xr > u.x0) { xr = u.x0 - 10; hit = true; } });
+      }
+      used.push({ y: y, x0: xr - w, x1: xr });
+      ctx.globalAlpha = 0.9; ctx.fillStyle = cssVar("--panel"); ctx.fillRect(xr - w, y - 7, w, 14); ctx.globalAlpha = 1;
+      ctx.fillStyle = d.borderColor; ctx.fillText(d.olLabel, xr - 3, y);
     });
     ctx.restore();
   }
