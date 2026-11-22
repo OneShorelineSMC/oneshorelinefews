@@ -101,6 +101,10 @@
   .mini .nar div + div { margin-top: 2px; }
   .mini .nar .hit { color: #b34700; }
   .mini .nar .m { color: var(--muted); }
+  .mini details.sbn { margin-top: 6px; font-size: 12.5px; line-height: 1.4; border-left: 3px solid #efa23a; padding: 2px 0 2px 8px; }
+  .mini details.sbn summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  .mini details.sbn p { margin: 4px 0 0; }
+  .mini .key { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11px; color: var(--muted); margin-top: 2px; }
   .mini .nar table.ht { border-collapse: collapse; margin-top: 3px; font-size: 12px; width: 100%; }
   .mini .nar table.ht th { text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); padding: 2px 8px 2px 0; }
   .mini .nar table.ht td { padding: 2px 8px 2px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
@@ -371,6 +375,33 @@ function barCol(heavy, both, edge) {
 var bandPlugin = { id: "bands", afterDatasetsDraw: function (ch) {
   var o = ch.options.plugins.bands; if (!o) return;
   var xs = ch.scales.x, ys = ch.scales.y, c = ch.ctx; c.save();
+  /* On-graph labels (staff, 2026-11-22: the EOC looks at one graph, not the legend at the top). Each tide threshold line
+     gets its name and height, red above its line, average high tide below its own, placed where the tide curve and the
+     peak times are least in the way; and the rain part gets a caption. White halo so a crossing line can't hide them. */
+  c.font = "600 10.5px system-ui, -apple-system, Segoe UI, Roboto, sans-serif"; c.lineJoin = "round";
+  var y2s = ch.scales.y2, pts = [];
+  if (y2s) ch.data.datasets.forEach(function (d) { if (d.yAxisID === "y2" && d.data.length > 2) d.data.forEach(function (q) { pts.push([xs.getPixelForValue(q.x), y2s.getPixelForValue(q.y)]); }); });
+  (o.peaks || []).forEach(function (w) { if (y2s) for (var k = -26; k <= 26; k += 4) pts.push([xs.getPixelForValue(w.peak) + k, y2s.getPixelForValue(w.v) - 10]); });
+  (o.refs || []).forEach(function (r) {
+    if (!y2s) return;
+    var ly = y2s.getPixelForValue(r.v), wd = c.measureText(r.txt).width + 6, top = r.up ? ly - 14 : ly + 2, best = null;
+    if (ly < ys.top - 2 || ly > ys.bottom) return;
+    for (var f = 0; f <= 1.0001; f += 0.05) {
+      var x = xs.left + 4 + f * (xs.right - xs.left - wd - 8), hit = 0;
+      pts.forEach(function (q) { if (q[0] >= x - 2 && q[0] <= x + wd + 2 && q[1] >= top - 2 && q[1] <= top + 14) hit++; });
+      if (!best || hit < best.hit) best = { x: x, hit: hit };
+    }
+    c.textAlign = "left"; c.textBaseline = "top";
+    c.strokeStyle = "rgba(255,255,255,.92)"; c.lineWidth = 3.5; c.strokeText(r.txt, best.x + 3, top);
+    c.fillStyle = r.col; c.fillText(r.txt, best.x + 3, top);
+  });
+  if (o.rainCap) {
+    var ry = y2s ? ys.top + (ys.bottom - ys.top) * (1 - RAIN_SHARE) + 1 : ys.top + 2;
+    c.font = "600 10.5px system-ui, -apple-system, Segoe UI, Roboto, sans-serif"; c.textAlign = "left"; c.textBaseline = "top";
+    c.strokeStyle = "rgba(255,255,255,.92)"; c.lineWidth = 3.5; c.strokeText(o.rainCap, xs.left + 4, ry);
+    c.fillStyle = "#6b4fa8"; c.fillText(o.rainCap, xs.left + 4, ry);
+  }
+  c.textBaseline = "alphabetic"; c.lineWidth = 1;
   // high tides above MHHW: a dot at each peak with its time
   var lastX = -1e9;
   (o.peaks || []).forEach(function (w) {
@@ -383,6 +414,23 @@ var bandPlugin = { id: "bands", afterDatasetsDraw: function (ch) {
     lastX = x; c.fillStyle = w.flood ? "#c0392b" : "#0A5587"; c.fillText(clk(w.peak), x, y - 6);
   });
   c.restore(); } };
+/* San Bruno's drop-down note (staff, 2026-11-22), in the words of the kiosk's San Bruno About: what the flood-risk tide
+   means, and that the streets can flood other ways. */
+var SB_NOTE = "<details class='sbn'><summary>What the flood-risk tide means for San Bruno Creek</summary>" +
+  "<p>San Bruno Creek has an established tide threshold: <b>8.9 ft NAVD88</b> on its blended tide, the height of last January\u2019s King Tide at San Bruno (provisional). " +
+  "When an intense burst of rain, a storm of about 5-year size or smaller, falls while the Bay is at or above that tide, the high Bay backs water up the creek, which can overtop into the eastern avenues, and it can back up the city\u2019s storm drains along Pine Avenue. " +
+  "That is what a <b style='color:#b0281a'>dark red</b> rain bar marks: Heavy rain or more forecast during such a tide.</p>" +
+  "<p>Flooding can happen without it. Below that tide the creek still rises with heavy rain, and streets can flood from local drainage: storm drains that back up or can\u2019t empty into the Bay at high tide, blocked inlets, or water ponding in low spots. " +
+  "The graph is a guide to timing, not a flood forecast. For warnings, follow the National Weather Service and San Mateo County.</p></details>";
+// A short key under each graph, so it reads on its own (staff, 2026-11-22)
+function miniKey(tide, sb) {
+  var sw = function (st, t) { return "<span><i style='" + st + "'></i>" + t + "</span>"; };
+  var bar = "display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px;";
+  var ln = "display:inline-block;width:16px;height:0;margin-right:4px;vertical-align:3px;";
+  return "<div class='key'>" + sw(bar + "background:var(--fc);border:1px solid var(--fcline)", "rain") + sw(bar + "background:#efa23a;border:1px solid #a35a00", "Heavy rain") +
+    (tide ? sw(bar + "background:#b0281a;border:1px solid #7d1a10", "Heavy rain on a " + (sb ? "flood-risk tide" : "flood-level tide")) +
+      sw(ln + "border-top:2.5px solid #0A5587", "tide, NOAA projection") + sw(ln + "border-top:3px dotted #0A5587", "tide estimate") + sw(ln + "border-top:1.5px solid #9aa6b2", "tide table") : "") + "</div>";
+}
 // The watersheds without a creek gauge that get a graph (graph = yes in lookups/ungauged_watersheds.csv), keyed for element ids
 function wsGraphs() {
   var W = D.watersheds || {}, out = {};
@@ -409,7 +457,7 @@ function miniSet(boxId, C, P, top) {
     ids.forEach(function (k) { if (charts[k]) { charts[k].destroy(); delete charts[k]; } });
     box.innerHTML = ids.map(function (id) { return '<div class="mini" id="m_' + id + '"><h3>' + esc(ws ? wsLabel(C[id]) : C[id].name) + '<span id="t_' + id + '"></span></h3>' +
       (hasT(id) ? '<div class="tt" id="tt_' + id + '"></div>' : "") +
-      '<div class="cb' + (hasT(id) ? " tall" : "") + '"><canvas id="c_' + id + '" role="img"></canvas></div>' +
+      '<div class="cb' + (hasT(id) ? " tall" : "") + '"><canvas id="c_' + id + '" role="img"></canvas></div>' + miniKey(hasT(id), TIDE_OF[id] === "sb") + (TIDE_OF[id] === "sb" ? SB_NOTE : "") +
       '<div class="nar" id="n_' + id + '"></div></div>'; }).join(""); box.dataset.ids = ids.join() + (ws ? "" : Object.keys(TIDE_OF).join()); }
   var grid = css("--line"), muted = css("--muted");
   ids.forEach(function (id) {
@@ -435,7 +483,9 @@ function miniSet(boxId, C, P, top) {
     var tideAt = function (x) { if (!T || !T.ok) return null; var b = null; T.best.forEach(function (p) { if (!b || Math.abs(p.x - x) < Math.abs(b.x - x)) b = p; }); return b && Math.abs(b.x - x) <= 9e5 ? b : null; };
     var opts = { responsive: true, maintainAspectRatio: false, animation: false, parsing: false,
       interaction: { mode: "nearest", axis: "x", intersect: false },
-      plugins: { legend: { display: false }, bands: { heavy: heavy, both: both, peaks: highs }, tooltip: { filter: function (it, i, all) { return all.indexOf(it) === 0; }, callbacks: {
+      plugins: { legend: { display: false }, bands: { heavy: heavy, both: both, peaks: highs, rainCap: "Rain per " + (P === "15" ? "15 min" : "hour"),
+        refs: T && T.ok ? [T.red != null ? { v: T.red, txt: (T.redName === "flood-risk tide" ? "Flood-risk tide " : "Flood level ") + T.red.toFixed(1) + " ft", col: "#c0392b", up: true } : null,
+          { v: T.mhhw, txt: "Average high tide " + T.mhhw.toFixed(1) + " ft", col: "#4a5560", up: false }].filter(Boolean) : [] }, tooltip: { filter: function (it, i, all) { return all.indexOf(it) === 0; }, callbacks: {
         title: function (it) { return when(new Date(it[0].parsed.x).toISOString()); },
         label: function (it) {
           var r = rainAt(it.parsed.x), t = tideAt(it.parsed.x), out = [];
