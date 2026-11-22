@@ -418,7 +418,7 @@ function miniKey(tide, sb, T) {
       sw(ln + "border-top:2.5px solid #0A5587", "tide, NOAA projection") + sw(ln + "border-top:3px dotted #0A5587", "tide estimate") + sw(ln + "border-top:1.5px solid #9aa6b2", "tide table") +
       (T && T.ok && T.red != null ? sw(ln + "border:0;height:2px;background:repeating-linear-gradient(90deg,#c0392b 0 6px,transparent 6px 8px,#c0392b 8px 10px,transparent 10px 12px)", (sb ? "flood-risk tide " : "flood level ") + T.red.toFixed(1) + " ft") : "") +
       (T && T.ok ? sw(ln + "border-top:1.5px dashed #5f6b78", "average high tide " + T.mhhw.toFixed(1) + " ft") : "") +
-      "<span>times = high tides above average</span>" : "");
+      sw("display:inline-block;width:8px;height:8px;border-radius:50%;background:#0A5587;margin-right:4px;vertical-align:0", "peak of a high tide above average, with its time") : "");
 }
 // The watersheds without a creek gauge that get a graph (graph = yes in lookups/ungauged_watersheds.csv), keyed for element ids
 function wsGraphs() {
