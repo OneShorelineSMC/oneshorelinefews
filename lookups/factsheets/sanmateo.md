@@ -32,7 +32,7 @@
 | Drains to | San Francisco Bay |
 | Description | Flow below Crystal Springs Reservoir is controlled by SFPUC releases and spills. |
 | Flood levels set? | Yes |
-| Tide station | NOAA 9414750 Alameda (average daily high tide, MHHW, 6.37 ft NAVD88) |
+| Tide station | NOAA 9414523 Redwood City (average daily high tide, MHHW, 7.02 ft NAVD88) |
 | Rain totals on the 2026 Update page | 15 min, 30 min, 1 hr |
 
 ## Creek level gauges
@@ -122,7 +122,7 @@ No OneRain rain thresholds on: Crystal Springs Cottage.
 | #30 Flood Watch | San Mateo Creek Below Crystal Springs Reservoir | flow volume goes above its 'Flood Watch' threshold (200.00 cfs) | Warning | **On** |
 | #31 Flood Warning | San Mateo Creek Below Crystal Springs Reservoir | flow volume goes above its 'Flood Warning' threshold (250.00 cfs) | Critical | **On** |
 
-**Tide:** the 2026 Update uses NOAA 9414750 Alameda for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 6.37 ft NAVD88). OneRain's tide settings aren't included.
+**Tide:** the 2026 Update uses NOAA 9414523 Redwood City for this creek's tide graph and high-tide lines (average daily high tide, MHHW, 7.02 ft NAVD88). OneRain's tide settings aren't included.
 
 <details><summary>Internal to-do for the project team (reviewers can skip)</summary>
 
