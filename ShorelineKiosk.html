@@ -2648,8 +2648,10 @@ function drawSB(c, now, R, T) {
   var est0 = tf.length ? OL.proj.end : Math.max(now, lastObs);
   var te = X.add ? X.tp.filter(function (p) { return p.t >= est0 && p.t <= t1; }).map(function (p) { var a = X.add(p.t); return { x: H(p.t), y: p.v + (a || 0) }; }) : [];
   var mh = X.B.mhhw, kg = X.B.flood, tys = tp.concat(to, tf, te).map(function (p) { return p.y; }).concat(mh != null ? [mh] : [], kg != null ? [kg] : []);
-  var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 1.7) : 8;   // room above the top line for its label
-  var flat = function (v, col, dash, lab, w) { return { label: lab, data: [{ x: H(t0), y: v }, { x: H(t1), y: v }], borderColor: col, borderWidth: w || 1.5, borderDash: dash, pointRadius: 0, pointHoverRadius: 0, olLabel: lab }; };
+  var tlo = tys.length ? Math.floor(Math.min.apply(null, tys)) : 0, thi = tys.length ? Math.ceil(Math.max.apply(null, tys) + 1) : 8;   // room above the top line for its label
+  // flat reference lines, drawn and labeled the same way as on Live conditions (staff 2026-11-21): refMarks puts each label
+  // on its line where it covers no water level and no other label
+  var flat = function (v, col, dash, lab, w, icon) { return { label: lab, data: [{ x: H(t0), y: v }, { x: H(t1), y: v }], borderColor: col, borderWidth: w || 1.5, borderDash: dash, pointRadius: 0, pointHoverRadius: 0, refLabel: lab, refIcon: icon }; };
   var x = function (show) {
     return { type: "linear", min: -OL_PAST, max: OL_AHEAD, grid: { color: function (cx) { return cx.tick && new Date(now + cx.tick.value * 3600000).getUTCHours() === 0 ? "#b9c4d0" : line; } },
       afterBuildTicks: function (ax) { var o = [], f = Math.ceil(t0 / H6) * H6; for (var t = f; t <= t1; t += H6) o.push({ value: H(t) }); ax.ticks = o; },
@@ -2659,12 +2661,14 @@ function drawSB(c, now, R, T) {
   var y = function (min, max, step, unit) { return { min: min, max: max, afterFit: function (ax) { ax.width = 44; }, grid: { color: line },
     ticks: { stepSize: step, color: muted, font: { size: 11 }, padding: 2, callback: function (v) { return +v.toFixed(2) + (unit ? " " + unit : ""); } } }; };
   var opts = function (bands, show, ymin, ymax, step, unit) {
-    return { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false }, olBands: Object.assign({ now: now, rain: [], tide: [], both: both, nowText: false }, bands) },
+    var o = { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false }, olBands: Object.assign({ now: now, rain: [], tide: [], both: both, nowText: false }, bands) },
       layout: { padding: { right: 4 } }, scales: { x: x(show), y: y(ymin, ymax, step, unit) } };
+    o.plugins.refMarks = { side: "right", bg: cssVar("--panel") };
+    return o;
   };
-  var mk = function (id, cfg) { var cv = document.getElementById(id); if (cv) OL.charts.push(new Chart(cv, Object.assign({ plugins: [olBands] }, cfg))); };
+  var mk = function (id, cfg) { var cv = document.getElementById(id); if (cv) OL.charts.push(new Chart(cv, Object.assign({ plugins: [olBands, refMarks] }, cfg))); };
   // 1. creek level with its flood levels
-  var d1 = ths.map(function (t) { return flat(t.value, lvColor(t.level), LV_DASH[t.level], t.name.replace(/^Flood | Flood Stage$/g, "") + " " + t.value.toFixed(2), t.level >= 3 ? 2.5 : 2); });
+  var d1 = ths.map(function (t) { var lv = Math.min(4, t.level); return flat(t.value, lvColor(lv), LV_DASH[lv], t.name.replace(/^Flood | Flood Stage$/g, "") + " " + t.value.toFixed(2), lv >= 3 ? 2.5 : 2, LV_ICON[lv]); });
   d1.push({ label: "Creek level", data: sp, borderColor: ink, backgroundColor: "rgba(26,58,92,0.12)", fill: "origin", borderWidth: 2.4, pointRadius: 0 });
   mk("olC1", { type: "line", data: { datasets: d1 }, options: opts({ nowText: true }, false, 0, Math.ceil(smax), smax > 6 ? 2 : 1, "ft") });
   // 2. rain per hour, with flood-size rain shaded
@@ -2674,8 +2678,8 @@ function drawSB(c, now, R, T) {
     options: opts({ rain: R.blocks }, false, 0, rtop, rtop / 2, "") });
   // 3. the Bay tide, with high tides shaded
   var d3 = [];
-  if (mh != null) d3.push(flat(mh, tc, [2, 3], "MHHW " + mh.toFixed(2), 1.2));
-  if (kg != null) d3.push(flat(kg, tc, [10, 4], "Flood-risk tide " + kg.toFixed(1) + " ft", 1.2));
+  if (mh != null) d3.push(flat(mh, cssVar("--mhhw"), [5, 4], "MHHW " + mh.toFixed(2) + " ft", 1.5));
+  if (kg != null) d3.push(flat(kg, cssVar("--red"), [10, 3, 2, 3], redText({ id: "sb" }, kg.toFixed(1) + " ft"), 3));
   var tblc = document.documentElement.dataset.theme === "dark" ? "#8f96a3" : "#8a919c";
   d3.push({ label: "Tide table", data: tp, borderColor: tblc, borderWidth: 1.2, pointRadius: 0 });
   d3.push({ label: "Measured", data: to, borderColor: tc, borderWidth: 2.4, pointRadius: 0 });
