@@ -272,10 +272,13 @@ standing for the winter (a staff override could be added), and showing a Bay run
 - **Caution:** October 2026 was already above the highest monthly departure on record at San Francisco (+0.95 ft above trend, March 1983), so all three paths extrapolate. A peer's tracker using the same approach found November 2026 running at its high scenario. The Tides page says which path the Bay is following now (the whole-day offset against each path's level for today).
 - Data mirrors used for the back-test: NOAA monthly means at 9414290 and CPC's ONI; the data job reads both from NOAA directly.
 
-**"Flood level likely" vs "Possible flood level" (Nov 21, 2026; provisional).** After the NOAA projection, a day whose
-estimate reaches the flood level says **Flood level likely** (orange fill, dashed edge) when the estimate is
+**"Flood level\*" vs "Possible flood level\*" (Nov 21, 2026; provisional).** After the NOAA projection, a day whose
+estimate reaches the flood level says **Flood level\*** (orange fill, dashed edge; \* = estimate, explained under the
+days) when the estimate is
 `TIDE_LIKELY_MARGIN_FT` (0.6 ft) or more above it and the day is within `TIDE_LIKELY_DAYS` (7); otherwise it stays
-**Possible flood level** (dashed outline only). Days the tide table or the NOAA projection already put at the flood level
+**Possible flood level\*** (dashed outline only). The Alameda tab is staff only from Nov 21, 2026 (no flood level set
+there), and San Mateo Creek's tide gauge moved from Alameda to Redwood City the same day (its shoreline tracks Redwood
+City more closely). Days the tide table or the NOAA projection already put at the flood level
 are unchanged ("Flood level"), and the home page banner and hero still use only the NOAA projection. Basis: this season at
 Redwood City (Oct 1 to Nov 21, 2026, `tide_tracker.json`), the tide table plus the past week's average skew surge
 predicted each day's highest water 3 to 6 days ahead with a typical miss of 0.3 ft (bias about 0) and a largest miss of
