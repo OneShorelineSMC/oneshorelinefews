@@ -166,7 +166,7 @@
       <span><i class="sw" style="background:none;border-top:2px dashed #5f6b78;border-radius:0;height:0;width:16px"></i>MHHW (average high tide)</span>
       <span><i class="sw" style="background:none;border-top:2px dashed #c0392b;border-radius:0;height:0;width:16px"></i>flood level (Redwood City) or flood-risk tide (San Bruno: a 5-year storm or smaller can flood the creek; provisional)</span>
       <span><i class="sw" style="background:#0A5587;border-radius:50%;width:7px;height:7px"></i>high tide above MHHW, with its time</span>
-      <span><i class="sw" style="background:#b0281a;border:1px solid #7d1a10"></i>rain bar: Heavy or more while the tide is above MHHW</span>
+      <span><i class="sw" style="background:#b0281a;border:1px solid #7d1a10"></i>rain bar: Heavy or more on a tide at the flood level or flood-risk tide</span>
     </div>
     <div class="grid2" id="minis"></div>
   </div>
@@ -321,7 +321,7 @@ var bandPlugin = { id: "bands", beforeDatasetsDraw: function (ch) {
   c.restore(); } };
 /* Rain and tide on one graph (staff, 2026-11-21: what matters is WHEN heavy rain lands on a high tide). Rain bars on the
    left axis, kept to the lower half of the plot; the tide on the right axis, kept to the upper part, so the two never
-   cross. Bars amber in Heavy hours, dark red where Heavy falls on a tide above MHHW (barCol).
+   cross. Bars amber in Heavy hours, dark red where Heavy falls on a tide at the creek's flood level or flood-risk tide (barCol).
    Time labels every 6 hours (every 3 on the 18-hour view): "6a", "noon", "6p", the day at midnight. */
 var RAIN_SHARE = 0.48, TIDE_SHARE = 0.42;   // rain uses the lower 48% of the plot, the tide the upper 42%
 function hourOf(v) { return Number(new Date(v).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hour12: false })) % 24; }
@@ -353,7 +353,7 @@ function span(a, b) {
 }
 /* Rain bars colored by the forecast (staff, 2026-11-22: shading and outlines read as extra rain bars): purple, amber in
    the hours of a Heavy window, deep orange in Very heavy or more, dark red where Heavy or more falls while the tide is
-   above MHHW. ctx.raw = {x: step middle, y}. */
+   at or above the creek's tide of concern (flood level or flood-risk tide). ctx.raw = {x: step middle, y}. */
 function barCol(heavy, both, edge) {
   return function (ctx) {
     var x = ctx.raw && ctx.raw.x, inW = function (b) { return x >= b.a && x < b.b; };
@@ -421,6 +421,9 @@ function miniSet(boxId, C, P, top) {
     // the tide (bayside creeks): lines on the right axis, the hours above MHHW and where Heavy rain falls in them
     var T = hasT(id) ? tideSets(id, x0, x1) : null, highs = T ? T.highs : [], both = [];
     heavy.forEach(function (h) { highs.forEach(function (w) { var a = Math.max(h.a, w.a), b = Math.min(h.b, w.b); if (b > a) both.push({ a: a, b: b, h: h, w: w }); }); });
+    // flagged (red bars, headline) only when that high tide reaches the creek's tide of concern (staff, 2026-11-22: a tide
+    // just above average high tide isn't one San Bruno's thresholds worry about)
+    var hot = both.filter(function (x) { return T && T.red != null && x.w.v >= T.red; });
     $("n_" + id).innerHTML = story(e, heavy, highs, both, T, wet, P, now, x1, avg, sm);
     $("c_" + id).setAttribute("aria-label", (ws ? wsLabel(e) : e.name) + ": forecast " + inch(tot) + " in over the period shown" + (T && T.ok ? ", with the tide" : ""));
     var rainAt = function (x) { var b = null; avg.forEach(function (p) { if (Math.abs(p.x - x) <= sm / 2) b = p; }); return b; };
@@ -439,7 +442,7 @@ function miniSet(boxId, C, P, top) {
           afterBuildTicks: function (ax) { ax.ticks = [0, yTop / 2, yTop].map(function (v) { return { value: v }; }); },
           ticks: { color: "#6b4fa8", font: { size: 10.5 }, callback: function (v) { return (v ? String(+v.toFixed(3)).replace(/^0\./, ".") : "0") + '"'; } } } } };
     var data = { datasets: [
-      { type: "bar", yAxisID: "y", data: avg, backgroundColor: barCol(heavy, both, false), borderColor: barCol(heavy, both, true), borderWidth: 1, barPercentage: 0.9, categoryPercentage: 1, grouped: false, order: 3 },
+      { type: "bar", yAxisID: "y", data: avg, backgroundColor: barCol(heavy, hot, false), borderColor: barCol(heavy, hot, true), borderWidth: 1, barPercentage: 0.9, categoryPercentage: 1, grouped: false, order: 3 },
       { type: "line", yAxisID: "y", data: mx, borderColor: css("--fcline"), borderWidth: 1.25, borderDash: [3, 3], pointRadius: 0, order: 2 }] };
     if (T && T.ok) {
       var tr = T.hi - T.lo, tmax = T.hi + tr * 0.14;   // headroom for the high-tide times
@@ -482,9 +485,17 @@ function story(e, heavy, highs, both, T, wet, P, now, x1, avg, sm) {
   var tw = function (w) { return w.v.toFixed(1) + " ft at " + clk(w.peak) + (sbF != null && w.v >= sbF ? ", a flood-risk tide" : ""); };
   if (T) {
     if (!T.ok) out.push('<span class="m">Tide loading…</span>');
-    else if (both.length) out.push('<b class="hit">Heavy rain on a high tide:</b> ' + both.map(function (x) {
-      return "<b>" + esc(span(x.a, x.b)) + "</b> (" + lv(x.h) + "; tide above average high tide " + esc(span(x.w.a, x.w.b).replace(/^\w+ /, "")) + ", peak " + esc(tw(x.w)) + ")"; }).join("; ") + ".");
-    else if (heavy.length) out.push("<b>No Heavy rain during a high tide.</b>");
+    else {
+      /* Heavy rain on a tide at or above the creek's tide of concern (T.red): the headline, red bars. On a high tide below
+         it: said plainly, with how far below. Gauges without a tide of concern: how far above average high tide. */
+      var hot = both.filter(function (x) { return T.red != null && x.w.v >= T.red; }), mild = both.filter(function (x) { return hot.indexOf(x) < 0; });
+      if (hot.length) out.push('<b class="hit">Heavy rain on a ' + T.redName + ':</b> ' + hot.map(function (x) {
+        return "<b>" + esc(span(x.a, x.b)) + "</b> (" + lv(x.h) + "; tide peaks " + esc(x.w.v.toFixed(1) + " ft at " + clk(x.w.peak)) + ", at or above the " + T.red.toFixed(1) + " ft " + T.redName + ")"; }).join("; ") + ".");
+      if (mild.length) out.push("<b>Heavy rain during a high tide:</b> " + mild.map(function (x) {
+        return esc(span(x.a, x.b)) + " (" + lv(x.h) + "); the tide peaks " + esc(x.w.v.toFixed(1) + " ft at " + clk(x.w.peak)) + ", " +
+          (T.red != null ? (T.red - x.w.v).toFixed(1) + " ft below the " + T.red.toFixed(1) + " ft " + T.redName : (x.w.v - T.mhhw).toFixed(1) + " ft above average high tide"); }).join("; ") + ".");
+      if (!both.length && heavy.length) out.push("<b>No Heavy rain during a high tide.</b>");
+    }
   }
   out.push(heavy.length ? "<b>Heavy or more:</b> " + heavy.map(function (h) { return esc(span(Math.max(h.a, now), h.b)) + " (" + lv(h) + ")"; }).join("; ") + "."
     : "No Heavy rain forecast" + (wet && wet.v >= 0.005 ? "; wettest " + (P === "15" ? "15 min" : "hour") + " " + inch(wet.v) + " in, " + esc(dayW(wet.t) + " " + clk(wet.t)) : "") + ".");
@@ -592,7 +603,9 @@ function tideSets(id, x0, x1) {
   var tag = function (arr, src) { return arr.map(function (p) { return { x: p.x, y: p.y, src: src }; }); };
   var best = tag(tp.filter(function (p) { return p.x < f0 && p.x < e0 && p.x >= x0; }), "tide table").concat(tag(tf, "NOAA projection"), tag(te.filter(function (p) { return p.x > f1; }), "estimate"));
   var highs = (tideHigh(id, x0, x1) || []).map(function (w) { w.flood = sb && B && B.flood != null && w.v >= B.flood; return w; });
-  return { ok: true, sets: sets, highs: highs, best: best, lo: lo, hi: hi, mhhw: mh, flood: sb && B ? B.flood : null };
+  // red: the tide of concern for this creek (San Bruno: the flood-risk tide; Redwood City creeks: its flood level), or null
+  return { ok: true, sets: sets, highs: highs, best: best, lo: lo, hi: hi, mhhw: mh, flood: sb && B ? B.flood : null,
+    red: isFinite(red) ? red : null, redName: sb ? "flood-risk tide" : "flood level" };
 }
 function loadTideStations() {
   var LKm = window.LOOKUPS;
