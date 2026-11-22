@@ -64,17 +64,23 @@ try:
     ledger = {"r:100": {"kind": "rain", "h": {"2026-11-23 15:00": 0.05}}}
     creeks = [{"id": "sanbruno", "name": "San Bruno Creek", "rain": [{"key": "r:100", "number": "100"}]}]
     tracker = {"generated": "2026-11-24 12:00", "storms": [storm], "open": [], "ledger": ledger}
-    out = R.review(tracker, runs, FREQ, MINS, creeks, T("2026-11-24 12:00"))
+    out = R.review(tracker, runs, FREQ, MINS, creeks, T("2026-11-24 12:00"), since=None)
     fa = out["heavy_no_storm"]
     check("Heavy forecast with no storm: listed once, with what fell", len(fa) == 1 and fa[0]["run"] == "2026-11-23 04:00" and fa[0]["measured_total"] == 0.05)
     sm = out["summary"]["sanbruno"]
     check("summary by lead time", sm["leads"]["24"]["caught"] == 1 and sm["leads"]["6"]["missed"] == 1 and sm["heavy_no_storm"] == 1)
 
     # kept as they are: a closed storm and a checked run aren't redone (the log may have moved on)
-    out2 = R.review(tracker, {}, FREQ, MINS, creeks, T("2026-11-24 12:00"), prev=out)
+    out2 = R.review(tracker, {}, FREQ, MINS, creeks, T("2026-11-24 12:00"), prev=out, since=None)
     check("closed storm kept without the log", out2["storms"] and out2["storms"][0]["leads"]["24"]["verdict"] == "caught")
-    out3 = R.review(tracker, runs, FREQ, MINS, creeks, T("2026-11-24 12:00"), prev=out)
+    out3 = R.review(tracker, runs, FREQ, MINS, creeks, T("2026-11-24 12:00"), prev=out, since=None)
     check("a checked run isn't listed twice", len(out3["heavy_no_storm"]) == 1)
+    # the reset: runs, storms and kept results before REVIEW_FROM are left out
+    out4 = R.review(tracker, runs, FREQ, MINS, creeks, T("2026-11-24 12:00"), prev=out, since="2026-11-22 07:00")
+    check("reset: a storm too soon after it (its 6 h run came before) and its kept result dropped", out4["storms"] == [] and out4["log_from"] == "2026-11-23 04:00")
+    check("reset: Heavy-with-no-storm from a run after it still counts", len(out4["heavy_no_storm"]) == 1)
+    out5 = R.review(tracker, runs, FREQ, MINS, creeks, T("2026-11-24 12:00"), prev=out, since="2026-11-24 00:00")
+    check("reset: nothing after it yet", out5["storms"] == [] and out5["heavy_no_storm"] == [] and out5["log_from"] == "2026-11-24 00:00")
     check("verdicts", R.verdict(1, 0) == "over-forecast" and R.verdict(0, 0) == "no Heavy" and R.verdict(None, 1) == "not rated")
 finally:
     shutil.rmtree(tmp)

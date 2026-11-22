@@ -45,6 +45,10 @@ HORIZON_H = 84           # the hourly product's reach (3.5 days)
 FA_RUN_HOURS = (0, 6, 12, 18)   # runs checked for "Heavy forecast with no storm" (UTC)
 FA_FROM_H, FA_TO_H = 6, 24      # ... over this stretch after the run
 H = dt.timedelta(hours=1)
+# The review starts here (Pacific): runs logged before it lacked the full AQPI datasets, so their forecasts, the storms they
+# would be checked against and "Heavy forecast with no storm" from them are left out, including any already kept in
+# rrfs_review.json (staff, 2026-11-22: reset). None = from the start of the log.
+REVIEW_FROM = "2026-11-22 07:00"
 
 
 def to_local(s):
@@ -228,15 +232,22 @@ def summarize(storms, fas):
     return out
 
 
-def review(tracker, runs, freq, mins_of, creeks, now, prev=None):
+def review(tracker, runs, freq, mins_of, creeks, now, prev=None, since=REVIEW_FROM):
     prev = prev or {}
     wy0 = hkey(dt.datetime.combine(water_year_start(now.date()), dt.time()))
+    s0 = wy0   # storms from here: with a reset, the first a run after it could have forecast (the shortest lead)
+    if since:   # the reset: nothing before it counts, kept results included
+        wy0 = max(wy0, since)
+        s0 = max(s0, hkey(parse_t(since) + min(LEADS) * H))
+        runs = {r: v for r, v in runs.items() if hkey(r) >= since}
     first = min(runs) if runs else None
-    kept = {(s["creek"], s["start"]): s for s in prev.get("storms", []) if s.get("closed") and s["start"] >= wy0}
+    kept = {(s["creek"], s["start"]): s for s in prev.get("storms", []) if s.get("closed") and s["start"] >= s0}
     storms = []
     for st in tracker.get("storms", []) + tracker.get("open", []):
         closed = st in tracker.get("storms", [])
         k = (st["creek"], st["start"])
+        if st["start"] < s0:
+            continue
         if k in kept:
             storms.append(kept[k]); continue
         if first is None or parse_t(st["start"]) - min(LEADS) * H < first:
@@ -255,7 +266,7 @@ def review(tracker, runs, freq, mins_of, creeks, now, prev=None):
     checked = [list(x) for x in checked if x[1] >= wy0]
     storms.sort(key=lambda s: (s["start"], s["creek"]), reverse=True)
     fas.sort(key=lambda x: x["run"], reverse=True)
-    return {"generated": hkey(now), "leads": LEADS, "pad_hours": PAD_H, "log_from": hkey(first) if first else None,
+    return {"generated": hkey(now), "leads": LEADS, "pad_hours": PAD_H, "log_from": max(hkey(first), since or "") if first else since,
             "storms": storms, "heavy_no_storm": fas, "summary": summarize(storms, fas), "checked_runs": checked}
 
 
