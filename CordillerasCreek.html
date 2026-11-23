@@ -53,6 +53,7 @@
   .hero { border-left: 6px solid var(--b0); }
   .hero .hd { font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.3; }
   .hero p { margin: 6px 0 0; }
+  .intro p { margin: 0 0 6px; } .intro p:last-child { margin: 0; }
   .hero .sm { font-size: 12.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
   /* three plain meters: the coming rain as a share of Dec 31, 2022 */
   .meters { display: grid; gap: 8px; margin-top: 10px; }
@@ -108,11 +109,18 @@
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
 <main>
-  <div class="card prev"><b>Preview for staff review.</b> Not linked from the public pages. Cordilleras Creek has no creek gauge, so this
-    page compares rain with the New Year's Eve 2022 storm, when the creek flooded parts of Redwood City.</div>
+  <div class="card prev"><b>Preview for staff review.</b> Not linked from the public pages. To confirm before it goes public: Redwood City's number for
+    reporting a blocked creek or a flooded street, and Redwood City's sandbag pickup.</div>
+
+  <div class="card intro">
+    <p><b>Cordilleras Creek</b> runs about 4 miles from the hills above Redwood City and San Carlos down to the Bay, much of it through backyards.
+      It has no water-level gauge, so this page can't tell you how high the creek is right now.</p>
+    <p>Instead it compares the rain with <b>New Year's Eve 2022</b>, when the creek flooded homes in Redwood City's Centennial and Edgewood Park
+      neighborhoods and on the alphabet streets.</p>
+  </div>
 
   <section class="card hero" id="hero" aria-live="polite">
-    <div class="sm">The outlook for Cordilleras Creek</div>
+    <div class="sm">This storm compared with New Year's Eve 2022</div>
     <div class="hd" id="heroHd">Loading…</div>
     <p id="heroWhy"></p>
     <div class="meters" id="meters"></div>
@@ -120,59 +128,70 @@
   </section>
 
   <div class="card">
-    <details>
-      <summary><b>For technical readers: every length of time, 1 hour to 2 days</b></summary>
-      <div class="tw" style="margin-top:8px"><table id="cmp"><tr><td class="empty">Loading…</td></tr></table></div>
-      <p class="note" id="cmpNote" style="margin-top:8px"></p>
-    </details>
+    <h2>What you can do</h2>
+    <ul class="plain">
+      <li><b>Get alerts.</b> Sign up for <a href="https://www.smcgov.org/ceo/smc-alert" target="_blank" rel="noopener">SMC Alert</a>, San Mateo County's emergency alerts.</li>
+      <li><b>If the creek runs past your home,</b> that stretch is yours to keep clear: Redwood City and San Carlos both leave it to the property owner.
+        Before the rain, take out branches, trash and anything that could wash down and jam a culvert or bridge. Stay out of the creek once it's running high.</li>
+      <li><b>Clear the storm drain</b> on your street of leaves when it's safe to.</li>
+      <li><b>Sandbags.</b> San Carlos: Corporation Yard, 1000 Bransten Road, weekdays 8 AM–3 PM, up to 10 bags.
+        Unincorporated areas (such as Emerald Hills): San Mateo County's Grant Corporation Yard, 752 Chestnut Street, Redwood City; reserve pre-made bags first,
+        <a href="tel:+16503634103">(650) 363-4103</a>.</li>
+      <li><b>Report flooding or a blocked creek.</b> San Carlos: <a href="tel:+16508024140">(650) 802-4140</a>. If anyone is in danger, call 911.</li>
+      <li><b>Never walk or drive through moving water.</b> Six inches of fast water can knock you down.</li>
+    </ul>
   </div>
 
   <div class="card">
-    <h2>Hour by hour</h2>
-    <div class="cb"><canvas id="cNow" role="img" aria-label="Rain in the last 48 hours and the forecast, hour by hour"></canvas></div>
-    <div class="key"><span><i style="background:var(--meas)"></i>measured (Belmont)</span><span><i style="background:var(--fc);border:1px solid var(--fcline)"></i>forecast (RRFS, watershed)</span></div>
-    <h3>Dec 30 – 31, 2022, same scale</h3>
-    <div class="cb"><canvas id="cNye" role="img" aria-label="Rain hour by hour on Dec 30 and 31, 2022, at Belmont"></canvas></div>
-    <div class="key"><span><i style="background:var(--nye)"></i>measured (Belmont)</span></div>
+    <h2>Rain each hour</h2>
+    <h3 style="margin-top:0">The last 2 days and the next 3</h3>
+    <div class="cb"><canvas id="cNow" role="img" aria-label="Rain each hour, the last 2 days and the forecast"></canvas></div>
+    <div class="key"><span><i style="background:var(--meas)"></i>rain that fell (Belmont rain gauge)</span><span><i style="background:var(--fc);border:1px solid var(--fcline)"></i>rain forecast</span></div>
+    <h3>New Year's Eve 2022, on the same scale</h3>
+    <div class="cb"><canvas id="cNye" role="img" aria-label="Rain each hour on Dec 29 to 31, 2022, at the Belmont rain gauge"></canvas></div>
+    <div class="key"><span><i style="background:var(--nye)"></i>rain that fell (Belmont rain gauge)</span></div>
     <p class="note" id="meta" style="margin-top:8px"></p>
   </div>
 
   <div class="card">
-    <h2>What happened on Dec 31, 2022</h2>
+    <h2>New Year's Eve 2022</h2>
     <div class="facts">
-      <div class="fact"><b>4.56 in</b><span>at Belmont on Dec 31, about 4.5 in across Redwood City (third-wettest day on record there)</span></div>
-      <div class="fact"><b>0.88 in</b><span>wettest hour at Belmont (1:05–2:05 PM): nearly a 25-year storm</span></div>
-      <div class="fact"><b>4.12 in</b><span>in 12 hours at Belmont (3:45 AM–3:40 PM): beyond a 100-year storm there</span></div>
-      <div class="fact"><b>7.8 ft</b><span>Redwood City high tide at 7:12 AM, 0.8 ft above the tide table, during the first burst</span></div>
+      <div class="fact"><b>4.6 in</b><span>of rain in one day, Dec 31. One of the wettest days on record in Redwood City.</span></div>
+      <div class="fact"><b>0.9 in</b><span>in the heaviest hour, 1 to 2 PM. An hour that wet comes about once in 25 years.</span></div>
+      <div class="fact"><b>4.1 in</b><span>in 12 hours, 4 AM to 4 PM. More than the 12-hour rain expected once in 100 years.</span></div>
+      <div class="fact"><b>Soaked</b><span>The ground was already wet: more than 2 in had fallen in the days before.</span></div>
     </div>
     <ul class="plain" style="margin-top:10px">
-      <li><b>Two bursts.</b> About 4–8 AM and 12–3 PM. The second, wetter hour came near low tide, so the flooding wasn't mainly the Bay.</li>
-      <li><b>Wet ground first.</b> Belmont had 2.3 in from Dec 26 to 30, and Huddart Park 5.3 in.</li>
-      <li><b>Where it flooded.</b> The alphabet streets (G Street) and the Centennial and Edgewood Park neighborhoods along the creek in Redwood City.
-        Debris in the channel has been raised since; the creek is privately owned along most of its length.</li>
-      <li><b>Nearby gauges that day:</b> Huddart Park (hills, 3.2 mi south) 7.30 in; Atherton (Caltrain) 3.24 in.</li>
+      <li><b>It came in two bursts,</b> early morning (4 to 8 AM) and early afternoon (noon to 3 PM). The afternoon burst was the heaviest and came at
+        low tide, so the flooding came from the rain, not the Bay.</li>
+      <li><b>Where it flooded:</b> the Centennial and Edgewood Park neighborhoods and the alphabet streets, including G Street. Water was nearly
+        10 feet deep in the creek behind some homes, and at least four homes were badly damaged.</li>
     </ul>
-    <p class="note" style="margin-top:8px">Sources: OneRain gauge records (Belmont 41104, Huddart Park, Atherton 41106), NOAA tide gauge 9414523, NOAA Atlas 14;
-      <a href="https://www.rwcpulse.com/?p=10447" target="_blank" rel="noopener">Redwood City Pulse</a> and
-      <a href="https://www.smdailyjournal.com/news/local/management-of-cordilleras-creek-still-in-question-in-redwood-city/article_ee7b60bc-c4a0-11ee-bd68-ffe4d29575f0.html" target="_blank" rel="noopener">San Mateo Daily Journal</a> on the flooding.</p>
+    <p class="note" style="margin-top:8px">Sources: the Belmont rain gauge (OneShoreline / OneRain) and NOAA; reporting by
+      <a href="https://www.rwcpulse.com/?p=10447" target="_blank" rel="noopener">Redwood City Pulse</a>,
+      <a href="https://www.rwcpulse.com/top-story/2023/04/05/how-do-we-stop-the-flooding-centennial-residents-ask-the-city-for-help-taming-an-unruly-creek/" target="_blank" rel="noopener">Redwood City Pulse (April 2023)</a> and the
+      <a href="https://www.smdailyjournal.com/news/local/management-of-cordilleras-creek-still-in-question-in-redwood-city/article_ee7b60bc-c4a0-11ee-bd68-ffe4d29575f0.html" target="_blank" rel="noopener">San Mateo Daily Journal</a>.</p>
   </div>
 
   <div class="card">
     <details>
-      <summary><b>How this is worked out</b></summary>
+      <summary><b>About this page (technical details)</b></summary>
       <ul class="plain" style="margin-top:8px">
-        <li><b>Measured rain:</b> the Belmont Creek rain gauge at Old County Road, 2.4 miles north on the same bay plain. It recorded the whole
-          Dec 2022 storm, so measured rain is compared with Belmont's own record of it. Pulgas, 1.8 miles west in the hills, is closer, but its
-          record starts in 2023; in 10 storms since, it caught about the same as Belmont in the wettest hour and 10–25% more over 3 to 12 hours.</li>
-        <li><b>Forecast:</b> RRFS (AQPI / CW3E) averaged over the 2 grid points in the Cordilleras watershed, the same forecast as on the
+        <li><b>Rain that fell:</b> the Belmont Creek rain gauge at Old County Road, 2.4 miles north on the same bay plain. It recorded the whole
+          Dec 2022 storm, so today's rain there is compared with its own record of that storm. The Pulgas gauge, 1.8 miles west in the hills, is
+          closer, but its record starts in 2023; in 10 storms since, it caught about the same as Belmont in the heaviest hour and 10–25% more over 3 to 12 hours.</li>
+        <li><b>Forecast:</b> the RRFS weather model (AQPI / CW3E), averaged over the 2 grid points in the Cordilleras watershed, the same forecast as on the
           <a href="RainForecast.html">RRFS rain page</a>. It is compared with the Dec 2022 storm adjusted to the watershed: Belmont's record times
           the ratio of NOAA Atlas 14 at the watershed's center to Atlas 14 at Belmont (1.09–1.12, about 10% more).</li>
-        <li><b>Windows:</b> the wettest 1, 3, 6, 12, 24 and 48 hours, in whole clock hours. "Measured" looks at the last 48 hours; "forecast" at the
-          rest of the forecast run (about 3.5 days); "together" joins the two, for a storm that is underway.</li>
-        <li><b>Storm size</b> is NOAA Atlas 14 at the watershed's center (a point value, so a watershed average leans a little low).</li>
-        <li><b>What it can't say:</b> whether the creek will flood. That also depends on debris and blockages in the channel, culverts, how wet the
-          ground already is, and the tide at the outlet (see <a href="Tides.html">Tides</a>, Redwood City).</li>
+        <li><b>Heaviest hour, 6 hours, day:</b> the wettest run of whole clock hours, in the last 2 days and the forecast joined together.
+          The headline goes by whichever comes closest to Dec 2022: under 50% "much less", 50–74% "about half", 75–99% "close to", 100% or more "as much or more".</li>
+        <li><b>"Once in 25 years"</b> and similar are NOAA Atlas 14 rainfall frequencies (a point value, so a watershed average leans a little low).</li>
+        <li><b>Dec 31, 2022 in detail:</b> Belmont 4.56 in that day, wettest hour 0.88 in (1:05–2:05 PM), 12 hours 4.12 in; Huddart Park (hills) 7.30 in; Atherton 3.24 in.
+          Redwood City's high tide peaked at 7.8 ft NAVD88 at 7:12 AM, 0.8 ft above the tide table, during the first burst. Basis: <code>lookups/CORDILLERAS_BASIS.md</code>.</li>
       </ul>
+      <h3>Every length of time, 1 hour to 2 days</h3>
+      <div class="tw"><table id="cmp"><tr><td class="empty">Loading…</td></tr></table></div>
+      <p class="note" id="cmpNote" style="margin-top:8px"></p>
     </details>
   </div>
 </main>
@@ -256,33 +275,34 @@ function render(st, rf) {
     "Close to the rain of the New Year's Eve 2022 storm", "As much rain as the New Year's Eve 2022 storm, or more"];
   var mSum = mv.reduce(function (a, v) { return a + v; }, 0);
   if (fTot < 0.01 && mSum < 0.01) {
-    $("heroHd").textContent = "No rain in the last 2 days and none in the forecast";
+    $("heroHd").textContent = "No rain in the last 2 days, and none in the forecast";
     $("heroWhy").textContent = "";
   } else {
     $("heroHd").textContent = heads[b];
     $("heroWhy").innerHTML = (fx.length ? "Expected over the next " + days + " day" + (days > 1 ? "s" : "") + ": <b>" + inch(fTot) + " in</b>" +
       (fv[pk] >= 0.01 ? ", the heaviest hour about " + inch(fv[pk]) + " in around " + esc(hourLabel(fx[pk])) : "") + ". " : "No forecast available right now. ") +
       (mSum >= 0.01 ? "So far, " + inch(mSum) + " in in the last 2 days. " : "") +
-      "On Dec 31, 2022, when the creek flooded parts of Redwood City, about 4.6 in fell in a day, 0.8 in of it in one hour.";
+      "On New Year's Eve 2022, about 4.6 in fell in one day, nearly an inch of it in a single hour.";
   }
   $("meters").innerHTML = [[1, "Heaviest hour"], [6, "Heaviest 6 hours"], [24, "Heaviest day"]].map(function (x) {
     var r = byH[x[0]], p = Math.max(r.mp, r.gp), v = r.gp >= r.mp ? r.g : r.m;
     return "<div class='meter'><span class='lb'>" + x[1] + "</span><span class='tr' role='img' aria-label='" + Math.round(p * 100) + "% of Dec 31, 2022'><i class='b" + band(p) +
       "' style='width:" + Math.min(100, p * 100).toFixed(0) + "%'></i></span><span class='tx'>" + inch(v) + " in, against " +
-      inch(NYE[x[0]] * K[x[0]]) + " in on Dec 31, 2022 (" + Math.round(p * 100) + "%)</span></div>";
+      inch(NYE[x[0]] * K[x[0]]) + " in on New Year's Eve 2022 (" + Math.round(p * 100) + "%)</span></div>";
   }).join("");
-  $("heroFoot").textContent = "Full bar = as much as Dec 31, 2022. Rain alone doesn't decide whether the creek floods: debris in the channel, " +
-    "how wet the ground already is, and high tides at the Bay matter too. Rain so far is from the Belmont gauge; the forecast is the RRFS model.";
+  $("heroFoot").textContent = "A full bar means as much rain as New Year's Eve 2022. Rain isn't the whole story: a creek jammed with branches or debris, " +
+    "ground that is already soaked, or a high tide at the Bay can make flooding more likely. Rain that has fallen is from the rain gauge in Belmont, 2.4 miles north; " +
+    "the forecast is from a weather model updated every few hours.";
 
   // charts, on one scale
   var ymax = Math.max(1, Math.max.apply(null, NYE_BEL.concat(mv, fv)) * 1.1);
   var axes = function (labels) {
     return { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: function (v, i) { return labels[i] || ""; } } },
-      y: { min: 0, max: ymax, title: { display: true, text: "in per hour" } } };
+      y: { min: 0, max: ymax, title: { display: true, text: "inches of rain" } } };
   };
   // a label at each midnight only (the day), so it stays readable on a phone
-  var lab = function (xs) { return xs.map(function (t) { var hh = +new Date(t).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hourCycle: "h23" });
-    return hh === 0 ? new Date(t).toLocaleString("en-US", { timeZone: TZ, weekday: "short" }) : ""; }); };
+  var lab = function (xs, dated) { return xs.map(function (t) { var hh = +new Date(t).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hourCycle: "h23" });
+    return hh === 0 ? new Date(t).toLocaleString("en-US", dated ? { timeZone: TZ, month: "short", day: "numeric" } : { timeZone: TZ, weekday: "short" }) : ""; }); };
   var css = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
   var xs = mx.concat(fx), lb = lab(xs);
   var d1 = mv.concat(fv.map(function () { return null; })), d2 = mv.map(function () { return null; }).concat(fv);
@@ -294,10 +314,10 @@ function render(st, rf) {
     options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: tip(xs) }, scales: axes(lb) } });
   var nx = NYE_BEL.map(function (v, i) { return Date.parse("2022-12-29T08:00:00Z") + i * H; });
   if (!charts.nye) charts.nye = new Chart($("cNye"), { type: "bar", data: { labels: nx, datasets: [{ data: NYE_BEL, backgroundColor: css("--nye"), barPercentage: 1, categoryPercentage: 0.9 }] },
-    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: tip(nx) }, scales: axes(lab(nx)) } });
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: tip(nx) }, scales: axes(lab(nx, true)) } });
   else { charts.nye.options.scales.y.max = ymax; charts.nye.update(); }
-  $("meta").textContent = "Measured: Belmont Creek at Old County Rd, to " + hourLabel(top + H) + (st && st.generated ? " (updated " + st.generated + ")" : "") +
-    ". Forecast: RRFS run " + (P ? new Date(P.run).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" }) : "not available") + ".";
+  $("meta").textContent = "Rain that fell: Belmont rain gauge, to " + hourLabel(top + H) + (st && st.generated ? " (updated " + st.generated + ")" : "") +
+    ". Forecast: RRFS weather model, run " + (P ? new Date(P.run).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" }) : "not available") + ".";
 }
 
 function load() {
