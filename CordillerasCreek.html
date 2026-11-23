@@ -175,8 +175,8 @@
     <h2>New Year's Eve 2022</h2>
     <div class="facts">
       <div class="fact"><b>4.6 in</b><span>of rain on Dec 31, the third-wettest day on record in Redwood City.</span></div>
-      <div class="fact"><b>0.9 in</b><span>in the heaviest hour, 1 to 2 PM. An hour that wet comes about once in 25 years.</span></div>
-      <div class="fact"><b>4.1 in</b><span>in 12 hours, 4 AM to 4 PM. More than the 12-hour rain expected once in 100 years.</span></div>
+      <div class="fact"><b>0.9 in</b><span>in the heaviest hour, 1 to 2 PM. An hour that wet has about a 1-in-25 (4%) chance in any year.</span></div>
+      <div class="fact"><b>4.1 in</b><span>in 12 hours, 4 AM to 4 PM. More than the 12-hour rain with a 1-in-100 (1%) chance in any year.</span></div>
       <div class="fact"><b>2.3 in</b><span>had already fallen in the five days before, so the ground was soaked.</span></div>
     </div>
     <ul class="plain" style="margin-top:10px">
@@ -202,7 +202,7 @@
           the ratio of NOAA Atlas 14 at the watershed's center to Atlas 14 at Belmont (1.09 to 1.12, about 10% more).</li>
         <li>The heaviest hour, 6 hours and day are the wettest runs of whole clock hours, with the last 2 days and the forecast joined together.
           The headline goes by whichever comes closest to Dec 2022: under 50% "much less", 50 to 74% "about half", 75 to 99% "close to", 100% or more "as much or more".</li>
-        <li>"Once in 25 years" and similar phrases are NOAA Atlas 14 rainfall frequencies. Atlas 14 is a point value, so a watershed average leans a little low.</li>
+        <li>"1-in-25 chance in any year" and the storm sizes in the table (a 25-year storm, for example) are NOAA Atlas 14 rainfall frequencies. A 25-year storm has about a 4% chance of happening in any year, and can happen more than once in the same year. Atlas 14 is a point value, so a watershed average leans a little low.</li>
         <li>On Dec 31, 2022, Belmont had 4.56 in, with 0.88 in in the wettest hour (1:05 to 2:05 PM) and 4.12 in over 12 hours. Huddart Park, in the hills, had 7.30 in and Atherton 3.24 in.
           Redwood City's high tide peaked at 7.8 ft NAVD88 at 7:12 AM, 0.8 ft above the tide table, during the first burst. Basis: <code>lookups/CORDILLERAS_BASIS.md</code>.</li>
       </ul>
@@ -301,7 +301,7 @@ function render(st, rf) {
     }).join("");
   $("cmpNote").textContent = "Each percent compares the same length of time with Dec 31, 2022. Measured rain at Belmont is compared with Belmont's own record. " +
     "The forecast, and measured rain plus forecast, are compared with the Dec 2022 storm adjusted to the Cordilleras watershed (about 10% more than Belmont). " +
-    "Storm sizes are NOAA Atlas 14 at the watershed's center.";
+    "Storm sizes are NOAA Atlas 14 at the watershed's center: a 25-year storm has a 1-in-25 (4%) chance in any year.";
 
   /* The outlook, in plain words for the public (staff, 2026-11-23). The storm now (rain in the last 2 days plus the
      forecast) as a share of Dec 31, 2022 for the wettest hour, 6 hours and day; the headline goes by the largest share. */
