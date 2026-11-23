@@ -53,6 +53,15 @@
   .hero { border-left: 6px solid var(--b0); }
   .hero .hd { font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.3; }
   .hero p { margin: 6px 0 0; }
+  .hero .sm { font-size: 12.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  /* three plain meters: the coming rain as a share of Dec 31, 2022 */
+  .meters { display: grid; gap: 8px; margin-top: 10px; }
+  .meter { display: grid; grid-template-columns: 8.5em 1fr; gap: 2px 10px; align-items: center; font-size: 14px; }
+  .meter .lb { color: var(--ink); font-weight: 600; }
+  .meter .tr { height: 12px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); position: relative; overflow: hidden; }
+  .meter .tr i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: var(--b0); min-width: 3px; }
+  .meter .tr i.b1 { background: var(--b1); } .meter .tr i.b2 { background: var(--b2); } .meter .tr i.b3 { background: var(--b3); }
+  .meter .tx { grid-column: 2; font-size: 12.5px; color: var(--muted); }
   .hero.b1 { border-left-color: var(--b1); background: var(--b1bg); } .hero.b2 { border-left-color: var(--b2); background: var(--b2bg); } .hero.b3 { border-left-color: var(--b3); background: var(--b3bg); }
   /* the comparison table */
   .tw { overflow-x: auto; }
@@ -103,14 +112,19 @@
     page compares rain with the New Year's Eve 2022 storm, when the creek flooded parts of Redwood City.</div>
 
   <section class="card hero" id="hero" aria-live="polite">
+    <div class="sm">The outlook for Cordilleras Creek</div>
     <div class="hd" id="heroHd">Loading…</div>
     <p id="heroWhy"></p>
+    <div class="meters" id="meters"></div>
+    <p class="note" id="heroFoot" style="margin-top:8px"></p>
   </section>
 
   <div class="card">
-    <h2>Rain compared with New Year's Eve 2022</h2>
-    <div class="tw"><table id="cmp"><tr><td class="empty">Loading…</td></tr></table></div>
-    <p class="note" id="cmpNote" style="margin-top:8px"></p>
+    <details>
+      <summary><b>For technical readers: every length of time, 1 hour to 2 days</b></summary>
+      <div class="tw" style="margin-top:8px"><table id="cmp"><tr><td class="empty">Loading…</td></tr></table></div>
+      <p class="note" id="cmpNote" style="margin-top:8px"></p>
+    </details>
   </div>
 
   <div class="card">
@@ -222,7 +236,7 @@ function render(st, rf) {
     return "<td class='n'>" + inch(v) + " in <span class='pct'>(" + Math.round(p * 100) + "%)</span><div class='bar'><i class='b" + band(p) + "' style='width:" +
       Math.min(100, p * 100).toFixed(0) + "%'></i></div>" + (v >= A14[h][0] ? "<span class='sz'>" + sizeShort(h, v) + "</span>" : "") + "</td>";
   };
-  $("cmp").innerHTML = "<tr><th>Wettest</th><th>Dec 31, 2022</th><th>Measured, last 48 h</th><th>Forecast" + (fx.length ? "" : " (none)") + "</th><th>Together</th></tr>" +
+  $("cmp").innerHTML = "<tr><th>Wettest</th><th>Dec 31, 2022</th><th>Measured, last 48 h</th><th>Forecast" + (fx.length ? "" : " (none)") + "</th><th>So far + forecast</th></tr>" +
     rows.map(function (r) {
       return "<tr><td>" + dur(r.h) + "</td><td class='n'>" + inch(r.nye) + " in<span class='sz'>\u2248 " + inch(r.ref) + " in watershed, " + sizeShort(r.h, r.ref).replace(" storm", "") + "</span></td>" + cell(r.m, r.mp, r.h) + cell(r.f, r.fp, r.h) + cell(r.g, r.gp, r.h) + "</tr>";
     }).join("");
@@ -230,17 +244,35 @@ function render(st, rf) {
     "Forecast and together: the Cordilleras watershed against the Dec 2022 storm adjusted to the watershed (about 10% more than Belmont). " +
     "Storm sizes are NOAA Atlas 14 at the watershed's center.";
 
-  // the answer: the closest any window comes to Dec 2022, measured or forecast
-  var best = null; rows.forEach(function (r) { [["m", "measured", r.mp, r.m], ["g", "forecast", r.gp, r.g]].forEach(function (x) { if (!best || x[2] > best.p) best = { kind: x[1], p: x[2], v: x[3], h: r.h }; }); });
-  var b = best ? band(best.p) : 0, hero = $("hero");
+  /* The outlook, in plain words for the public (staff, 2026-11-23). The storm now (rain in the last 2 days plus the
+     forecast) as a share of Dec 31, 2022 for the wettest hour, 6 hours and day; the headline goes by the largest share. */
+  var byH = {}; rows.forEach(function (r) { byH[r.h] = r; });
+  var best = null; rows.forEach(function (r) { [r.mp, r.gp].forEach(function (p) { if (!best || p > best) best = p; }); });
+  var b = band(best || 0), hero = $("hero");
   hero.className = "card hero" + (b ? " b" + b : "");
-  var words = ["Well below", "About half of", "Approaching", "At or above"][b];
-  if (!best || best.v < 0.01) { $("heroHd").textContent = "No rain measured or forecast"; $("heroWhy").textContent = "Nothing in the last 48 hours at Belmont or in the RRFS forecast for the watershed."; }
-  else {
-    $("heroHd").textContent = words + " the New Year's Eve 2022 storm";
-    $("heroWhy").innerHTML = "Closest: <b>" + inch(best.v) + " in in " + dur(best.h) + "</b> (" + (best.kind === "measured" ? "measured" : "measured so far plus forecast") +
-      "), " + Math.round(best.p * 100) + "% of Dec 31, 2022 over the same time, " + esc(size(best.h, best.v)) + ". Rain alone; the creek also depends on debris, how wet the ground is, and the tide.";
+  var fTot = fv.reduce(function (a, v) { return a + v; }, 0), pk = -1; fv.forEach(function (v, k) { if (pk < 0 || v > fv[pk]) pk = k; });
+  var days = fx.length ? Math.max(1, Math.round((fx[fx.length - 1] - now) / 86400000)) : 0;
+  var heads = ["Much less rain than the New Year's Eve 2022 storm", "About half the rain of the New Year's Eve 2022 storm",
+    "Close to the rain of the New Year's Eve 2022 storm", "As much rain as the New Year's Eve 2022 storm, or more"];
+  var mSum = mv.reduce(function (a, v) { return a + v; }, 0);
+  if (fTot < 0.01 && mSum < 0.01) {
+    $("heroHd").textContent = "No rain in the last 2 days and none in the forecast";
+    $("heroWhy").textContent = "";
+  } else {
+    $("heroHd").textContent = heads[b];
+    $("heroWhy").innerHTML = (fx.length ? "Expected over the next " + days + " day" + (days > 1 ? "s" : "") + ": <b>" + inch(fTot) + " in</b>" +
+      (fv[pk] >= 0.01 ? ", the heaviest hour about " + inch(fv[pk]) + " in around " + esc(hourLabel(fx[pk])) : "") + ". " : "No forecast available right now. ") +
+      (mSum >= 0.01 ? "So far, " + inch(mSum) + " in in the last 2 days. " : "") +
+      "On Dec 31, 2022, when the creek flooded parts of Redwood City, about 4.6 in fell in a day, 0.8 in of it in one hour.";
   }
+  $("meters").innerHTML = [[1, "Heaviest hour"], [6, "Heaviest 6 hours"], [24, "Heaviest day"]].map(function (x) {
+    var r = byH[x[0]], p = Math.max(r.mp, r.gp), v = r.gp >= r.mp ? r.g : r.m;
+    return "<div class='meter'><span class='lb'>" + x[1] + "</span><span class='tr' role='img' aria-label='" + Math.round(p * 100) + "% of Dec 31, 2022'><i class='b" + band(p) +
+      "' style='width:" + Math.min(100, p * 100).toFixed(0) + "%'></i></span><span class='tx'>" + inch(v) + " in, against " +
+      inch(NYE[x[0]] * K[x[0]]) + " in on Dec 31, 2022 (" + Math.round(p * 100) + "%)</span></div>";
+  }).join("");
+  $("heroFoot").textContent = "Full bar = as much as Dec 31, 2022. Rain alone doesn't decide whether the creek floods: debris in the channel, " +
+    "how wet the ground already is, and high tides at the Bay matter too. Rain so far is from the Belmont gauge; the forecast is the RRFS model.";
 
   // charts, on one scale
   var ymax = Math.max(1, Math.max.apply(null, NYE_BEL.concat(mv, fv)) * 1.1);
