@@ -119,12 +119,15 @@
       neighborhoods and on the alphabet streets.</p>
   </div>
 
+  <div id="ncards" aria-live="polite"></div>
+
   <section class="card hero" id="hero" aria-live="polite">
     <div class="sm">This storm compared with New Year's Eve 2022</div>
     <div class="hd" id="heroHd">Loading…</div>
     <p id="heroWhy"></p>
     <div class="meters" id="meters"></div>
     <p class="note" id="heroFoot" style="margin-top:8px"></p>
+    <p class="note" style="margin-top:4px"><a href="https://scripps.ucsd.edu/news/groundbreaking-atmospheric-river-forecasting-collaboration-crosses-finish-line" target="_blank" rel="noopener">About the AQPI forecast</a> · <span id="fresh"></span></p>
   </section>
 
   <div class="card">
@@ -152,8 +155,8 @@
   <div class="card">
     <h2>Rain adding up</h2>
     <p id="totSay" style="margin:0 0 4px"></p>
-    <div class="cb"><canvas id="cTot" role="img" aria-label="Rain added up since this storm began, beside New Year's Eve 2022"></canvas></div>
-    <div class="key"><span><i style="background:none;border-top:3px solid var(--meas);border-radius:0;height:0;width:16px;vertical-align:3px"></i>this storm so far</span><span><i style="background:none;border-top:3px dashed var(--fcline);border-radius:0;height:0;width:16px;vertical-align:3px"></i>with the forecast</span><span><i style="background:none;border-top:3px solid var(--nye);border-radius:0;height:0;width:16px;vertical-align:3px"></i>New Year's Eve 2022</span></div>
+    <div class="cb" id="totBox"><canvas id="cTot" role="img" aria-label="Rain added up since this storm began, beside New Year's Eve 2022"></canvas></div>
+    <div class="key" id="totKey"><span><i style="background:none;border-top:3px solid var(--meas);border-radius:0;height:0;width:16px;vertical-align:3px"></i>this storm so far</span><span><i style="background:none;border-top:3px dashed var(--fcline);border-radius:0;height:0;width:16px;vertical-align:3px"></i>with the forecast</span><span><i style="background:none;border-top:3px solid var(--nye);border-radius:0;height:0;width:16px;vertical-align:3px"></i>New Year's Eve 2022</span></div>
     <p class="note" id="meta" style="margin-top:8px"></p>
   </div>
 
@@ -202,6 +205,9 @@
   </div>
 </main>
 
+<script src="lookups.js?v=20261121f"></script>
+<script src="severity.js?v=20261121f"></script>
+<script src="hero.js?v=20261121f"></script>
 <script>
 var RAW = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
 var TZ = "America/Los_Angeles";
@@ -322,7 +328,7 @@ function render(st, rf) {
   }).join("");
   $("heroFoot").textContent = "A full bar means as much rain as New Year's Eve 2022. Rain isn't the whole story: a creek jammed with branches or debris, " +
     "ground that is already soaked, or a high tide at the Bay can make flooding more likely. Rain that has fallen is from the rain gauge in Belmont, 2.4 miles north; " +
-    "the forecast is from a weather model updated every few hours.";
+    "the forecast is from AQPI, a Bay Area rain forecast from NOAA and Scripps Institution of Oceanography, updated every few hours.";
 
   // charts, on one scale
   var ymax = Math.max(1, Math.max.apply(null, NYE_BEL.concat(mv, fv)) * 1.1);
@@ -355,8 +361,12 @@ function render(st, rf) {
      beside Dec 31, 2022 from its own first wet hour (Dec 30, 4 PM), both as watershed estimates. */
   var TS = stormNow(mv, fv), NC = nyeCum(); if (TS) TS.t0 = xs[TS.i0];
   if (charts.tot) { charts.tot.destroy(); delete charts.tot; }
-  if (!TS) {
-    $("totSay").textContent = "No storm in the last 2 days or the next 3.";
+  var quiet = !TS || TS.total < 0.1;
+  $("totBox").hidden = quiet; $("totKey").hidden = quiet;
+  if (quiet) {
+    /* Quiet (staff, 2026-11-23): no empty chart when there's no storm; say so, and what it will show when there is one */
+    $("totSay").innerHTML = (TS ? "Only a trace of rain in the last 2 days and the next 3 (" + inch(TS.total) + " in)." : "No rain in the last 2 days, and none in the next 3.") +
+      " <span class='note'>When a storm comes, this adds up its rain as it falls, beside New Year's Eve 2022 (" + inch(NYE_TOT) + " in).</span>";
   } else {
     var n = Math.max(TS.cum.length, NC.length), hx = []; for (var q = 0; q < n; q++) hx.push(q);
     var so = TS.cum.map(function (v, q) { return q <= TS.nowAt ? v : null; }), fc = TS.cum.map(function (v, q) { return q >= TS.nowAt ? v : null; });
@@ -380,6 +390,8 @@ function render(st, rf) {
   if (!charts.nye) charts.nye = new Chart($("cNye"), { type: "bar", data: { labels: nx, datasets: [{ data: NYE_BEL, backgroundColor: css("--nye"), barPercentage: 1, categoryPercentage: 0.9 }] },
     options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: tip(nx) }, scales: axes(lab(nx, true)) } });
   else { charts.nye.options.scales.y.max = ymax; charts.nye.update(); }
+  $("fresh").textContent = "Forecast " + (P ? "from " + new Date(P.run).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" }) : "not available right now") +
+    " · rain gauge read " + hourLabel(top + H);
   $("meta").textContent = "Rain that fell: Belmont rain gauge, to " + hourLabel(top + H) + (st && st.generated ? " (updated " + st.generated + ")" : "") +
     ". Forecast: RRFS weather model, run " + (P ? new Date(P.run).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" }) : "not available") + ".";
 }
@@ -391,6 +403,11 @@ function load() {
     render(x[0], x[1]);
   });
 }
+/* National Weather Service alerts (staff, 2026-11-23), the shared cards from hero.js: the "Creeks and rain" card (Flood
+   Watch, Flood Warning and the like for the county), with any Bay or coast products rolled into one line under it. */
+var NWS = { list: null, failed: false };
+function drawCards() { if (window.HERO) HERO.nwsCards($("ncards"), { nws: NWS.list, nwsFailed: NWS.failed, current: "creek", only: true, inland: true, shoreAlso: true }); }
+if (window.HERO) HERO.loadNWS(function (list, failed) { if (list) { NWS.list = list; NWS.failed = false; } else if (!NWS.list) NWS.failed = true; drawCards(); });
 load();
 setInterval(load, 10 * 60000);
 </script>
