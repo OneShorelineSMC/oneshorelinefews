@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>Cordilleras Creek · preview</title>
+<!-- PREVIEW for staff review (2026-11-23), linked from staff.html only. Cordilleras Creek has no creek gauge, so this
+     page compares rain with the storm that flooded it on Dec 31, 2022 (New Year's Eve), at 1 to 48 hours:
+       measured  Belmont Creek at Old County Rd rain gauge (OneRain 41104), hour by hour from storm_tracker.json
+       forecast  RRFS (AQPI / CW3E) average over the Cordilleras watershed, from rrfs.json
+     Dec 31, 2022 is Belmont's own record of that storm (OneRain public pages, pulled 2026-11-23). Measured rain is
+     compared with Belmont's Dec 2022 record directly; the forecast with Belmont's record times the ratio of NOAA Atlas 14
+     at the watershed's center to Atlas 14 at Belmont (about 1.1). Basis: lookups/CORDILLERAS_BASIS.md. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+  integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
+    --soft: rgba(26,58,92,.05); --warnbg: #fff4e5; --warnink: #7a3d00;
+    --fc: rgba(126,87,194,.55); --fcline: #7e57c2; --meas: #0A5587; --nye: #9aa6b2;
+    --b0: #5d6d80; --b1: #7a6400; --b1bg: #fff3c4; --b2: #a84300; --b2bg: #fff0db; --b3: #b71c1c; --b3bg: #fde7e7; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --soft: rgba(255,255,255,.05); --warnbg: #3a2a12; --warnink: #ffd59a; --meas: #64b5f6; --nye: #7d8b9b;
+    --b0: #9aa8b8; --b1: #f2d544; --b1bg: #3a3310; --b2: #ffa94d; --b2bg: #3d2a12; --b3: #f47c79; --b3bg: #3d1616; color-scheme: dark; } }
+  :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --soft: rgba(255,255,255,.05); --warnbg: #3a2a12; --warnink: #ffd59a; --meas: #64b5f6; --nye: #7d8b9b;
+    --b0: #9aa8b8; --b1: #f2d544; --b1bg: #3a3310; --b2: #ffa94d; --b2bg: #3d2a12; --b3: #f47c79; --b3bg: #3d1616; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom)); -webkit-text-size-adjust: 100%; }
+  a { color: var(--link); }
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap, main { max-width: 760px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header img { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; }
+  header a { color: #fff; }
+  header .h911 { margin-left: auto; font-size: 13px; font-weight: 700; text-align: right; }
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: .05em; background: rgba(255,255,255,.2); padding: 2px 7px; border-radius: 999px; vertical-align: middle; }
+  main { padding: 12px 16px 30px; display: grid; gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+  h2 { margin: 0 0 8px; font-size: 17px; color: var(--ink); }
+  h3 { margin: 10px 0 4px; font-size: 14.5px; color: var(--ink); }
+  .note { font-size: 13.5px; color: var(--muted); margin: 0; }
+  .prev { background: var(--warnbg); color: var(--warnink); border: 0; font-size: 13.5px; }
+  .prev b { color: inherit; }
+  /* the answer at the top */
+  .hero { border-left: 6px solid var(--b0); }
+  .hero .hd { font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .hero p { margin: 6px 0 0; }
+  .hero.b1 { border-left-color: var(--b1); background: var(--b1bg); } .hero.b2 { border-left-color: var(--b2); background: var(--b2bg); } .hero.b3 { border-left-color: var(--b3); background: var(--b3bg); }
+  /* the comparison table */
+  .tw { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px 6px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  @media (max-width: 520px) { table { font-size: 13px; } th, td { padding-right: 5px; } .pct { display: block; } }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-top: 0; }
+  td.n { font-variant-numeric: tabular-nums; }
+  .bar { height: 7px; border-radius: 4px; background: var(--soft); margin-top: 4px; position: relative; overflow: hidden; max-width: 160px; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--b0); }
+  .bar i.b1 { background: var(--b1); } .bar i.b2 { background: var(--b2); } .bar i.b3 { background: var(--b3); }
+  .pct { font-size: 12.5px; color: var(--muted); }
+  .sz { font-size: 12px; color: var(--muted); display: block; }
+  .cb { position: relative; height: 210px; margin-top: 6px; }
+  .key { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  ul.plain { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 6px; }
+  .fact { border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; }
+  .fact b { display: block; font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .fact span { font-size: 12.5px; color: var(--muted); }
+  .empty { color: var(--muted); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } header .h911 { display: none; } }
+  nav a.on { color: var(--ink); font-weight: bold; }
+</style>
+<link rel="stylesheet" href="nav.css?v=20261108b">
+</head>
+<body>
+<header><div class="wrap">
+  <img src="img/oneshoreline-mark-white.png" alt="">
+  <div><h1>Cordilleras Creek <span class="tag">PREVIEW</span></h1><div class="org"><a href="staff.html">Staff tools</a> · OneShoreline Flood Early Warning</div></div>
+  <div class="h911">In an emergency, call 911.</div>
+</div></header>
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="staff.html"><span class="i" aria-hidden="true">🧰</span>Staff tools</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+<main>
+  <div class="card prev"><b>Preview for staff review.</b> Not linked from the public pages. Cordilleras Creek has no creek gauge, so this
+    page compares rain with the New Year's Eve 2022 storm, when the creek flooded parts of Redwood City.</div>
+
+  <section class="card hero" id="hero" aria-live="polite">
+    <div class="hd" id="heroHd">Loading…</div>
+    <p id="heroWhy"></p>
+  </section>
+
+  <div class="card">
+    <h2>Rain compared with New Year's Eve 2022</h2>
+    <div class="tw"><table id="cmp"><tr><td class="empty">Loading…</td></tr></table></div>
+    <p class="note" id="cmpNote" style="margin-top:8px"></p>
+  </div>
+
+  <div class="card">
+    <h2>Hour by hour</h2>
+    <div class="cb"><canvas id="cNow" role="img" aria-label="Rain in the last 48 hours and the forecast, hour by hour"></canvas></div>
+    <div class="key"><span><i style="background:var(--meas)"></i>measured (Belmont)</span><span><i style="background:var(--fc);border:1px solid var(--fcline)"></i>forecast (RRFS, watershed)</span></div>
+    <h3>Dec 30 – 31, 2022, same scale</h3>
+    <div class="cb"><canvas id="cNye" role="img" aria-label="Rain hour by hour on Dec 30 and 31, 2022, at Belmont"></canvas></div>
+    <div class="key"><span><i style="background:var(--nye)"></i>measured (Belmont)</span></div>
+    <p class="note" id="meta" style="margin-top:8px"></p>
+  </div>
+
+  <div class="card">
+    <h2>What happened on Dec 31, 2022</h2>
+    <div class="facts">
+      <div class="fact"><b>4.56 in</b><span>at Belmont on Dec 31, about 4.5 in across Redwood City (third-wettest day on record there)</span></div>
+      <div class="fact"><b>0.88 in</b><span>wettest hour at Belmont (1:05–2:05 PM): nearly a 25-year storm</span></div>
+      <div class="fact"><b>4.12 in</b><span>in 12 hours at Belmont (3:45 AM–3:40 PM): beyond a 100-year storm there</span></div>
+      <div class="fact"><b>7.8 ft</b><span>Redwood City high tide at 7:12 AM, 0.8 ft above the tide table, during the first burst</span></div>
+    </div>
+    <ul class="plain" style="margin-top:10px">
+      <li><b>Two bursts.</b> About 4–8 AM and 12–3 PM. The second, wetter hour came near low tide, so the flooding wasn't mainly the Bay.</li>
+      <li><b>Wet ground first.</b> Belmont had 2.3 in from Dec 26 to 30, and Huddart Park 5.3 in.</li>
+      <li><b>Where it flooded.</b> The alphabet streets (G Street) and the Centennial and Edgewood Park neighborhoods along the creek in Redwood City.
+        Debris in the channel has been raised since; the creek is privately owned along most of its length.</li>
+      <li><b>Nearby gauges that day:</b> Huddart Park (hills, 3.2 mi south) 7.30 in; Atherton (Caltrain) 3.24 in.</li>
+    </ul>
+    <p class="note" style="margin-top:8px">Sources: OneRain gauge records (Belmont 41104, Huddart Park, Atherton 41106), NOAA tide gauge 9414523, NOAA Atlas 14;
+      <a href="https://www.rwcpulse.com/?p=10447" target="_blank" rel="noopener">Redwood City Pulse</a> and
+      <a href="https://www.smdailyjournal.com/news/local/management-of-cordilleras-creek-still-in-question-in-redwood-city/article_ee7b60bc-c4a0-11ee-bd68-ffe4d29575f0.html" target="_blank" rel="noopener">San Mateo Daily Journal</a> on the flooding.</p>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary><b>How this is worked out</b></summary>
+      <ul class="plain" style="margin-top:8px">
+        <li><b>Measured rain:</b> the Belmont Creek rain gauge at Old County Road, 2.4 miles north on the same bay plain. It recorded the whole
+          Dec 2022 storm, so measured rain is compared with Belmont's own record of it. Pulgas, 1.8 miles west in the hills, is closer, but its
+          record starts in 2023; in 10 storms since, it caught about the same as Belmont in the wettest hour and 10–25% more over 3 to 12 hours.</li>
+        <li><b>Forecast:</b> RRFS (AQPI / CW3E) averaged over the 2 grid points in the Cordilleras watershed, the same forecast as on the
+          <a href="RainForecast.html">RRFS rain page</a>. It is compared with the Dec 2022 storm adjusted to the watershed: Belmont's record times
+          the ratio of NOAA Atlas 14 at the watershed's center to Atlas 14 at Belmont (1.09–1.12, about 10% more).</li>
+        <li><b>Windows:</b> the wettest 1, 3, 6, 12, 24 and 48 hours, in whole clock hours. "Measured" looks at the last 48 hours; "forecast" at the
+          rest of the forecast run (about 3.5 days); "together" joins the two, for a storm that is underway.</li>
+        <li><b>Storm size</b> is NOAA Atlas 14 at the watershed's center (a point value, so a watershed average leans a little low).</li>
+        <li><b>What it can't say:</b> whether the creek will flood. That also depends on debris and blockages in the channel, culverts, how wet the
+          ground already is, and the tide at the outlet (see <a href="Tides.html">Tides</a>, Redwood City).</li>
+      </ul>
+    </details>
+  </div>
+</main>
+
+<script>
+var RAW = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/";
+var TZ = "America/Los_Angeles";
+var WS = "CORDILLERAS CREEK";
+// Belmont Creek at Old County Rd (OneRain 41104), inches in each clock hour from Dec 29, 2022 00:00 (Pacific); the gauge tips at 0.04 in.
+var NYE_T0 = "2022-12-29 00:00";
+var NYE_BEL = [0,0,0.04,0.04,0,0,0,0.04,0,0.04,0,0,0,0,0,0,0.04,0,0.04,0.04,0.04,0,0,0,0.04,0.08,0.04,0,0.04,0,0,0.04,0.08,0.04,0.04,0,0,0,0,0,0.04,0,0.04,0,0,0,0,0.04,0.08,0.04,0.08,0.04,
+  0.32,0.68,0.6,0.28,0.08,0.08,0.2,0.04,0.28,0.8,0.56,0.16,0.12,0.08,0.04,0,0,0,0,0,0,0,0,0,0,0];
+var HOURS = [1, 3, 6, 12, 24, 48];
+// Atlas 14 at the watershed's center over Atlas 14 at Belmont (2-year column); turns Belmont's record into a watershed estimate
+var K = { 1: 1.12, 3: 1.11, 6: 1.11, 12: 1.11, 24: 1.09, 48: 1.10 };
+// NOAA Atlas 14 (PDS, inches) at 37.4822, -122.2667 for 1, 2, 5, 10, 25, 50, 100 years
+var ARI = [1, 2, 5, 10, 25, 50, 100];
+var A14 = { 1: [0.472, 0.577, 0.717, 0.834, 0.998, 1.13, 1.26], 3: [0.868, 1.05, 1.30, 1.51, 1.80, 2.03, 2.26], 6: [1.23, 1.50, 1.87, 2.18, 2.60, 2.94, 3.29],
+  12: [1.61, 2.00, 2.53, 2.98, 3.60, 4.09, 4.60], 24: [1.97, 2.50, 3.21, 3.80, 4.63, 5.29, 5.97], 48: [2.49, 3.16, 4.06, 4.80, 5.84, 6.65, 7.50] };
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function inch(v) { return v < 0.005 ? "0" : v.toFixed(2); }
+// the wettest run of n consecutive values
+function maxRun(a, n) { var best = 0, s = 0; for (var i = 0; i < a.length; i++) { s += a[i] || 0; if (i >= n) s -= a[i - n] || 0; if (s > best) best = s; } return best; }
+function size(h, v) {
+  var t = A14[h], k = -1; for (var i = 0; i < t.length; i++) if (v >= t[i]) k = i;
+  if (k < 0) return "under a 1-year storm";
+  return k === t.length - 1 ? "beyond a 100-year storm" : "about a " + ARI[k] + "-year storm";
+}
+function sizeShort(h, v) {   // for the table: "10-yr storm", "under 1-yr", "over 100-yr"
+  var t = A14[h], k = -1; for (var i = 0; i < t.length; i++) if (v >= t[i]) k = i;
+  return k < 0 ? "under 1-yr" : k === t.length - 1 ? "over 100-yr" : ARI[k] + "-yr storm";
+}
+function band(p) { return p >= 1 ? 3 : p >= 0.75 ? 2 : p >= 0.5 ? 1 : 0; }
+function dur(h) { return h === 1 ? "1 hour" : h + " hours"; }
+function localHourKey(ms) {
+  var p = {}; new Intl.DateTimeFormat("en-US", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date(ms)).forEach(function (x) { p[x.type] = x.value; });
+  return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":00";
+}
+function hourLabel(ms) { return new Date(ms).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric" }); }
+var NYE = {}; HOURS.forEach(function (h) { NYE[h] = maxRun(NYE_BEL, h); });
+
+var charts = {};
+function render(st, rf) {
+  var now = Date.now(), H = 3600000, top = Math.floor(now / H) * H;
+  // measured: Belmont, the last 48 clock hours (the current hour last)
+  var led = (st && st.ledger && st.ledger.bel_rain && st.ledger.bel_rain.h) || {}, mx = [], mv = [];
+  for (var i = 47; i >= 0; i--) { var t = top - i * H; mx.push(t); mv.push(+led[localHourKey(t)] || 0); }
+  // forecast: RRFS hourly over the watershed, steps after now (each step's value is the hour ending at its time)
+  var W = rf && rf.watersheds && rf.watersheds[WS], P = rf && rf.products && rf.products["60"], fx = [], fv = [];
+  if (W && W.p60 && P) P.steps.forEach(function (s, k) { var e = Date.parse(s); if (e > now && W.p60.avg[k] != null) { fx.push(e - H); fv.push(+W.p60.avg[k] || 0); } });
+  // together: measured (scaled to the watershed) then the forecast
+  var tog = mv.map(function (v) { return v * 1.1; }).concat(fv);
+  var rows = HOURS.map(function (h) {
+    var m = maxRun(mv, h), f = maxRun(fv, h), g = maxRun(tog, h), ref = NYE[h] * K[h];
+    return { h: h, nye: NYE[h], ref: ref, m: m, mp: m / NYE[h], f: f, fp: f / ref, g: g, gp: g / ref };
+  });
+  var cell = function (v, p, h) {
+    return "<td class='n'>" + inch(v) + " in <span class='pct'>(" + Math.round(p * 100) + "%)</span><div class='bar'><i class='b" + band(p) + "' style='width:" +
+      Math.min(100, p * 100).toFixed(0) + "%'></i></div>" + (v >= A14[h][0] ? "<span class='sz'>" + sizeShort(h, v) + "</span>" : "") + "</td>";
+  };
+  $("cmp").innerHTML = "<tr><th>Wettest</th><th>Dec 31, 2022</th><th>Measured, last 48 h</th><th>Forecast" + (fx.length ? "" : " (none)") + "</th><th>Together</th></tr>" +
+    rows.map(function (r) {
+      return "<tr><td>" + dur(r.h) + "</td><td class='n'>" + inch(r.nye) + " in<span class='sz'>\u2248 " + inch(r.ref) + " in watershed, " + sizeShort(r.h, r.ref).replace(" storm", "") + "</span></td>" + cell(r.m, r.mp, r.h) + cell(r.f, r.fp, r.h) + cell(r.g, r.gp, r.h) + "</tr>";
+    }).join("");
+  $("cmpNote").textContent = "Percent of the Dec 31, 2022 storm over the same length of time. Measured: Belmont against Belmont's own record. " +
+    "Forecast and together: the Cordilleras watershed against the Dec 2022 storm adjusted to the watershed (about 10% more than Belmont). " +
+    "Storm sizes are NOAA Atlas 14 at the watershed's center.";
+
+  // the answer: the closest any window comes to Dec 2022, measured or forecast
+  var best = null; rows.forEach(function (r) { [["m", "measured", r.mp, r.m], ["g", "forecast", r.gp, r.g]].forEach(function (x) { if (!best || x[2] > best.p) best = { kind: x[1], p: x[2], v: x[3], h: r.h }; }); });
+  var b = best ? band(best.p) : 0, hero = $("hero");
+  hero.className = "card hero" + (b ? " b" + b : "");
+  var words = ["Well below", "About half of", "Approaching", "At or above"][b];
+  if (!best || best.v < 0.01) { $("heroHd").textContent = "No rain measured or forecast"; $("heroWhy").textContent = "Nothing in the last 48 hours at Belmont or in the RRFS forecast for the watershed."; }
+  else {
+    $("heroHd").textContent = words + " the New Year's Eve 2022 storm";
+    $("heroWhy").innerHTML = "Closest: <b>" + inch(best.v) + " in in " + dur(best.h) + "</b> (" + (best.kind === "measured" ? "measured" : "measured so far plus forecast") +
+      "), " + Math.round(best.p * 100) + "% of Dec 31, 2022 over the same time, " + esc(size(best.h, best.v)) + ". Rain alone; the creek also depends on debris, how wet the ground is, and the tide.";
+  }
+
+  // charts, on one scale
+  var ymax = Math.max(1, Math.max.apply(null, NYE_BEL.concat(mv, fv)) * 1.1);
+  var axes = function (labels) {
+    return { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: function (v, i) { return labels[i] || ""; } } },
+      y: { min: 0, max: ymax, title: { display: true, text: "in per hour" } } };
+  };
+  // a label at each midnight only (the day), so it stays readable on a phone
+  var lab = function (xs) { return xs.map(function (t) { var hh = +new Date(t).toLocaleString("en-US", { timeZone: TZ, hour: "numeric", hourCycle: "h23" });
+    return hh === 0 ? new Date(t).toLocaleString("en-US", { timeZone: TZ, weekday: "short" }) : ""; }); };
+  var css = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  var xs = mx.concat(fx), lb = lab(xs);
+  var d1 = mv.concat(fv.map(function () { return null; })), d2 = mv.map(function () { return null; }).concat(fv);
+  var tip = function (xs2) { return { callbacks: { title: function (it) { return hourLabel(xs2[it[0].dataIndex]); }, label: function (it) { return inch(it.raw) + " in"; } } }; };
+  if (charts.now) charts.now.destroy();
+  charts.now = new Chart($("cNow"), { type: "bar", data: { labels: xs, datasets: [
+      { data: d1, backgroundColor: css("--meas"), barPercentage: 1, categoryPercentage: 0.9 },
+      { data: d2, backgroundColor: css("--fc"), borderColor: css("--fcline"), borderWidth: 1, barPercentage: 1, categoryPercentage: 0.9 }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: tip(xs) }, scales: axes(lb) } });
+  var nx = NYE_BEL.map(function (v, i) { return Date.parse("2022-12-29T08:00:00Z") + i * H; });
+  if (!charts.nye) charts.nye = new Chart($("cNye"), { type: "bar", data: { labels: nx, datasets: [{ data: NYE_BEL, backgroundColor: css("--nye"), barPercentage: 1, categoryPercentage: 0.9 }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: tip(nx) }, scales: axes(lab(nx)) } });
+  else { charts.nye.options.scales.y.max = ymax; charts.nye.update(); }
+  $("meta").textContent = "Measured: Belmont Creek at Old County Rd, to " + hourLabel(top + H) + (st && st.generated ? " (updated " + st.generated + ")" : "") +
+    ". Forecast: RRFS run " + (P ? new Date(P.run).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" }) : "not available") + ".";
+}
+
+function load() {
+  var get = function (f) { return fetch(RAW + f + "?t=" + Math.floor(Date.now() / 120000), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(f + " " + r.status); return r.json(); }).catch(function () { return null; }); };
+  Promise.all([get("storm_tracker.json"), get("rrfs.json")]).then(function (x) {
+    if (!x[0] && !x[1]) { $("heroHd").textContent = "Couldn't load the rain data"; $("heroWhy").textContent = "Try again in a few minutes."; return; }
+    render(x[0], x[1]);
+  });
+}
+load();
+setInterval(load, 10 * 60000);
+</script>
+</body>
+</html>
