@@ -45,9 +45,11 @@ Pulgas against Belmont in the 10 storms with 0.5 in or more at both (Jan–Feb 2
 in the wettest hour (0.97×), 1.08× over 3 hours, 1.14× over 6 hours, 1.22× over 12 hours, 1.27× in storm totals.
 Huddart runs about 1.5× Belmont.
 
-**Belmont is used for measured rain** because it recorded the whole Dec 2022 storm and is already in the FEWS data
-job, so measured rain is compared with Belmont's own record of that storm. Adding Pulgas to the data job would bring a
-gauge closer to the upper watershed, but there's no Dec 2022 record to compare it with.
+**Measured rain is the average of Belmont and Pulgas** (from 2026-11-24). Pulgas is in the data job as a "logged"
+gauge (`creek_gauges.csv` role `logged`, listed under Belmont): it is read and kept in the hourly record
+(`storm_tracker.json`) but counts toward nothing on the Belmont Creek pages. The average of the two runs about 10% above
+Belmont, matching the Atlas 14 ratio below, so it is compared with Belmont's Dec 2022 record times K, the same as the
+forecast. For hours before Pulgas was logged, the page uses Belmont times 1.1.
 
 ## The forecast
 
@@ -67,6 +69,13 @@ NOAA Atlas 14 (PDS, inches) at the watershed center, from the NOAA PFDS, 2026-11
 | 12 h | 1.61 | 2.00 | 2.53 | 2.98 | 3.60 | 4.09 | 4.60 |
 | 24 h | 1.97 | 2.50 | 3.21 | 3.80 | 4.63 | 5.29 | 5.97 |
 | 48 h | 2.49 | 3.16 | 4.06 | 4.80 | 5.84 | 6.65 | 7.50 |
+
+## How good the forecast is here
+
+The Storm Tracker's "Rain forecast vs measured" card checks Cordilleras too (`scripts/rrfs_review.py`, `WATCH`): storms
+are found in the Belmont + Pulgas average with the Storm Tracker's own rules (6 dry hours, at least 0.1 in), and the RRFS
+forecast for the watershed 6 and 24 hours ahead is rated against Atlas 14 at the watershed's center (Heavy, Very heavy
+and Intense at the 1-, 2- and 5-year depths). "Heavy forecast with no storm" isn't checked for Cordilleras yet.
 
 ## The headline
 
