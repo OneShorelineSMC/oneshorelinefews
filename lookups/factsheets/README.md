@@ -8,7 +8,7 @@ One page per creek in the **FEWS 2026 Update**, the new public creek and tide st
 |---|---|---|---|---|---|---|
 | [Colma Creek](colma.md) | Public pages | Daly City; Colma; South San Francisco | 1 | 2 | Yes | 4 |
 | [San Bruno Creek](sanbruno.md) | Public pages | San Bruno; South San Francisco | 1 | 1 | Yes, but what they mean isn't recorded | 4 |
-| [Belmont Creek](belmont.md) | Public pages | Belmont; San Carlos; unincorporated Harbor Industrial Area | 1 | 1 | Yes | 7 |
+| [Belmont Creek](belmont.md) | Public pages | Belmont; San Carlos; unincorporated Harbor Industrial Area | 1 | 2 | Yes | 7 |
 | [Atherton Channel](atherton.md) | Public pages | Woodside (upper watershed); Atherton; unincorporated North Fair Oaks; Redwood City | 2 | 1 | Yes | 3 |
 | [San Francisquito Creek](sanfrancisquito.md) | Staff preview only | Woodside; Portola Valley; Menlo Park; East Palo Alto; Palo Alto; Stanford (unincorporated Santa Clara County) | 1 | 3 | Yes | 3 |
 | [San Mateo Creek](sanmateo.md) | Staff preview only | Hillsborough; San Mateo | 1 | 1 | Yes | 4 |
