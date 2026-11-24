@@ -88,7 +88,6 @@ How settings were chosen: the highest setting that still warned before all, or a
 | Gauge | OneRain ID | Location | Where | Use in the 2026 Update |
 |---|---|---|---|---|
 | Old County Road | 41104 | 37.51719, -122.27125 | lower watershed | Shown on the 2026 Update page and counts toward the rain indicator |
-| Pulgas | PUL | 37.47500, -122.29800 | hills 1.8 mi west of the Cordilleras watershed | Shown on the 2026 Update page and counts toward the rain indicator |
 
 **Rain triggers** (flood levels for rain: each one sets the creek to the status shown)
 
@@ -108,9 +107,6 @@ The rain indicator uses the heaviest rain over any window: Heavy = 1-year storm,
 | Old County Road | Heavy (1-year) | 0.22 | 0.305 | 0.432 | 1.76 |
 | Old County Road | Very heavy (2-year) | 0.264 | 0.366 | 0.517 | 2.29 |
 | Old County Road | Intense (5-year) | 0.324 | 0.45 | 0.637 | 2.98 |
-| Pulgas | Heavy (1-year) | 0.265 | 0.368 | 0.52 | 2.18 |
-| Pulgas | Very heavy (2-year) | 0.323 | 0.449 | 0.635 | 2.78 |
-| Pulgas | Intense (5-year) | 0.402 | 0.559 | 0.791 | 3.59 |
 
 Source: NOAA Atlas 14 Vol. 6 v2, partial-duration series, point estimate at the gauge (pulled 2026-10-13).
 
