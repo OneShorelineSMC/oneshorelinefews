@@ -161,7 +161,7 @@ def main():
         cf = cfacts.get(cid, {})
         cg = [g for g in gauges if g["creek"] == cid]
         stages = [g for g in cg if g["type"] == "stage"]
-        rains = [g for g in cg if g["type"] == "rain"]
+        rains = [g for g in cg if g["type"] == "rain" and g.get("role") != "logged"]   # logged gauges serve other pages
         tide = tides.get(c.get("tide_station", ""), {})
         public = c.get("preview_only", "").lower() != "yes"
         cdash = [d for d in dash if d["creek"] == cid]

@@ -82,6 +82,30 @@ try:
     out5 = R.review(tracker, runs, FREQ, MINS, creeks, T("2026-11-24 12:00"), prev=out, since="2026-11-24 00:00")
     check("reset: nothing after it yet", out5["storms"] == [] and out5["heavy_no_storm"] == [] and out5["log_from"] == "2026-11-24 00:00")
     check("verdicts", R.verdict(1, 0) == "over-forecast" and R.verdict(0, 0) == "no Heavy" and R.verdict(None, 1) == "not rated")
+
+    # ---- a watershed with no gauge (WATCH): Cordilleras from Belmont + Pulgas
+    W = R.WATCH[0]
+    hh = lambda h, d=24: "2026-11-%02d %02d:00" % (d, h)
+    led = {"bel_rain": {"kind": "rain", "h": {hh(9): 0.2, hh(10): 0.6, hh(11): 0.2}},
+           "pul_rain": {"kind": "rain", "h": {hh(10): 0.8, hh(11): 0.4}}}
+    ser = R.watch_series(led, W)
+    check("watch: Belmont alone x 1.1 before Pulgas's record starts", abs(ser[T(hh(9))] - 0.22) < 1e-9)
+    check("watch: the two averaged once both have a record", abs(ser[T(hh(10))] - 0.7) < 1e-9 and abs(ser[T(hh(11))] - 0.3) < 1e-9)
+    ws = R.watch_storms(led, {"STORM_DRY_HOURS": 6, "STORM_MIN_IN": 0.1}, T("2026-11-24 20:00"), W)
+    st, closed = ws[0]
+    check("watch: one storm 9:00-11:00, closed, total 1.22 in", len(ws) == 1 and st["start"] == hh(9) and st["end"] == hh(11) and closed
+          and st["rain"][0]["total"] == 1.22)
+    rows2 = [(T("2026-11-23 09:00"), W["id"], T(hh(9)) + dt.timedelta(hours=i), v, v * 1.4) for i, v in enumerate([0.1, 0.6, 0.3])]
+    p2 = os.path.join(tmp, "rrfs_log2.csv")
+    open(p2, "w").write(log(rows2))
+    out_w = R.review({"generated": "2026-11-24 20:00", "storms": [], "open": [], "ledger": led, "rules": {"STORM_DRY_HOURS": 6, "STORM_MIN_IN": 0.1}},
+                     R.read_log(p2), FREQ, MINS, [], T("2026-11-24 20:00"), since=None)
+    sw = [x for x in out_w["storms"] if x["creek"] == W["id"]]
+    check("watch: storm reviewed against the watershed's Atlas 14; 0.7 in in an hour is Very heavy (2-year 0.577), forecast 0.6, caught",
+          len(sw) == 1 and sw[0]["measured"]["level"] == 2 and sw[0]["leads"]["24"]["verdict"] == "caught" and sw[0]["name"].startswith("Cordilleras"))
+    out_k = R.review({"generated": "2026-12-05 12:00", "storms": [], "open": [], "ledger": {}, "rules": {}}, R.read_log(p2), FREQ, MINS, [],
+                     T("2026-12-05 12:00"), prev=out_w, since=None)
+    check("watch: a closed result kept after its hours leave the record", [x["start"] for x in out_k["storms"] if x["creek"] == W["id"]] == [hh(9)])
 finally:
     shutil.rmtree(tmp)
 

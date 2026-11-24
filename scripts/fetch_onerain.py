@@ -81,7 +81,7 @@ def set_sensors(creeks):
     for c in creeks:
         for g in c["stages"]:
             SENSORS[g["key"]] = dict(g, name=f"{g['site_name']} ({g['number']}) – Stage", kind="stage", unit="ft")
-        for g in c["rain"] + c.get("rain_support", []):
+        for g in c["rain"] + c.get("rain_support", []) + c.get("rain_logged", []):   # logged: read and kept, counts toward nothing
             SENSORS[g["key"]] = dict(g, name=f"{g['label']} ({g['number']}) – Rain", kind="rain_increment", unit="in")
 
 
@@ -90,7 +90,7 @@ def creeks_from_previous(previous_file):
     out = []
     for c in all_creeks(previous_file):
         c = json.loads(json.dumps(c))
-        for g in c.get("stages", []) + c.get("rain", []) + c.get("rain_support", []):
+        for g in c.get("stages", []) + c.get("rain", []) + c.get("rain_support", []) + c.get("rain_logged", []):
             if g.get("source") == "usgs":
                 g.pop("url", None)
                 continue
@@ -245,7 +245,7 @@ def public_config():
                       f"{SITE}/sensor/?site_id={g['site_id']}&site={g['site']}&device_id={g['device_id']}&device={g['device']}")
         return out
     out = [dict(c, stages=[gauge(g) for g in c["stages"]], rain=[gauge(g) for g in c["rain"]],
-                rain_support=[gauge(g) for g in c.get("rain_support", [])]) for c in CREEKS]
+                rain_support=[gauge(g) for g in c.get("rain_support", [])], rain_logged=[gauge(g) for g in c.get("rain_logged", [])]) for c in CREEKS]
     # Staff-preview creeks go in a separate list, so the public pages never see them
     return [c for c in out if not c.get("preview_only")], [c for c in out if c.get("preview_only")]
 

@@ -21,6 +21,12 @@ Hourly windows only: the forecast is hourly, so the gauges' 15- and 30-minute bu
 a watershed average and the gauge is one point, so totals are expected to differ; the ratings and timing matter more.
 Results for closed storms are kept as they are (rrfs_log.csv keeps 60 days), and dropped at the new water year.
 
+Creeks with no gauge of their own (WATCH, staff 2026-11-24): the same check for a watershed in the RRFS log, against
+the average of nearby rain gauges in the hourly record, rated against NOAA Atlas 14 at the watershed's center. Its storms
+come from that average with the Storm Tracker's own rules (STORM_DRY_HOURS, STORM_MIN_IN). Cordilleras Creek: Belmont
+and Pulgas (Pulgas alone has no Dec 2022 record; until the hourly record has Pulgas, Belmont x 1.1, the Atlas 14 ratio of
+the watershed's center to Belmont). Basis: lookups/CORDILLERAS_BASIS.md.
+
 Writes rrfs_review.json (the Storm Tracker shows it) and rrfs_review.csv (one row per storm and lead time).
 
 Usage: python rrfs_review.py out/storm_tracker.json out/rrfs_log.csv out/rrfs_review.json [--creeks out/creeks.json]
@@ -49,6 +55,63 @@ H = dt.timedelta(hours=1)
 # would be checked against and "Heavy forecast with no storm" from them are left out, including any already kept in
 # rrfs_review.json (staff, 2026-11-22: reset). None = from the start of the log.
 REVIEW_FROM = "2026-11-22 07:00"
+# Watersheds with no creek gauge, checked against nearby rain gauges (see the docstring). freq: NOAA Atlas 14 (PDS,
+# inches) at the watershed's center, {minutes: {years: depth}}; Heavy, Very heavy and Intense are the 1-, 2- and 5-year
+# depths, as for the gauges in rain_frequency.csv.
+WATCH = [{
+    "id": "ws:CORDILLERAS CREEK", "name": "Cordilleras Creek (no gauge)", "gauges": ["bel_rain", "pul_rain"], "one_scale": 1.1,
+    "label": "Belmont + Pulgas", "minutes": [60, 180, 360, 720, 1440],
+    "freq": {60: {1: 0.472, 2: 0.577, 5: 0.717, 10: 0.834, 25: 0.998, 100: 1.26},
+             180: {1: 0.868, 2: 1.05, 5: 1.30, 10: 1.51, 25: 1.80, 100: 2.26},
+             360: {1: 1.23, 2: 1.50, 5: 1.87, 10: 2.18, 25: 2.60, 100: 3.29},
+             720: {1: 1.61, 2: 2.00, 5: 2.53, 10: 2.98, 25: 3.60, 100: 4.60},
+             1440: {1: 1.97, 2: 2.50, 5: 3.21, 10: 3.80, 25: 4.63, 100: 5.97}}}]
+
+
+def watch_freq(w):
+    return {"minutes": {m: dict(v) for m, v in w["freq"].items()}, "levels": {m: [v[1], v[2], v[5]] for m, v in w["freq"].items()}}
+
+
+def watch_series(ledger, w):
+    """{hour: inches} for a watershed: the average of its gauges over the hours each has a record for (a gauge's record
+    starts at its first logged hour); an hour with one gauge only is that gauge times one_scale (Belmont alone x 1.1)."""
+    recs = {}
+    for k in w["gauges"]:
+        h = {parse_t(t): float(v) for t, v in ((ledger.get(k) or {}).get("h") or {}).items()}
+        if h:
+            recs[k] = (min(h), h)
+    out = {}
+    for hr in sorted({t for _, h in recs.values() for t in h}):
+        vals = [h.get(hr, 0.0) for t0, h in recs.values() if hr >= t0]
+        if not vals:
+            continue
+        out[hr] = (sum(vals) / len(vals)) if len(vals) > 1 else vals[0] * w.get("one_scale", 1.0)
+    return out
+
+
+def watch_storms(ledger, rules, now, w):
+    """Storms in a watershed's average series, by the Storm Tracker's rules, in the shape check_storm reads."""
+    dry, mn, wet = int(rules.get("STORM_DRY_HOURS", 6)), float(rules.get("STORM_MIN_IN", 0.1)), float(rules.get("STORM_WET_IN", 0.01))
+    ser = watch_series(ledger, w)
+    hrs = [t for t in sorted(ser) if ser[t] >= wet]
+    groups, cur = [], []
+    for t in hrs:
+        if cur and (t - cur[-1]) > dry * H:
+            groups.append(cur); cur = []
+        cur.append(t)
+    if cur:
+        groups.append(cur)
+    out = []
+    for g in groups:
+        a, b = g[0], g[-1]
+        part = {t: v for t, v in ser.items() if a <= t <= b}
+        tot = round(sum(part.values()), 2)
+        if tot < mn:
+            continue
+        gauge = {"label": w["label"], "number": w["id"], "total": tot, "series": [[hkey(t), round(v, 3)] for t, v in sorted(part.items())],
+                 "peaks": {str(m): {"in": window_peak(part, a, b, m // 60)[0]} for m in w["minutes"]}}
+        out.append(({"creek": w["id"], "name": w["name"], "start": hkey(a), "end": hkey(b), "rain": [gauge]}, b <= now - dry * H))
+    return out
 
 
 def to_local(s):
@@ -256,6 +319,24 @@ def review(tracker, runs, freq, mins_of, creeks, now, prev=None, since=REVIEW_FR
         if s:
             s["closed"] = closed
             storms.append(s)
+    for w in WATCH:   # watersheds with no creek gauge, against nearby rain gauges
+        wf = dict(freq or {}); wf[w["id"]] = watch_freq(w)
+        for st, closed in watch_storms(tracker.get("ledger", {}), tracker.get("rules", {}), now, w):
+            k = (st["creek"], st["start"])
+            if st["start"] < s0:
+                continue
+            if k in kept:
+                storms.append(kept[k]); continue
+            if first is None or parse_t(st["start"]) - min(LEADS) * H < first:
+                continue
+            s = check_storm(st, runs, wf, w["minutes"])
+            if s:
+                s["closed"] = closed
+                storms.append(s)
+        # kept results whose hours have left the hourly record (the record keeps about a week; the creeks' own storms stay in
+        # storm_tracker.json all year, these don't)
+        have = {(x["creek"], x["start"]) for x in storms}
+        storms += [v for k, v in kept.items() if k[0] == w["id"] and k not in have]
     fas = [x for x in prev.get("heavy_no_storm", []) if x["run"] >= wy0]
     done = {(x["creek"], x["run"]) for x in fas} | set(tuple(x) for x in prev.get("checked_runs", []))
     new = heavy_no_storm(runs, tracker.get("ledger", {}), creeks, tracker.get("storms", []) + tracker.get("open", []), freq, mins_of, now, done)

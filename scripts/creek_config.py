@@ -129,7 +129,7 @@ def load_creeks(tides):
             errors.append(f"{w}: order must be a number"); continue
         c = {"id": cid, "name": r["name"], "short": r["short_name"], "rain_windows": wins,
              "intro": r.get("intro", ""), "tide": r.get("tide_station") or None, "note": r.get("note", ""), "stages": [], "rain": [],
-             "rain_support": [], "preview_only": pv == "yes"}
+             "rain_support": [], "rain_logged": [], "preview_only": pv == "yes"}
         if rmax:
             c["rating_max_min"] = int(rmax)   # longest rain window that rates (blank: RAIN_RATING_MAX_MIN)
         rg, rm, rl = r.get("running_rain_gauge", ""), r.get("running_rain_min", ""), r.get("running_rain_label", "")
@@ -188,13 +188,15 @@ def load_creeks(tides):
             creeks[cid]["stages"].append(g)
         else:
             # role: blank/primary = shown on the pages; supporting = counts toward the creek's rain level only
-            # (creek status layer, staff preview), not in the rain tables or graphs
-            if role not in ("", "primary", "supporting"):
-                errors.append(f"{w}: role must be primary, supporting or blank for a rain gauge"); continue
+            # (creek status layer, staff preview), not in the rain tables or graphs; logged = read and kept in the hourly
+            # record (storm_tracker.json) only, for pages outside the creek list (staff 2026-11-24: Pulgas, for the
+            # Cordilleras Creek page); it counts toward nothing and the creek pages don't show it
+            if role not in ("", "primary", "supporting", "logged"):
+                errors.append(f"{w}: role must be primary, supporting, logged or blank for a rain gauge"); continue
             if r.get("rise_ft", "").strip():
                 errors.append(f"{w}: rise_ft is for stage gauges only; leave it blank for a rain gauge"); continue
             g["where"] = r.get("where", "")
-            creeks[cid]["rain_support" if role == "supporting" else "rain"].append(g)
+            creeks[cid]["rain_support" if role == "supporting" else "rain_logged" if role == "logged" else "rain"].append(g)
         keys.add(key)
     for c in creeks.values():
         if not c["stages"]:
