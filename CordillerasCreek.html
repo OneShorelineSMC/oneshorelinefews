@@ -143,7 +143,7 @@
     <h2>Rain each hour</h2>
     <p class="note">The last 2 days and the next 3. The dashed line is the heaviest hour on New Year's Eve 2022.</p>
     <div class="cb"><canvas id="cNow" role="img" aria-label="Rain each hour, the last 2 days and the forecast"></canvas></div>
-    <div class="key"><span><i style="background:var(--meas)"></i>rain that fell (Belmont rain gauge)</span><span><i style="background:var(--fc);border:1px solid var(--fcline)"></i>rain forecast</span><span><i style="background:none;border-top:2px dashed var(--b3);border-radius:0;height:0;width:16px;vertical-align:3px"></i>heaviest hour, New Year's Eve 2022</span></div>
+    <div class="key"><span><i style="background:var(--meas)"></i>rain that fell (<span id="measKey">Belmont rain gauge</span>)</span><span><i style="background:var(--fc);border:1px solid var(--fcline)"></i>rain forecast</span><span><i style="background:none;border-top:2px dashed var(--b3);border-radius:0;height:0;width:16px;vertical-align:3px"></i>heaviest hour, New Year's Eve 2022</span></div>
   </div>
 
   <div class="card">
@@ -194,9 +194,10 @@
     <details>
       <summary><b>About this page (technical details)</b></summary>
       <ul class="plain" style="margin-top:8px">
-        <li>Rain that fell is from the Belmont Creek rain gauge at Old County Road, 2.4 miles north on the same bay plain. It recorded the whole
-          Dec 2022 storm, so today's rain there is compared with its own record of that storm. The Pulgas gauge, 1.8 miles west in the hills, is
-          closer, but its record starts in 2023. In 10 storms since then, it caught about the same as Belmont in the heaviest hour and 10 to 25% more over 3 to 12 hours.</li>
+        <li>Rain that fell is the average of two rain gauges: Belmont Creek at Old County Road, 2.4 miles north on the same bay plain, and Pulgas,
+          1.8 miles west in the hills. Belmont recorded the whole Dec 2022 storm; Pulgas's record starts in 2023, and in 10 storms since it caught about the
+          same as Belmont in the heaviest hour and 10 to 25% more over 3 to 12 hours, so the average matches the watershed's expected 10% more than Belmont.
+          Pulgas joined the hourly record on Nov 24, 2026; for earlier hours the page uses Belmont times 1.1.</li>
         <li>The forecast is the RRFS weather model (AQPI / CW3E), averaged over the 2 grid points in the Cordilleras watershed, the same forecast as on the
           <a href="RainForecast.html">RRFS rain page</a>. It is compared with the Dec 2022 storm adjusted to the watershed: Belmont's record times
           the ratio of NOAA Atlas 14 at the watershed's center to Atlas 14 at Belmont (1.09 to 1.12, about 10% more).</li>
@@ -265,7 +266,7 @@ var NYE_TOT = nyeCum().slice(-1)[0];
 /* This storm: the hourly series (last 48 h measured x 1.1, then the forecast). The storm going on now (wet in the last
    6 hours, or about to start), else the next one in the forecast. nowAt = hours from its start to now (-1 if not begun). */
 function stormNow(mv, fv) {
-  var v = mv.map(function (x) { return x * 1.1; }).concat(fv), now = mv.length - 1, runs = [], a = -1, dry = DRY;
+  var v = mv.concat(fv), now = mv.length - 1, runs = [], a = -1, dry = DRY;
   for (var i = 0; i < v.length; i++) {
     if (v[i] >= 0.01) { if (a < 0 || dry >= DRY) { if (a >= 0) runs.push([a, last]); a = i; } var last = i; dry = 0; } else dry++;
   }
@@ -276,20 +277,30 @@ function stormNow(mv, fv) {
   return { t0: null, i0: pick[0], cum: cum, total: s, nowAt: now >= pick[0] ? Math.min(now - pick[0], cum.length - 1) : -1 };
 }
 
-var charts = {};
+var charts = {}, MEAS_LABEL = "Belmont rain gauge";
 function render(st, rf) {
   var now = Date.now(), H = 3600000, top = Math.floor(now / H) * H;
   // measured: Belmont, the last 48 clock hours (the current hour last)
-  var led = (st && st.ledger && st.ledger.bel_rain && st.ledger.bel_rain.h) || {}, mx = [], mv = [];
-  for (var i = 47; i >= 0; i--) { var t = top - i * H; mx.push(t); mv.push(+led[localHourKey(t)] || 0); }
+  /* measured, as a watershed estimate (staff 2026-11-24): the average of Belmont and Pulgas for the hours both have a
+     record (Pulgas is in the hourly record from 2026-11-24), otherwise Belmont x 1.1 (the Atlas 14 ratio of the
+     watershed's center to Belmont). The same rule as the forecast review (scripts/rrfs_review.py, WATCH). */
+  var LG = (st && st.ledger) || {}, recOf = function (k) { var h = (LG[k] && LG[k].h) || {}, ks = Object.keys(h).sort(); return { h: h, from: ks[0] || null }; };
+  var bel = recOf("bel_rain"), pul = recOf("pul_rain"), mx = [], mv = [], both = 0;
+  for (var i = 47; i >= 0; i--) {
+    var t = top - i * H, k = localHourKey(t), b = +bel.h[k] || 0;
+    var two = pul.from && k >= pul.from && bel.from && k >= bel.from;
+    if (two) both++;
+    mx.push(t); mv.push(two ? (b + (+pul.h[k] || 0)) / 2 : b * 1.1);
+  }
+  MEAS_LABEL = both ? "Belmont and Pulgas rain gauges, averaged" : "Belmont rain gauge";
   // forecast: RRFS hourly over the watershed, steps after now (each step's value is the hour ending at its time)
   var W = rf && rf.watersheds && rf.watersheds[WS], P = rf && rf.products && rf.products["60"], fx = [], fv = [];
   if (W && W.p60 && P) P.steps.forEach(function (s, k) { var e = Date.parse(s); if (e > now && W.p60.avg[k] != null) { fx.push(e - H); fv.push(+W.p60.avg[k] || 0); } });
   // together: measured (scaled to the watershed) then the forecast
-  var tog = mv.map(function (v) { return v * 1.1; }).concat(fv);
+  var tog = mv.concat(fv);
   var rows = HOURS.map(function (h) {
     var m = maxRun(mv, h), f = maxRun(fv, h), g = maxRun(tog, h), ref = NYE[h] * K[h];
-    return { h: h, nye: NYE[h], ref: ref, m: m, mp: m / NYE[h], f: f, fp: f / ref, g: g, gp: g / ref };
+    return { h: h, nye: NYE[h], ref: ref, m: m, mp: m / ref, f: f, fp: f / ref, g: g, gp: g / ref };
   });
   var cell = function (v, p, h) {
     return "<td class='n'>" + inch(v) + " in <span class='pct'>(" + Math.round(p * 100) + "%)</span><div class='bar'><i class='b" + band(p) + "' style='width:" +
@@ -299,8 +310,8 @@ function render(st, rf) {
     rows.map(function (r) {
       return "<tr><td>" + dur(r.h) + "</td><td class='n'>" + inch(r.nye) + " in<span class='sz'>\u2248 " + inch(r.ref) + " in watershed, " + sizeShort(r.h, r.ref).replace(" storm", "") + "</span></td>" + cell(r.m, r.mp, r.h) + cell(r.f, r.fp, r.h) + cell(r.g, r.gp, r.h) + "</tr>";
     }).join("");
-  $("cmpNote").textContent = "Each percent compares the same length of time with Dec 31, 2022. Measured rain at Belmont is compared with Belmont's own record. " +
-    "The forecast, and measured rain plus forecast, are compared with the Dec 2022 storm adjusted to the Cordilleras watershed (about 10% more than Belmont). " +
+  $("cmpNote").textContent = "Each percent compares the same length of time with Dec 31, 2022, adjusted to the Cordilleras watershed (Belmont's record, about 10% more). " +
+    "Measured rain is the average of the Belmont and Pulgas gauges (Belmont times 1.1 for hours before Pulgas was logged); the forecast is the watershed average. " +
     "Storm sizes are NOAA Atlas 14 at the watershed's center: a 25-year storm has a 1-in-25 (4%) chance in any year.";
 
   /* The outlook, in plain words for the public (staff, 2026-11-23). The storm now (rain in the last 2 days plus the
@@ -338,7 +349,8 @@ function render(st, rf) {
       inch(NYE[x[0]] * K[x[0]]) + " in on New Year's Eve 2022 (" + Math.round(p * 100) + "%)</span></div>";
   }).join("");
   $("heroFoot").textContent = "A full bar means as much rain as New Year's Eve 2022. Other things can make flooding more likely: branches or debris jamming the creek, " +
-    "ground that is already soaked, or a high tide at the Bay. Rain that has fallen is from the rain gauge in Belmont, 2.4 miles north. " +
+    "ground that is already soaked, or a high tide at the Bay. Rain that has fallen is from " + (MEAS_LABEL.indexOf("Pulgas") >= 0 ?
+    "two rain gauges, in Belmont (2.4 miles north) and at Pulgas in the hills (1.8 miles west), averaged. " : "the rain gauge in Belmont, 2.4 miles north. ") +
     "The forecast is from AQPI, a Bay Area rain forecast from NOAA and Scripps Institution of Oceanography, updated every few hours.";
 
   // charts, on one scale
@@ -403,7 +415,8 @@ function render(st, rf) {
   else { charts.nye.options.scales.y.max = ymax; charts.nye.update(); }
   $("fresh").textContent = "Forecast " + (P ? "from " + new Date(P.run).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" }) : "not available right now") +
     " · rain gauge read " + hourLabel(top + H);
-  $("meta").textContent = "Rain that fell: Belmont rain gauge, to " + hourLabel(top + H) + (st && st.generated ? " (updated " + st.generated + ")" : "") +
+  $("measKey").textContent = MEAS_LABEL;
+  $("meta").textContent = "Rain that fell: " + MEAS_LABEL + ", to " + hourLabel(top + H) + (st && st.generated ? " (updated " + st.generated + ")" : "") +
     ". Forecast: RRFS weather model, run " + (P ? new Date(P.run).toLocaleString("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", minute: "2-digit" }) : "not available") + ".";
 }
 

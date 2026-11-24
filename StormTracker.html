@@ -952,6 +952,8 @@ function renderFc(F) {
       esc(lv(x.level, x.minutes) + ", " + x.in.toFixed(2) + " in") + "</td><td class='n'>" + x.measured_total.toFixed(2) + " in</td></tr>"; }).join("")
     : "<tr><td><span class='empty'>None: every Heavy forecast so far came with a storm.</span></td></tr>";
   $("fcNote").innerHTML = "The forecast is the watershed average (the gauge is one point), so totals are expected to differ; the ratings and timing matter more. " +
+    "Cordilleras Creek has no gauge of its own: it's checked against the Belmont and Pulgas rain gauges averaged, rated with NOAA Atlas 14 at the watershed's center " +
+    "(<a href='CordillerasCreek.html'>Cordilleras Creek page</a>). " +
     "The forecast is read over the storm plus " + (F.pad_hours || 3) + " hours either side. Hourly only: the gauges' 15- and 30-minute bursts aren't compared. " +
     "* the forecast didn't reach the end of the storm. Rules: <code>scripts/rrfs_review.py</code>; every storm as a spreadsheet: <a href='" + esc(FC_URL.replace(".json", ".csv")) + "' download>rrfs_review.csv</a>.";
 }
