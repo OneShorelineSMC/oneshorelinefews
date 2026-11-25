@@ -119,7 +119,8 @@ levels the data job reads from BCDC: `station` (NOAA id) · `return_years` (1, 2
 ## Embedding on another website (staff, 2026-11-11; updated 2026-11-12)
 
 Any public page can sit in an iframe on oneshoreline.org. Links to other websites open as the whole page, not inside
-the FEWS box. There are two ways to size the box:
+the FEWS box. A slim line at the top of each page in the box has an "Open full size" link that opens the same page on
+its own (the GitHub address) in a new tab (2026-11-24; not on `?embed=1` widgets, and only on pages that load lookups.js). There are two ways to size the box:
 
 **Window (recommended):** the box is about one screen tall and FEWS scrolls inside it, so the menu stays on screen the
 same way it does on the site itself (the bottom bar on phones, the tab strip at the top on computers). No script needed:
