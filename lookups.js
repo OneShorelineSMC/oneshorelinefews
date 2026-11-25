@@ -771,7 +771,21 @@
       lastH = h;
       try { window.parent.postMessage({ fews_height: h, fews_page: location.pathname.split("/").pop() || "index.html" }, "*"); } catch (e) {}
     };
+    /* "Open full size" (staff, 2026-11-24): inside the website the page is boxed in, so a slim line at the top opens the
+       same page, full size, on its own (the GitHub address) in a new tab. Not on ?embed=1 widgets. */
+    var popOut = function () {
+      if (/[?&]embed=1\b/.test(location.search) || document.getElementById("fewsPop")) return;
+      var u = location.href.replace(/([?&])fit=1(&|$)/, function (m, a, b) { return b ? a : ""; }).replace(/[?&]$/, "");
+      var bar = document.createElement("div");
+      bar.id = "fewsPop";
+      bar.setAttribute("style", "display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:5px 12px;font:13px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
+        "background:var(--card,#fff);border-bottom:1px solid var(--line,#e3e8ee);color:var(--muted,#5d6d80)");
+      bar.innerHTML = '<a href="' + u.replace(/"/g, "&quot;") + '" target="_blank" rel="noopener" style="color:var(--link,#0a5587);font-weight:600;text-decoration:none">' +
+        'Open full size <span aria-hidden="true">\u2197</span></a>';
+      document.body.insertBefore(bar, document.body.firstChild);
+    };
     var start = function () {
+      popOut();
       topLinks();
       if (window.MutationObserver) new MutationObserver(topLinks).observe(document.body, { childList: true, subtree: true });
       if (!fit) return;
