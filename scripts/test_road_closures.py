@@ -206,5 +206,28 @@ try:
 except ValueError:
     check("security: only https addresses fetched", True)
 
+# ---- cause: tide, rain, both (staff 2026-11-24)
+tides = {"stations": [{"id": "9414523", "name": "Redwood City", "mhhw": 7.02, "days": {"2026-11-24": {"max": 9.5, "t": "11:06"}, "2026-11-18": {"max": 7.5, "t": "06:00"}}},
+                      {"id": "9414290", "name": "San Francisco", "mhhw": 5.9, "days": {}}]}
+trk = {"ledger": {"bel_rain": {"kind": "rain", "h": {"2026-11-17 06:00": 0.0, "2026-11-18 03:00": 0.4, "2026-11-18 04:00": 0.3, "2026-11-24 09:00": 0.04}}}}
+keys = {"belmont": ["bel_rain"], "colma": []}
+mk = lambda **k: dict({"kind": "flood", "side": "bay", "lat": 37.5, "creeks": ["belmont"], "active": False}, **k)
+lg = [mk(id="t", started="2026-11-24 10:25", ended="2026-11-24 14:00"), mk(id="r", started="2026-11-18 05:00", ended="2026-11-18 09:00"),
+      mk(id="b", started="2026-11-24 10:00", ended="2026-11-24 13:00", creeks=[]), mk(id="s", kind="storm", started="2026-11-24 10:00", ended="2026-11-24 13:00"),
+      mk(id="old", started="2026-11-10 08:00", ended="2026-11-10 12:00")]
+lg[2]["side"] = "bay"
+R.set_causes(lg, dt.datetime(2026, 11, 25, 6, 0, tzinfo=dt.timezone.utc), trk, tides, keys_of=keys, rules=dict(R.CAUSE_DEFAULTS))
+cz = {c["id"]: c.get("cause") for c in lg}
+check("cause: a king tide 2.5 ft above average high tide with 0.04 in of rain is High tide", cz["t"] == "tide" and lg[0]["why"]["tide"]["above"] == 2.48)
+check("cause: 0.7 in of rain before it and a tide only 0.5 ft above average is Rain", cz["r"] == "rain" and lg[1]["why"]["rain"]["in"] == 0.7)
+check("cause: outside the monitored creeks, the side's gauges are used", cz["b"] == "tide" and lg[2]["why"]["rain"]["gauge"] == "bel_rain")
+check("cause: slides and other storm closures get none", cz["s"] is None)
+check("cause: older than the hourly rain record and not explained by the tide: none", cz["old"] is None)
+check("cause: a closed closure checked after it ended is final", lg[0].get("cause_final") is True)
+trk2 = {"ledger": {"bel_rain": {"kind": "rain", "h": {"2026-11-22 00:00": 0.0, "2026-11-23 20:00": 0.5}}}}
+lg2 = [mk(id="x", started="2026-11-24 10:25", ended="2026-11-24 14:00")]
+R.set_causes(lg2, dt.datetime(2026, 11, 25, 6, 0, tzinfo=dt.timezone.utc), trk2, tides, keys_of=keys, rules=dict(R.CAUSE_DEFAULTS, ROAD_RAIN_HOURS=24))
+check("cause: rain and a high tide together is both", lg2[0]["cause"] == "both")
+
 print("\n" + ("All passed" if not fails else f"{len(fails)} failed"))
 sys.exit(1 if fails else 0)

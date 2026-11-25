@@ -32,6 +32,17 @@ water). It's logged as a notice at the time it was posted, with its link, and pl
 since a post names streets in words. South San Francisco's site isn't CivicPlus and has no feed found yet; SMC Alert
 has no public feed, and the County uses Genasys Protect for evacuations only.
 
+Cause (staff, 2026-11-24, king tides): each flooding closure gets a cause from the conditions around it, so tidal
+flooding on a dry day isn't counted as storm flooding:
+  "tide"  the measured high tide in or near the closure (3 hours before it to 1 hour after) was at least ROAD_TIDE_FT
+          above average high tide (MHHW) at the nearest NOAA gauge on its side (Bayside: San Francisco north of 37.60,
+          Redwood City south of it; Coastside: Monterey), from tide_tracker.json (each day's measured high);
+  "rain"  at least ROAD_RAIN_IN fell in the ROAD_RAIN_HOURS before the closure through its end, at the rain gauges of its
+          creeks (or, outside them, the wettest rain gauge on its side), from storm_tracker.json's hourly record;
+  "both"  both; "unclear" neither. Settings in lookups/settings.csv. Each closure keeps "why" (the tide and the rain).
+  A closure is checked while open and once more after it ends; a closure older than the hourly rain record keeps what
+  it had. Slides, washouts and repairs aren't given a cause.
+
 Writes road_closures.json on the data branch.
 
 Usage: python road_closures.py OUTPUT.json [--min-age MINUTES]
@@ -579,6 +590,122 @@ def update(previous, now, fetch=get, feeds=None, erc=None):
     }
 
 
+# ---- cause: tide, rain, both (staff 2026-11-24)
+CAUSE_DEFAULTS = {"ROAD_TIDE_FT": 1.0, "ROAD_RAIN_IN": 0.25, "ROAD_RAIN_HOURS": 12}
+TIDE_NORTH_LAT = 37.60
+GAUGE_LABEL = {}   # rain gauge key -> its name, filled from the creek list
+
+
+def read_settings(path=os.path.join(ROOT, "lookups", "settings.csv")):
+    out = dict(CAUSE_DEFAULTS)
+    try:
+        with open(path, encoding="utf-8-sig", newline="") as f:
+            for r in csv.DictReader(f):
+                if (r.get("key") or "").strip() in out:
+                    try:
+                        out[r["key"].strip()] = float(r["value"])
+                    except (TypeError, ValueError):
+                        pass
+    except OSError:
+        pass
+    return out
+
+
+def _pt(s):
+    return dt.datetime.strptime(s[:16], "%Y-%m-%d %H:%M")
+
+
+def creek_rain_keys():
+    """{creek id: [its rain gauge keys]} from the creek list (primary gauges)."""
+    try:
+        import creek_config as C
+        t = C.load_tide_stations()
+        creeks, _ = C.load_creeks(t[0] if isinstance(t, tuple) else t)
+        for c in creeks:
+            for g in c["rain"]:
+                GAUGE_LABEL[g["key"]] = g.get("label") or g["key"]
+        return {c["id"]: [g["key"] for g in c["rain"]] for c in creeks}
+    except Exception:  # noqa: BLE001  (no creek list: the side's gauges can't be found; rain is then not checked)
+        return {}
+
+
+def tide_station(c, tides):
+    want = "9413450" if c.get("side") == "coast" else "9414290" if (c.get("lat") or 0) >= TIDE_NORTH_LAT else "9414523"
+    for s in (tides or {}).get("stations") or []:
+        if s.get("id") == want:
+            return s
+    return None
+
+
+def tide_near(c, tides, a, b):
+    """The highest measured daily high between a and b at the closure's tide gauge: {station, name, ft, t, above}."""
+    s = tide_station(c, tides)
+    if not s or s.get("mhhw") is None:
+        return None
+    best = None
+    d = a.date()
+    while d <= b.date():
+        r = (s.get("days") or {}).get(d.isoformat())
+        if r and r.get("max") is not None and r.get("t"):
+            t = _pt(d.isoformat() + " " + r["t"])
+            if a <= t <= b and (best is None or r["max"] > best["ft"]):
+                best = {"station": s["id"], "name": s.get("name"), "ft": round(r["max"], 2), "t": t.strftime("%Y-%m-%d %H:%M"),
+                        "above": round(r["max"] - s["mhhw"], 2)}
+        d += dt.timedelta(days=1)
+    return best
+
+
+def rain_near(c, ledger, keys_of, a, b):
+    """The most rain at one of the closure's gauges between a and b: {in, gauge}; None if the hourly record doesn't
+    reach back to a (then rain can't be judged)."""
+    keys = [k for cr in (c.get("creeks") or []) for k in keys_of.get(cr, [])]
+    if not keys:   # outside the monitored creeks: every gauge on its side
+        side = c.get("side")
+        keys = [k for cr, ks in keys_of.items() if side in (None, "both") or CREEK_SIDE.get(cr) == side for k in ks]
+    hours = [_pt(h) for k in ledger for h in ((ledger.get(k) or {}).get("h") or {})]
+    if not keys or not hours or min(hours) > a:
+        return None
+    best = {"in": 0.0, "gauge": keys[0]}
+    for k in keys:
+        h = (ledger.get(k) or {}).get("h") or {}
+        tot = sum(float(v) for t, v in h.items() if a <= _pt(t) < b)
+        if tot > best["in"]:
+            best = {"in": round(tot, 2), "gauge": k}
+    best["label"] = GAUGE_LABEL.get(best["gauge"], best["gauge"])
+    return best
+
+
+def set_causes(log, now, tracker, tides, keys_of=None, rules=None):
+    """Give each flooding closure its cause (see the docstring). Changes log in place."""
+    rules = rules or CAUSE_DEFAULTS
+    keys_of = creek_rain_keys() if keys_of is None else keys_of
+    ledger = (tracker or {}).get("ledger") or {}
+    nowl = _pt(local(now))
+    for c in log:
+        if c.get("kind") != "flood" or c.get("cause_final") or not c.get("started"):
+            continue
+        st = _pt(c["started"])
+        en = nowl if c.get("active") or not (c.get("ended") or c.get("last_seen")) else _pt(c.get("ended") or c.get("last_seen"))
+        tide = tide_near(c, tides, st - dt.timedelta(hours=3), en + dt.timedelta(hours=1))
+        rain = rain_near(c, ledger, keys_of, st - dt.timedelta(hours=rules["ROAD_RAIN_HOURS"]), en + dt.timedelta(hours=1))
+        t_hit = bool(tide and tide["above"] >= rules["ROAD_TIDE_FT"])
+        if rain is None and (c.get("cause") or not t_hit):
+            continue   # older than the hourly rain record: keep what it had, or leave it without a cause
+        r_hit = bool(rain and rain["in"] >= rules["ROAD_RAIN_IN"])
+        c["cause"] = "both" if t_hit and r_hit else "tide" if t_hit else "rain" if r_hit else "unclear"
+        c["why"] = {"tide": tide, "rain": rain, "rules": {k: rules[k] for k in CAUSE_DEFAULTS}}
+        if not c.get("active") and rain is not None and nowl >= en + dt.timedelta(hours=1):
+            c["cause_final"] = True
+
+
+def read_json(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
 def main(argv):
     path = argv[1]
     min_age = float(argv[argv.index("--min-age") + 1]) if "--min-age" in argv else 0
@@ -594,6 +721,12 @@ def main(argv):
         print(f"road closures: last run {last}, younger than {min_age:g} min; kept")
         return 0
     result = update(previous, now)
+    here = os.path.dirname(os.path.abspath(path))   # storm_tracker.json and tide_tracker.json sit beside it in the data job
+    try:
+        set_causes(result["log"], now, read_json(os.path.join(here, "storm_tracker.json")), read_json(os.path.join(here, "tide_tracker.json")),
+                   rules=read_settings())
+    except Exception as e:  # noqa: BLE001  (a cause problem never stops the closures)
+        result["problems"].append(f"cause: {type(e).__name__}: {e}"[:200])
     with open(path, "w") as f:
         json.dump(result, f, separators=(",", ":"))
     for k, s in result["sources"].items():
@@ -604,7 +737,7 @@ def main(argv):
               + (f", fields {s.get('fields')}" if k == "erc" and s.get("ok") else ""))
     for c in result["log"]:
         if c.get("active"):
-            print(f"  active: {c['route']} {c['dir']} {c['where']} - {c['what']} since {c['started']}")
+            print(f"  active: {c.get('route')} {c.get('dir')} {c.get('where')} - {c.get('what')} since {c['started']}" + (f" (cause: {c['cause']})" if c.get("cause") else ""))
     for p in result["problems"]:
         print("problem:", p)
     return 0
