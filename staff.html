@@ -33,6 +33,12 @@
   li a span { display: block; font-size: 14px; color: var(--muted); }
   li a:hover b { text-decoration: underline; }
   li a:focus-visible { outline: 3px solid #1e6fd9; outline-offset: -3px; }
+  details.roll > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
+  details.roll > summary::-webkit-details-marker { display: none; }
+  details.roll > summary h2 { display: inline; margin: 20px 2px 8px; }
+  details.roll > summary::after { content: "▸"; color: var(--muted); font-size: 14px; margin-top: 12px; }
+  details.roll[open] > summary::after { content: "▾"; }
+  details.roll > summary:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
   .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: #8a4b00; border: 1.5px solid #b45a00; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tag { color: #ffc27a; border-color: #ffc27a; } }
   :root[data-theme="dark"] .tag { color: #ffc27a; border-color: #ffc27a; }
@@ -69,46 +75,54 @@
   <p class="note">Bookmark this page. Each link opens the staff view (it adds <code>?preview=1</code> to the address). This page isn't
     secret: anyone with the address can open it.</p>
 
-  <h2>Beta tools</h2>
+  <h2>Beta dashboards</h2>
   <ul>
-    <li><a href="Shoreline.html?preview=1"><b>Shoreline and creek outlets</b><span class="tag">BETA</span>
-      <span>The county map of where the Bay could come over the shoreline (BCDC ART), with FEMA zones and the creek outlets. Pick a city to zoom to its low spots and outlets, with NOAA’s Bay model (SFBOFS) for the next 48 hours at each one; “Copy a link” gives a city its own view.</span></a></li>
-    <li><a href="TideTracker.html"><b>Tide tracker</b><span class="tag">BETA</span>
-      <span>The water year so far at Redwood City, Alameda, San Francisco and Monterey: days and hours above MHHW, the 1-year tide, 8.5 ft and NOAA’s minor flooding level, month by month, against the record.</span></a></li>
-    <li><a href="SanFrancisquito.html"><b>San Francisquito Creek</b><span class="tag">PREVIEW</span>
-      <span>For review: the creek from the hills to the Bay with SFCJPA's Palo Alto gauges and a status for each location.</span></a></li>
-    <li><a href="CordillerasCreek.html"><b>Cordilleras Creek</b><span class="tag">PREVIEW</span>
-      <span>For review: an ungauged creek. Rain measured at Belmont and the RRFS forecast for its watershed, compared at 1 to 48 hours with the New Year's Eve 2022 storm that flooded it.</span></a></li>
     <li><a href="RainForecast.html"><b>RRFS rain forecast</b><span class="tag">BETA</span>
       <span>The RRFS model's rain forecast (AQPI / CW3E) for every creek's watershed side by side: the next 6 hours to 3.5 days, forecast Heavy rain, and a map of the grid points each creek uses.</span></a></li>
-    <li><a href="MonthlySummary.html"><b>Monthly summary</b><span class="tag">DRAFT</span>
-      <span>For elected officials: each month's high tides, storms and road closures, Bayside and Coastside, with what touched each city (and its supervisorial district). Builds itself as the month goes; staff write the words at the top. The PDF is a two-page brief with the detail as an appendix.</span></a></li>
+    <li><a href="CordillerasCreek.html"><b>Cordilleras Creek</b><span class="tag">PREVIEW</span>
+      <span>For review: an ungauged creek. Rain measured at Belmont and the RRFS forecast for its watershed, compared at 1 to 48 hours with the New Year's Eve 2022 storm that flooded it.</span></a></li>
+    <li><a href="SanFrancisquito.html"><b>San Francisquito Creek</b><span class="tag">PREVIEW</span>
+      <span>For review: the creek from the hills to the Bay with SFCJPA's Palo Alto gauges and a status for each location.</span></a></li>
+  </ul>
+
+  <h2>Trackers and reports</h2>
+  <ul>
     <li><a href="StormTracker.html"><b>Storm tracker</b><span class="tag">BETA</span>
       <span>Each storm at each creek this season: rain at the creek’s gauges and how rare it was, and how the creek responded (peak, hours at each flood level, lag). Season summary per creek.</span></a></li>
+    <li><a href="TideTracker.html"><b>Tide tracker</b><span class="tag">BETA</span>
+      <span>The water year so far at Redwood City, Alameda, San Francisco and Monterey: days and hours above MHHW, the 1-year tide, 8.5 ft and NOAA’s minor flooding level, month by month, against the record.</span></a></li>
+    <li><a href="MonthlySummary.html"><b>Monthly summary</b><span class="tag">DRAFT</span>
+      <span>For elected officials: each month's high tides, storms and road closures, Bayside and Coastside, with what touched each city (and its supervisorial district). Builds itself as the month goes; staff write the words at the top. The PDF is a two-page brief with the detail as an appendix.</span></a></li>
+    <li><a href="Shoreline.html?preview=1"><b>Shoreline and creek outlets</b><span class="tag">BETA</span>
+      <span>The county map of where the Bay could come over the shoreline (BCDC ART), with FEMA zones and the creek outlets. Pick a city to zoom to its low spots and outlets, with NOAA’s Bay model (SFBOFS) for the next 48 hours at each one; “Copy a link” gives a city its own view.</span></a></li>
   </ul>
 
-  <h2>Staff views of the public pages</h2>
-  <ul>
-    <li><a href="index.html?preview=1"><b>Home</b><span>With the staff badges.</span></a></li>
-    <li><a href="Creeks.html?preview=1"><b>Creeks</b><span>Plus the staff table: what is behind each status.</span></a></li>
-    <li><a href="Tides.html?preview=1"><b>Tides</b><span>Bayside and Coastside.</span></a></li>
-    <li><a href="SiteMap.html?preview=1"><b>Sensor map</b></a></li>
-    <li><a href="CommunityFloodReports.html?preview=1"><b>Community flood reports</b><span>The report form and the reports waiting for review.</span></a></li>
-    <li><a href="ShorelineKiosk.html?preview=1"><b>EOC kiosk</b><span>The 800 × 480 screen.</span></a></li>
-    <li><a href="SanBrunoKiosk.html"><b>San Bruno EOC screen</b><span>The kiosk with San Bruno Creek only: live conditions, the outlook, and an About for the EOC.</span></a></li>
-  </ul>
+  <details class="roll">
+    <summary><h2>Staff views of the public pages</h2></summary>
+    <ul>
+      <li><a href="index.html?preview=1"><b>Home</b><span>With the staff badges.</span></a></li>
+      <li><a href="Creeks.html?preview=1"><b>Creeks</b><span>Plus the staff table: what is behind each status.</span></a></li>
+      <li><a href="Tides.html?preview=1"><b>Tides</b><span>Bayside and Coastside.</span></a></li>
+      <li><a href="SiteMap.html?preview=1"><b>Sensor map</b></a></li>
+      <li><a href="CommunityFloodReports.html?preview=1"><b>Community flood reports</b><span>The report form and the reports waiting for review.</span></a></li>
+      <li><a href="ShorelineKiosk.html?preview=1"><b>EOC kiosk</b><span>The 800 × 480 screen.</span></a></li>
+      <li><a href="SanBrunoKiosk.html"><b>San Bruno EOC screen</b><span>The kiosk with San Bruno Creek only: live conditions, the outlook, and an About for the EOC.</span></a></li>
+    </ul>
+  </details>
 
-  <h2>Drafts to review (GitHub)</h2>
-  <ul>
-    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/proposed/shoreline_hotspots.csv" target="_blank" rel="noopener"><b>Shoreline low spots, draft list</b>
-      <span>Review, then save as lookups/shoreline_hotspots.csv.</span></a></li>
-    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/proposed/creek_outlets.csv" target="_blank" rel="noopener"><b>Creek outlets, draft list</b>
-      <span>Review, then save as lookups/creek_outlets.csv.</span></a></li>
-    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/THRESHOLDS_BASIS.md" target="_blank" rel="noopener"><b>Thresholds and methods</b>
-      <span>Why each level and estimate is what it is.</span></a></li>
-    <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/actions" target="_blank" rel="noopener"><b>Data jobs and builds (Actions)</b>
-      <span>Creek maps, shoreline hotspots, creek outlets; their logs.</span></a></li>
-  </ul>
+  <details class="roll">
+    <summary><h2>Drafts to review (GitHub)</h2></summary>
+    <ul>
+      <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/proposed/shoreline_hotspots.csv" target="_blank" rel="noopener"><b>Shoreline low spots, draft list</b>
+        <span>Review, then save as lookups/shoreline_hotspots.csv.</span></a></li>
+      <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/proposed/creek_outlets.csv" target="_blank" rel="noopener"><b>Creek outlets, draft list</b>
+        <span>Review, then save as lookups/creek_outlets.csv.</span></a></li>
+      <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/blob/main/lookups/THRESHOLDS_BASIS.md" target="_blank" rel="noopener"><b>Thresholds and methods</b>
+        <span>Why each level and estimate is what it is.</span></a></li>
+      <li><a href="https://github.com/OneShorelineSMC/oneshorelinefews/actions" target="_blank" rel="noopener"><b>Data jobs and builds (Actions)</b>
+        <span>Creek maps, shoreline hotspots, creek outlets; their logs.</span></a></li>
+    </ul>
+  </details>
 </main>
 
 
