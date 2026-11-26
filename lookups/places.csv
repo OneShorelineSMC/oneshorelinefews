@@ -1,34 +1,34 @@
-place,kind,side,district,ab825_seat,note
-Atherton,city,bay,3,South,
-Belmont,city,bay,2 3,Central,Split: District 3 is the southern hills; points are placed with split_city_districts.json
-Brisbane,city,bay,5,North,
-Burlingame,city,bay,1,North,
-Colma,city,bay,5,North,
-Daly City,city,coast,5,Coastal,Spans the coast and the Bay side; AB 825 puts it in the Coastal seat
-East Palo Alto,city,bay,4,South,
-Foster City,city,bay,2,Central,
-Half Moon Bay,city,coast,3,Coastal,
-Hillsborough,city,bay,1,Central,
-Menlo Park,city,bay,3 4,South,Split: District 4 is east of about El Camino and Middlefield (Belle Haven and the Bayfront); points are placed with split_city_districts.json
-Millbrae,city,bay,1,North,
-Pacifica,city,coast,3,Coastal,
-Portola Valley,city,bay,3,South,
-Redwood City,city,bay,4,South,District 3 holds only slivers of the city in the county's layer
-San Bruno,city,bay,1 5,North,Split: District 5 is the western hills; points are placed with split_city_districts.json
-San Carlos,city,bay,3,Central,
-San Mateo,city,bay,2,Central,
-South San Francisco,city,bay,1 5,North,Split: District 5 is the western part; points are placed with split_city_districts.json
-Woodside,city,bay,3,South,
-Broadmoor,unincorporated,coast,5,,
-El Granada,unincorporated,coast,3,,
-Emerald Lake Hills,unincorporated,bay,3 4,,
-Harbor Industrial,unincorporated,bay,2,,Between Belmont and San Carlos at the Bay
-La Honda,unincorporated,coast,3,,
-Loma Mar,unincorporated,coast,3,,
-Miramar,unincorporated,coast,3,,
-Montara,unincorporated,coast,3,,
-Moss Beach,unincorporated,coast,3,,
-North Fair Oaks,unincorporated,bay,4,,
-Pescadero,unincorporated,coast,3,,
-Princeton,unincorporated,coast,3,,
-San Gregorio,unincorporated,coast,3,,
+place,kind,side,district,ab825_seat,lat,note
+Atherton,city,bay,3,South,37.46,
+Belmont,city,bay,2 3,Central,37.52,Split: District 3 is the southern hills
+Brisbane,city,bay,5,North,37.68,
+Burlingame,city,bay,1,North,37.58,
+Colma,city,bay,5,North,37.68,
+Daly City,city,coast,5,Coastal,37.69,Spans the coast and the Bay side; AB 825 puts it in the Coastal seat
+East Palo Alto,city,bay,4,South,37.47,
+Foster City,city,bay,2,Central,37.56,
+Half Moon Bay,city,coast,3,Coastal,37.46,
+Hillsborough,city,bay,1,Central,37.57,
+Menlo Park,city,bay,3 4,South,37.47,Split: District 4 is east of about El Camino and Middlefield (Belle Haven and the Bayfront)
+Millbrae,city,bay,1,North,37.60,
+Pacifica,city,coast,3,Coastal,37.62,
+Portola Valley,city,bay,3,South,37.38,
+Redwood City,city,bay,4,South,37.49,District 3 holds only slivers of the city in the county's layer
+San Bruno,city,bay,1 5,North,37.63,Split: District 5 is the western hills
+San Carlos,city,bay,3,Central,37.50,
+San Mateo,city,bay,2,Central,37.56,
+South San Francisco,city,bay,1 5,North,37.65,Split: District 5 is the western part
+Woodside,city,bay,3,South,37.43,
+Broadmoor,unincorporated,coast,5,,37.69,
+El Granada,unincorporated,coast,3,,37.50,
+Emerald Lake Hills,unincorporated,bay,3 4,,37.47,
+Harbor Industrial,unincorporated,bay,2,,37.52,Between Belmont and San Carlos at the Bay
+La Honda,unincorporated,coast,3,,37.32,
+Loma Mar,unincorporated,coast,3,,37.27,
+Miramar,unincorporated,coast,3,,37.49,
+Montara,unincorporated,coast,3,,37.54,
+Moss Beach,unincorporated,coast,3,,37.53,
+North Fair Oaks,unincorporated,bay,4,,37.47,
+Pescadero,unincorporated,coast,3,,37.26,
+Princeton,unincorporated,coast,3,,37.50,
+San Gregorio,unincorporated,coast,3,,37.33,
