@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A5587">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<title>Monthly summary · OneShoreline Flood Early Warning</title>
+<!-- Monthly summary (staff, 2026-11-25): each month's high tides, storms and road closures for elected officials (Board
+     of Supervisors, city councils), Bayside and Coastside, with what touched each city (labeled with its supervisorial
+     district). Printed, the first pages are the brief (words, numbers, by city) and the detail follows as an appendix. Staff only for now (linked from staff.html). The facts build themselves as the month goes
+     (scripts/monthly_summary.py in the data job writes monthly_summary.json on the data branch); the words at the top
+     are written by staff in lookups/monthly/YYYY-MM.md. -->
+<style>
+  :root { --bg: #f0f4f8; --card: #ffffff; --ink: #003B5C; --text: #22303f; --muted: #5d6d80; --line: #e3e8ee; --brand: #0A5587; --link: #0a5587;
+    --soft: #f6f8fb; --tide: #1e6fd9; --tide-bg: #e7f0fc; --rain: #4a6b2a; --rain-bg: #eaf3e1; --both: #6b3fa0; --both-bg: #f0e9f8;
+    --warn: #b3261e; --warn-bg: #fdecea; --amber: #8a4b00; --amber-bg: #fff3e0; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --soft: #1c2936; --tide: #8cc8ff; --tide-bg: #16304a; --rain: #b5d98f; --rain-bg: #213320; --both: #d3b5f5; --both-bg: #2e2340;
+    --warn: #ff9b92; --warn-bg: #3d1f1c; --amber: #ffc27a; --amber-bg: #3a2a14; } }
+  :root[data-theme="dark"] { --bg: #0f1720; --card: #17222e; --ink: #e6edf5; --text: #d3dce6; --muted: #9aa8b8; --line: #2a3644; --link: #8cc8ff;
+    --soft: #1c2936; --tide: #8cc8ff; --tide-bg: #16304a; --rain: #b5d98f; --rain-bg: #213320; --both: #d3b5f5; --both-bg: #2e2340;
+    --warn: #ff9b92; --warn-bg: #3d1f1c; --amber: #ffc27a; --amber-bg: #3a2a14; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  a { color: var(--link); }
+  header { background: var(--brand); color: #fff; padding: calc(9px + env(safe-area-inset-top)) 16px 9px; }
+  header .wrap, main { max-width: 900px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; gap: 11px; }
+  header img { width: 36px; height: 36px; flex: none; }
+  header h1 { font-size: 19px; margin: 0; line-height: 1.15; }
+  header .org { font-size: 12.5px; opacity: .85; }
+  .h911 { margin-left: auto; flex: none; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 700; line-height: 1.25; color: #fff; }
+  @media (max-width: 640px) { .h911 { font-size: 12px; max-width: 9.4em; white-space: normal; } }
+  main { padding: 14px 16px 40px; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--amber); border: 1.5px solid currentColor; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 2px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 2px 0 12px; }
+  .bar select { font: inherit; font-size: 16px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); min-height: 40px; }
+  .bar .sm, .sm { font-size: 13.5px; color: var(--muted); }
+  .bar button { font: inherit; font-size: 14px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; min-height: 40px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+  h2 { font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 22px 2px 8px; }
+  .story h1 { font-size: 24px; color: var(--ink); margin: 0 0 6px; line-height: 1.2; }
+  .story h2 { font-size: 17px; letter-spacing: 0; text-transform: none; color: var(--ink); margin: 16px 0 4px; }
+  .story p { margin: 0 0 10px; max-width: 68ch; }
+  .story ul { margin: 0 0 10px; padding-left: 20px; }
+  .story .draft { display: inline-block; font-size: 12.5px; color: var(--amber); background: var(--amber-bg); border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 0 0 14px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .tile .k { font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .tile .v { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; margin-top: 2px; }
+  .tile .s { font-size: 13px; color: var(--muted); }
+  .ev { border-left: 5px solid var(--line); }
+  .ev.tide { border-left-color: var(--tide); } .ev.rain { border-left-color: var(--rain); } .ev.both { border-left-color: var(--both); }
+  .ev h3 { margin: 0 0 2px; font-size: 17px; color: var(--ink); }
+  .ev .when { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-right: 6px; vertical-align: 1px; }
+  .chip.tide { color: var(--tide); background: var(--tide-bg); } .chip.rain { color: var(--rain); background: var(--rain-bg); } .chip.both { color: var(--both); background: var(--both-bg); }
+  .chip.side { color: var(--muted); background: var(--soft); font-weight: 600; }
+  .chip.warn { color: var(--warn); background: var(--warn-bg); } .chip.amber { color: var(--amber); background: var(--amber-bg); }
+  .ev ul { margin: 0; padding-left: 20px; } .ev li { margin: 2px 0; }
+  .small { font-size: 14.5px; color: var(--muted); }
+  .bycity td.d { white-space: nowrap; color: var(--muted); font-size: 13.5px; }
+  .bycity td.p { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .bycity ul { margin: 0; padding-left: 16px; } .bycity li { margin: 1px 0; }
+  .apx { display: none; }
+  .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  details.card > summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details.card[open] > summary { margin-bottom: 8px; }
+  .note { font-size: 14px; color: var(--muted); }
+  .empty { color: var(--muted); font-size: 14.5px; }
+  :focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
+  /* the public pages' bottom bar, with Staff tools on */
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); z-index: 1100; }
+  nav a { flex: 1; text-decoration: none; font-size: 13px; color: var(--muted); padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+  nav a .i { font-size: 21px; line-height: 1.1; }
+  @media (max-width: 420px) { nav a { font-size: 11px; } nav a .i { font-size: 19px; } }
+  nav a.on { color: var(--ink); font-weight: bold; }
+  @media print {
+    nav, .bar, .noprint { display: none !important; } body { padding-bottom: 0; background: #fff; color: #000; font-size: 12pt; }
+    header { background: #fff; color: #000; border-bottom: 2px solid #0A5587; } header img { display: none; } .h911 { display: none; }
+    .card, .tile { break-inside: avoid; border-color: #bbb; } .tw { overflow: visible; }
+    body { font-size: 10.5pt; line-height: 1.4; } main { padding: 6px 0 0; } .card { padding: 10px 12px; margin-bottom: 10px; }
+    .card.story, #areas { break-inside: auto; } .bycity tr { break-inside: avoid; } .bycity { font-size: 9.5pt; } .bycity th, .bycity td { padding: 3px 6px; }
+    .tile { padding: 6px 10px; } .tile .v { font-size: 17px; } .tiles { gap: 6px; margin-bottom: 10px; } h2 { margin: 12px 2px 6px; }
+    #detail { break-before: page; } #detail .apx { display: block; font-size: 18px; color: #000; text-transform: none; letter-spacing: 0; margin-top: 0; }
+    .tiles { grid-template-columns: repeat(3, 1fr); } .story p { max-width: none; }
+    details.card { display: block; } details.card > summary { list-style: none; }
+  }
+</style>
+<link rel="stylesheet" href="nav.css?v=20261108b">
+</head>
+<body>
+<header><div class="wrap">
+  <img src="img/oneshoreline-mark-white.png" alt="">
+  <div><h1>Monthly summary <span class="tag" style="border-color:#fff;color:#fff">STAFF PREVIEW</span></h1><div class="org">OneShoreline Flood Early Warning · tides, storms and road closures, Bayside and Coastside</div></div>
+  <div class="h911">In an emergency, call 911.</div>
+</div></header>
+<nav aria-label="Pages">
+  <a href="index.html"><span class="i" aria-hidden="true">🏠</span>Home</a>
+  <a href="Creeks.html"><span class="i" aria-hidden="true">💧</span>Creeks</a>
+  <a href="Tides.html"><span class="i" aria-hidden="true"><svg class="wv" viewBox="0 0 24 24" width="1.15em" height="1.1em" style="display:block" aria-hidden="true"><path d="M1.5 12q2.6-5 5.25 0t5.25 0 5.25 0 5.25 0" fill="none" stroke="#1e88e5" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tides</a>
+  <a class="on" href="staff.html"><span class="i" aria-hidden="true">🧰</span>Staff tools</a>
+  <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
+  <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
+</nav>
+<main>
+  <div class="bar">
+    <label for="month" class="sm" style="display:inline">Month</label> <select id="month" aria-label="Month"></select>
+    <span class="sm" id="asof">Loading…</span>
+    <button type="button" id="print" class="noprint" style="margin-left:auto">Print or save as PDF</button>
+  </div>
+
+  <div class="card story" id="story"><p class="empty">Loading…</p></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <h2>By city</h2>
+  <div class="card tw" id="areas"></div>
+  <p class="note">A creek is listed under the communities downstream of it when it reached a flood level or its public status reached Be ready or
+    Flooding likely (the four public creeks only); a road closure under the city it is in. High tides reach the whole shoreline, so they're in the summary above, not here.
+    D = supervisorial district; a city split between two districts shows both.</p>
+
+  <section id="detail">
+  <h2 class="apx">Appendix: the detail</h2>
+  <h2>What happened, event by event</h2>
+  <div id="events"></div>
+
+  <h2>The numbers</h2>
+  <details class="card" open><summary>High tides at the NOAA gauges</summary><div class="tw" id="tides"></div>
+    <p class="note" id="tideNote"></p></details>
+  <details class="card"><summary>Rain this month at the creek rain gauges</summary><div class="tw" id="rain"></div>
+    <p class="note" id="rainNote"></p></details>
+  <details class="card" open><summary>Road closures for flooding and storms</summary><div class="tw" id="roads"></div>
+    <p class="note">State highways in San Mateo County from the Caltrans Lane Closure System, and City of San Bruno posts. A closure's
+      cause is set by a rule, not by Caltrans: <b>high tide</b> when the measured high tide near it ran at least 1 foot above the average
+      high tide, <b>rain</b> when at least 0.25 inch fell in the 12 hours before it closed through 3 hours after, <b>both</b>, or not known.</p></details>
+  <details class="card"><summary>NWS coastal flood products</summary><div class="tw" id="nws"></div>
+    <p class="note">Coastal Flood Advisories and Warnings from the National Weather Service in San Francisco that included San Mateo County.
+      Flood Watches and Warnings for rain aren't kept by this site yet.</p></details>
+
+  </section>
+
+  <details class="card noprint"><summary>How this page is made</summary>
+    <p class="note">The facts build themselves through the month from what the Flood Early Warning site already records: the NOAA tide gauges
+      at Redwood City, Alameda, San Francisco and Monterey (heights compared with each gauge's average high tide, MHHW, and ranked against its
+      full record); each storm at each creek gauge (rain, how rare its heaviest part was against NOAA Atlas 14, and the creek levels and
+      statuses reached); and road closures. The month before is updated through the 3rd of the next month, then kept as it is.
+      The words at the top are written by staff and saved in <code>lookups/monthly/</code>. Each city's supervisorial district is from the county's
+      2022 district map (<code>lookups/places.csv</code>).</p>
+    <p class="note">Not here yet: community flood reports (none were approved this month), city road closures other than San Bruno's, and
+      NWS rain products. Tide numbers are preliminary until NOAA reviews them.</p>
+  </details>
+</main>
+
+<script>
+var DATA_URL = "https://raw.githubusercontent.com/OneShorelineSMC/oneshorelinefews/data/monthly_summary.json";
+var STORY_DIR = "lookups/monthly/";
+var Q = new URLSearchParams(location.search);
+if (Q.get("data")) DATA_URL = Q.get("data");   // a local copy, for review
+var J = null;
+var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+var SIDE = { bay: "Bayside", coast: "Coastside" };
+var CAUSE = { tide: "High tide", rain: "Rain", both: "Rain and high tide" };
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function pd(s) { return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10), +(s.slice(11, 13) || 0), +(s.slice(14, 16) || 0)); }
+function day(s) { return MON[+s.slice(5, 7) - 1] + " " + (+s.slice(8, 10)); }
+function hm(s) { var h = +s.slice(11, 13), m = s.slice(14, 16); return (h % 12 || 12) + (m === "00" ? "" : ":" + m) + " " + (h < 12 ? "AM" : "PM"); }
+function when(s) { return day(s) + (s.length > 10 ? ", " + hm(s) : ""); }
+function span(a, b) { // "Nov 22 to 25", "Nov 30 to Dec 2", "Nov 13"
+  if (!b || a.slice(0, 10) === b.slice(0, 10)) return day(a);
+  return day(a) + " to " + (a.slice(5, 7) === b.slice(5, 7) ? +b.slice(8, 10) : day(b));
+}
+function ft(x) { return (x >= 0 ? "" : "−") + Math.abs(x).toFixed(1) + " ft"; }
+function dur(min) { if (min < 60) return min + " min"; var h = Math.floor(min / 60), m = Math.round(min % 60); return h + " h" + (m ? " " + m + " min" : ""); }
+function ord(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function chance(y) { // a storm size in years, as a chance in any year
+  if (!y) return ""; var n = y >= 10 ? Math.round(y) : Math.round(y * 10) / 10, p = 100 / y;
+  return "about a 1-in-" + n + " (" + (p >= 10 ? Math.round(p) : p.toFixed(p < 1 ? 1 : 0)) + "%) chance in any year";
+}
+
+// ------------------------------------------------------------------ the words at the top (staff-written Markdown)
+function md(t) {
+  var out = [], list = null;
+  function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<i>$1</i>")
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>'); }
+  t.replace(/\r/g, "").split(/\n\s*\n/).forEach(function (b) {
+    b = b.trim(); if (!b) return;
+    if (/^# /.test(b)) out.push("<h1>" + inline(b.slice(2)) + "</h1>");
+    else if (/^## /.test(b)) out.push("<h2>" + inline(b.slice(3)) + "</h2>");
+    else if (/^[-*] /.test(b)) out.push("<ul>" + b.split(/\n(?=[-*] )/).map(function (x) { return "<li>" + inline(x.replace(/^[-*] /, "")) + "</li>"; }).join("") + "</ul>");
+    else out.push("<p>" + inline(b.replace(/\n/g, " ")) + "</p>");
+  });
+  return out.join("");
+}
+function loadStory(m) {
+  var M = J.months[m], name = MONTHS[+m.slice(5) - 1] + " " + m.slice(0, 4);
+  $("story").innerHTML = "<p class='empty'>Loading…</p>";
+  fetch(STORY_DIR + m + ".md?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function (t) {
+      $("story").innerHTML = (M.complete ? "" : '<span class="draft">Draft · the month isn’t over; the facts below update through ' + when(M.through) + "</span>") + md(t);
+    }).catch(function () {
+      $("story").innerHTML = "<h1>" + name + "</h1><p class='empty'>No summary written yet for this month. The facts below build themselves as the month goes; staff add the words at the top in <code>lookups/monthly/" + m + ".md</code>.</p>";
+    });
+}
+
+// ------------------------------------------------------------------ the month
+function concern(t) { return t.concern ? t.concern.label.replace(" (provisional)", "").replace(" (derived)", "") : ""; }
+function tileHtml(k, v, s) { return '<div class="tile"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="s">' + (s || "") + "</div></div>"; }
+function tiles(M) {
+  var t = (M.tides || []).filter(function (x) { return x.above_mhhw != null; }).sort(function (a, b) { return b.above_mhhw - a.above_mhhw; });
+  var bay = t.filter(function (x) { return x.side === "bay"; })[0], coast = t.filter(function (x) { return x.side === "coast"; })[0];
+  var g = (M.rain && M.rain.gauges || [])[0], big = (M.storms || []).filter(function (s) { return s.notable; });
+  var nd = {};
+  (M.nws || []).forEach(function (n) { for (var d = pd(n.onset.slice(0, 10)); d <= pd(n.ends.slice(0, 10)); d.setDate(d.getDate() + 1)) if (d.getMonth() + 1 === +M.month.slice(5)) nd[d.getDate()] = 1; });
+  var nc = (M.roads || []).reduce(function (a, r) { return a + (r.closures || 1); }, 0);
+  function tt(x) { return x ? ft(x.above_mhhw).replace("ft", "ft") : "–"; }
+  function ts(x) { if (!x) return ""; var a = x.all_time; return "above average high tide at " + x.name + ", " + day(x.max_at) + (a && a.rank === 1 ? " · highest since " + a.since : a && a.rank <= 10 ? " · " + ord(a.rank) + " highest since " + a.since : ""); }
+  $("tiles").innerHTML =
+    tileHtml("Highest Bay tide", tt(bay), ts(bay)) +
+    tileHtml("Highest ocean tide", tt(coast), ts(coast)) +
+    tileHtml("Storms", String(big.length), big.length ? "with flooding signs or 1 inch or more" + ((M.storms || []).length > big.length ? " · " + ((M.storms || []).length - big.length) + " smaller" : "") : "") +
+    tileHtml("Wettest rain gauge", g ? g.in.toFixed(2) + " in" : "–", g ? g.label + " (" + g.creeks.join(", ") + ")" + (M.rain.sfo ? " · SFO airport " + M.rain.sfo.in.toFixed(2) + " in" : "") : "") +
+    tileHtml("Highway flood closures", String(nc), (M.roads || []).length && nc !== (M.roads || []).length ? "in " + M.roads.length + " places" : "") +
+    tileHtml("Days with an NWS coastal flood product", String(Object.keys(nd).length), "Advisory or Warning");
+}
+function roadLine(r) {
+  var n = r.closures > 1 ? r.closures + " closures" : "Closed", pl = r.places.map(function (p) { return p.place; }).join(" / ");
+  var dirs = r.dirs && r.dirs.length > 1 ? " (both directions)" : r.dirs && r.dirs.length ? " (" + r.dirs[0].toLowerCase() + "bound)" : "";
+  var wh = r.closures > 1 && r.wheres.length > 1 ? (r.facility ? r.facility.toLowerCase().replace(/^on ramp$/, "ramps").replace(/^off ramp$/, "ramps") + ": " : "") + r.wheres.join("; ") : r.where;
+  return "<b>" + esc(r.route) + "</b> in " + esc(pl) + ": " + esc(wh) + dirs + ". " + (r.closures > 1 ? r.closures + " closures from " : "From ") + when(r.started) +
+    (r.active ? ", still closed" : r.ended ? " to " + (r.ended.slice(0, 10) === r.started.slice(0, 10) ? hm(r.ended) : when(r.ended)) : "") +
+    (r.cause ? ' <span class="chip ' + (r.cause === "both" ? "both" : r.cause) + '">' + CAUSE[r.cause] + "</span>" : r.kind === "storm" ? ' <span class="chip side">' + esc(r.what || "storm") + "</span>" : "");
+}
+function tideCard(p, M) {
+  var gs = p.gauges.slice().sort(function (a, b) { return (b.max - b.level_ft) - (a.max - a.level_ft); });
+  var T = {}; (M.tides || []).forEach(function (t) { T[t.name] = t; });
+  var li = gs.map(function (g) {
+    var t = T[g.station], d = t && t.daily.filter(function (x) { return x[0] === g.max_day; })[0];
+    var above = t && t.mhhw != null ? g.max - t.mhhw : null, a = t && t.all_time && t.max_at && t.max_at.slice(0, 10) === g.max_day ? t.all_time : null;
+    return "<li><b>" + esc(g.station) + "</b>: " + (above != null ? ft(above) + " above average high tide" : g.max.toFixed(2) + " ft") + " on " + day(g.max_day) +
+      (d && d[2] != null ? ", " + ft(d[1] - d[2]) + " above the tide table" : "") +
+      (a ? (a.rank === 1 ? ", <b>the highest since its record began in " + a.since + "</b>" : a.rank <= 10 ? ", the " + ord(a.rank) + " highest since " + a.since : "") : "") +
+      ". " + g.days.length + " day" + (g.days.length === 1 ? "" : "s") + " at or above its " + esc(g.level.replace(" (provisional)", "").replace(" (derived)", "")) + ".</li>";
+  }).join("");
+  var nws = p.nws.map(function (n) { return n.event + " " + span(n.onset, n.ends); });
+  var rd = p.roads.map(function (i) { return "<li>" + roadLine(M.roads[i]) + "</li>"; }).join("");
+  var storms = (M.storms || []).filter(function (s) { return s.notable && s.on_high_tide.length && s.on_high_tide[0] <= p.last && s.on_high_tide[s.on_high_tide.length - 1] >= p.first; });
+  return '<div class="card ev tide"><h3><span class="chip tide">High tides</span>' + span(p.first, p.last) + "</h3>" +
+    '<div class="when">' + p.sides.map(function (s) { return '<span class="chip side">' + SIDE[s] + "</span>"; }).join("") + "</div><ul>" + li +
+    (nws.length ? "<li>NWS: " + esc(nws.join("; ")) + ".</li>" : "") + (rd ? "<li>Road closures:<ul>" + rd + "</ul></li>" : "") +
+    (storms.length ? "<li>Rain during these days: see the storm" + (storms.length > 1 ? "s" : "") + " of " + storms.map(function (s) { return span(s.start, s.end); }).join(" and ") + ".</li>" : "") + "</ul></div>";
+}
+function stormCard(s, M) {
+  var cl = s.creeks, kind = s.on_high_tide.length ? "both" : "rain";
+  var w = cl.slice().sort(function (a, b) { return b.rain - a.rain; }).filter(function (c) { return c.rain >= 0.1; });
+  var byG = {}, top = [];
+  w.forEach(function (c) { var k = c.gauge || c.name; if (!byG[k]) { byG[k] = { gauge: c.gauge, creeks: [], rain: c.rain }; top.push(byG[k]); } byG[k].creeks.push(c.name); });
+  var li = [];
+  li.push("<li>Rain: " + top.slice(0, 4).map(function (g) { return "<b>" + g.rain.toFixed(2) + " in</b> at " + esc(g.gauge || "") + " (" + esc(g.creeks.join(", ")) + ")"; }).join("; ") + (top.length > 4 ? "; less elsewhere" : "") + ".</li>");
+  var rare = cl.filter(function (c) { return c.rarest && c.rarest.level >= 2 && c.rarest.years; }).sort(function (a, b) { return b.rarest.years - a.rarest.years; })[0];
+  if (rare) {
+    var mins = rare.rarest.minutes, win = mins >= 60 ? (mins / 60) + " hour" + (mins > 60 ? "s" : "") : mins + " minutes";
+    li.push("<li>Rarest: the heaviest " + win + " at " + esc(rare.rarest.gauge) + " (" + esc(rare.name) + "), " + chance(rare.rarest.years) + ".</li>");
+  }
+  var lv = cl.filter(function (c) { return c.reached; }).sort(function (a, b) { return b.reached - a.reached; });
+  if (lv.length) li.push("<li>Creek levels: " + lv.map(function (c) {
+    return "<b>" + esc(c.name) + "</b> reached " + '<span class="chip ' + (c.reached >= 3 ? "warn" : "amber") + '">' + esc(c.reached_label) + "</span>" +
+      (c.peak && c.peak.ft != null ? " (" + c.peak.ft.toFixed(2) + " ft at " + esc(c.peak.gauge) + ", " + when(c.peak.at) + ")" : "");
+  }).join("; ") + ".</li>");
+  var st = cl.filter(function (c) { return c.status && (c.status.status === "ready" || c.status.status === "likely"); })
+    .sort(function (a, b) { return (b.status.status === "likely") - (a.status.status === "likely") || b.status.minutes - a.status.minutes; });
+  if (st.length) li.push("<li>Creek status: " + st.map(function (c) { return esc(c.name) + " <b>" + esc(c.status.label) + "</b> for " + dur(c.status.minutes) + " (from " + when(c.status.first) + ")"; }).join("; ") + ".</li>");
+  var rd = s.roads.map(function (i) { return "<li>" + roadLine(M.roads[i]) + "</li>"; }).join("");
+  if (rd) li.push("<li>Road closures:<ul>" + rd + "</ul></li>");
+  if (s.on_high_tide.length) li.push("<li>It fell during a run of high tides (" + s.on_high_tide.map(day).join(", ") + ").</li>");
+  return '<div class="card ev ' + kind + '"><h3><span class="chip ' + kind + '">' + (kind === "both" ? "Storm on a high tide" : "Storm") + "</span>" + span(s.start, s.end) + (s.open ? ' <span class="chip amber">still going</span>' : "") + "</h3>" +
+    '<div class="when">' + when(s.start) + " to " + when(s.end) + " " + s.sides.map(function (x) { return '<span class="chip side">' + SIDE[x] + "</span>"; }).join("") + "</div><ul>" + li.join("") + "</ul></div>";
+}
+function events(M) {
+  var ev = (M.tide_periods || []).map(function (p) { return { t: p.first, h: tideCard(p, M) }; })
+    .concat((M.storms || []).filter(function (s) { return s.notable; }).map(function (s) { return { t: s.start.slice(0, 10), h: stormCard(s, M) }; }));
+  ev.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : 0; });
+  var sm = (M.storms || []).filter(function (s) { return !s.notable; });
+  var smh = sm.length ? '<p class="small">Smaller rain: ' + sm.map(function (s) { return span(s.start, s.end) + (s.wettest ? " (up to " + s.wettest.in.toFixed(2) + " in at " + esc(s.wettest.gauge) + ")" : ""); }).join("; ") + ".</p>" : "";
+  $("events").innerHTML = (ev.length ? ev.map(function (e) { return e.h; }).join("") : '<p class="empty">Nothing yet this month: no high-tide runs and no storms.</p>') + smh +
+    '<p class="note">High tides here: days when a gauge reached its tide level of concern (the 1-year tide at Redwood City and Monterey; NOAA’s minor flooding level at Alameda and San Francisco). Storms: rain at the creek gauges; listed in full when a creek reached a flood level, a creek’s status reached Be ready or Flooding likely, 1 inch or more fell, or a road closed. Flood levels and statuses are the public ones (Colma, San Bruno, Belmont, Atherton), the same the public pages showed; creeks still in staff preview show rain only.</p>';
+}
+
+// by area
+function dlabel(ds) { return ds && ds.length ? "D" + ds.join("/D") : ""; }
+function areaItems(items, M) {
+  var cr = {}, order = [], rd = [];
+  items.forEach(function (x) {
+    if (x.type === "creek") { if (!cr[x.creek]) { cr[x.creek] = []; order.push(x.creek); } cr[x.creek].push(x); }
+    else rd.push(x);
+  });
+  return "<ul>" + order.map(function (c) {
+    return "<li>" + esc(c) + ": " + cr[c].map(function (x) {
+      var s = M.storms.filter(function (s) { return s.start === x.start; })[0];
+      return [x.reached, x.status].filter(Boolean).join(", ") + " (" + (s ? span(s.start, s.end) : day(x.start)) + ")";
+    }).join("; ") + "</li>";
+  }).concat(rd.map(function (x) { var r = M.roads[x.road]; return "<li>" + esc(r.route) + " closed " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; })).join("") + "</ul>";
+}
+function areas(M) {
+  var A = Array.isArray(M.areas) ? M.areas : [];
+  $("areas").innerHTML = A.length ? "<table class='bycity'><thead><tr><th>Place</th><th>District</th><th>What happened</th></tr></thead><tbody>" +
+    A.map(function (a) { return "<tr><td class='p'>" + esc(a.place) + "</td><td class='d'>" + dlabel(a.districts) + "</td><td>" + areaItems(a.items, M) + "</td></tr>"; }).join("") +
+    "</tbody></table>" : "<p class='empty'>No creek reached a flood level and no road closed this month.</p>";
+}
+
+// tables
+function tables(M) {
+  var t = M.tides || [];
+  $("tides").innerHTML = t.length ? "<table><thead><tr><th>Gauge</th><th class='n'>Highest<br>above avg high tide</th><th>When</th><th class='n'>Above the<br>tide table</th><th>This month in past years</th><th>All days on record</th><th class='n'>Days at or above<br>level of concern</th></tr></thead><tbody>" +
+    t.map(function (x) {
+      var d = x.daily.filter(function (r) { return x.max_at && r[0] === x.max_at.slice(0, 10); })[0], a = x.all_time, mr = x.month_rank, ck = x.concern && x.days_above ? x.days_above[x.concern.key] : null;
+      return "<tr><td><b>" + esc(x.name) + "</b><br><span class='sm'>" + SIDE[x.side] + "</span></td><td class='n'>" + (x.above_mhhw != null ? ft(x.above_mhhw) : "–") +
+        "<br><span class='sm'>" + (x.max != null ? x.max.toFixed(2) + " ft NAVD88" : "") + "</span></td><td>" + (x.max_at ? when(x.max_at) : "–") + "</td><td class='n'>" + (d && d[2] != null ? ft(d[1] - d[2]) : "–") +
+        "</td><td>" + (mr ? (mr.rank === 1 ? "<b>Highest</b>" : ord(mr.rank) + " highest") + " of " + mr.of + " years" + (mr.record ? "<br><span class='sm'>" + (mr.rank === 1 ? "old record " : "record ") + mr.record[1].toFixed(2) + " ft, " + mr.record[0] + "</span>" : "") : "–") +
+        "</td><td>" + (a ? (a.rank === 1 ? "<b>Highest</b>" : ord(a.rank) + " highest") + " since " + a.since + (a.higher.length ? "<br><span class='sm'>higher: " + a.higher.slice(0, 3).map(function (h) { return day(h[0]) + ", " + h[0].slice(0, 4); }).join("; ") + "</span>" : "") : "–") +
+        "</td><td class='n'>" + (ck != null ? ck : "–") + "<br><span class='sm'>" + esc(concern(x)) + (x.concern ? " " + x.concern.ft.toFixed(2) + " ft" : "") + "</span></td></tr>";
+    }).join("") + "</tbody></table>" : "<p class='empty'>No tide data for this month.</p>";
+  $("tideNote").textContent = "Heights are the highest measured water each day (NOAA, preliminary), in feet above each gauge’s average high tide (MHHW); NAVD88 heights are underneath. “Above the tide table” is how far the water ran above NOAA’s prediction that day, from wind, low pressure and runoff.";
+  var g = (M.rain && M.rain.gauges) || [];
+  $("rain").innerHTML = g.length ? "<table><thead><tr><th>Rain gauge</th><th>Creek</th><th class='n'>This month</th><th>Wettest day</th></tr></thead><tbody>" +
+    g.map(function (r) { return "<tr><td>" + esc(r.label) + "</td><td>" + esc(r.creeks.join(", ")) + "</td><td class='n'><b>" + r.in.toFixed(2) + " in</b></td><td>" + day(r.wettest_day) + " (" + r.wettest_in.toFixed(2) + " in)</td></tr>"; }).join("") +
+    (M.rain.sfo ? "<tr><td>SFO airport (NWS official)</td><td>–</td><td class='n'><b>" + M.rain.sfo.in.toFixed(2) + " in</b></td><td></td></tr>" : "") + "</tbody></table>" : "<p class='empty'>No rain recorded.</p>";
+  $("rainNote").textContent = "Each creek's own rain gauges (OneRain), added up by day. A gauge far below its neighbors may have missed rain; check it before quoting it.";
+  var r = M.roads || [];
+  $("roads").innerHTML = r.length ? "<ul style='margin:0;padding-left:18px'>" + r.map(function (x) { return "<li style='margin:4px 0'>" + roadLine(x) + "</li>"; }).join("") + "</ul>" : "<p class='empty'>None this month.</p>";
+  var n = M.nws || [];
+  $("nws").innerHTML = n.length ? "<table><thead><tr><th>Product</th><th>From</th><th>Until</th></tr></thead><tbody>" + n.map(function (x) { return "<tr><td>" + esc(x.event) + "</td><td>" + when(x.onset) + "</td><td>" + when(x.ends) + "</td></tr>"; }).join("") + "</tbody></table>" : "<p class='empty'>None this month.</p>";
+}
+
+function show(m) {
+  var M = J.months[m];
+  try { localStorage.setItem("ms_month", m); } catch (e) {}
+  $("asof").textContent = M.complete ? "Complete · " + MONTHS[+m.slice(5) - 1] : "Building · through " + when(M.through);
+  loadStory(m); tiles(M); events(M); areas(M); tables(M);
+}
+$("print").addEventListener("click", function () { document.querySelectorAll("details").forEach(function (d) { d.open = true; }); window.print(); });
+fetch(DATA_URL + (DATA_URL.indexOf("?") < 0 ? "?t=" + Math.floor(Date.now() / 6e4) : ""), { cache: "no-store" })
+  .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(function (j) {
+    J = j;
+    var ms = Object.keys(j.months || {}).sort().reverse();
+    if (!ms.length) { $("asof").textContent = "No months yet."; return; }
+    $("month").innerHTML = ms.map(function (m) { return '<option value="' + m + '">' + MONTHS[+m.slice(5) - 1] + " " + m.slice(0, 4) + "</option>"; }).join("");
+    var want = Q.get("month"), saved = null;
+    try { saved = localStorage.getItem("ms_month"); } catch (e) {}
+    var m = ms.indexOf(want) >= 0 ? want : ms.indexOf(saved) >= 0 && !want ? saved : ms[0];
+    $("month").value = m;
+    $("month").addEventListener("change", function () { show($("month").value); });
+    show(m);
+  })
+  .catch(function (e) {
+    $("asof").textContent = "Couldn’t load the summary (" + e.message + "). It appears after the data job’s next run.";
+    $("story").innerHTML = "<p class='empty'>The monthly summary file isn’t on the data branch yet.</p>";
+  });
+</script>
+</body>
+</html>

@@ -254,7 +254,7 @@
         <li><b>Cause of a flooding closure</b> (<code>road_closures.py</code>, staff 2026-11-24): <b>High tide</b> when the measured high tide from 3 hours before
           it to 1 hour after was at least <code>ROAD_TIDE_FT</code> (1 ft) above average high tide at the nearest NOAA gauge on its side (San Francisco or Redwood City
           on the Bayside, Monterey on the Coastside); <b>Rain</b> when at least <code>ROAD_RAIN_IN</code> (0.25 in) fell at its creek's rain gauge (or the wettest
-          gauge on its side) from 12 hours before it until it reopened; <b>Rain + high tide</b> for both; <b>Cause unclear</b> for neither. Each closure shows the tide
+          gauge on its side) from 12 hours before it closed until 3 hours after (later rain in a long closure doesn't count); <b>Rain + high tide</b> for both; <b>Cause unclear</b> for neither. Each closure shows the tide
           and rain behind its cause. Closures older than the hourly rain record (about a week) are tagged only when the tide alone explains them.</li>
         <li><b>City posts:</b> cities' own posts about street closures from flooding or storm damage, read from their website feeds every 10 minutes
           (<code>lookups/city_feeds.csv</code>; San Bruno's News Flash and Alert Center so far). A post shows at the time it was posted, with a link, and
