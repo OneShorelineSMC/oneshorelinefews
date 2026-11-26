@@ -327,13 +327,13 @@ function areas(M) {
 // tables
 function tables(M) {
   var t = M.tides || [];
-  $("tides").innerHTML = t.length ? "<table><thead><tr><th>Gauge</th><th class='n'>Highest<br>above avg high tide</th><th>When</th><th class='n'>Above the<br>tide table</th><th>This month in past years</th><th>All days on record</th><th class='n'>Days at or above<br>level of concern</th></tr></thead><tbody>" +
+  $("tides").innerHTML = t.length ? "<table><thead><tr><th>Gauge</th><th class='n'>Highest<br>above avg high tide</th><th>When</th><th class='n'>Above the<br>tide table</th><th>Among past " + MONTHS[+M.month.slice(5) - 1] + "s</th><th>Against every day in the gauge's record</th><th class='n'>Days at or above<br>level of concern</th></tr></thead><tbody>" +
     t.map(function (x) {
       var d = x.daily.filter(function (r) { return x.max_at && r[0] === x.max_at.slice(0, 10); })[0], a = x.all_time, mr = x.month_rank, ck = x.concern && x.days_above ? x.days_above[x.concern.key] : null;
       return "<tr><td><b>" + esc(x.name) + "</b><br><span class='sm'>" + SIDE[x.side] + "</span></td><td class='n'>" + (x.above_mhhw != null ? ft(x.above_mhhw) : "–") +
         "<br><span class='sm'>" + (x.max != null ? x.max.toFixed(2) + " ft NAVD88" : "") + "</span></td><td>" + (x.max_at ? when(x.max_at) : "–") + "</td><td class='n'>" + (d && d[2] != null ? ft(d[1] - d[2]) : "–") +
-        "</td><td>" + (mr ? (mr.rank === 1 ? "<b>Highest</b>" : ord(mr.rank) + " highest") + " of " + mr.of + " years" + (mr.record ? "<br><span class='sm'>" + (mr.rank === 1 ? "old record " : "record ") + mr.record[1].toFixed(2) + " ft, " + mr.record[0] + "</span>" : "") : "–") +
-        "</td><td>" + (a ? (a.rank === 1 ? "<b>Highest</b>" : ord(a.rank) + " highest") + " since " + a.since + (a.higher.length ? "<br><span class='sm'>higher: " + a.higher.slice(0, 3).map(function (h) { return day(h[0]) + ", " + h[0].slice(0, 4); }).join("; ") + "</span>" : "") : "–") +
+        "</td><td>" + (mr ? (mr.rank === 1 ? "<b>Highest</b>" : ord(mr.rank) + " highest") + " of " + mr.of + " " + MONTHS[+M.month.slice(5) - 1] + "s with full records" + (mr.record ? "<br><span class='sm'>" + (mr.rank === 1 ? "old record " : "record ") + mr.record[1].toFixed(2) + " ft, " + mr.record[0] + "</span>" : "") : "–") +
+        "</td><td>" + (a ? (a.rank === 1 ? "<b>Highest day</b> since " + a.since : "<b>" + ord(a.rank) + " highest day</b> since " + a.since) + (a.higher.length ? "<br><span class='sm'>only higher: " + a.higher.slice(0, 3).map(function (h) { return day(h[0]) + ", " + h[0].slice(0, 4); }).join("; ") + "</span>" : "") : "–") +
         "</td><td class='n'>" + (ck != null ? ck : "–") + "<br><span class='sm'>" + esc(concern(x)) + (x.concern ? " " + x.concern.ft.toFixed(2) + " ft" : "") + "</span></td></tr>";
     }).join("") + "</tbody></table>" : "<p class='empty'>No tide data for this month.</p>";
   $("tideNote").textContent = "Heights are the highest measured water each day (NOAA, preliminary), in feet above each gauge’s average high tide (MHHW); NAVD88 heights are underneath. “Above the tide table” is how far the water ran above NOAA’s prediction that day, from wind, low pressure and runoff.";
