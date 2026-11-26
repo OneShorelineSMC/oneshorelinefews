@@ -29,8 +29,10 @@ City notices (staff, 2026-11-14): cities' own posts about street closures, which
 in lookups/city_feeds.csv is an RSS or Atom feed (CivicPlus sites such as San Bruno's publish News Flash and Alert
 Center feeds). A post counts when its title or text names a closure (CLOSE_RX) and a storm cause (STORM_RX or rain or
 water). It's logged as a notice at the time it was posted, with its link, and placed by the city's row (creeks, side),
-since a post names streets in words. South San Francisco's site isn't CivicPlus and has no feed found yet; SMC Alert
-has no public feed, and the County uses Genasys Protect for evacuations only.
+since a post names streets in words. A city with no feed can be read from its emergency page instead (staff, 2026-11-25:
+South San Francisco posts its alerts only on ssfca.gov's Emergency Information page): each "AS OF <date> AT <time> -
+<title>" block after "CURRENT ALERTS" is one post, its text running to the next block (page_items). SMC Alert has no
+public feed, and the County uses Genasys Protect for evacuations only.
 
 Cause (staff, 2026-11-24, king tides): each flooding closure gets a cause from the conditions around it, so tidal
 flooding on a dry day isn't counted as storm flooding:
@@ -96,7 +98,7 @@ CREEK_SIDE = {"colma": "bay", "sanbruno": "bay", "belmont": "bay", "atherton": "
               "greenhills": "bay", "pilarcitos": "coast", "sangregorio": "coast", "pescadero": "coast", "butano": "coast"}
 NEAREST_MAX_DEG = 0.02   # a point outside every watershed (Bay fill, a beach) takes the nearest one within about 2 km
 CITY_FEEDS = os.path.join(ROOT, "lookups", "city_feeds.csv")
-CLOSE_RX = re.compile(r"\bclos(?:ed|ure|ures|ing)\b|detour|impassable|avoid the area|shut down|blocked|not passable", re.I)
+CLOSE_RX = re.compile(r"\bclos(?:ed|ure|ures|ing)\b|detour|impassable|avoid the area|shut down|blocked|not passable|alternate routes?|traffic advisory|road(?:way)? hazards?", re.I)
 CITY_STORM_RX = re.compile(r"flood|storm|rain|water|slide|mud|tree|wash.?out|sink ?hole|creek", re.I)
 KEEP_DAYS_AFTER_END = 400   # the water year is pruned separately; this is a backstop
 MAX_LOG = 600
@@ -429,11 +431,19 @@ def read_feeds(path=None):
         return []
     with open(path, newline="", encoding="utf-8-sig") as f:
         rows = [{"city": r["city"].strip(), "url": r["url"].strip(), "creeks": (r.get("creeks") or "").split(),
-                 "side": (r.get("side") or "").strip() or None}
+                 "side": (r.get("side") or "").strip() or None, "tide_lat": _num((r.get("lat") or "").strip())}
                 for r in csv.DictReader(f) if (r.get("city") or "").strip() and (r.get("url") or "").strip() and not r["city"].startswith("#")]
     # only https feeds; creeks are plain ids; side is bay or coast (anything else is dropped, not passed to the page)
     return [dict(r, creeks=[k for k in r["creeks"] if re.fullmatch(r"[a-z0-9_]{1,30}", k)], side=r["side"] if r["side"] in ("bay", "coast") else None)
             for r in rows if r["url"].lower().startswith("https://")]
+
+
+def _num(s):
+    try:
+        v = float(s)
+        return v if 36.9 <= v <= 37.9 else None   # San Mateo County only
+    except ValueError:
+        return None
 
 
 def plain(t):
@@ -481,9 +491,59 @@ def same_site(link, feed_url):
     return a.scheme == "https" and bool(a.hostname) and host(a.hostname) == host(b.hostname)
 
 
+PAGE_ALERT_RX = re.compile(r"AS OF\s+(?:[A-Z]+DAY,?\s+)?([A-Z]+)\.?\s+(\d{1,2}),?\s+(\d{4}),?\s+AT\s+(\d{1,2}):(\d{2})\s*([AP])\.?\s*M\.?\s*"
+                           r"[\u2013\u2014-]+\s*([^\n]+)", re.I)
+PAGE_STOP_RX = re.compile(r"\n\s*(?:Visit the National Weather Service|Get Ready Before|General information)", re.I)
+MONTHS = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
+
+
+def is_feed(text):
+    return bool(re.match(r"\s*(?:<\?xml|<rss\b|<feed\b)", (text or "")[:2000], re.I))
+
+
+def page_items(text, url):
+    """A city's emergency page -> [{title, link, text, at, key}]: each "AS OF <date> AT <time> - <title>" block after
+    "CURRENT ALERTS" (South San Francisco's layout), its text running to the next block, the page's standing links, or
+    PAGE_MAX characters. Regular expressions only (no HTML or XML parser), so the page's markup can't do anything."""
+    t = re.sub(r"(?is)<(script|style)\b[^>]*>.*?</\1\s*>", " ", text or "")
+    t = re.sub(r"(?i)<\s*li\b[^>]*>", "\n; ", t)
+    t = re.sub(r"(?i)<\s*(?:br|/p|/li|/ul|/div|/h\d|p|div|h\d)\b[^>]*>", "\n", t)
+    t = html.unescape(re.sub(r"<[^>]+>", " ", t))
+    t = re.sub(r"[ \t\xa0]+", " ", t)
+    i = t.upper().find("CURRENT ALERTS")
+    if i < 0:
+        return []
+    t = t[i:]
+    stop = PAGE_STOP_RX.search(t)
+    t = t[:stop.start()] if stop else t
+    ms = list(PAGE_ALERT_RX.finditer(t))
+    out = []
+    for k, m in enumerate(ms):
+        mon = MONTHS.get(m.group(1)[:3].lower())
+        if not mon:
+            continue
+        h = int(m.group(4)) % 12 + (12 if m.group(6).upper() == "P" else 0)
+        try:
+            at = dt.datetime(int(m.group(3)), mon, int(m.group(2)), h, int(m.group(5)), tzinfo=PAC)
+        except ValueError:
+            continue
+        body = t[m.end():ms[k + 1].start() if k + 1 < len(ms) else m.end() + PAGE_MAX]
+        places = [re.sub(r"\s+", " ", x).strip() for x in re.findall(r"\n\s*;\s*([^\n]+)", body)]   # the list: usually the streets
+        body = re.sub(r"\s*\n\s*;\s*", "; ", body)          # list items joined with semicolons
+        body = re.sub(r":\s*;", ":", re.sub(r"\s+", " ", body)).strip(" ;")
+        title = re.sub(r"\s+", " ", m.group(7)).strip(" -\u2013\u2014").title().replace("&", "and")
+        out.append({"title": title, "link": url, "text": body, "at": at, "key": "%s|%s" % (at.isoformat(), title),
+                    "places": [x for x in places if x][:12]})
+    return out
+
+
+PAGE_MAX = 1200
+
+
 def city_notices(text, feed, now):
     out = []
-    for it in feed_items(text):
+    items = feed_items(text) if is_feed(text) else page_items(text, feed["url"])
+    for it in items:
         blob = it["title"] + " " + it["text"]
         if not (CLOSE_RX.search(blob) and CITY_STORM_RX.search(blob)) or NOT_STORM_RX.search(it["title"]) and not STRONG_RX.search(blob):
             continue
@@ -493,12 +553,12 @@ def city_notices(text, feed, now):
         link = it["link"] if same_site(it["link"], feed["url"]) else ""
         snippet = it["text"][:240] + ("…" if len(it["text"]) > 240 else "")
         out.append({
-            "id": "city:" + hashlib.sha1(f"{feed['city']}|{it['link'] or it['title']}".encode()).hexdigest()[:14],
+            "id": "city:" + hashlib.sha1(f"{feed['city']}|{it.get('key') or it['link'] or it['title']}".encode()).hexdigest()[:14],
             "source": "City of " + feed["city"], "notice": True,
             "route": "", "dir": "", "facility": "", "closure": "", "lanes": "", "place": feed["city"],
-            "where": it["title"], "what": snippet, "link": link, "kind": "flood" if FLOOD_RX.search(blob) else "storm",
+            "where": it["title"] + (": " + "; ".join(it["places"]) if it.get("places") else ""), "what": snippet, "link": link, "kind": "flood" if FLOOD_RX.search(blob) else "storm",
             "started": local(at), "ended": local(at), "est_end": None, "lat": None, "lon": None, "pts": [],
-            "creeks": feed["creeks"], "side": feed["side"], "watersheds": [],
+            "creeks": feed["creeks"], "side": feed["side"], "watersheds": [], "tide_lat": feed.get("tide_lat"),
         })
     return out
 
@@ -630,7 +690,8 @@ def creek_rain_keys():
 
 
 def tide_station(c, tides):
-    want = "9413450" if c.get("side") == "coast" else "9414290" if (c.get("lat") or 0) >= TIDE_NORTH_LAT else "9414523"
+    lat = c.get("lat") if c.get("lat") is not None else c.get("tide_lat")   # a city notice has no point: its city's latitude
+    want = "9413450" if c.get("side") == "coast" else "9414290" if (lat or 0) >= TIDE_NORTH_LAT else "9414523"
     for s in (tides or {}).get("stations") or []:
         if s.get("id") == want:
             return s

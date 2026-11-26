@@ -158,7 +158,33 @@ na = R.city_notices(ATOM, FEED, NOW)
 check("city: Atom feeds too", len(na) == 1 and na[0]["started"] == "2026-11-13 12:00" and na[0]["kind"] == "storm")
 r7 = R.update({}, NOW, lambda u: (_ for _ in ()).throw(OSError("down")) if "sanbruno" in u else fetch(u), feeds=[FEED])
 check("update: a city feed down is a problem, Caltrans still read", any("San Bruno" in p for p in r7["problems"]) and r7["sources"]["lcs"]["ok"])
-check("city_feeds.csv: San Bruno's two CivicPlus feeds", [f["city"] for f in R.read_feeds(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups", "city_feeds.csv"))] == ["San Bruno", "San Bruno"])
+check("city_feeds.csv: San Bruno's two CivicPlus feeds and South San Francisco's emergency page",
+      [f["city"] for f in R.read_feeds(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups", "city_feeds.csv"))] == ["San Bruno", "San Bruno", "South San Francisco"])
+
+# a city's emergency page, no feed (South San Francisco, Nov 25 2026, as served)
+SSF_PAGE = """<html><head><script>var x = "AS OF MONDAY, JANUARY 1, 2026 AT 1:00 P.M. &ndash; ROAD CLOSED FLOODING";</script></head><body>
+<h1>Emergency Information</h1><div><p><strong>CURRENT ALERTS AND UPDATES:</strong></p><div><div>
+<p>AS OF WEDNESDAY, NOVEMBER 25, 2026 AT 12:17 P.M. &ndash; TRAFFIC ADVISORY &ndash; FLOODING &amp; ROADWAY HAZARDS</p>
+<p>While rain is not in the forecast until Sunday, November 29, these areas may continue to experience flooding with the next tide:</p>
+<ul><li>Forbes Blvd. &amp; DNA Way</li><li>Littlefield Ave. &amp; Lawrence Ave.</li><li>Harbor Way &amp; Mitchell Ave.</li>
+<li>South Airport Rd. &amp; Wondercolor Ln.</li><li>Belle Air Rd. &amp; S. Airport Rd.</li></ul>
+<p>Please continue to exercise caution when driving in this area, and remember to avoid driving through water and barriers, and use alternate routes.</p>
+<p>AS OF TUESDAY, NOVEMBER 24, 2026 AT 7:05 A.M. &ndash; COMMUNITY MEETING</p><p>Join us at the library.</p>
+<p>Visit the National Weather Service for the latest forecasts.</p></div></div></div>
+<h2>Get Ready Before an Emergency</h2><p>Track changing weather conditions, street closures, and evacuation warnings.</p></body></html>"""
+NOW2 = dt.datetime(2026, 11, 26, 2, 0, tzinfo=dt.timezone.utc)
+SSF = {"city": "South San Francisco", "url": "https://www.ssfca.gov/Our-City/Emergency-Information", "creeks": ["colma"], "side": "bay"}
+sp = R.city_notices(SSF_PAGE, SSF, NOW2)
+check("city page: one notice, the flooding advisory (not the meeting, not the script, not the standing links)", len(sp) == 1 and sp[0]["kind"] == "flood")
+check("city page: posted 12:17 PM Pacific; the five streets named; linked to the page; placed by the city's row",
+      sp[0]["started"] == "2026-11-25 12:17" and sp[0]["where"].endswith("Harbor Way & Mitchell Ave.; South Airport Rd. & Wondercolor Ln.; Belle Air Rd. & S. Airport Rd.")
+      and sp[0]["where"].startswith("Traffic Advisory") and sp[0]["link"] == SSF["url"] and sp[0]["creeks"] == ["colma"] and "<" not in sp[0]["what"])
+check("city page: the same post read again keeps its id; a new post gets a new one",
+      R.city_notices(SSF_PAGE, SSF, NOW2)[0]["id"] == sp[0]["id"] and R.city_notices(SSF_PAGE.replace("12:17", "4:40"), SSF, NOW2)[0]["id"] != sp[0]["id"])
+check("city page: a notice's tide comes from its city's latitude (South San Francisco: San Francisco's gauge, not Redwood City's)",
+      R.tide_station(dict(sp[0], tide_lat=37.65), {"stations": [{"id": "9414290"}, {"id": "9414523"}]})["id"] == "9414290"
+      and R.tide_station(dict(sp[0], tide_lat=None), {"stations": [{"id": "9414290"}, {"id": "9414523"}]})["id"] == "9414523")
+check("city page: no alerts block = nothing (and no error)", R.city_notices("<html><body><p>Nothing here.</p></body></html>", SSF, NOW2) == [])
 
 # finding the Emergency Road Closures layer when the item has no url
 HUB = {"data": {"attributes": {"url": "https://services.example.com/arcgis/rest/services/ERC/FeatureServer", "layer": {"id": 2}}}}

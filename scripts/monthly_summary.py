@@ -322,7 +322,7 @@ def month_roads(roads, month, places):
     for c in (roads or {}).get("log") or []:
         if c.get("kind") not in ("flood", "storm") or (c.get("started") or "")[:7] != month:
             continue
-        k = (c.get("route"), c.get("started", "")[:13])
+        k = (c.get("route") or c.get("id"), c.get("started", "")[:13])   # a city notice stands alone
         row = out.get(k)
         stretch = " / ".join(sorted(x.strip() for x in (c.get("where") or "").split(" to ")))
         if row:
@@ -335,7 +335,8 @@ def month_roads(roads, month, places):
                 row["places"].append(place_entry(c["place"], places))
             row["active"] = row["active"] or bool(c.get("active"))
             continue
-        out[k] = {"route": c.get("route"), "where": c.get("where"), "wheres": [c.get("where")], "stretches": [stretch], "closures": 1, "dirs": [c.get("dir")] if c.get("dir") else [], "facility": c.get("facility"),
+        out[k] = {"route": c.get("route"), "notice": bool(c.get("notice")), "source": c.get("source"), "link": c.get("link") if c.get("notice") else None,
+                  "where": c.get("where"), "wheres": [c.get("where")], "stretches": [stretch], "closures": 1, "dirs": [c.get("dir")] if c.get("dir") else [], "facility": c.get("facility"),
                   "what": c.get("what"), "kind": c.get("kind"), "started": c.get("started"), "ended": c.get("ended"),
                   "active": bool(c.get("active")), "side": c.get("side"), "cause": c.get("cause"), "why": c.get("why"),
                   "places": [place_entry(c.get("place"), places)] if c.get("place") else []}
