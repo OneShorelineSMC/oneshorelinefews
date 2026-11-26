@@ -140,7 +140,7 @@
   <details class="card"><summary>Rain this month at the creek rain gauges</summary><div class="tw" id="rain"></div>
     <p class="note" id="rainNote"></p></details>
   <details class="card" open><summary>Road closures for flooding and storms</summary><div class="tw" id="roads"></div>
-    <p class="note">State highways in San Mateo County from the Caltrans Lane Closure System, and city posts (San Bruno's feeds and South San Francisco's emergency page). A closure's
+    <p class="note">State highways in San Mateo County from the Caltrans Lane Closure System, and city posts (San Bruno's feeds and South San Francisco's emergency page), and SMC Alert road closures once its mailbox is set up. A closure's
       cause is set by a rule, not by Caltrans: <b>high tide</b> when the measured high tide near it ran at least 1 foot above the average
       high tide, <b>rain</b> when at least 0.25 inch fell in the 12 hours before it closed through 3 hours after, <b>both</b>, or not known.</p></details>
   <details class="card"><summary>NWS coastal flood products</summary><div class="tw" id="nws"></div>
@@ -315,7 +315,7 @@ function areaItems(items, M) {
       var s = M.storms.filter(function (s) { return s.start === x.start; })[0];
       return [x.reached, x.status].filter(Boolean).join(", ") + " (" + (s ? span(s.start, s.end) : day(x.start)) + ")";
     }).join("; ") + "</li>";
-  }).concat(rd.map(function (x) { var r = M.roads[x.road]; if (r.notice) return "<li>City reported flooding " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; return "<li>" + esc(r.route) + " closed " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; })).join("") + "</ul>";
+  }).concat(rd.map(function (x) { var r = M.roads[x.road]; if (r.notice) return "<li>" + (r.source === "SMC Alert" ? "SMC Alert: " + esc(r.where.replace(/,\s*[^,]*$/, "")) + " closed " : "City reported flooding ") + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; return "<li>" + esc(r.route) + " closed " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; })).join("") + "</ul>";
 }
 function areas(M) {
   var A = Array.isArray(M.areas) ? M.areas : [];

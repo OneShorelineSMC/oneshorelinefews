@@ -410,7 +410,7 @@ function renderRoads() {
     (past.length ? "<details style='margin-top:8px'><summary style='cursor:pointer;font-weight:600;color:var(--ink)'>This season: " + nc + " highway closure" + (nc === 1 ? "" : "s") +
       " since " + esc(day(RC.water_year_start || "")) + " (" + fl + " from flooding" + (byC.length ? ": " + byC.join(", ") : "") + ")" + (np ? " and " + np + " city post" + (np === 1 ? "" : "s") : "") + "</summary><ul class='rcl'>" + past.map(roadItem).join("") + "</ul></details>" :
       "<p class='note'>No storm closures logged yet this season.</p>") +
-    "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno and South San Francisco so far). " +
+    "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno and South San Francisco so far) and SMC Alert, once its mailbox is set up. " +
       (past.some(function (c) { return c.gone; }) ? "* reopened when it left Caltrans' feed (within 10 minutes). " : "") + "</p>" +
     (bad.length ? "<div class='warn'>Couldn't read " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
 }
