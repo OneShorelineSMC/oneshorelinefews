@@ -67,6 +67,7 @@ REPORTS_MAX_AGE_DAYS,180,days,sensor map,Approved flood reports older than this 
 REPORTS_MAX_PHOTOS,40,photos,sensor map,At most this many approved photos are published at a time (newest reports first).,,
 RAIN_NOW_MIN,60,minutes,"creek cards, kiosk",The rain chip says 'Raining' below Heavy if a creek's working rain gauges recorded at least RAIN_NOW_IN in this many minutes; otherwise 'No rain',,
 RAIN_NOW_IN,0.01,in,"creek cards, kiosk",...this much rain (one tip of a rain gauge bucket is 0.01 in),,
+OUTLOOK_PUBLIC,0,0 or 1,Creeks page (each creek),"1 = everyone sees the Next 3 days box (NWS flood-size rain and the coming high tides; San Bruno also its flood-risk tide warning and how it floods); 0 = staff view (?preview=1) only. Never changes a status.",,
 FORECAST_PUBLIC,1,0 or 1,"Creeks page, home page creek cards",1 = everyone sees the National Weather Service rain forecast row on creek cards; 0 = staff view (?preview=1) only. Never shown on the kiosk; never changes a status.,,
 FORECAST_SHOW_IN,0.25,in,creek cards,Show the forecast row only when at least this much rain is expected in the next 3 days,,
 FORECAST_EVERY_MIN,60,minutes,data job,Read the NWS forecast (api.weather.gov) at most this often; the 15-minute runs in between reuse it,,
