@@ -1,3 +1,4 @@
-city,url,creeks,side,note
-San Bruno,https://www.sanbruno.ca.gov/RSSFeed.aspx?ModID=1&CID=All-newsflash.xml,sanbruno,bay,CivicPlus News Flash (all categories)
-San Bruno,https://www.sanbruno.ca.gov/RSSFeed.aspx?ModID=63&CID=All-0,sanbruno,bay,CivicPlus Alert Center (all categories)
+city,url,creeks,side,note,lat
+San Bruno,https://www.sanbruno.ca.gov/RSSFeed.aspx?ModID=1&CID=All-newsflash.xml,sanbruno,bay,CivicPlus News Flash (all categories),37.63
+San Bruno,https://www.sanbruno.ca.gov/RSSFeed.aspx?ModID=63&CID=All-0,sanbruno,bay,CivicPlus Alert Center (all categories),37.63
+South San Francisco,https://www.ssfca.gov/Our-City/Emergency-Information,colma,bay,Emergency Information page (no feed): its CURRENT ALERTS AND UPDATES blocks,37.65
