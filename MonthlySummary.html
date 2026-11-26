@@ -140,7 +140,7 @@
   <details class="card"><summary>Rain this month at the creek rain gauges</summary><div class="tw" id="rain"></div>
     <p class="note" id="rainNote"></p></details>
   <details class="card" open><summary>Road closures for flooding and storms</summary><div class="tw" id="roads"></div>
-    <p class="note">State highways in San Mateo County from the Caltrans Lane Closure System, and City of San Bruno posts. A closure's
+    <p class="note">State highways in San Mateo County from the Caltrans Lane Closure System, and city posts (San Bruno's feeds and South San Francisco's emergency page). A closure's
       cause is set by a rule, not by Caltrans: <b>high tide</b> when the measured high tide near it ran at least 1 foot above the average
       high tide, <b>rain</b> when at least 0.25 inch fell in the 12 hours before it closed through 3 hours after, <b>both</b>, or not known.</p></details>
   <details class="card"><summary>NWS coastal flood products</summary><div class="tw" id="nws"></div>
@@ -156,7 +156,7 @@
       statuses reached); and road closures. The month before is updated through the 3rd of the next month, then kept as it is.
       The words at the top are written by staff and saved in <code>lookups/monthly/</code>. Each city's supervisorial district is from the county's
       2022 district map (<code>lookups/places.csv</code>).</p>
-    <p class="note">Not here yet: community flood reports (none were approved this month), city road closures other than San Bruno's, and
+    <p class="note">Not here yet: community flood reports (none were approved this month), city road closures other than San Bruno's and South San Francisco's, and
       NWS rain products. Tide numbers are preliminary until NOAA reviews them.</p>
   </details>
 </main>
@@ -231,10 +231,15 @@ function tiles(M) {
     tileHtml("Highest ocean tide", tt(coast), ts(coast)) +
     tileHtml("Storms", String(big.length), big.length ? "with flooding signs or 1 inch or more" + ((M.storms || []).length > big.length ? " · " + ((M.storms || []).length - big.length) + " smaller" : "") : "") +
     tileHtml("Wettest rain gauge", g ? g.in.toFixed(2) + " in" : "–", g ? g.label + " (" + g.creeks.join(", ") + ")" + (M.rain.sfo ? " · SFO airport " + M.rain.sfo.in.toFixed(2) + " in" : "") : "") +
-    tileHtml("Highway flood closures", String(nc), (M.roads || []).length && nc !== (M.roads || []).length ? "in " + M.roads.length + " places" : "") +
+    tileHtml("Road flooding and closures", String(nc), "state highways and city posts" + ((M.roads || []).length && nc !== (M.roads || []).length ? " · " + M.roads.length + " places" : "")) +
     tileHtml("Days with an NWS coastal flood product", String(Object.keys(nd).length), "Advisory or Warning");
 }
 function roadLine(r) {
+  if (r.notice) {   // a city's own post (its title names the streets)
+    var lk = /^https:\/\/[^\/\s"'<>]+\//i.test(r.link || "") ? r.link : "";
+    return "<b>" + esc(r.source || "City notice") + "</b>, posted " + when(r.started) + ": " + (lk ? '<a href="' + esc(lk) + '" target="_blank" rel="noopener">' + esc(r.where) + "</a>" : esc(r.where)) +
+      (r.cause ? ' <span class="chip ' + (r.cause === "both" ? "both" : r.cause) + '">' + CAUSE[r.cause] + "</span>" : "");
+  }
   var n = r.closures > 1 ? r.closures + " closures" : "Closed", pl = r.places.map(function (p) { return p.place; }).join(" / ");
   var dirs = r.dirs && r.dirs.length > 1 ? " (both directions)" : r.dirs && r.dirs.length ? " (" + r.dirs[0].toLowerCase() + "bound)" : "";
   var wh = r.closures > 1 && r.wheres.length > 1 ? (r.facility ? r.facility.toLowerCase().replace(/^on ramp$/, "ramps").replace(/^off ramp$/, "ramps") + ": " : "") + r.wheres.join("; ") : r.where;
@@ -310,7 +315,7 @@ function areaItems(items, M) {
       var s = M.storms.filter(function (s) { return s.start === x.start; })[0];
       return [x.reached, x.status].filter(Boolean).join(", ") + " (" + (s ? span(s.start, s.end) : day(x.start)) + ")";
     }).join("; ") + "</li>";
-  }).concat(rd.map(function (x) { var r = M.roads[x.road]; return "<li>" + esc(r.route) + " closed " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; })).join("") + "</ul>";
+  }).concat(rd.map(function (x) { var r = M.roads[x.road]; if (r.notice) return "<li>City reported flooding " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; return "<li>" + esc(r.route) + " closed " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; })).join("") + "</ul>";
 }
 function areas(M) {
   var A = Array.isArray(M.areas) ? M.areas : [];

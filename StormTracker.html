@@ -257,8 +257,8 @@
           gauge on its side) from 12 hours before it closed until 3 hours after (later rain in a long closure doesn't count); <b>Rain + high tide</b> for both; <b>Cause unclear</b> for neither. Each closure shows the tide
           and rain behind its cause. Closures older than the hourly rain record (about a week) are tagged only when the tide alone explains them.</li>
         <li><b>City posts:</b> cities' own posts about street closures from flooding or storm damage, read from their website feeds every 10 minutes
-          (<code>lookups/city_feeds.csv</code>; San Bruno's News Flash and Alert Center so far). A post shows at the time it was posted, with a link, and
-          counts for the city's creeks and side; posts rarely say when a street reopened. South San Francisco's site has no feed yet, and SMC Alert has no public feed.</li>
+          (<code>lookups/city_feeds.csv</code>; San Bruno's News Flash and Alert Center, and South San Francisco's Emergency Information page, read for its "AS OF" alerts since it has no feed). A post shows at the time it was posted, with a link, and
+          counts for the city's creeks and side; posts rarely say when a street reopened. SMC Alert has no public feed.</li>
         <li><b>Gaps:</b> a gauge that went quiet during a storm is named; its rain may be missing. Rain gauges under-catch in wind.</li>
         <li><b>Earlier seasons:</b> the history from the OneRain archive can be added later with the same rules (THRESHOLDS_BASIS.md §12).</li>
       </ul>
@@ -410,7 +410,7 @@ function renderRoads() {
     (past.length ? "<details style='margin-top:8px'><summary style='cursor:pointer;font-weight:600;color:var(--ink)'>This season: " + nc + " highway closure" + (nc === 1 ? "" : "s") +
       " since " + esc(day(RC.water_year_start || "")) + " (" + fl + " from flooding" + (byC.length ? ": " + byC.join(", ") : "") + ")" + (np ? " and " + np + " city post" + (np === 1 ? "" : "s") : "") + "</summary><ul class='rcl'>" + past.map(roadItem).join("") + "</ul></details>" :
       "<p class='note'>No storm closures logged yet this season.</p>") +
-    "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno so far). " +
+    "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno and South San Francisco so far). " +
       (past.some(function (c) { return c.gone; }) ? "* reopened when it left Caltrans' feed (within 10 minutes). " : "") + "</p>" +
     (bad.length ? "<div class='warn'>Couldn't read " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
 }
