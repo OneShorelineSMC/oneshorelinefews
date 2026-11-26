@@ -538,7 +538,8 @@ def page_items(text, url):
         body = re.sub(r"\s*\n\s*;\s*", "; ", body)          # list items joined with semicolons
         body = re.sub(r":\s*;", ":", re.sub(r"\s+", " ", body)).strip(" ;")
         title = re.sub(r"\s+", " ", m.group(7)).strip(" -\u2013\u2014").title().replace("&", "and")
-        out.append({"title": title, "link": url, "text": body, "at": at, "key": "%s|%s" % (at.isoformat(), title),
+        # no link: the page is replaced as the city posts new alerts, so a link would show a later alert (staff, 2026-11-26)
+        out.append({"title": title, "link": "", "text": body, "at": at, "key": "%s|%s" % (at.isoformat(), title),
                     "places": [x for x in places if x][:12]})
     return out
 
@@ -700,7 +701,8 @@ def update(previous, now, fetch=get, feeds=None, erc=None):
             problems.append(f"Emergency Road Closures: {type(e).__name__}: {e}"[:400])
             sources["erc"] = dict(prev_src.get("erc") or {}, ok=False)
             sources["erc"]["error"] = f"{type(e).__name__}: {e}"[:400]
-    for i, fd in enumerate(read_feeds() if feeds is None else feeds):
+    feeds = read_feeds() if feeds is None else feeds
+    for i, fd in enumerate(feeds):
         key = f"city:{fd['city']}:{i + 1}"
         try:
             cur = city_notices(fetch(fd["url"]), fd, now)
@@ -709,6 +711,10 @@ def update(previous, now, fetch=get, feeds=None, erc=None):
         except Exception as e:  # noqa: BLE001
             problems.append(f"{fd['city']} feed: {type(e).__name__}: {e}"[:200])
             sources[key] = dict(prev_src.get(key) or {"url": fd["url"]}, ok=False)
+    page_urls = {fd["url"] for fd in feeds}
+    for c in log:   # posts read from a city's page (not a feed) keep no link: the page changes as new alerts go up
+        if c.get("notice") and c.get("link") in page_urls:
+            c["link"] = ""
     log = prune(log, now)
     try:
         ws = watersheds()

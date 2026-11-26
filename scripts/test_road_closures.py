@@ -176,14 +176,17 @@ NOW2 = dt.datetime(2026, 11, 26, 2, 0, tzinfo=dt.timezone.utc)
 SSF = {"city": "South San Francisco", "url": "https://www.ssfca.gov/Our-City/Emergency-Information", "creeks": ["colma"], "side": "bay"}
 sp = R.city_notices(SSF_PAGE, SSF, NOW2)
 check("city page: one notice, the flooding advisory (not the meeting, not the script, not the standing links)", len(sp) == 1 and sp[0]["kind"] == "flood")
-check("city page: posted 12:17 PM Pacific; the five streets named; linked to the page; placed by the city's row",
+check("city page: posted 12:17 PM Pacific; the five streets named; no link (the page changes day to day); placed by the city's row",
       sp[0]["started"] == "2026-11-25 12:17" and sp[0]["where"].endswith("Harbor Way & Mitchell Ave.; South Airport Rd. & Wondercolor Ln.; Belle Air Rd. & S. Airport Rd.")
-      and sp[0]["where"].startswith("Traffic Advisory") and sp[0]["link"] == SSF["url"] and sp[0]["creeks"] == ["colma"] and "<" not in sp[0]["what"])
+      and sp[0]["where"].startswith("Traffic Advisory") and sp[0]["link"] == "" and sp[0]["creeks"] == ["colma"] and "<" not in sp[0]["what"])
 check("city page: the same post read again keeps its id; a new post gets a new one",
       R.city_notices(SSF_PAGE, SSF, NOW2)[0]["id"] == sp[0]["id"] and R.city_notices(SSF_PAGE.replace("12:17", "4:40"), SSF, NOW2)[0]["id"] != sp[0]["id"])
 check("city page: a notice's tide comes from its city's latitude (South San Francisco: San Francisco's gauge, not Redwood City's)",
       R.tide_station(dict(sp[0], tide_lat=37.65), {"stations": [{"id": "9414290"}, {"id": "9414523"}]})["id"] == "9414290"
       and R.tide_station(dict(sp[0], tide_lat=None), {"stations": [{"id": "9414290"}, {"id": "9414523"}]})["id"] == "9414523")
+_old = [dict(sp[0], link=SSF["url"], active=False, ended=sp[0]["started"])]
+_r = R.update({"log": _old}, NOW2, lambda u: "<html><body><p>CURRENT ALERTS AND UPDATES: none.</p></body></html>" if "ssfca" in u else fetch(u), feeds=[SSF])
+check("city page: a post logged before 2026-11-26 loses its link to the page", [c["link"] for c in _r["log"] if c.get("notice")] == [""])
 check("city page: no alerts block = nothing (and no error)", R.city_notices("<html><body><p>Nothing here.</p></body></html>", SSF, NOW2) == [])
 
 # SMC Alert, copied from a FEWS mailbox into a published Google Sheet (Nov 18, 2026, as sent)
