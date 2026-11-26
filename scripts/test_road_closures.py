@@ -186,6 +186,30 @@ check("city page: a notice's tide comes from its city's latitude (South San Fran
       and R.tide_station(dict(sp[0], tide_lat=None), {"stations": [{"id": "9414290"}, {"id": "9414523"}]})["id"] == "9414523")
 check("city page: no alerts block = nothing (and no error)", R.city_notices("<html><body><p>Nothing here.</p></body></html>", SSF, NOW2) == [])
 
+# SMC Alert, copied from a FEWS mailbox into a published Google Sheet (Nov 18, 2026, as sent)
+SMC_CSV = """id,received,subject,body
+a1,2026-11-18 11:43,"Road Closure Industrial Road, San Carlos","Road Closure Notice – Industrial Road, San Carlos Due to flooding, Industrial Road is closed between Harbor Boulevard and Quarry Road until further notice. Please avoid the affected area and use alternate routes. Allow extra travel time and follow posted detour signs."
+a2,2026-11-18 14:46,"Road Reopening Notice – Industrial Road, San Carlos","Road Reopening Notice – Industrial Road, San Carlos Industrial Road has been reopened between Harbor Boulevard and Quarry Road. Thank you for your patience and cooperation."
+a3,2026-11-19 09:00,"Shelter in place lifted, Belmont","Police activity has ended."
+a4,2026-11-19 07:10,"Road Closure – Bayshore Blvd, Brisbane","Bayshore Blvd is closed at Old County Rd due to flooding."
+"""
+SMCF = {"city": "SMC Alert", "url": "https://docs.google.com/spreadsheets/d/e/x/pub?output=csv", "creeks": [], "side": None}
+PL = R.read_places()
+sm = R.smc_notices(SMC_CSV, SMCF, dt.datetime(2026, 11, 21, 2, 0, tzinfo=dt.timezone.utc), PL)
+ic = [c for c in sm if "Industrial" in c["where"]]
+check("SMC Alert: the closure and its reopening make one closure, 11:43 AM to 2:46 PM, in San Carlos (Bayside, its latitude)",
+      len(ic) == 1 and ic[0]["started"] == "2026-11-18 11:43" and ic[0]["ended"] == "2026-11-18 14:46" and ic[0]["place"] == "San Carlos"
+      and ic[0]["side"] == "bay" and ic[0]["tide_lat"] == 37.5 and ic[0]["kind"] == "flood" and ic[0]["source"] == "SMC Alert")
+check("SMC Alert: not a road or storm alert = left out", not any("Shelter" in c["where"] for c in sm))
+bb = [c for c in sm if "Bayshore" in c["where"]][0]
+check("SMC Alert: no reopening alert after 24 hours = logged as ended, reopening unknown", bb["ended"] == bb["started"] and bb.get("reopen_unknown"))
+bo = R.smc_notices(SMC_CSV, SMCF, dt.datetime(2026, 11, 19, 16, 0, tzinfo=dt.timezone.utc), PL)
+check("SMC Alert: within 24 hours with no reopening = still open", [c for c in bo if "Bayshore" in c["where"]][0]["ended"] is None)
+r11 = R.update({}, NOW2, lambda u: SMC_CSV if "docs.google" in u else fetch(u), feeds=[SMCF])
+check("update: SMC Alert read as its own source (not 'City of')", r11["sources"]["city:SMC Alert:1"]["ok"] and any(c.get("source") == "SMC Alert" for c in r11["log"]))
+check("city_feeds.csv: the SMC Alert row is there but switched off (#) until the Sheet exists",
+      "#SMC Alert" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups", "city_feeds.csv")).read())
+
 # finding the Emergency Road Closures layer when the item has no url
 HUB = {"data": {"attributes": {"url": "https://services.example.com/arcgis/rest/services/ERC/FeatureServer", "layer": {"id": 2}}}}
 svc = R.erc_service(lambda u: json.dumps({"error": {"code": 403, "message": "You do not have permissions"}}) if "sharing" in u else json.dumps(HUB))

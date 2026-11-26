@@ -32,7 +32,8 @@ water). It's logged as a notice at the time it was posted, with its link, and pl
 since a post names streets in words. A city with no feed can be read from its emergency page instead (staff, 2026-11-25:
 South San Francisco posts its alerts only on ssfca.gov's Emergency Information page): each "AS OF <date> AT <time> -
 <title>" block after "CURRENT ALERTS" is one post, its text running to the next block (page_items). SMC Alert has no
-public feed, and the County uses Genasys Protect for evacuations only.
+public feed: a FEWS mailbox copies its alerts into a published Google Sheet (SMC_ALERT_SETUP.md), read as a CSV row in
+city_feeds.csv (smc_notices). The County uses Genasys Protect for evacuations only.
 
 Cause (staff, 2026-11-24, king tides): each flooding closure gets a cause from the conditions around it, so tidal
 flooding on a dry day isn't counted as storm flooding:
@@ -55,6 +56,7 @@ import datetime as dt
 import email.utils
 import hashlib
 import html
+import io
 import json
 import os
 import re
@@ -484,6 +486,10 @@ def feed_items(text):
     return out
 
 
+def source_name(fd):
+    return "SMC Alert" if fd["city"].lower().startswith("smc alert") else "City of " + fd["city"]
+
+
 def same_site(link, feed_url):
     """A post's link is kept only if it's https on the feed's own site (so a tampered feed can't point staff elsewhere)."""
     a, b = urllib.parse.urlsplit(link or ""), urllib.parse.urlsplit(feed_url)
@@ -539,8 +545,78 @@ def page_items(text, url):
 
 PAGE_MAX = 1200
 
+# ---- SMC Alert (staff, 2026-11-25): the County's alerts (Rave, sent by the Sheriff's Office) have no public feed and
+# are sent only to the addresses each subscriber registered. A FEWS mailbox subscribed for every shoreline community
+# copies them into a Google Sheet published as CSV (scripts/smc_alert_to_sheet.gs, SMC_ALERT_SETUP.md); that CSV is a
+# row in lookups/city_feeds.csv with city "SMC Alert". Columns: id, received (Pacific, YYYY-MM-DD HH:MM), subject, body.
+# A "Road Closure" alert opens a closure; a later "Reopening" alert for the same road ends it. The place is the city
+# after the subject's last comma ("Industrial Road, San Carlos"), from lookups/places.csv (its side and latitude).
+SMC_HEAD = ("id", "received", "subject", "body")
+SMC_OPEN_HOURS = 24      # a closure with no reopening alert is shown as open this long, then logged as ended unknown
+SMC_TOPIC_RX = re.compile(r"^\s*(?:smc\s*alert\s*:?\s*)?(?:road\s+)?(?:closure|reopen(?:ing|ed)?)(?:\s+notice)?\s*[\u2013\u2014:-]?\s*", re.I)
+
+
+def is_smc_csv(text):
+    return (text or "").lstrip("\ufeff").lower().startswith("id,received,subject,body")
+
+
+def read_places(path=None):
+    """{lower-case place: {place, side, lat}} from lookups/places.csv."""
+    path = path or os.path.join(ROOT, "lookups", "places.csv")
+    try:
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            return {r["place"].strip().lower(): {"place": r["place"].strip(), "side": (r.get("side") or "").strip() if (r.get("side") or "").strip() in ("bay", "coast") else None,
+                                                 "lat": _num((r.get("lat") or "").strip())} for r in csv.DictReader(f) if (r.get("place") or "").strip()}
+    except OSError:
+        return {}
+
+
+def smc_road(subject):
+    """("industrial road", "San Carlos" or None) from "Road Closure Notice – Industrial Road, San Carlos"."""
+    t = SMC_TOPIC_RX.sub("", plain(subject))
+    road, _, city = t.rpartition(",")
+    road, city = (road or t).strip(" .-\u2013"), city.strip(" .") if road else None
+    return re.sub(r"\s+", " ", road).lower(), city
+
+
+def smc_notices(text, feed, now, places=None):
+    places = read_places() if places is None else places
+    rows = []
+    for r in csv.DictReader(io.StringIO(text.lstrip("\ufeff"))):
+        try:
+            at = dt.datetime.strptime((r.get("received") or "").strip()[:16], "%Y-%m-%d %H:%M").replace(tzinfo=PAC)
+        except ValueError:
+            continue
+        rows.append((at, plain(r.get("subject")), plain(r.get("body")), (r.get("id") or "").strip()))
+    rows.sort(key=lambda x: x[0])
+    out, open_by_road = [], {}
+    for at, subj, body, rid in rows:
+        blob = subj + " " + body
+        road, city = smc_road(subj)
+        if re.search(r"reopen", subj, re.I) or re.search(r"\bhas been reopened\b|\bis (?:now )?open\b", body, re.I):
+            c = open_by_road.pop(road, None)
+            if c and local(at) >= c["started"]:
+                c["ended"] = local(at)
+            continue
+        if not (CLOSE_RX.search(blob) and CITY_STORM_RX.search(blob)) or NOT_STORM_RX.search(subj) and not STRONG_RX.search(blob):
+            continue
+        p = places.get((city or "").lower()) or {}
+        c = {"id": "smc:" + hashlib.sha1(f"{rid or subj}|{at.isoformat()}".encode()).hexdigest()[:14],
+             "source": "SMC Alert", "notice": True, "route": "", "dir": "", "facility": "", "closure": "", "lanes": "",
+             "place": p.get("place") or city or "", "where": subj, "what": body[:240] + ("…" if len(body) > 240 else ""), "link": "",
+             "kind": "flood" if FLOOD_RX.search(blob) else "storm", "started": local(at), "ended": None, "est_end": None,
+             "lat": None, "lon": None, "pts": [], "creeks": [], "side": p.get("side"), "watersheds": [], "tide_lat": p.get("lat")}
+        open_by_road[road] = c
+        out.append(c)
+    for c in out:   # no reopening alert: open for SMC_OPEN_HOURS, then ended unknown (logged at its start)
+        if not c["ended"] and _pt(local(now)) - _pt(c["started"]) > dt.timedelta(hours=SMC_OPEN_HOURS):
+            c["ended"], c["reopen_unknown"] = c["started"], True
+    return out
+
 
 def city_notices(text, feed, now):
+    if is_smc_csv(text):
+        return smc_notices(text, feed, now)
     out = []
     items = feed_items(text) if is_feed(text) else page_items(text, feed["url"])
     for it in items:
@@ -628,7 +704,7 @@ def update(previous, now, fetch=get, feeds=None, erc=None):
         key = f"city:{fd['city']}:{i + 1}"
         try:
             cur = city_notices(fetch(fd["url"]), fd, now)
-            merge(log, cur, "City of " + fd["city"], now)
+            merge(log, cur, source_name(fd), now)
             sources[key] = {"ok": True, "url": fd["url"], "checked": local(now), "storm_items": len(cur)}
         except Exception as e:  # noqa: BLE001
             problems.append(f"{fd['city']} feed: {type(e).__name__}: {e}"[:200])
