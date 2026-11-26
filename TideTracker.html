@@ -66,6 +66,14 @@
   .up { color: var(--red); font-weight: 600; }
   ul.plain { margin: 6px 0 0; padding-left: 20px; }
   details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  /* accordion cards (staff, 2026-11-26): the long day-by-day tables start closed; the heading opens them */
+  details.acc > summary { list-style: none; display: flex; align-items: baseline; gap: 8px; }
+  details.acc > summary::-webkit-details-marker { display: none; }
+  details.acc > summary h2 { margin: 0; flex: 1; }
+  details.acc > summary::after { content: "Show ▸"; font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  details.acc[open] > summary::after { content: "Hide ▾"; }
+  details.acc[open] > summary { margin-bottom: 10px; }
+  details.acc > summary:focus-visible { outline: 3px solid #1e6fd9; outline-offset: 2px; }
   details p, details li { font-size: 14px; }
   code { font-size: 12.5px; }
   a { color: var(--link); }
@@ -143,18 +151,18 @@
     <div id="record"></div>
   </div>
 
-  <div class="card">
-    <h2>High water days</h2>
+  <details class="card acc">
+    <summary><h2>High water days</h2></summary>
     <div class="tablewrap" tabindex="0" role="region" aria-label="High water days (scrolls sideways)"><table id="events"></table></div>
     <p class="note" id="evNote"></p>
-  </div>
+  </details>
 
-  <div class="card">
-    <h2>How good was NOAA’s projection?</h2>
+  <details class="card acc">
+    <summary><h2>How good was NOAA’s projection?</h2></summary>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Projection check (scrolls sideways)"><table id="proj"></table></div>
     <p class="note">NOAA’s projection of each day’s highest water, as it stood before the day began (the last one the data job saw before
       midnight), against what was measured. Kept from Oct 29, 2026 on; NOAA doesn’t archive its projections for us to look back.</p>
-  </div>
+  </details>
 
   <div class="card">
     <h2>National Weather Service coastal flood products (San Mateo County)</h2>
@@ -395,7 +403,7 @@ function graph() {
 }
 
 function months() {
-  var mk = monthKeys();
+  var mk = monthKeys().slice().reverse();   // newest first, as in the month closeout above
   var head = "<thead><tr><th>Month</th><th class='n'>Highest<span class='sm'>ft NAVD88</span></th><th class='n'>Tide table highest<span class='sm'>ft NAVD88</span></th><th class='n'>Bay above the tide table<span class='sm'>average non-tidal residual, ft</span></th><th class='n'>Highest high tide above the tide table<span class='sm'>skew surge, ft</span></th>" +
     S.levels.map(function (l) { return "<th class='n'>Days ≥ " + esc(l.label) + "<span class='sm'>" + l.ft.toFixed(2) + " ft NAVD88 · hours</span></th>"; }).join("") + "</tr></thead>";
   var body = mk.map(function (k) {

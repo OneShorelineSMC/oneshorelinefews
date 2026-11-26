@@ -44,9 +44,7 @@
   header .ht { font-size: 19px; font-weight: bold; margin: 0; line-height: 1.15; }
   header .org { font-size: 12.5px; opacity: .85; line-height: 1.25; }
   /* Weather Service coastal alerts (the full alert is on the home page) */
-  #alert { display: none; color: #fff; background: #9a5b00; padding: 10px max(16px, calc((100% - 860px) / 2 + 16px)); gap: 10px; align-items: center; text-decoration: none; }
-  #alert.show { display: flex; } #alert.warning { background: #b71c1c; } #alert.statement { background: #455a75; }
-  #alert .ic { font-size: 22px; line-height: 1; } #alert .tx { flex: 1; min-width: 0; } #alert b { font-size: 16px; } #alert small { display: block; font-size: 12.5px; opacity: .92; }
+  .heroWrap { padding: 12px 0 0; }   /* the NWS Bay shoreline card (hero.js nwsCards), as on Bayside Tides */
   main { max-width: 1240px; margin: 0 auto; padding: 0 12px; }
   /* city picker and the Bay model parts (from the creek outlets page, 2026-11-03) */
   .citybar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; position: sticky; top: 0; z-index: 900; }
@@ -178,9 +176,9 @@
   <a href="SiteMap.html"><span class="i" aria-hidden="true">🗺️</span>Map</a>
   <a href="Creeks.html#about"><span class="i" aria-hidden="true">ℹ️</span>About</a>
 </nav>
-<a id="alert" href="index.html"><span class="ic" aria-hidden="true">⚠</span><span class="tx"><b id="aMain"></b><small id="aSub"></small></span></a>
 
 <main>
+  <div class="heroWrap"><div id="ncards" aria-live="polite"></div></div>
   <h1 class="page">Shoreline and creek outlets<span class="draft">Beta</span><span class="draft" id="draftTag" hidden>Draft</span></h1>
   <p class="intro"><span data-text="shore_intro"></span> With NOAA’s San Francisco Bay model (SFBOFS) at each low spot and creek outlet for the next 48 hours.</p>
   <p class="qc"><span class="chip">BETA</span> Low points and creek outlet coordinates are undergoing QC review.</p>
@@ -281,6 +279,8 @@
 <script src="lookups.js?v=20261124a"></script>
 <script src="tide_season.js?v=20261124a"></script>
 <script src="tide_banner.js?v=20261124a"></script>
+<script src="severity.js?v=20261124a"></script>
+<script src="hero.js?v=20261124a"></script>
 <script>
 /* Shoreline: low spots along San Mateo County's Bay shoreline (BCDC Adapting to Rising Tides maps) and whether the coming
    tides at Redwood City are high enough to reach them. lookups/THRESHOLDS_BASIS.md §4c.
@@ -873,16 +873,14 @@ var OT = (function () {
     get D() { return O.D; }, get sel() { return O.sel; }, set sel(v) { O.sel = v; } };
 })();
 
-/* Weather Service coastal alerts for the county: one line, full details on the home page */
+/* National Weather Service: the Bay shoreline card, as on Bayside Tides (hero.js nwsCards; staff, 2026-11-26: replaces
+   the old one-line banner). Tap it for the alert's text; anything else in effect is one line under it. */
+var NWS = { list: null, failed: false };
 function loadAlerts() {
-  fetch("https://api.weather.gov/alerts/active?area=CA", { headers: { Accept: "application/geo+json" } }).then(function (r) { return r.json(); }).then(function (j) {
-    var a = (j.features || []).map(function (f) { return f.properties; }).filter(function (p) {
-      return ((p.geocode && p.geocode.SAME) || []).indexOf("006081") >= 0 && p.status === "Actual" && p.messageType !== "Cancel" &&
-        /coastal|tidal|surf|beach|storm surge/i.test(p.event || "");
-    })[0], el = $("alert");
-    el.className = a ? "show " + (/warning/i.test(a.event) ? "warning" : /statement/i.test(a.event) ? "statement" : "") : "";
-    if (a) { $("aMain").textContent = a.event; $("aSub").textContent = "National Weather Service · details on the home page ›"; }
-  }).catch(function () {});
+  HERO.loadNWS(function (list, failed) {
+    if (list) { NWS.list = list; NWS.failed = false; } else if (!NWS.list) NWS.failed = true;
+    HERO.nwsCards($("ncards"), { nws: NWS.list, nwsFailed: NWS.failed, current: "bay", only: true });
+  });
 }
 
 if (TS) {
