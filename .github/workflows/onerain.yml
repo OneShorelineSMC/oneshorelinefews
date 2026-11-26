@@ -11,6 +11,7 @@
 #   road_closures.json - road closures from flooding and storms in San Mateo County (Caltrans and city posts), logged for the water year (StormTracker.html)
 #   alert_review.json + alert_review.csv - each rain or rising-fast alert (full status above the public one) checked against the flood levels that followed (StormTracker.html)
 #   bayside.json - the Bayside creeks' main rain gauges and SFO compared storm by storm (StormTracker.html)
+#   monthly_summary.json - each month's high tides, storms and road closures by district, AB 825 seat and city (MonthlySummary.html)
 #   rrfs_review.json + rrfs_review.csv - each storm's RRFS forecasts (6 and 24 hours ahead) against the creek's main rain gauge (StormTracker.html)
 #   rrfs.json + rrfs_log.csv - the RRFS model rain forecast (AQPI / CW3E) for each creek's watershed and the watersheds without a creek gauge, staff view only (Creeks.html?preview=1, RainForecast.html)
 #   atlas14_watersheds.json - NOAA Atlas 14 at a point in each watershed without a creek gauge (fetched once, a few per run)
@@ -76,6 +77,7 @@ jobs:
             git show FETCH_HEAD:atlas14_watersheds.json > out/atlas14_watersheds.json 2>/dev/null || true
             git show FETCH_HEAD:road_closures.json > out/road_closures.json 2>/dev/null || true
             git show FETCH_HEAD:sfcjpa.json > out/sfcjpa.json 2>/dev/null || true
+            git show FETCH_HEAD:monthly_summary.json > out/monthly_summary.json 2>/dev/null || true
             git show FETCH_HEAD:community_flood_reports.json > out/community_flood_reports.json 2>/dev/null || rm -f out/community_flood_reports.json
             git archive FETCH_HEAD community_flood_reports 2>/dev/null | tar -x -C out 2>/dev/null || true
           fi
@@ -194,6 +196,13 @@ jobs:
           if [ -n "$ARCGIS_API_KEY" ] && [ -n "$REPORTS_LAYER_URL" ]; then pip install --quiet pillow==11.0.0; fi
           python scripts/fetch_community_flood_reports.py out --min-age 14
 
+      - name: Monthly summary (staff page MonthlySummary.html; scripts/monthly_summary.py)
+        # The month's high tides, storms and road closures, from the files above, by district and city. Redone every run for
+        # the current month (and the month before through the 3rd); earlier months are kept. Never stops the creek data.
+        continue-on-error: true
+        timeout-minutes: 2
+        run: python scripts/monthly_summary.py out
+
       - name: Publish to the data branch
         run: |
           cd out
@@ -204,7 +213,7 @@ jobs:
           git add creeks.json sanbruno.json $( [ -f sites.json ] && echo sites.json ) $( [ -f status_log.csv ] && echo status_log.csv ) $( [ -s creeks_7day.json ] && echo creeks_7day.json ) $( [ -s tide_offset.json ] && echo tide_offset.json ) \
             $( [ -s outlet_tides.json ] && echo outlet_tides.json ) $( [ -s outlet_tides_log.csv ] && echo outlet_tides_log.csv ) \
             $( [ -s tide_tracker.json ] && echo tide_tracker.json ) $( [ -s tide_tracker_history.json ] && echo tide_tracker_history.json ) \
-            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s rrfs.json ] && echo rrfs.json ) $( [ -s rrfs_log.csv ] && echo rrfs_log.csv ) $( [ -s atlas14_watersheds.json ] && echo atlas14_watersheds.json ) $( [ -s alert_review.json ] && echo alert_review.json alert_review.csv ) $( [ -s rrfs_review.json ] && echo rrfs_review.json rrfs_review.csv ) $( [ -s bayside.json ] && echo bayside.json ) $( [ -s road_closures.json ] && echo road_closures.json ) $( [ -s sfcjpa.json ] && echo sfcjpa.json ) \
+            $( [ -s storm_tracker.json ] && echo storm_tracker.json ) $( [ -s waves.json ] && echo waves.json ) $( [ -s rrfs.json ] && echo rrfs.json ) $( [ -s rrfs_log.csv ] && echo rrfs_log.csv ) $( [ -s atlas14_watersheds.json ] && echo atlas14_watersheds.json ) $( [ -s alert_review.json ] && echo alert_review.json alert_review.csv ) $( [ -s rrfs_review.json ] && echo rrfs_review.json rrfs_review.csv ) $( [ -s bayside.json ] && echo bayside.json ) $( [ -s road_closures.json ] && echo road_closures.json ) $( [ -s sfcjpa.json ] && echo sfcjpa.json ) $( [ -s monthly_summary.json ] && echo monthly_summary.json ) \
             $( [ -s community_flood_reports.json ] && echo community_flood_reports.json ) $( [ -d community_flood_reports ] && [ -n "$(ls -A community_flood_reports)" ] && echo community_flood_reports )
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \

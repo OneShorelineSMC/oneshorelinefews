@@ -75,6 +75,8 @@ jobs:
         run: python scripts/test_storm_tracker.py
       - name: Waves and runup
         run: python scripts/test_waves.py
+      - name: Monthly summary (districts, closures, storms, high-tide runs)
+        run: python scripts/test_monthly_summary.py
       - name: Road closures (Caltrans, city posts) and their security checks
         run: python scripts/test_road_closures.py
       - name: San Francisquito Creek from SFCJPA (sign-in and readings)
