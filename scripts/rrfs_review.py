@@ -41,7 +41,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from creek_signals import load_rain_frequency   # noqa: E402
-from storm_tracker import rate, window_peak, hkey, parse_t, water_year_start   # noqa: E402
+from storm_tracker import rate, window_peak, hkey, parse_t, water_year_start, drop_repeats   # noqa: E402
 
 LOOKUPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lookups")
 PAC, UTC = ZoneInfo("America/Los_Angeles"), dt.timezone.utc
@@ -345,6 +345,8 @@ def review(tracker, runs, freq, mins_of, creeks, now, prev=None, since=REVIEW_FR
     checked = sorted({(c["id"], hkey(r)) for r in runs for c in creeks
                       if r.replace(tzinfo=PAC).astimezone(UTC).hour in FA_RUN_HOURS and r + FA_TO_H * H <= now - 2 * H} | done)
     checked = [list(x) for x in checked if x[1] >= wy0]
+    # a storm whose first hours have left the hourly record is found again starting later: keep the first one only
+    storms = drop_repeats(storms)
     storms.sort(key=lambda s: (s["start"], s["creek"]), reverse=True)
     fas.sort(key=lambda x: x["run"], reverse=True)
     return {"generated": hkey(now), "leads": LEADS, "pad_hours": PAD_H, "log_from": max(hkey(first), since or "") if first else since,

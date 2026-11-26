@@ -366,6 +366,24 @@ def find_storms(rain_series, S):
     return [tuple(x) for x in out]
 
 
+def drop_repeats(storms):
+    """Storms with any repeats taken out, in their order. When a storm's first hours leave the hourly record (after
+    KEEP_DAYS), what is left of it is found again as a storm that starts later; it overlaps the storm already written,
+    so it is a repeat. Of the storms at a creek that overlap, the one that starts first is kept."""
+    drop = set()
+    by_creek = {}
+    for s in storms:
+        by_creek.setdefault(s["creek"], []).append(s)
+    for ss in by_creek.values():
+        kept = []
+        for s in sorted(ss, key=lambda s: s["start"]):
+            if any(k["start"] <= s["end"] and s["start"] <= k["end"] for k in kept):
+                drop.add(id(s))
+            else:
+                kept.append(s)
+    return [s for s in storms if id(s) not in drop]
+
+
 def window_peak(series, start, end, hours):
     """Largest rain in any `hours` consecutive hours within [start, end], and the hour that window ends."""
     best, best_end, h = 0.0, None, start
@@ -621,7 +639,11 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
         update_sfo(out, now, fetch)
     tlev = tide_levels(tide_tracker)
     update_days(out["days"], out["ledger"], creeks, sensors, now)
+    out["storms"] = drop_repeats(out["storms"])   # repeats written before 2026-11-25 are taken out
     done = {(s["creek"], s["start"]) for s in out["storms"]}
+    closed_at = {}
+    for s in out["storms"]:
+        closed_at.setdefault(s["creek"], []).append((s["start"], s["end"]))
     track, opened = out["track"], []
     hold = dt.timedelta(hours=S["STORM_DRY_HOURS"] + S["STORM_RESPONSE_HOURS"])
     for c in creeks:
@@ -630,6 +652,8 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
         for start, end in find_storms(series, S):
             if (c["id"], hkey(start)) in done:
                 continue
+            if any(a <= hkey(end) and hkey(start) <= b for a, b in closed_at.get(c["id"], [])):
+                continue   # the rest of a storm already written, its first hours gone from the hourly record
             total = max([round(sum(v for h, v in s.items() if start <= h <= end), 2) for s in series] or [0])
             if total < S["STORM_MIN_IN"] - 1e-9:
                 continue

@@ -37,7 +37,7 @@ flooding on a dry day isn't counted as storm flooding:
   "tide"  the measured high tide in or near the closure (3 hours before it to 1 hour after) was at least ROAD_TIDE_FT
           above average high tide (MHHW) at the nearest NOAA gauge on its side (Bayside: San Francisco north of 37.60,
           Redwood City south of it; Coastside: Monterey), from tide_tracker.json (each day's measured high);
-  "rain"  at least ROAD_RAIN_IN fell in the ROAD_RAIN_HOURS before the closure through its end, at the rain gauges of its
+  "rain"  at least ROAD_RAIN_IN fell from ROAD_RAIN_HOURS before the closure to 3 hours after it closed, at the rain gauges of its
           creeks (or, outside them, the wettest rain gauge on its side), from storm_tracker.json's hourly record;
   "both"  both; "unclear" neither. Settings in lookups/settings.csv. Each closure keeps "why" (the tide and the rain).
   A closure is checked while open and once more after it ends; a closure older than the hourly rain record keeps what
@@ -687,7 +687,9 @@ def set_causes(log, now, tracker, tides, keys_of=None, rules=None):
         st = _pt(c["started"])
         en = nowl if c.get("active") or not (c.get("ended") or c.get("last_seen")) else _pt(c.get("ended") or c.get("last_seen"))
         tide = tide_near(c, tides, st - dt.timedelta(hours=3), en + dt.timedelta(hours=1))
-        rain = rain_near(c, ledger, keys_of, st - dt.timedelta(hours=rules["ROAD_RAIN_HOURS"]), en + dt.timedelta(hours=1))
+        # rain that could have caused it: from ROAD_RAIN_HOURS before it closed to 3 hours after (rain later in a long
+        # closure, after it was already shut by a tide, doesn't change why it closed)
+        rain = rain_near(c, ledger, keys_of, st - dt.timedelta(hours=rules["ROAD_RAIN_HOURS"]), min(en, st + dt.timedelta(hours=3)) + dt.timedelta(minutes=1))
         t_hit = bool(tide and tide["above"] >= rules["ROAD_TIDE_FT"])
         if rain is None and (c.get("cause") or not t_hit):
             continue   # older than the hourly rain record: keep what it had, or leave it without a cause

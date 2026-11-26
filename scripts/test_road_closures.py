@@ -229,5 +229,10 @@ lg2 = [mk(id="x", started="2026-11-24 10:25", ended="2026-11-24 14:00")]
 R.set_causes(lg2, dt.datetime(2026, 11, 25, 6, 0, tzinfo=dt.timezone.utc), trk2, tides, keys_of=keys, rules=dict(R.CAUSE_DEFAULTS, ROAD_RAIN_HOURS=24))
 check("cause: rain and a high tide together is both", lg2[0]["cause"] == "both")
 
+trk3 = {"ledger": {"bel_rain": {"kind": "rain", "h": {"2026-11-22 00:00": 0.0, "2026-11-24 22:00": 0.6}}}}
+lg3 = [mk(id="y", started="2026-11-24 10:25", active=True)]
+R.set_causes(lg3, dt.datetime(2026, 11, 25, 8, 0, tzinfo=dt.timezone.utc), trk3, tides, keys_of=keys, rules=dict(R.CAUSE_DEFAULTS))
+check("cause: rain that night, long after a king tide closed the road, doesn't make it rain + high tide", lg3[0]["cause"] == "tide")
+
 print("\n" + ("All passed" if not fails else f"{len(fails)} failed"))
 sys.exit(1 if fails else 0)

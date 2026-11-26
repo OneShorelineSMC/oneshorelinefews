@@ -243,5 +243,24 @@ check("peak tide: water then, vs the table, the nearest high water 3 hr before, 
       pt_ == {"ft": 5.74, "vs_table": 2.06, "high_ft": 6.92, "high_at": "2026-11-18 07:00", "creek_after_high_hours": 3.0, "high_vs_mhhw": 0.55})
 check("peak tide: none recorded = None", T.peak_tide({"id": "sanbruno", "tide": "9414750"}, {}, dt.datetime(2026, 11, 18, 10), {}) is None)
 
+# Past KEEP_DAYS: a storm's first hours leave the hourly record, and what's left mustn't be written again as a new storm
+# (Nov 2026: 184 of 268 storms were such repeats)
+_before = [s["start"] for s in state["storms"]]
+for hr in range(100, 24 * (T.KEEP_DAYS + 3)):
+    now = T0 + dt.timedelta(hours=hr)
+    state = T.run(snapshot(now), copy.deepcopy(state), now, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
+check("past %d days: still the same two storms, none written again" % T.KEEP_DAYS,
+      [s["start"] for s in state["storms"]] == _before and len(_before) == 2)
+rep = [{"creek": "colma", "start": "2026-11-13 02:00", "end": "2026-11-13 23:00"},
+       {"creek": "sanbruno", "start": "2026-11-13 02:00", "end": "2026-11-13 23:00"},
+       {"creek": "colma", "start": "2026-11-13 05:00", "end": "2026-11-13 23:00"},   # a repeat
+       {"creek": "colma", "start": "2026-11-15 15:00", "end": "2026-11-16 08:00"}]
+check("drop_repeats: the later-starting overlap at the same creek goes; other creeks and later storms stay",
+      T.drop_repeats(rep) == [rep[0], rep[1], rep[3]])
+_st = copy.deepcopy(state)
+_st["storms"].append(dict(copy.deepcopy(_st["storms"][0]), start="2026-11-03 12:00"))
+_st = T.run(snapshot(now), _st, now, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
+check("repeats already in storm_tracker.json are taken out on the next run", len(_st["storms"]) == 2)
+
 print("storm_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
