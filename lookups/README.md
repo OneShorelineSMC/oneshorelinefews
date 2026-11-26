@@ -19,6 +19,9 @@ folder as a plain table (CSV). You don't need to touch any page code to change t
 | `rising_fast_results.csv` | Rising-fast results per gauge, written by `scripts/evaluate_rising_fast.py` (don't edit by hand) | fact sheets only | when the evaluation is rerun |
 | `onerain_dashboard_thresholds.csv` | OneRain's own thresholds on each sensor (creek height and rain), read from saved OneRain pages (reference; FEWS doesn't use them), with a NOAA Atlas 14 or USGS-record comparison | fact sheets only | when OneRain settings change |
 | `onerain_alarm_rules.csv` | OneRain's alarm rules (what sends a text alert, and whether each rule is on), read from OneRain's admin rule list (reference; the 2026 Update sends no texts) | fact sheets only | when OneRain's rules change |
+| `places.csv` | Each city and unincorporated community: Bayside or Coastside, its supervisorial district (both, for a city split between two), its AB 825 city seat (North, Central, South, Coastal; blank for unincorporated; kept for later, not shown yet) | data job (`scripts/monthly_summary.py`) → `MonthlySummary.html` | next data run |
+| `creek_places.csv` | The communities each creek's flood levels and status are for (downstream of the gauge), separated by `;` | data job (monthly summary) | next data run |
+| `monthly/YYYY-MM.md` | **The words at the top of each month's summary**, written by staff (plain text; `#` and `##` headings, `-` lists, `**bold**`). The facts under them build themselves. | `MonthlySummary.html` directly | within about 1 min |
 | `factsheets/` | **One fact sheet per creek, generated** from the tables above by `scripts/build_creek_factsheets.py` (the **Rebuild creek fact sheets** Action reruns it whenever a table changes). Don't edit these pages; edit the tables. | — | automatic |
 | `proposed/` | Drafts for the creek status layer: 10 more creeks and their gauges. See `proposed/README.md` | **not read** | — |
 
