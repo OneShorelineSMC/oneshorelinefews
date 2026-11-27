@@ -95,6 +95,24 @@ check("not complete before the month ends", not m["complete"] and m["through"] =
 check("the month before is redone through the 3rd only",
       M.months_to_build(dt.datetime(2026, 12, 2, 9)) == ["2026-11", "2026-12"] and M.months_to_build(dt.datetime(2026, 12, 4, 9)) == ["2026-12"])
 
+# staff-logged impacts (lookups/impacts.csv) and the month's waves
+imp = M.read_impacts()
+check("impacts.csv: read, sorted by date, a link only when https", len(imp) >= 2 and imp == sorted(imp, key=lambda x: (x["date"], x["time"]))
+      and all(x["link"] == "" or x["link"].startswith("https://") for x in imp))
+mm = M.apply_impacts(dict(m), [{"date": "2026-11-18", "time": "11:43", "place": "San Carlos", "side": "bay", "kind": "road", "label": "Road closed", "what": "Industrial Road closed", "source": "SMC Alert", "link": ""},
+                               {"date": "2026-11-25", "time": "", "place": "Pacifica", "side": "coast", "kind": "damage", "label": "Damage", "what": "Pier end broke off", "source": "AP", "link": "https://x"},
+                               {"date": "2026-10-02", "time": "", "place": "Pacifica", "side": "coast", "kind": "other", "label": "Reported", "what": "Another month", "source": "", "link": ""}], places)
+check("impacts: this month's only, with the storm and high-tide run on the same days",
+      len(mm["impacts"]) == 2 and mm["impacts"][0]["storms"] == [[i for i, x in enumerate(m["storms"]) if x["start"].startswith("2026-11-18")][0]]
+      and mm["impacts"][0]["tide_periods"] == [0] and mm["impacts"][1]["tide_periods"] == [1] and mm["impacts"][1]["storms"] == [])
+A2 = {x["place"]: x for x in mm["areas"]}
+check("impacts: under their place (San Carlos D3, Pacifica D3), and applied twice = still once",
+      [i["type"] for i in A2["San Carlos"]["items"]] == ["impact"] and A2["Pacifica"]["districts"] == [3]
+      and len([i for a in M.apply_impacts(mm, mm["impacts"], places)["areas"] for i in a["items"] if i["type"] == "impact"]) == 2)
+wv = M.month_waves({"daily": {"46012": {"2026-11-24": {"ft": 12.1, "s": 14}, "2026-11-25": {"ft": 19.4, "s": 17}, "2026-10-30": {"ft": 25.0}}}}, "2026-11")
+check("waves: the month's highest at the Half Moon Bay buoy, days at 15 ft or more", wv["max_ft"] == 19.4 and wv["max_day"] == "2026-11-25" and wv["days_15ft"] == 1 and wv["days"] == 2)
+check("waves: none kept yet = none", M.month_waves({}, "2026-11") is None)
+
 with tempfile.TemporaryDirectory() as d:
     json.dump({"months": {"2026-10": {"month": "2026-10", "kept": True}}}, open(os.path.join(d, "monthly_summary.json"), "w"))
     json.dump(tt, open(os.path.join(d, "tide_tracker.json"), "w"))

@@ -82,6 +82,14 @@ check("update: both buoys (the one down keeps its last reading), CWF with issue 
 r2 = W.update({"cwf": {"zone": "PZZ545", "periods": []}}, NOW, lambda u, accept=None: (_ for _ in ()).throw(OSError("offline")))
 check("update: NWS down: the last forecast kept", r2["cwf"] == {"zone": "PZZ545", "periods": []})
 
+# ---- each day's highest wave, kept for the water year (staff, 2026-11-26)
+_buoys = [{"id": "46012", "obs": [{"t": "2026-11-25T20:00Z", "ft": 19.4, "s": 17}, {"t": "2026-11-26T07:30Z", "ft": 12.0, "s": 15},
+                                   {"t": "2026-11-26T09:00Z", "ft": 11.0, "s": 15}, {"t": "2026-11-26T02:00Z", "ft": None}]}]
+_d = W.daily_highest({"46012": {"2026-11-24": {"ft": 9.0, "t": "x", "s": 12}, "2026-09-30": {"ft": 5.0}}}, _buoys, dt.datetime(2026, 11, 26, 10, 0, tzinfo=dt.timezone.utc))["46012"]
+check("daily highest: by Pacific day (7:30 UTC on the 26th is the 25th), earlier days kept, last water year dropped",
+      _d["2026-11-25"]["ft"] == 19.4 and _d["2026-11-26"]["ft"] == 11.0 and _d["2026-11-24"]["ft"] == 9.0 and "2026-09-30" not in _d)
+check("update: daily highest saved in waves.json", "daily" in r and "46012" in r["daily"])
+
 # ---- runup (experimental)
 r2 = W.stockdon_r2(5.8, 18, 0.05)
 check("Stockdon R2%: 19 ft at 18 s on a 1:20 beach is about 3.2 m (10.6 ft)", abs(r2 - 3.23) < 0.03)

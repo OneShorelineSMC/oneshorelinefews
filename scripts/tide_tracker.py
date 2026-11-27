@@ -402,7 +402,8 @@ def history_stats(hd, levels, today):
 
 # ---------------------------------------------------------------------------------------------------- forward-only logs
 def nws_coastal(previous, fetch=get_json, log=print):
-    """Coastal flood products for San Mateo County, kept for the water year."""
+    """Coastal flood and high surf products for San Mateo County, kept for the water year (High Surf Warnings and
+    Advisories since 2026-11-26: the Nov 25 surf that broke the end off the Pacifica Pier wasn't kept)."""
     keep = {a["id"]: a for a in previous or []}
     try:
         j = fetch(NWS)
@@ -414,7 +415,8 @@ def nws_coastal(previous, fetch=get_json, log=print):
         same = (p.get("geocode") or {}).get("SAME") or []
         if not any(str(s)[-6:] == COUNTY_SAME for s in same):
             continue
-        if "coastal flood" not in str(p.get("event", "")).lower() or p.get("status") != "Actual":
+        ev = str(p.get("event", "")).lower()
+        if not ("coastal flood" in ev or "high surf" in ev) or p.get("status") != "Actual":
             continue
         key = "%s|%s" % (p.get("event"), (p.get("ends") or p.get("expires") or "")[:16])
         keep[key] = {"id": key, "event": p.get("event"), "onset": p.get("onset") or p.get("effective"),

@@ -22,6 +22,9 @@ tide + wave runup, the method of the USGS/NOAA Total Water Level forecast (which
 The slopes are placeholders until surveyed, and the formula is for sand beaches, so the numbers are rough. Each day's
 peak is kept twice for checking: forecast the day before (fc1) and hindcast (hind), in runup.history.
 
+Each buoy's highest wave each day (Pacific) is kept for the water year in "daily" (staff, 2026-11-26: the 48 hours of
+readings left Nov 25's swell, the day the Pacifica Pier's end broke off, out of the record); the monthly summary uses it.
+
 Writes waves.json on the data branch. Kept as is when a source can't be read.
 
 Usage: python waves.py OUTPUT.json [--min-age MINUTES] [--beaches lookups/runup_beaches.csv]
@@ -155,6 +158,26 @@ def update(previous, now_utc, fetch=get):
     except Exception as e:  # noqa: BLE001
         out["problems"].append(f"CWF: {type(e).__name__}: {e}"[:200])
         out["cwf"] = (previous or {}).get("cwf")
+    out["daily"] = daily_highest((previous or {}).get("daily"), out["buoys"], now_utc)
+    return out
+
+
+def daily_highest(previous, buoys, now_utc):
+    """{buoy id: {date (Pacific): {ft, t (UTC), s}}}: each day's highest significant wave height, kept from the start of
+    the water year (Oct 1). A day's highest only goes up as readings come in."""
+    pac = ZoneInfo("America/Los_Angeles")
+    now_p = now_utc.astimezone(pac)
+    wy0 = dt.date(now_p.year if now_p.month >= 10 else now_p.year - 1, 10, 1).isoformat()
+    out = {b: {d: v for d, v in (days or {}).items() if d >= wy0} for b, days in (previous or {}).items()}
+    for b in buoys or []:
+        days = out.setdefault(b.get("id"), {})
+        for o in b.get("obs") or []:
+            if o.get("ft") is None:
+                continue
+            t = dt.datetime.strptime(o["t"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=dt.timezone.utc)
+            d = t.astimezone(pac).date().isoformat()
+            if d >= wy0 and (d not in days or o["ft"] > days[d]["ft"]):
+                days[d] = {"ft": o["ft"], "t": o["t"], "s": o.get("s")}
     return out
 
 

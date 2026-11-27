@@ -9,9 +9,10 @@ Runs at the end of the data job and builds the month as it goes. It reads what t
   tide_tracker_history.json  each gauge's daily highs back to the start of its record (for the all-time rank)
   storm_tracker.json         each storm at each creek: rain, how rare its heaviest part was, creek levels reached
   status_log.csv             every change of a creek's status (Stay alert / Be ready / Flooding likely)
+  waves.json                 each day's highest wave at the Half Moon Bay buoy (from 2026-11-26)
   road_closures.json         flooding closures on San Mateo County state highways, with their cause (tide / rain / both)
   community_flood_reports.json  staff-approved community reports, when there are any
-and two lookups: lookups/places.csv (each city and unincorporated community: side, supervisorial district or districts,
+lookups/impacts.csv (what happened on the ground that no feed reports, entered by staff), and two lookups: lookups/places.csv (each city and unincorporated community: side, supervisorial district or districts,
 AB 825 seat) and lookups/creek_places.csv (the communities each creek's status is for). A city split between two
 districts is labeled with both (staff, 2026-11-25: kept simple on purpose; no district lines).
 
@@ -35,6 +36,7 @@ import csv
 import datetime as dt
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -344,7 +346,7 @@ def month_roads(roads, month, places):
 
 
 # ------------------------------------------------------------------------------------------------ month
-def build_month(month, now, tt, hist, tracker, status_rows, roads, reports, lookups=LOOKUPS):
+def build_month(month, now, tt, hist, tracker, status_rows, roads, reports, lookups=LOOKUPS, waves=None):
     places, creek_places = load_places(lookups)
     first = dt.date.fromisoformat(month + "-01")
     nxt = (first.replace(day=28) + dt.timedelta(days=4)).replace(day=1)
@@ -409,8 +411,61 @@ def build_month(month, now, tt, hist, tracker, status_rows, roads, reports, look
             rep.append({"time": t, "place": x.get("city") or x.get("place"), "what": x.get("type") or x.get("what")})
     return {"month": month, "through": through.strftime("%Y-%m-%d %H:%M"), "complete": now >= dt.datetime.combine(nxt, dt.time()),
             "tides": tides, "tide_periods": periods, "rain": rain, "nws": nws, "storms": storms, "roads": rds, "areas": areas,
-            "reports": rep, "sources": {"tide_tracker": (tt or {}).get("generated"), "storm_tracker": (tracker or {}).get("generated"),
+            "reports": rep, "waves": month_waves(waves, month), "sources": {"tide_tracker": (tt or {}).get("generated"), "storm_tracker": (tracker or {}).get("generated"),
                                         "road_closures": (roads or {}).get("generated"), "status_log_rows": len(status_rows or [])}}
+
+
+IMPACT_KINDS = {"flooding": "Flooding", "damage": "Damage", "road": "Road closed", "evacuation": "Evacuation", "other": "Reported"}
+
+
+def read_impacts(lookups=LOOKUPS):
+    """lookups/impacts.csv: what happened on the ground that no feed reports (staff, 2026-11-26: the Pacifica Pier's end
+    breaking off on Nov 25): date, time, place, side, kind, what, source, link."""
+    out = []
+    for r in read_csv(os.path.join(lookups, "impacts.csv")):
+        d = (r.get("date") or "").strip()
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", d) or not (r.get("what") or "").strip():
+            continue
+        link = (r.get("link") or "").strip()
+        out.append({"date": d, "time": (r.get("time") or "").strip()[:5], "place": (r.get("place") or "").strip(),
+                    "side": (r.get("side") or "").strip() or None, "kind": (r.get("kind") or "other").strip().lower(),
+                    "label": IMPACT_KINDS.get((r.get("kind") or "other").strip().lower(), "Reported"), "what": r["what"].strip(),
+                    "source": (r.get("source") or "").strip(), "link": link if link.startswith("https://") else ""})
+    return sorted(out, key=lambda x: (x["date"], x["time"]))
+
+
+def apply_impacts(m, impacts, places):
+    """Put the month's impacts on a month (kept months too, so a row added later still shows): with the storm or high-tide
+    run on the same days, and under its place."""
+    mine = [dict(x) for x in impacts if x["date"][:7] == m["month"]]
+    if not mine and "impacts" not in m:
+        return m
+    for x in mine:
+        x["storms"] = [i for i, s in enumerate(m.get("storms") or []) if s["start"][:10] <= x["date"] <= s["end"][:10]]
+        x["tide_periods"] = [i for i, p in enumerate(m.get("tide_periods") or []) if p["first"] <= x["date"] <= p["last"]]
+    m["impacts"] = mine
+    areas = {a["place"]: a for a in m.get("areas") or []}
+    for a in areas.values():
+        a["items"] = [i for i in a["items"] if i.get("type") != "impact"]
+    for k, x in enumerate(mine):
+        if not x["place"]:
+            continue
+        pe = place_entry(x["place"], places)
+        a = areas.setdefault(pe["place"], {"place": pe["place"], "kind": pe["kind"], "districts": pe["districts"], "seat": pe["seat"], "items": []})
+        a["items"].append({"type": "impact", "impact": k, "date": x["date"], "label": x["label"]})
+    m["areas"] = sorted([a for a in areas.values() if a["items"]], key=lambda a: (min(a["districts"] or [9]), a["kind"] != "city", a["place"]))
+    return m
+
+
+def month_waves(waves, month):
+    """The month's highest waves at the Half Moon Bay buoy (waves.json "daily", from 2026-11-26)."""
+    d = ((waves or {}).get("daily") or {}).get("46012") or {}
+    days = {k: v for k, v in d.items() if k[:7] == month and v.get("ft") is not None}
+    if not days:
+        return None
+    top = max(days, key=lambda k: days[k]["ft"])
+    return {"buoy": "Half Moon Bay buoy (46012)", "max_ft": days[top]["ft"], "max_day": top, "period_s": days[top].get("s"),
+            "days": len(days), "days_15ft": sum(1 for v in days.values() if v["ft"] >= 15), "daily": [[k, days[k]["ft"]] for k in sorted(days)]}
 
 
 def months_to_build(now):
@@ -427,10 +482,15 @@ def run(folder, now):
     tt, hist = read_json(p("tide_tracker.json"), {}), read_json(p("tide_tracker_history.json"), {})
     tracker, roads = read_json(p("storm_tracker.json"), {}), read_json(p("road_closures.json"), {})
     reports = read_json(p("community_flood_reports.json"), {})
+    waves = read_json(p("waves.json"), {})
     rows = read_csv(p("status_log.csv"))
     months = dict(prev.get("months") or {})
     for m in months_to_build(now):
-        months[m] = build_month(m, now, tt, hist, tracker, rows, roads, reports)
+        months[m] = build_month(m, now, tt, hist, tracker, rows, roads, reports, waves=waves)
+    places = load_places()[0]
+    impacts = read_impacts()
+    for m in months:   # staff-entered impacts go on every kept month, so a row added late still shows
+        apply_impacts(months[m], impacts, places)
     out = {"generated": now.strftime("%Y-%m-%d %H:%M"), "months": dict(sorted(months.items()))}
     with open(p("monthly_summary.json"), "w") as f:
         json.dump(out, f, separators=(",", ":"))

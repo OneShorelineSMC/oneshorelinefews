@@ -76,6 +76,9 @@ def fetch(url):
             {"properties": {"event": "Coastal Flood Advisory", "status": "Actual", "geocode": {"SAME": ["006081"]}, "onset": "2026-10-20T08:00:00-07:00",
                             "ends": "2026-10-20T14:00:00-07:00", "sent": "2026-10-19T15:00:00-07:00", "headline": "Coastal Flood Advisory"}},
             {"properties": {"event": "Coastal Flood Advisory", "status": "Actual", "geocode": {"SAME": ["006001"]}, "onset": "2026-10-20T08:00:00-07:00"}},
+            {"properties": {"event": "High Surf Warning", "status": "Actual", "geocode": {"SAME": ["006081"]}, "onset": "2026-10-21T03:00:00-07:00",
+                            "ends": "2026-10-21T21:00:00-07:00", "sent": "2026-10-20T15:00:00-07:00", "headline": "High Surf Warning"}},
+            {"properties": {"event": "Beach Hazards Statement", "status": "Actual", "geocode": {"SAME": ["006081"]}, "onset": "2026-10-21T03:00:00-07:00"}},
             {"properties": {"event": "Wind Advisory", "status": "Actual", "geocode": {"SAME": ["006081"]}}}]}
     q = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
     st, prod = q["station"], q["product"]
@@ -193,7 +196,7 @@ check("season so far ranked against past water years over the same dates", r["ra
 
 # projections and NWS
 check("projections stored for tomorrow and the day after", set(r["proj"]) >= {"2026-10-30", "2026-10-31"} and r["proj"]["2026-10-30"]["lead_days"] == 1)
-check("NWS: only San Mateo County coastal flood products, once", len(out["nws"]) == 1 and out["nws"][0]["event"] == "Coastal Flood Advisory")
+check("NWS: only San Mateo County coastal flood and high surf products, once", [a["event"] for a in out["nws"]] == ["Coastal Flood Advisory", "High Surf Warning"])
 
 # a new day: earlier days are kept, not fetched again
 calls.clear()
