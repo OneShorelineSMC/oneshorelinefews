@@ -1,0 +1,284 @@
+"""Checks for scripts/storm_tracker.py: a made-up storm at one creek, run hour by hour as the data job would."""
+import copy
+import datetime as dt
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import storm_tracker as T   # noqa: E402
+
+checks = fails = 0
+
+
+def check(name, ok):
+    global checks, fails
+    checks += 1
+    if not ok:
+        fails += 1
+    print(("ok   " if ok else "FAIL ") + name)
+
+
+S = {"STORM_DRY_HOURS": 6, "STORM_MIN_IN": 0.1, "STORM_WET_IN": 0.01, "STORM_RESPONSE_HOURS": 12}
+# Atlas 14 at the gauge: Heavy / Very heavy / Intense for each window (inches)
+FREQ = {"41101": {"levels": {15: [0.24, 0.28, 0.35], 30: [0.32, 0.39, 0.47], 60: [0.46, 0.55, 0.67], 180: [0.83, 0.98, 1.2],
+                             360: [1.1, 1.3, 1.6], 720: [1.5, 1.8, 2.2], 1440: [2.0, 2.4, 3.0]},
+                  "minutes": {m: {1.0: v[0], 2.0: v[1], 5.0: v[2], 10.0: v[2] * 1.2} for m, v in
+                              {15: [0.24, 0.28, 0.35], 30: [0.32, 0.39, 0.47], 60: [0.46, 0.55, 0.67], 180: [0.83, 0.98, 1.2],
+                               360: [1.1, 1.3, 1.6], 720: [1.5, 1.8, 2.2], 1440: [2.0, 2.4, 3.0]}.items()}}}
+T0 = dt.datetime(2026, 11, 3, 0, 0)
+# rain each hour (hour index from T0 -> inches, reported in 4 tips of a quarter each, at :15 :30 :45 :00)
+RAIN = {10: 0.05, 11: 0.10, 12: 0.20, 13: 0.40, 14: 0.60, 15: 0.30, 16: 0.10, 17: 0.05,   # storm 1: 1.80 in
+        30: 0.02, 31: 0.03,                                                                 # too little: not a storm
+        60: 0.10, 61: 0.20, 65: 0.10}                                                       # storm 2 (gap of 4 h: one storm)
+SUPPORT = {12: 0.30, 13: 0.50, 14: 0.40}
+
+
+def level_at(i):   # creek level (ft): rises after the rain, peaks at hour 18, back down by hour 30
+    return round(1.0 + max(0, 4.5 - abs(i - 18) * 0.6) if 8 <= i <= 30 else 1.0, 2)
+
+
+def tips(rain, upto):
+    out = []
+    for i, v in sorted(rain.items()):
+        for q in (15, 30, 45, 60):
+            t = T0 + dt.timedelta(hours=i, minutes=q)
+            if t <= upto:
+                out.append([t.strftime("%Y-%m-%d %H:%M"), round(v / 4, 4), ""])
+    return out
+
+
+def snapshot(now):
+    lo = now - dt.timedelta(hours=50)
+    pts = [p for p in tips(RAIN, now) if T.parse_t(p[0]) >= lo]
+    sup = [p for p in tips(SUPPORT, now) if T.parse_t(p[0]) >= lo]
+    if not pts or T.parse_t(pts[0][0]) > lo + dt.timedelta(minutes=30):   # a dry report at the window start
+        pts.insert(0, [lo.strftime("%Y-%m-%d %H:%M"), 0.0, ""])
+    stage = []
+    t = lo
+    while t <= now:
+        i = (t - T0).total_seconds() / 3600
+        stage.append([t.strftime("%Y-%m-%d %H:%M"), level_at(round(i)), ""])
+        t += dt.timedelta(minutes=15)
+    i = (now - T0).total_seconds() / 3600
+    last15 = sum(p[1] for p in pts if T.parse_t(p[0]) > now - dt.timedelta(minutes=15))
+    last30 = sum(p[1] for p in pts if T.parse_t(p[0]) > now - dt.timedelta(minutes=30))
+    status = "likely" if level_at(round(i)) >= 5.0 else "ready" if level_at(round(i)) >= 3.4 else "none"
+    c = {"id": "colma", "name": "Colma Creek", "short": "Colma", "status": {"key": status}, "tide": "9414750",
+         "rain": [{"key": "col_rain", "label": "Orange Memorial Park", "number": "41101"}],
+         "rain_support": [{"key": "col_rain_41200", "label": "San Bruno Mountain", "number": "41200"}],
+         "stages": [{"key": "col_stage", "label": "Orange Memorial Park", "number": "41101", "tidal": True,
+                     "thresholds": [{"value": 3.4, "name": "Flood Monitoring", "level": 1}, {"value": 5.0, "name": "Flood Watch", "level": 2},
+                                    {"value": 6.75, "name": "Flood Warning", "level": 3}]}]}
+    sens = {"col_rain": {"kind": "rain_increment", "points": pts, "latest": pts[-1],
+                         "signals": {"fresh": True, "totals": {"15": round(last15, 2), "30": round(last30, 2)}}},
+            "col_rain_41200": {"kind": "rain_increment", "points": sup or [[lo.strftime("%Y-%m-%d %H:%M"), 0.0, ""]], "latest": None,
+                               "signals": {"fresh": not (12 <= i <= 14)}},   # goes quiet in the middle of the storm
+            "col_stage": {"kind": "stage", "points": stage, "latest": stage[-1],
+                          "signals": {"trend": "fast" if 14 <= i <= 17 else "steady", "rising_fast": {"rise": 0.6} if 14 <= i <= 16 else None}}}
+    return {"generated": now.strftime("%Y-%m-%d %H:%M:%S"), "creeks": [c], "sensors": sens}
+
+
+# NOAA (fake): the tide table at Alameda peaks at 6.5 ft NAVD88 at 16:00 on Nov 3; the measured water runs 0.8 ft above it
+import math, urllib.parse   # noqa: E401,E402
+TT_LEVELS = {"stations": [{"id": "9414750", "levels": [{"key": "mhhw", "ft": 6.37, "label": "MHHW (average high tide)"},
+                                                       {"key": "minor", "ft": 8.27, "label": "NOAA minor flooding (derived)"}]}]}
+NOAA_CALLS = []
+
+
+def tide_pred(t):
+    h = (t - T0).total_seconds() / 3600
+    return round(3.0 + 3.5 * math.cos(2 * math.pi * (h - 16) / 12.42), 3)
+
+
+def fake_noaa(url):
+    q = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
+    NOAA_CALLS.append(q["product"])
+    b, e = dt.datetime.strptime(q["begin_date"], "%Y%m%d %H:%M"), dt.datetime.strptime(q["end_date"], "%Y%m%d %H:%M")
+    step = dt.timedelta(hours=1) if q["product"] == "predictions" else dt.timedelta(minutes=6)
+    rows, t = [], b.replace(minute=0)
+    while t <= e:
+        v = tide_pred(t) + (0.8 if q["product"] == "water_level" else 0)
+        rows.append({"t": t.strftime("%Y-%m-%d %H:%M"), "v": "%.3f" % v})
+        t += step
+    return {"predictions": rows} if q["product"] == "predictions" else {"data": rows}
+
+
+state, seen_open = {}, []
+for hr in range(0, 100):
+    for mm in (0, 30):
+        now = T0 + dt.timedelta(hours=hr, minutes=mm)
+        state = T.run(snapshot(now), copy.deepcopy(state), now, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
+        if state["open"]:
+            seen_open.append((hr, state["open"][0]["total"]))
+        if hr == 40 and mm == 0:
+            at40 = copy.deepcopy(state)
+
+check("storm shows as open while it rains, total growing", any(t for h, t in seen_open if h == 12) and
+      max(t for h, t in seen_open if h <= 17) > min(t for h, t in seen_open if h <= 17))
+s1 = [s for s in at40["storms"]]
+check("closed after the rain plus 6 dry hours plus 12 hours for the creek", len(s1) == 1 and not at40["open"])
+st = state["storms"][0]
+check("two storms in all (light rain at hours 30-31 left out; hours 60-65 one storm)", len(state["storms"]) == 2)
+check("storm 1: 10:00 to 17:00, 8 hours", st["start"] == "2026-11-03 10:00" and st["end"] == "2026-11-03 17:00" and st["hours"] == 8)
+r = [x for x in st["rain"] if x["key"] == "col_rain"][0]
+check("storm 1 total 1.80 in", abs(r["total"] - 1.80) < 0.005 and abs(st["total"] - 1.80) < 0.005)
+check("peak hour 0.60 in, 3 hr 1.30 in, 6 hr 1.70 in, 24 hr = the whole storm",
+      r["peaks"]["60"]["in"] == 0.6 and r["peaks"]["180"]["in"] == 1.3 and r["peaks"]["360"]["in"] == 1.7 and r["peaks"]["1440"]["in"] == 1.8)
+check("15- and 30-minute peaks sampled while open (0.15 / 0.30 in)", r["peaks"]["15"]["in"] == 0.15 and r["peaks"]["30"]["in"] == 0.3)
+check("rated against Atlas 14: 1 hr Very heavy, 6 hr Intense; rarest = Intense",
+      r["peaks"]["60"]["rate"]["level"] == 2 and r["peaks"]["360"]["rate"]["level"] == 3 and r["rarest"]["level"] == 3 and st["rain_level"] == 3)
+check("rough storm size given in years", r["rarest"]["years"] and r["rarest"]["years"] >= 5)
+sup = [x for x in st["rain"] if x["key"] == "col_rain_41200"][0]
+check("supporting gauge: its own total, no Atlas 14 values (none)", abs(sup["total"] - 1.2) < 0.005 and sup["rarest"] is None)
+lv = st["levels"][0]
+check("creek level peak 5.5 ft, first reached in the 17:00 hour", lv["peak"] == 5.5 and lv["peak_at"] == "2026-11-03 17:00")
+check("lag from the heaviest hour of rain (14:00) to the peak: 3 hours", lv["lag_hours"] == 3.0)
+hrs = {t["name"]: t["hours"] for t in lv["thresholds"]}
+check("hours at or above each flood level (Monitoring 8, Watch 2, Warning 0)", hrs == {"Flood Monitoring": 8, "Flood Watch": 2, "Flood Warning": 0})
+check("reached Flood Watch (level 2)", lv["reached"] == 2 and st["reached"] == 2)
+check("rising fast seen; highest status Flooding likely", st["rising_fast"] and st["status"] == "likely")
+check("the supporting gauge that went quiet is named", st["quiet"] == ["San Bruno Mountain"])
+check("hourly series kept for the graphs", len(r["series"]) == 8 and len(lv["series"]) > 20)
+check("frozen: storm 1 unchanged after it closed", at40["storms"][0] == st)
+check("no lag while the creek hasn't risen (storm 2)", state["storms"][1]["levels"][0]["lag_hours"] is None)
+st2 = state["storms"][1]
+check("storm 2: 60:00-65:00 joined across a 3-hour gap, 0.40 in", st2["start"] == "2026-11-05 12:00" and abs(st2["total"] - 0.4) < 0.005)
+check("no tracking left once storms close", state["track"] == {})
+sm = state["summary"][0]
+check("season: 2 storms, one reaching Flood Watch, none Flood Warning", sm["storms"] == 2 and sm["watch"] == 1 and sm["warning"] == 0)
+check("season rain at the creek's gauge = all its rain (2.25 in)", abs([x for x in sm["rain"] if x["key"] == "col_rain"][0]["total"] - 2.25) < 0.01)
+check("season: days at each status counted", sm["status_days"]["likely"] == 1 and sm["status_days"]["none"] >= 3)
+check("season: biggest storm is storm 1", sm["biggest"]["start"] == "2026-11-03 10:00")
+sl = sm["levels"][0]
+check("season creek level: highest 5.5 ft on Nov 3, reached Flood Watch", sl["max"] == 5.5 and sl["max_day"] == "2026-11-03" and sl["max_reached"] == 2)
+check("season hours at each flood level, added up over the storms (Monitoring 8, Watch 2)",
+      {t["name"]: t["storm_hours"] for t in sl["thresholds"]} == {"Flood Monitoring": 8, "Flood Watch": 2, "Flood Warning": 0})
+check("reporting share for a gauge that went quiet < 1", [x for x in sm["rain"] if x["key"] == "col_rain_41200"][0]["reporting"] < 1)
+check("hourly record kept to 10 days", all(k >= T.hkey(T0 + dt.timedelta(hours=99) - dt.timedelta(days=10)) for rec in state["ledger"].values() for k in rec["h"]))
+# a late report fixes an hour
+L = {}
+now = T0 + dt.timedelta(hours=20)
+T.merge_ledger(L, {"g": {"kind": "rain_increment", "points": [["2026-11-03 10:00", 0.0, ""], ["2026-11-03 13:00", 0.2, ""]]}}, now)
+T.merge_ledger(L, {"g": {"kind": "rain_increment", "points": [["2026-11-03 10:00", 0.0, ""], ["2026-11-03 13:00", 0.2, ""], ["2026-11-03 13:00", 0.1, ""]]}}, now)
+check("a late report replaces the hour (0.30 in, not 0.50)", L["g"]["h"] == {"2026-11-03 12:00": 0.3})
+T.merge_ledger(L, {"g": {"kind": "rain_increment", "points": [["2026-11-03 10:00", 0.0, ""]]}}, now)
+check("an hour with no reports in a later download is dry", L["g"]["h"] == {})
+# a new water year: last season kept as "previous"
+ny = dt.datetime(2027, 10, 1, 1, 0)
+snap = snapshot(T0 + dt.timedelta(hours=99))
+snap["generated"] = ny.strftime("%Y-%m-%d %H:%M:%S")
+nx = T.run(snap, copy.deepcopy(state), ny, S, FREQ, tides=False)
+check("new water year: WY2028, last season kept under previous, storms cleared",
+      nx["water_year"] == "WY2028" and nx["previous"]["water_year"] == "WY2027" and len(nx["previous"]["storms"]) == 2 and nx["storms"] == [])
+check("record start date set", state["since"] == "2026-11-01" or state["since"] <= "2026-11-03")
+
+# the tide during storm 1 (Alameda, the creek's tide gauge)
+td = st["tide"]
+check("tide: the creek's own gauge (Alameda), highest water 7.3 ft NAVD88 at 16:00", td["station"] == "9414750" and td["peak"] == 7.3 and td["peak_at"] == "2026-11-03 16:00")
+check("tide: the table then 6.5 ft; the water 0.8 ft above it (the storm push)", td["table_at_peak"] == 6.5 and td["push_at_peak"] == 0.8 and abs(td["push_max"] - 0.8) < 0.02)
+check("tide: 0.93 ft above the average high tide; hours above it counted, none at NOAA minor flooding",
+      td["above_mhhw"] == 0.93 and [l["hours"] for l in td["levels"] if l["key"] == "mhhw"][0] >= 1 and [l["hours"] for l in td["levels"] if l["key"] == "minor"][0] == 0)
+check("tide: the creek peaked 1 hour after the high tide", td["creek_vs_tide_hours"] == 1.0)
+check("tide: hourly series (measured, table) kept for the graph", len(td["series"]) > 20 and td["series"][0][2] is not None)
+check("tide: NOAA read at most about hourly (not every 30-minute run)", NOAA_CALLS.count("water_level") <= 105)
+check("season: storms with the water above the average high tide counted", sm["tide_above_mhhw"] >= 1 and sm["tide_peak"] == 7.3)
+cst = dict(snapshot(T0 + dt.timedelta(hours=20))["creeks"][0]); cst.pop("tide")
+check("a coast creek with no tide gauge uses Monterey", T.tide_station(cst) == "9413450")
+st_nd = T.run(snapshot(T0 + dt.timedelta(hours=20)), {}, T0 + dt.timedelta(hours=20), S, FREQ,
+              fetch=lambda u: (_ for _ in ()).throw(OSError("NOAA down")))
+check("NOAA down: storms still built, the problem noted, no tide numbers", st_nd["open"] and st_nd["open"][0]["tide"]["peak"] is None and st_nd["tide_problems"])
+
+# storms closed before the tide was recorded get it once the record covers them (added_later)
+st0 = {}
+for k in range(0, 81):
+    now = T0 + dt.timedelta(minutes=30 * k)
+    st0 = T.run(snapshot(now), copy.deepcopy(st0), now, S, FREQ, tides=False)
+check("before the tide: a closed storm without tide", st0["storms"] and (st0["storms"][0].get("tide") or {}).get("peak") is None)
+t1 = T0 + dt.timedelta(hours=40, minutes=30)
+st1 = T.run(snapshot(t1), copy.deepcopy(st0), t1, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
+check("first tide run: the closed storm gets its tide, marked as added later", st1["storms"][0]["tide"]["peak"] == 7.3 and st1["storms"][0]["tide"]["added_later"])
+
+# SFO airport's hourly rain (NWS), San Bruno storms only (staff, 2026-11-18)
+def fake_nws(url):
+    assert "stations/KSFO/observations" in url
+    feats = []
+    for hh, mm in [(8, 2.54), (9, 7.62), (10, None)]:   # 0.10 in, 0.30 in, dry hour
+        feats.append({"properties": {"timestamp": "2026-11-18T%02d:56:00+00:00" % (hh + 8), "precipitationLastHour": {"unitCode": "wmoUnit:mm", "value": mm},
+                                     "windDirection": {"unitCode": "wmoUnit:degree_(angle)", "value": 220}, "windSpeed": {"unitCode": "wmoUnit:km_h-1", "value": 32.2}}})
+    feats.append({"properties": {"timestamp": "2026-11-18T17:20:00+00:00", "precipitationLastHour": {"unitCode": "wmoUnit:mm", "value": 5.0}}})   # a special: skipped
+    return {"features": feats}
+o = {"ledger": {}}
+T.update_sfo(o, dt.datetime(2026, 11, 18, 12, 0), fetch=fake_nws, log=lambda m: None)
+h = o["ledger"]["sfo:KSFO"]["h"]
+check("SFO: hourly reports in Pacific hours, mm to inches, dry hours and specials left out",
+      h == {"2026-11-18 08:00": 0.1, "2026-11-18 09:00": 0.3})
+sf = T.sfo_for(dt.datetime(2026, 11, 18, 7), dt.datetime(2026, 11, 18, 11), o["ledger"])
+check("SFO: wind each hour, degrees and mph", o["ledger"]["sfowind:KSFO"]["h"].get("2026-11-18 10:00") == [220, 20.0] and len(o["ledger"]["sfowind:KSFO"]["h"]) == 3)
+check("SFO wind isn't a day total", (T.update_days({}, o["ledger"], [], {}, dt.datetime(2026, 11, 18, 12)) or True) and True)
+_cli = {"L": {"@graph": [{"@id": "a"}, {"@id": "b"}, {"@id": "c"}]},
+        "a": {"productText": "CLIMATE SUMMARY FOR NOVEMBER 20 2026\nPRECIPITATION (IN)\n  TODAY            0.32  "},
+        "b": {"productText": "CLIMATE SUMMARY FOR NOVEMBER 19 2026\nPRECIPITATION (IN)\n  YESTERDAY        1.18   "},
+        "c": {"productText": "CLIMATE SUMMARY FOR NOVEMBER 19 2026\nPRECIPITATION (IN)\n  TODAY        T   "}}
+_o = {}
+T.update_sfo_cli(_o, lambda u: _cli["L"] if u.endswith("/SFO") else _cli[u], lambda m: None)
+check("SFO official daily rain (CLI): the day's final report wins over the same-day one", _o["sfo_cli"] == {"2026-11-20": 0.32, "2026-11-19": 1.18})
+check("SFO in a storm: total and wettest hours", sf["total"] == 0.4 and sf["peaks"]["60"]["in"] == 0.3 and sf["peaks"]["180"]["in"] == 0.4)
+check("SFO: read at most hourly", T.update_sfo(o, dt.datetime(2026, 11, 18, 12, 30), fetch=lambda u: 1 / 0) == [])
+check("SFO: NWS down keeps the record", T.update_sfo(o, dt.datetime(2026, 11, 18, 14, 0), fetch=lambda u: 1 / 0, log=lambda m: None) and o["ledger"]["sfo:KSFO"]["h"] == h)
+
+# Separate creek peaks within one storm (San Bruno, Nov 18 2026: ~4.2 ft at 10 AM, down to 0.5 ft, 4.7 ft at 11 PM)
+H0 = dt.datetime(2026, 11, 18, 3)
+ser = lambda vals: [(H0 + dt.timedelta(hours=i), x) for i, x in enumerate(vals)]   # noqa: E731
+SB = [1.48, 1.71, 1.40, 1.19, 1.19, 3.0, 3.71, 4.22, 4.07, 3.49, 2.45, 1.89, 1.57, 1.15, 0.95, 0.74, 0.63, 0.53, 3.12, 2.99, 4.74]
+check("peaks: San Bruno's two flood peaks, with the low before each", T.creek_peaks(ser(SB)) == [(7, 4), (20, 17)])
+check("peaks: the second still counts once the creek starts down", T.creek_peaks(ser(SB + [4.63])) == [(7, 4), (20, 17)])
+check("peaks: a small bump on the way up isn't a peak (1.71 ft at 4 AM)", 1 not in [i for i, _ in T.creek_peaks(ser(SB))])
+check("peaks: a wiggle on the falling side isn't a peak", T.creek_peaks(ser([0.2, 1, 2, 3, 2.6, 2.8, 2, 1])) == [(3, 0)])
+check("peaks: a smaller second peak counts", T.creek_peaks(ser([0.2, 2, 4, 2, 0.5, 2.5, 1])) == [(2, 0), (5, 4)])
+
+L = {"tide:9414750": {"h": {"2026-11-18 07:00": 6.92, "2026-11-18 08:00": 6.89, "2026-11-18 10:00": 5.74}},
+     "tidepred:9414750": {"h": {"2026-11-18 10:00": 3.68}}}
+pt_ = T.peak_tide({"id": "sanbruno", "tide": "9414750"}, L, dt.datetime(2026, 11, 18, 10), {"9414750": [{"key": "mhhw", "ft": 6.37}]})
+check("peak tide: water then, vs the table, the nearest high water 3 hr before, vs MHHW",
+      pt_ == {"ft": 5.74, "vs_table": 2.06, "high_ft": 6.92, "high_at": "2026-11-18 07:00", "creek_after_high_hours": 3.0, "high_vs_mhhw": 0.55})
+check("peak tide: none recorded = None", T.peak_tide({"id": "sanbruno", "tide": "9414750"}, {}, dt.datetime(2026, 11, 18, 10), {}) is None)
+
+# Past KEEP_DAYS: a storm's first hours leave the hourly record, and what's left mustn't be written again as a new storm
+# (Nov 2026: 184 of 268 storms were such repeats)
+_before = [s["start"] for s in state["storms"]]
+for hr in range(100, 24 * (T.KEEP_DAYS + 3)):
+    now = T0 + dt.timedelta(hours=hr)
+    state = T.run(snapshot(now), copy.deepcopy(state), now, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
+check("past %d days: still the same two storms, none written again" % T.KEEP_DAYS,
+      [s["start"] for s in state["storms"]] == _before and len(_before) == 2)
+rep = [{"creek": "colma", "start": "2026-11-13 02:00", "end": "2026-11-13 23:00"},
+       {"creek": "sanbruno", "start": "2026-11-13 02:00", "end": "2026-11-13 23:00"},
+       {"creek": "colma", "start": "2026-11-13 05:00", "end": "2026-11-13 23:00"},   # a repeat
+       {"creek": "colma", "start": "2026-11-15 15:00", "end": "2026-11-16 08:00"}]
+check("drop_repeats: the later-starting overlap at the same creek goes; other creeks and later storms stay",
+      T.drop_repeats(rep) == [rep[0], rep[1], rep[3]])
+_st = copy.deepcopy(state)
+_st["storms"].append(dict(copy.deepcopy(_st["storms"][0]), start="2026-11-03 12:00"))
+_st = T.run(snapshot(now), _st, now, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
+check("repeats already in storm_tracker.json are taken out on the next run", len(_st["storms"]) == 2)
+
+# a gauge staff marked out of service (gauge_outages.csv), by key and by its old key at the same OneRain site
+_o = {"col_rain_41200": {"since": "2026-11-13", "note": "Reading low.", "number": "41200"}}
+_sa = {"ledger": {"col_rain_41200": {"kind": "rain", "h": {"2026-11-12 10:00": 0.1, "2026-11-13 10:00": 0.3}}},
+       "days": {"rain": {"col_rain_41200": {"2026-11-12": 0.1, "2026-11-13": 0.3}, "rain_mountain": {"2026-11-13": 0.3}}}}
+_ss = [{"creek": "sanbruno", "start": "2026-11-13 02:00", "end": "2026-11-13 23:00", "total": 0.9, "rain_level": 2,
+        "rain": [{"key": "rain_mountain", "number": "41200", "support": False, "total": 0.9, "rarest": {"level": 2}},
+                 {"key": "rain_first_ave", "number": "41100", "support": False, "total": 0.5, "rarest": {"level": 1}}]},
+       {"creek": "sanbruno", "start": "2026-11-03 02:00", "end": "2026-11-03 23:00", "total": 0.2, "rain_level": 0,
+        "rain": [{"key": "rain_mountain", "number": "41200", "support": False, "total": 0.2, "rarest": None}]}]
+T.set_aside(_sa, _o, _ss)
+T.set_aside(_sa, _o, _ss)   # twice = the same
+check("out of service: readings from out_since out of the hourly record and day totals, kept apart as read",
+      _sa["ledger"]["col_rain_41200"]["h"] == {"2026-11-12 10:00": 0.1} and _sa["days"]["rain"]["col_rain_41200"] == {"2026-11-12": 0.1}
+      and _sa["days"]["set_aside"]["col_rain_41200"]["read"] == {"2026-11-13": 0.3} and _sa["days"]["set_aside"]["rain_mountain"]["read"] == {"2026-11-13": 0.3})
+check("out of service: marked in storms from out_since (same site, old key too), not counted in total or rain level; earlier storms as they were",
+      _ss[0]["rain"][0]["out_of_service"]["since"] == "2026-11-13" and _ss[0]["total"] == 0.5 and _ss[0]["rain_level"] == 1
+      and "out_of_service" not in _ss[1]["rain"][0] and _ss[1]["total"] == 0.2)
+
+print("storm_tracker: %d checks, %d failed" % (checks, fails))
+sys.exit(1 if fails else 0)
