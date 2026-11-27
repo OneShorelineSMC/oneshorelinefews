@@ -233,7 +233,8 @@ def creek_status(spans, a, b):
 
 
 def main_rain(st):
-    rs = [r for r in st.get("rain") or [] if not r.get("support")] or st.get("rain") or []
+    ok = [r for r in st.get("rain") or [] if not r.get("out_of_service")]   # set-aside readings (gauge_outages.csv) don't count
+    rs = [r for r in ok if not r.get("support")] or ok
     return max(rs, key=lambda r: r.get("total") or 0) if rs else None
 
 
@@ -262,7 +263,7 @@ def storm_events(tracker, month, spans, creek_side, tide_days, public=None):
                 row["rain"], row["gauge"] = r["total"], r.get("label")
             for rr in s.get("rain") or []:
                 x = rr.get("rarest")
-                if x and not rr.get("support") and (row["rarest"] is None or (x["level"], x.get("years") or 0) > (row["rarest"]["level"], row["rarest"].get("years") or 0)):
+                if x and not rr.get("support") and not rr.get("out_of_service") and (row["rarest"] is None or (x["level"], x.get("years") or 0) > (row["rarest"]["level"], row["rarest"].get("years") or 0)):
                     row["rarest"] = dict(x, gauge=rr.get("label"))
             row["levels"] += [lv for lv in s.get("levels") or [] if lv.get("peak") is not None]
             if s.get("tide") and s["tide"].get("above_mhhw") is not None:
@@ -306,11 +307,17 @@ def month_rain(tracker, month):
             if not r.get("support"):
                 keys.setdefault(r["key"], {"key": r["key"], "label": r.get("label"), "creeks": set()})["creeks"].add(s["name"])
     out = []
+    aside = (tracker.get("days") or {}).get("set_aside") or {}
     for k, g in keys.items():
         d = {x: v for x, v in (days.get(k) or {}).items() if x[:7] == month and v is not None}
-        if d:
-            out.append({"key": k, "label": g["label"], "creeks": sorted(g["creeks"]), "in": round(sum(d.values()), 2), "days": len(d),
-                        "wettest_day": max(d, key=d.get), "wettest_in": round(max(d.values()), 2)})
+        sa = aside.get(k) or {}
+        sd = {x: v for x, v in (sa.get("read") or {}).items() if x[:7] == month and v is not None}
+        if d or sd:
+            row = {"key": k, "label": g["label"], "creeks": sorted(g["creeks"]), "in": round(sum(d.values()), 2), "days": len(d),
+                   "wettest_day": max(d, key=d.get) if d else None, "wettest_in": round(max(d.values()), 2) if d else None}
+            if sd:   # out of service (gauge_outages.csv): the month's total stops the day before; what it read after is kept apart
+                row["out_of_service"] = {"since": sa.get("since"), "note": sa.get("note"), "set_aside_in": round(sum(sd.values()), 2)}
+            out.append(row)
     cli = {x: v for x, v in (tracker.get("sfo_cli") or {}).items() if x[:7] == month and v is not None}
     sfo = {"in": round(sum(cli.values()), 2), "days": len(cli)} if cli else None
     return {"gauges": sorted(out, key=lambda r: -r["in"]), "sfo": sfo, "since": tracker.get("since")}

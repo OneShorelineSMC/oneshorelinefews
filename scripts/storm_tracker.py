@@ -547,8 +547,11 @@ def season_summary(c, days, storms, wy0):
         d = days.get("rain", {}).get(g["key"], {})
         rep = days.get("report", {}).get(g["key"], {})
         runs, fresh = sum(v[1] for v in rep.values()), sum(v[0] for v in rep.values())
+        sa = (days.get("set_aside") or {}).get(g["key"])
         out["rain"].append({"key": g["key"], "label": g.get("label"), "support": g["support"], "total": round(sum(d.values()), 2),
-                            "wet_days": sum(1 for v in d.values() if v >= 0.01), "reporting": round(fresh / runs, 3) if runs else None})
+                            "wet_days": sum(1 for v in d.values() if v >= 0.01), "reporting": round(fresh / runs, 3) if runs else None,
+                            # readings set aside (gauge out of service): the season total stops the day before
+                            "out_of_service": {"since": sa.get("since"), "note": sa.get("note"), "set_aside_in": round(sum(sa["read"].values()), 2)} if sa else None})
     for g in stage_g:
         d = days.get("level", {}).get(g["key"], {})
         rep = days.get("report", {}).get(g["key"], {})
@@ -578,6 +581,77 @@ def season_summary(c, days, storms, wy0):
         big = max(mine, key=lambda s: ((s.get("rain_level") or 0), s.get("total") or 0))
         out["biggest"] = {"start": big["start"], "total": big["total"], "rain_level": big.get("rain_level"), "reached": big.get("reached")}
     return out
+
+
+# --------------------------------------------------------------------------------------------- gauges set aside
+def load_outages(path=os.path.join(LOOKUPS, "gauge_outages.csv"), gauges=os.path.join(LOOKUPS, "creek_gauges.csv")):
+    """Gauges staff marked out of service (lookups/gauge_outages.csv), with their OneRain site number from creek_gauges.csv:
+    {key: {"since": "YYYY-MM-DD", "note", "number"}}. fetch_onerain.py stops publishing them; here their readings from
+    out_since on are set aside in the record (staff, 2026-11-26: San Bruno Mountain reading low, field verified)."""
+    out, nums = {}, {}
+    try:
+        with open(gauges, newline="", encoding="utf-8-sig") as f:
+            nums = {r["gauge"].strip(): (r.get("onerain_number") or "").strip() for r in csv.DictReader(f) if r.get("gauge")}
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            for r in csv.DictReader(f):
+                k = (r.get("gauge") or "").strip()
+                if k and not k.startswith("#"):
+                    out[k] = {"since": (r.get("out_since") or "").strip()[:10], "note": (r.get("note") or "").strip(), "number": nums.get(k, "")}
+    except FileNotFoundError:
+        pass
+    return out
+
+
+def outage_for(key, number, outages):
+    """The outage that covers a gauge: by its key, or by the same OneRain site under an older key (San Bruno Mountain
+    was rain_mountain for San Bruno Creek until 2026-11-17)."""
+    if key in outages:
+        return outages[key]
+    return next((o for o in outages.values() if number and str(o.get("number")) == str(number)), None)
+
+
+def set_aside(out, outages, storms):
+    """Readings of out-of-service gauges from out_since on: taken out of the hourly record and the day totals (kept in
+    days["set_aside"] as they were read), and marked in each storm's rain list ("out_of_service"), where they no longer
+    count toward the storm's total or rain level. Earlier readings stay as they are."""
+    if not outages:
+        return
+    keys = {}
+    for s in storms:
+        for r in s.get("rain") or []:
+            o = outage_for(r["key"], r.get("number"), outages)
+            if o:
+                keys[r["key"]] = o
+    for k, o in outages.items():
+        keys.setdefault(k, o)
+    for k, o in keys.items():
+        since = o.get("since") or "0000"
+        rec = out["ledger"].get(k)
+        if rec:
+            rec["h"] = {h: v for h, v in rec["h"].items() if h[:10] < since}
+        d = (out["days"].get("rain") or {}).get(k)
+        if d is not None:
+            moved = {x: v for x, v in d.items() if x >= since}
+            if moved:
+                sa = out["days"].setdefault("set_aside", {}).setdefault(k, {"read": {}})
+                sa["read"].update(moved)
+            if k in out["days"].get("set_aside", {}):
+                out["days"]["set_aside"][k].update(since=o.get("since"), note=o.get("note"))
+            for x in moved:
+                del d[x]
+    for s in storms:
+        hit = False
+        for r in s.get("rain") or []:
+            o = keys.get(r["key"])
+            if o and s["end"][:10] >= (o.get("since") or "0000"):
+                r["out_of_service"] = {"since": o.get("since"), "note": o.get("note")}
+                hit = True
+        if hit:
+            use = [r for r in s["rain"] if not r.get("out_of_service")]
+            main = [r for r in use if not r["support"]] or use
+            s["total"] = max([r["total"] for r in main] or [0])
+            tops = [r["rarest"]["level"] for r in use if r.get("rarest")]
+            s["rain_level"] = max(tops) if tops else (0 if s.get("rain_level") is not None else None)
 
 
 def update_days(days, ledger, creeks, sensors, now):
@@ -610,8 +684,9 @@ def update_days(days, ledger, creeks, sensors, now):
     return days
 
 
-def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=None, tides=True):
+def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=None, tides=True, outages=None):
     S = S or load_settings()
+    outages = load_outages() if outages is None else outages
     if freq is None:
         freq, _ = load_rain_frequency()
         freq = freq or {}
@@ -639,6 +714,7 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
         update_sfo(out, now, fetch)
     tlev = tide_levels(tide_tracker)
     update_days(out["days"], out["ledger"], creeks, sensors, now)
+    set_aside(out, outages, out["storms"])   # out-of-service gauges: before storms are found, so they don't make one
     out["storms"] = drop_repeats(out["storms"])   # repeats written before 2026-11-25 are taken out
     done = {(s["creek"], s["start"]) for s in out["storms"]}
     closed_at = {}
@@ -715,6 +791,7 @@ def run(creeks_json, previous, now, S=None, freq=None, tide_tracker=None, fetch=
             s0, e0 = parse_t(st["start"]), parse_t(st["end"])
             if now - s0 <= dt.timedelta(days=6):
                 st["sfo"] = dict(sfo_for(s0, e0, out["ledger"]) or {}, added_later=True) if out["ledger"].get("sfo:" + SFO_STATION) else None
+    set_aside(out, outages, out["storms"] + opened)
     out["storms"].sort(key=lambda s: (s["start"], s["creek"]))
     out["summary"] = [season_summary(c, out["days"], out["storms"] + opened, wy0) for c in creeks]
     out["creeks"] = [{"id": c["id"], "name": c["name"], "short": c.get("short"), "preview_only": bool(c.get("preview_only")),

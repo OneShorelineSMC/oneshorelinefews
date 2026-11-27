@@ -113,6 +113,15 @@ wv = M.month_waves({"daily": {"46012": {"2026-11-24": {"ft": 12.1, "s": 14}, "20
 check("waves: the month's highest at the Half Moon Bay buoy, days at 15 ft or more", wv["max_ft"] == 19.4 and wv["max_day"] == "2026-11-25" and wv["days_15ft"] == 1 and wv["days"] == 2)
 check("waves: none kept yet = none", M.month_waves({}, "2026-11") is None)
 
+_tr = {"storms": [{"name": "San Bruno Creek", "rain": [{"key": "rain_mountain", "label": "San Bruno Mountain", "support": False}]}],
+       "days": {"rain": {"rain_mountain": {"2026-11-01": 0.16, "2026-11-04": 0.24}},
+                "set_aside": {"rain_mountain": {"since": "2026-11-13", "note": "Reading low.", "read": {"2026-11-13": 0.8, "2026-11-15": 0.7}}}}}
+_g = M.month_rain(_tr, "2026-11")["gauges"][0]
+check("month rain: an out-of-service gauge counts to the day before, what it read after kept apart",
+      _g["in"] == 0.4 and _g["out_of_service"]["set_aside_in"] == 1.5 and _g["out_of_service"]["since"] == "2026-11-13")
+check("storms: an out-of-service gauge isn't the creek's rain", M.main_rain({"rain": [{"key": "a", "support": False, "total": 2.0, "out_of_service": {"since": "2026-11-13"}},
+                                                                                   {"key": "b", "support": False, "total": 1.0}]})["key"] == "b")
+
 with tempfile.TemporaryDirectory() as d:
     json.dump({"months": {"2026-10": {"month": "2026-10", "kept": True}}}, open(os.path.join(d, "monthly_summary.json"), "w"))
     json.dump(tt, open(os.path.join(d, "tide_tracker.json"), "w"))

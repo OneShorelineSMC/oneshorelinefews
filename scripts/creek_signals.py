@@ -456,7 +456,8 @@ def creek_status(c, sens, tide, now, S):
         if ok and (not trigger or tr["level"] > trigger["level"]):
             trigger = dict(tr, amount=round(amt, 2))
     # Rain level: highest across working rain gauges (shown and supporting); Severe needs confirmation
-    rain_gauges = c["rain"] + c.get("rain_support", [])
+    # a rain gauge staff marked out of service (gauge_outages.csv) is left out: not working, and never "silent"
+    rain_gauges = [g for g in c["rain"] + c.get("rain_support", []) if not sens.get(g["key"], {}).get("out_of_service")]
     working, elevated, best = [], 0, None
     for g in rain_gauges:
         sig = sens.get(g["key"], {}).get("signals", {})

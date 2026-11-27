@@ -262,5 +262,23 @@ _st["storms"].append(dict(copy.deepcopy(_st["storms"][0]), start="2026-11-03 12:
 _st = T.run(snapshot(now), _st, now, S, FREQ, tide_tracker=TT_LEVELS, fetch=fake_noaa)
 check("repeats already in storm_tracker.json are taken out on the next run", len(_st["storms"]) == 2)
 
+# a gauge staff marked out of service (gauge_outages.csv), by key and by its old key at the same OneRain site
+_o = {"col_rain_41200": {"since": "2026-11-13", "note": "Reading low.", "number": "41200"}}
+_sa = {"ledger": {"col_rain_41200": {"kind": "rain", "h": {"2026-11-12 10:00": 0.1, "2026-11-13 10:00": 0.3}}},
+       "days": {"rain": {"col_rain_41200": {"2026-11-12": 0.1, "2026-11-13": 0.3}, "rain_mountain": {"2026-11-13": 0.3}}}}
+_ss = [{"creek": "sanbruno", "start": "2026-11-13 02:00", "end": "2026-11-13 23:00", "total": 0.9, "rain_level": 2,
+        "rain": [{"key": "rain_mountain", "number": "41200", "support": False, "total": 0.9, "rarest": {"level": 2}},
+                 {"key": "rain_first_ave", "number": "41100", "support": False, "total": 0.5, "rarest": {"level": 1}}]},
+       {"creek": "sanbruno", "start": "2026-11-03 02:00", "end": "2026-11-03 23:00", "total": 0.2, "rain_level": 0,
+        "rain": [{"key": "rain_mountain", "number": "41200", "support": False, "total": 0.2, "rarest": None}]}]
+T.set_aside(_sa, _o, _ss)
+T.set_aside(_sa, _o, _ss)   # twice = the same
+check("out of service: readings from out_since out of the hourly record and day totals, kept apart as read",
+      _sa["ledger"]["col_rain_41200"]["h"] == {"2026-11-12 10:00": 0.1} and _sa["days"]["rain"]["col_rain_41200"] == {"2026-11-12": 0.1}
+      and _sa["days"]["set_aside"]["col_rain_41200"]["read"] == {"2026-11-13": 0.3} and _sa["days"]["set_aside"]["rain_mountain"]["read"] == {"2026-11-13": 0.3})
+check("out of service: marked in storms from out_since (same site, old key too), not counted in total or rain level; earlier storms as they were",
+      _ss[0]["rain"][0]["out_of_service"]["since"] == "2026-11-13" and _ss[0]["total"] == 0.5 and _ss[0]["rain_level"] == 1
+      and "out_of_service" not in _ss[1]["rain"][0] and _ss[1]["total"] == 0.2)
+
 print("storm_tracker: %d checks, %d failed" % (checks, fails))
 sys.exit(1 if fails else 0)
