@@ -208,7 +208,7 @@
     <p class="note" style="margin-top:0">For each storm, the RRFS forecast (the one on the Rain forecast page) that was out <b>24 hours</b> and <b>6 hours</b>
       before the rain began, against the creek's main rain gauge. Ratings use NOAA Atlas 14 at that gauge over the wettest 1, 3 and 6 hours (Heavy, Very heavy,
       Intense), the same as everywhere else. <b>Caught</b> = Heavy or more forecast and measured; <b>missed</b> = measured, not forecast;
-      <b>over-forecast</b> = forecast, not measured. Timing = when the forecast's wettest hour came, against the gauge's (+2 h = 2 hours late).</p>
+      <b>over-forecast</b> = forecast, not measured; – = no storm yet with Heavy rain forecast or measured, so nothing to score. Timing = when the forecast's wettest hour came, against the gauge's (+2 h = 2 hours late).</p>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Forecast check by creek (scrolls sideways)"><table id="fcTable"></table></div>
     <details style="margin-top:8px" open><summary style="cursor:pointer">Each storm, newest first</summary>
       <div class="tablewrap" tabindex="0" role="region" aria-label="Forecast check by storm (scrolls sideways)"><table id="fcList"></table></div></details>
@@ -988,7 +988,10 @@ function renderFc(F) {
   var hr = function (h) { return h == null ? "–" : h === 0 ? "on time" : (h > 0 ? "+" : "") + h + " h"; };
   var V = { caught: "✓ caught", missed: "✗ missed", "over-forecast": "✗ over-forecast", "no Heavy": "no Heavy either way", "not rated": "not rated" };
   var cs = Object.keys(F.summary || {}).map(function (k) { return [k, F.summary[k]]; }).sort(function (a, b) { return a[1].name < b[1].name ? -1 : 1; });
-  var cell = function (d) { return d ? "<td class='n'>" + d.caught + "</td><td class='n'>" + d.missed + "</td><td class='n'>" + d["over-forecast"] + "</td><td class='n'>" +
+  // no storm with Heavy rain forecast or measured: nothing to score yet, so a dash, not 0 (staff, 2026-11-26)
+  var none = function (d) { return !(d.caught + d.missed + d["over-forecast"]); };
+  var cnt = function (d, k) { return none(d) ? "<td class='n' title='No Heavy rain forecast or measured: nothing to score yet'>–</td>" : "<td class='n'>" + d[k] + "</td>"; };
+  var cell = function (d) { return d ? cnt(d, "caught") + cnt(d, "missed") + cnt(d, "over-forecast") + "<td class='n'>" +
     (d.median_ratio == null ? "–" : Math.round(d.median_ratio * 100) + "%") + "</td><td class='n'>" + hr(d.median_timing_h) + "</td>" : "<td colspan='5'><span class='empty'>no forecast that far ahead</span></td>"; };
   $("fcTable").innerHTML = cs.length ? "<tr><th rowspan='2'>Creek</th><th class='n' rowspan='2'>Storms</th><th colspan='5'>24 hours ahead</th><th colspan='5'>6 hours ahead</th><th class='n' rowspan='2'>Heavy forecast, no storm</th></tr>" +
     "<tr>" + [0, 1].map(function () { return "<th class='n'>Caught</th><th class='n'>Missed</th><th class='n'>Over</th><th class='n'>Total vs gauge</th><th class='n'>Timing</th>"; }).join("") + "</tr>" +
