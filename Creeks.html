@@ -1085,6 +1085,9 @@ function staffReadings(c, st, now) {
   // rain at each gauge (supporting gauges too: the status uses them)
   var wins = rainWindows(c), rg = (c.rain || []).map(function (g) { return { g: g, sup: false }; }).concat((c.rain_support || []).map(function (g) { return { g: g, sup: true }; }));
   rg.forEach(function (r) {
+    var oos = (sens[r.g.key] || {}).out_of_service;   // staff marked it out of service (gauge_outages.csv): no readings, and why
+    if (oos) { row("<b>Rain</b> · " + esc(r.g.label) + (r.sup ? ' <span class="sm" style="display:inline">(' + esc(r.g.where || "supporting") + ")</span>" : "") + srcLink(r.g), "–",
+      "<b>" + esc(LK.text("gauge_out")) + "</b>" + (oos.note ? '<span class="sm">' + esc(oos.note) + "</span>" : ""), "", oos.since ? "since " + esc(oos.since) : ""); return; }
     var p = pts(r.g.key), sig = (sens[r.g.key] || {}).signals || {}, lvl = sig.level || 0, d = sig.driver;
     var vals = wins.map(function (m) { return '<span style="white-space:nowrap">' + winLabel(m) + " <b>" + inch(rainSum(p, now - m * 60000, now)) + "</b></span>"; }).join(" · ") + " in";
     var lr = sig.last_report ? parseLocal(sig.last_report) : null;

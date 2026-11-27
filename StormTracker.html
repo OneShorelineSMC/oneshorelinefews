@@ -647,12 +647,19 @@ function show(k, quiet) {
   showRest(s, d, rainTable(s), levelText(s), quiet);
 }
 var PEAKS = ["15", "30", "60", "180", "360", "720", "1440", "2880"];   // rain windows (48 hr: staff 2026-11-19)
+// a gauge staff marked out of service (lookups/gauge_outages.csv): from out_since its readings stay listed but don't count,
+// as if it were a supporting gauge with no rating (storm_tracker.py set_aside; staff 2026-11-26: San Bruno Mountain)
+function setAside(j) {
+  (j.storms || []).concat(j.open || []).forEach(function (s) {
+    (s.rain || []).forEach(function (r) { if (r.out_of_service) { r.support = true; r.rarest = null; } });
+  });
+}
 function rainTable(s) {
   var peaks = PEAKS;
   return "<table><thead><tr><th>Rain gauge</th><th class='n'>Total</th>" + peaks.map(function (m) { return "<th class='n'>" + mins(+m) + "</th>"; }).join("") + "</tr></thead><tbody>" +
-    s.rain.map(function (r) { return "<tr><td><b>" + esc(r.label) + "</b>" + (r.support ? '<span class="sm">supporting gauge</span>' : "") + "</td><td class='n'><b>" + inch(r.total) + "</b></td>" +
-      peaks.map(function (m) { var p = r.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) + (p.rate && p.rate.level ? '<span class="sm"><span class="chip l' + p.rate.level + '">' + WORD[p.rate.level] + "</span></span>" : "") +
-        (p.rate && p.rate.years ? '<span class="sm">' + yr(p.rate.years) + " · " + aep(p.rate.years) + "</span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") +
+    s.rain.map(function (r) { return "<tr><td><b>" + esc(r.label) + "</b>" + (r.out_of_service ? '<span class="sm" style="color:var(--warn,#8a5a00)">⚠ out of service from ' + esc(day(r.out_of_service.since)) + ": " + esc(r.out_of_service.note) + "</span>" : r.support ? '<span class="sm">supporting gauge</span>' : "") + "</td><td class='n'>" + (r.out_of_service ? "<s>" + inch(r.total) + "</s>" : "<b>" + inch(r.total) + "</b>") + "</td>" +
+      peaks.map(function (m) { var p = r.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) + (r.out_of_service ? "" : p.rate && p.rate.level ? '<span class="sm"><span class="chip l' + p.rate.level + '">' + WORD[p.rate.level] + "</span></span>" : "") +
+        (!r.out_of_service && p.rate && p.rate.years ? '<span class="sm">' + yr(p.rate.years) + " · " + aep(p.rate.years) + "</span>" : "") : "–") + "</td>"; }).join("") + "</tr>"; }).join("") +
     // SFO airport (NWS) as a check on the creek's own gauge (San Bruno; staff 2026-11-18). Hourly only, so no 15/30 min.
     (s.sfo && s.sfo.peaks ? "<tr class='sfo'><td><b>" + esc(s.sfo.label) + '</b><span class="sm">for comparison · reports hourly</span></td><td class="n"><b>' + inch(s.sfo.total) + "</b></td>" +
       peaks.map(function (m) { var p = s.sfo.peaks[m]; return "<td class='n'>" + (p ? inch(p.in) : '<span class="sm">–</span>') + "</td>"; }).join("") + "</tr>" : "") + "</tbody></table>";
@@ -1069,7 +1076,7 @@ function loadAlerts() {
 }
 function load() {
   fetch(DATA_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function (j) { J = j; render(); if (SEL && find(SEL)) show(SEL, true); })
+    .then(function (j) { J = j; setAside(J); render(); if (SEL && find(SEL)) show(SEL, true); })
     .catch(function () { $("meta").textContent = "The storm tracker's data isn't on the data branch yet (it starts with the next data job run after upload), or couldn't be read."; });
 }
 load();

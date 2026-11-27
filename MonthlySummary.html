@@ -176,6 +176,7 @@ function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 function pd(s) { return new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10), +(s.slice(11, 13) || 0), +(s.slice(14, 16) || 0)); }
 function day(s) { return MON[+s.slice(5, 7) - 1] + " " + (+s.slice(8, 10)); }
+function addDays(s, n) { var d = new Date(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10) + n)); return d.toISOString().slice(0, 10); }
 function hm(s) { var h = +s.slice(11, 13), m = s.slice(14, 16); return (h % 12 || 12) + (m === "00" ? "" : ":" + m) + " " + (h < 12 ? "AM" : "PM"); }
 function when(s) { return day(s) + (s.length > 10 ? ", " + hm(s) : ""); }
 function span(a, b) { // "Nov 22 to 25", "Nov 30 to Dec 2", "Nov 13"
@@ -359,7 +360,11 @@ function tables(M) {
   $("tideNote").textContent = "Heights are the highest measured water each day (NOAA, preliminary), in feet above each gauge’s average high tide (MHHW); NAVD88 heights are underneath. “Above the tide table” is how far the water ran above NOAA’s prediction that day, from wind, low pressure and runoff.";
   var g = (M.rain && M.rain.gauges) || [];
   $("rain").innerHTML = g.length ? "<table><thead><tr><th>Rain gauge</th><th>Creek</th><th class='n'>This month</th><th>Wettest day</th></tr></thead><tbody>" +
-    g.map(function (r) { return "<tr><td>" + esc(r.label) + "</td><td>" + esc(r.creeks.join(", ")) + "</td><td class='n'><b>" + r.in.toFixed(2) + " in</b></td><td>" + day(r.wettest_day) + " (" + r.wettest_in.toFixed(2) + " in)</td></tr>"; }).join("") +
+    g.map(function (r) {
+      // a gauge staff marked out of service (gauge_outages.csv): its total stops the day before, and what it read after is shown apart
+      var o = r.out_of_service, tot = o ? (r.days ? r.in.toFixed(2) + " in<span class='sm' style='display:block;font-weight:400'>to " + day(addDays(o.since, -1)) + "</span>" : "–") : "<b>" + r.in.toFixed(2) + " in</b>";
+      return "<tr><td>" + esc(r.label) + (o ? "<span class='sm' style='display:block;color:var(--warn,#8a5a00)'>⚠ Out of service from " + day(o.since) + ": " + esc(o.note) + " Read " + o.set_aside_in.toFixed(2) + " in after that, not counted.</span>" : "") + "</td><td>" + esc(r.creeks.join(", ")) + "</td><td class='n'>" + tot + "</td><td>" + (r.wettest_day ? day(r.wettest_day) + " (" + r.wettest_in.toFixed(2) + " in)" : "–") + "</td></tr>";
+    }).join("") +
     (M.rain.sfo ? "<tr><td>SFO airport (NWS official)</td><td>–</td><td class='n'><b>" + M.rain.sfo.in.toFixed(2) + " in</b></td><td></td></tr>" : "") + "</tbody></table>" : "<p class='empty'>No rain recorded.</p>";
   $("rainNote").textContent = "Each creek's own rain gauges (OneRain), added up by day. A gauge far below its neighbors may have missed rain; check it before quoting it.";
   var r = M.roads || [];
