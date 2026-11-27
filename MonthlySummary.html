@@ -139,12 +139,12 @@
     <p class="note" id="tideNote"></p></details>
   <details class="card"><summary>Rain this month at the creek rain gauges</summary><div class="tw" id="rain"></div>
     <p class="note" id="rainNote"></p></details>
-  <details class="card" open><summary>Road closures for flooding and storms</summary><div class="tw" id="roads"></div>
-    <p class="note">State highways in San Mateo County from the Caltrans Lane Closure System, and city posts (San Bruno's feeds and South San Francisco's emergency page), and SMC Alert road closures once its mailbox is set up. A closure's
-      cause is set by a rule, not by Caltrans: <b>high tide</b> when the measured high tide near it ran at least 1 foot above the average
+  <details class="card" open><summary>On the ground: closures, flooding and damage</summary><div class="tw" id="ground"></div>
+    <p class="note">Everything in date order, each with where it came from. <b>Caltrans</b>: state highways in San Mateo County from the Lane Closure System.
+      <b>City posts</b>: San Bruno's feeds and South San Francisco's emergency page (SMC Alert road closures too, once its mailbox is set up).
+      <b>Staff log</b>: what staff added that no feed reports (<code>lookups/impacts.csv</code>; add a row with its date, place, what happened and the source).
+      A closure's cause is set by a rule, not by Caltrans: <b>high tide</b> when the measured high tide near it ran at least 1 foot above the average
       high tide, <b>rain</b> when at least 0.25 inch fell in the 12 hours before it closed through 3 hours after, <b>both</b>, or not known.</p></details>
-  <details class="card"><summary>Reported on the ground</summary><div class="tw" id="impacts"></div>
-    <p class="note">What staff logged that no feed reports: damage, flooding, closures (<code>lookups/impacts.csv</code>; add a row with its date, place, what happened and the source).</p></details>
   <details class="card"><summary>NWS coastal flood and high surf products</summary><div class="tw" id="nws"></div>
     <p class="note">Coastal Flood Advisories and Warnings, and High Surf Advisories and Warnings (kept from Nov 26, 2026), from the National Weather Service in San Francisco that included San Mateo County. Flood Watches and Warnings for rain aren’t kept by this site yet.</p></details>
 
@@ -251,10 +251,10 @@ function roadLine(r) {
     (r.cause ? ' <span class="chip ' + (r.cause === "both" ? "both" : r.cause) + '">' + CAUSE[r.cause] + "</span>" : r.kind === "storm" ? ' <span class="chip side">' + esc(r.what || "storm") + "</span>" : "");
 }
 // what staff logged on the ground (lookups/impacts.csv): one line each, with its source
-function impactLine(x) {
+function impactLine(x, noDate) {
   var src = x.source ? (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener">' + esc(x.source) + "</a>" : esc(x.source)) : "";
   return '<span class="chip ' + (x.kind === "damage" || x.kind === "evacuation" ? "warn" : "amber") + '">' + esc(x.label) + "</span>" +
-    (x.place ? "<b>" + esc(x.place) + "</b>, " : "") + day(x.date) + (x.time ? " " + hm(x.date + " " + x.time) : "") + ": " + esc(x.what) + (src ? ' <span class="sm">(' + src + ")</span>" : "");
+    (x.place ? "<b>" + esc(x.place) + "</b>" + (noDate && !x.time ? "" : ", ") : "") + (noDate ? "" : day(x.date)) + (x.time ? (noDate ? "" : " ") + hm(x.date + " " + x.time) : "") + ": " + esc(x.what) + (src ? ' <span class="sm">(' + src + ")</span>" : "");
 }
 function impactsFor(M, key, i) {
   var h = (M.impacts || []).filter(function (x) { return (x[key] || []).indexOf(i) >= 0; }).map(function (x) { return "<li>" + impactLine(x) + "</li>"; }).join("");
@@ -368,9 +368,15 @@ function tables(M) {
     (M.rain.sfo ? "<tr><td>SFO airport (NWS official)</td><td>–</td><td class='n'><b>" + M.rain.sfo.in.toFixed(2) + " in</b></td><td></td></tr>" : "") + "</tbody></table>" : "<p class='empty'>No rain recorded.</p>";
   $("rainNote").textContent = "Each creek's own rain gauges (OneRain), added up by day. A gauge far below its neighbors may have missed rain; check it before quoting it.";
   var r = M.roads || [];
-  $("roads").innerHTML = r.length ? "<ul style='margin:0;padding-left:18px'>" + r.map(function (x) { return "<li style='margin:4px 0'>" + roadLine(x) + "</li>"; }).join("") + "</ul>" : "<p class='empty'>None this month.</p>";
-  var im = M.impacts || [];
-  $("impacts").innerHTML = im.length ? "<ul style='margin:0;padding-left:18px'>" + im.map(function (x) { return "<li style='margin:4px 0'>" + impactLine(x) + "</li>"; }).join("") + "</ul>" : "<p class='empty'>None logged this month.</p>";
+  // closures and what staff logged, as one list in date order (staff, 2026-11-26): the record is about what happened;
+  // the source is a tag on each line
+  var im = M.impacts || [], gr = r.map(function (x) { return { t: x.started || "", h: roadLine(x) + (x.notice ? "" : ' <span class="sm" style="display:inline">(Caltrans)</span>') }; })
+    .concat(im.map(function (x) { return { t: x.date + " " + (x.time || "00:00"), h: impactLine(x, true) + ' <span class="sm" style="display:inline">· staff log</span>' }; }))
+    .sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : 0; });
+  var lastD = "";
+  $("ground").innerHTML = gr.length ? "<ul style='margin:0;padding-left:18px'>" + gr.map(function (x) {
+    var d = x.t.slice(0, 10), head = d !== lastD ? "<li style='list-style:none;margin:10px 0 2px -18px;font-weight:600'>" + day(d) + "</li>" : ""; lastD = d;
+    return head + "<li style='margin:4px 0'>" + x.h + "</li>"; }).join("") + "</ul>" : "<p class='empty'>No closures or reports this month.</p>";
   var n = M.nws || [];
   $("nws").innerHTML = n.length ? "<table><thead><tr><th>Product</th><th>From</th><th>Until</th></tr></thead><tbody>" + n.map(function (x) { return "<tr><td>" + esc(x.event) + "</td><td>" + when(x.onset) + "</td><td>" + when(x.ends) + "</td></tr>"; }).join("") + "</tbody></table>" : "<p class='empty'>None this month.</p>";
 }

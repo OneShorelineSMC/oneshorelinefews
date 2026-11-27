@@ -147,14 +147,8 @@
   </div>
 
   <div class="card" id="roadCard" hidden>
-    <h2>Road closures from storms and high tides <span class="sm" style="display:inline;font-weight:400">Caltrans and city posts · San Mateo County</span></h2>
+    <h2>On the ground <span class="sm" style="display:inline;font-weight:400">closures, flooding and damage · San Mateo County</span></h2>
     <div id="roads"></div>
-  </div>
-
-  <div class="card" id="impactCard" hidden>
-    <h2>Reported on the ground <span class="sm" style="display:inline;font-weight:400">logged by staff · this season</span></h2>
-    <div id="impacts"></div>
-    <p class="note" style="margin:6px 0 0">Damage, flooding and closures that no feed reports (staff, 2026-11-26: the Pacifica Pier). Add a row to <code>lookups/impacts.csv</code>: date, place, what happened, the source and its link.</p>
   </div>
 
   <div class="card" id="seasonCard">
@@ -385,7 +379,7 @@ function roadItem(c) {
     " · closed " + esc(when(c.started)) + (end ? ", reopened " + esc(when(end)) + " (" + hrs(c.started, end) + ")" + (c.gone ? "*" : "") :
       ' · <b style="color:var(--lv3)">still closed</b>' + (c.est_end ? ", expected to reopen " + esc(when(c.est_end)) : "")) + "</span>" +
     (c.detour ? '<span class="sm">Detour: ' + esc(c.detour) + "</span>" : "") + (c.kind === "flood" && c.cause ? causeLine(c) : "") +
-    '<span class="sm">' + (c.watersheds && c.watersheds.length ? esc(c.watersheds.join(", ")) + " watershed" + (c.watersheds.length > 1 ? "s" : "") + " · " + esc(SIDE[c.side] || "") : "Location not given") + "</span></li>";
+    '<span class="sm">Caltrans · ' + (c.watersheds && c.watersheds.length ? esc(c.watersheds.join(", ")) + " watershed" + (c.watersheds.length > 1 ? "s" : "") + " · " + esc(SIDE[c.side] || "") : "location not given") + "</span></li>";
 }
 // a storm's closures: in its creek's watershed (here), elsewhere on the same side (near), on the other side (far)
 function closuresFor(s) {
@@ -401,23 +395,40 @@ function closuresFor(s) {
   });
   return g;
 }
+// One card for what is happening on the ground (staff, 2026-11-26). "Now" shows only what is true now and drops off on its
+// own: closures still open, city posts from the last 24 hours, staff reports dated today or yesterday. The season log
+// keeps everything, closures and staff reports together, newest first, each tagged with its source.
 function renderRoads() {
-  if (!RC) return;
+  if (!RC && !IMP) return;
   $("roadCard").hidden = false;
-  var log = (RC.log || []).slice().reverse(), act = log.filter(function (c) { return c.active; }), past = log.filter(function (c) { return !c.active; });
-  var day1 = pt(RC.generated) - 864e5, posts = log.filter(function (c) { return c.notice && pt(c.started) >= day1; });
+  var log = RC ? (RC.log || []).slice() : [], imp = IMP || [];
+  var genS = (RC && RC.generated) || (J && J.generated) || "", gen = genS ? pt(genS) : Date.now(), checked = genS;
+  if (!genS) { var _n = new Date(Date.now() - 8 * 36e5); genS = _n.toISOString().slice(0, 10) + " " + _n.toISOString().slice(11, 16); }
+  var act = log.filter(function (c) { return c.active; }), day1 = gen - 864e5;
+  var posts = log.filter(function (c) { return c.notice && !c.active && pt(c.started) >= day1; });
+  var today = genS.slice(0, 10), yest = today ? new Date(Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10) - 1)).toISOString().slice(0, 10) : "";
+  var impNow = imp.filter(function (x) { return x.date >= yest; });
+  var nowItems = act.map(function (c) { return { t: c.started || "", h: roadItem(c) }; }).concat(posts.map(function (c) { return { t: c.started || "", h: roadItem(c) }; }))
+    .concat(impNow.map(function (x) { return { t: x.date + " " + (x.time || "00:00"), h: impactItem(x) }; })).sort(function (a, b) { return a.t < b.t ? 1 : -1; });
+  var all = log.map(function (c) { return { t: c.started || "", h: roadItem(c) }; }).concat(imp.map(function (x) { return { t: x.date + " " + (x.time || "00:00"), h: impactItem(x) }; }))
+    .sort(function (a, b) { return a.t < b.t ? 1 : -1; });
   var nc = log.filter(function (c) { return !c.notice; }).length, np = log.length - nc;
-  var src = RC.sources || {}, bad = Object.keys(src).filter(function (k) { return !src[k].ok; }).map(function (k) { return k === "lcs" ? "Caltrans' Lane Closure System" : k === "erc" ? "Caltrans' Emergency Road Closures" : k.split(":")[1] + "'s website feed"; })
+  var src = RC ? RC.sources || {} : {}, bad = Object.keys(src).filter(function (k) { return !src[k].ok; }).map(function (k) { return k === "lcs" ? "Caltrans' Lane Closure System" : k === "erc" ? "Caltrans' Emergency Road Closures" : k.split(":")[1] + "'s website feed"; })
     .filter(function (v, i, a) { return a.indexOf(v) === i; });
   var fls = log.filter(function (c) { return c.kind === "flood" && !c.notice; }), fl = fls.length;
   var byC = ["tide", "rain", "both", "unclear"].map(function (k) { var n = fls.filter(function (c) { return c.cause === k; }).length; return n ? n + " " + CAUSE[k][1].toLowerCase() : ""; }).filter(Boolean);
-  $("roads").innerHTML = "<p style='margin:0'><b>Closed now:</b> " + (act.length ? act.length + "</p><ul class='rcl'>" + act.map(roadItem).join("") + "</ul>" : "none from storms on San Mateo County state highways.</p>") +
-    (posts.length ? "<p style='margin:8px 0 0'><b>City posts in the last 24 hours:</b></p><ul class='rcl'>" + posts.map(roadItem).join("") + "</ul>" : "") +
-    (past.length ? "<details style='margin-top:8px'><summary style='cursor:pointer;font-weight:600;color:var(--ink)'>This season: " + nc + " highway closure" + (nc === 1 ? "" : "s") +
-      " since " + esc(day(RC.water_year_start || "")) + " (" + fl + " from flooding" + (byC.length ? ": " + byC.join(", ") : "") + ")" + (np ? " and " + np + " city post" + (np === 1 ? "" : "s") : "") + "</summary><ul class='rcl'>" + past.map(roadItem).join("") + "</ul></details>" :
-      "<p class='note'>No storm closures logged yet this season.</p>") +
-    "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno and South San Francisco so far) and SMC Alert, once its mailbox is set up. " +
-      (past.some(function (c) { return c.gone; }) ? "* reopened when it left Caltrans' feed (within 10 minutes). " : "") + "</p>" +
+  var counts = [nc + " highway closure" + (nc === 1 ? "" : "s") + (nc ? " (" + fl + " from flooding" + (byC.length ? ": " + byC.join(", ") : "") + ")" : "")];
+  if (np) counts.push(np + " city post" + (np === 1 ? "" : "s"));
+  if (imp.length) counts.push(imp.length + " staff report" + (imp.length === 1 ? "" : "s"));
+  $("roads").innerHTML = "<p style='margin:0'><b>Now</b>" + (checked ? '<span class="sm" style="display:inline"> · checked ' + esc(when(checked)) + "</span>" : "") + "</p>" +
+    (nowItems.length ? "<ul class='rcl'>" + nowItems.map(function (x) { return x.h; }).join("") + "</ul>" :
+      "<p class='note' style='margin-top:4px'>Nothing closed on San Mateo County state highways from storms or high tides, no city posts in the last 24 hours, and nothing logged by staff today or yesterday.</p>") +
+    (all.length ? "<details style='margin-top:10px'><summary style='cursor:pointer;font-weight:600;color:var(--ink)'>This season since " + esc(day((RC && RC.water_year_start) || (J && J.wy_start) || "")) + ": " + counts.join(", ") + "</summary><ul class='rcl'>" +
+      all.map(function (x) { return x.h; }).join("") + "</ul></details>" : "<p class='note'>Nothing logged yet this season.</p>") +
+    "<p class='note'><b>Caltrans</b> covers state highways only. City streets come from <b>city posts</b> (San Bruno and South San Francisco so far) and SMC Alert, once its mailbox is set up. " +
+      "<b>Staff log</b> is what no feed reports (damage, flooding, closures; the Pacifica Pier, for one): add a row to <code>lookups/impacts.csv</code> with the date, place, what happened, the source and its link. " +
+      "It shows here once the file is uploaded, under Now for today and yesterday, then in the season log." +
+      (log.some(function (c) { return c.gone; }) ? " * reopened when it left Caltrans' feed (within 10 minutes)." : "") + "</p>" +
     (bad.length ? "<div class='warn'>Couldn't read " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
 }
 // what staff logged on the ground (lookups/impacts.csv), newest first, from the start of the water year
@@ -438,16 +449,18 @@ function csvRows(t) {   // a small CSV reader (quoted fields, "" inside quotes);
   return rows.filter(function (r) { return r.some(function (x) { return x.trim(); }); })
     .map(function (r) { var o = {}; head.forEach(function (h, j) { o[h] = (r[j] || "").trim(); }); return o; });
 }
+var IMP = null;
+function impactItem(x) {
+  var lk = /^https:\/\/[^\s"'<>]+$/.test(x.link || "") ? x.link : "", k = (x.kind || "").toLowerCase();
+  return "<li><b>" + esc(x.place || "Place not given") + "</b>" + ' <span class="chip ' + (k === "damage" || k === "evacuation" ? "kf" : "ks") + '">' + esc(IMPACT_LABEL[k] || "Reported") + "</span>" +
+    '<span class="sm">' + esc(x.what) + "</span>" +
+    '<span class="sm">' + esc(x.time ? when(x.date + " " + x.time) : day(x.date)) + " · " + (x.source ? (lk ? '<a href="' + esc(lk) + '" target="_blank" rel="noopener">' + esc(x.source) + "</a>" : esc(x.source)) + " · " : "") + "staff log</span></li>";
+}
 function loadImpacts() {
   fetch("lookups/impacts.csv?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(csvRows).then(function (rows) {
     var wy = J && J.wy_start ? J.wy_start.slice(0, 10) : "0000";
-    var r = rows.filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.what && x.date >= wy; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
-    $("impactCard").hidden = !r.length;
-    $("impacts").innerHTML = "<ul style='margin:0;padding-left:18px'>" + r.map(function (x) {
-      var lk = /^https:\/\/[^\s"'<>]+$/.test(x.link || "") ? x.link : "", k = (x.kind || "").toLowerCase();
-      return "<li style='margin:4px 0'><b>" + esc(IMPACT_LABEL[k] || "Reported") + "</b> · " + esc(day(x.date)) + (x.place ? ", " + esc(x.place) : "") + ": " + esc(x.what) +
-        (x.source ? ' <span class="sm" style="display:inline">(' + (lk ? '<a href="' + esc(lk) + '" target="_blank" rel="noopener">' + esc(x.source) + "</a>" : esc(x.source)) + ")</span>" : "") + "</li>";
-    }).join("") + "</ul>";
+    IMP = rows.filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.what && x.date >= wy; });
+    renderRoads();
   }).catch(function () {});
 }
 function loadRoads() {
