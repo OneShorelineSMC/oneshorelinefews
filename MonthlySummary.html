@@ -143,9 +143,10 @@
     <p class="note">State highways in San Mateo County from the Caltrans Lane Closure System, and city posts (San Bruno's feeds and South San Francisco's emergency page), and SMC Alert road closures once its mailbox is set up. A closure's
       cause is set by a rule, not by Caltrans: <b>high tide</b> when the measured high tide near it ran at least 1 foot above the average
       high tide, <b>rain</b> when at least 0.25 inch fell in the 12 hours before it closed through 3 hours after, <b>both</b>, or not known.</p></details>
-  <details class="card"><summary>NWS coastal flood products</summary><div class="tw" id="nws"></div>
-    <p class="note">Coastal Flood Advisories and Warnings from the National Weather Service in San Francisco that included San Mateo County.
-      Flood Watches and Warnings for rain aren't kept by this site yet.</p></details>
+  <details class="card"><summary>Reported on the ground</summary><div class="tw" id="impacts"></div>
+    <p class="note">What staff logged that no feed reports: damage, flooding, closures (<code>lookups/impacts.csv</code>; add a row with its date, place, what happened and the source).</p></details>
+  <details class="card"><summary>NWS coastal flood and high surf products</summary><div class="tw" id="nws"></div>
+    <p class="note">Coastal Flood Advisories and Warnings, and High Surf Advisories and Warnings (kept from Nov 26, 2026), from the National Weather Service in San Francisco that included San Mateo County. Flood Watches and Warnings for rain aren’t kept by this site yet.</p></details>
 
   </section>
 
@@ -222,7 +223,7 @@ function tiles(M) {
   var bay = t.filter(function (x) { return x.side === "bay"; })[0], coast = t.filter(function (x) { return x.side === "coast"; })[0];
   var g = (M.rain && M.rain.gauges || [])[0], big = (M.storms || []).filter(function (s) { return s.notable; });
   var nd = {};
-  (M.nws || []).forEach(function (n) { for (var d = pd(n.onset.slice(0, 10)); d <= pd(n.ends.slice(0, 10)); d.setDate(d.getDate() + 1)) if (d.getMonth() + 1 === +M.month.slice(5)) nd[d.getDate()] = 1; });
+  (M.nws || []).filter(function (n) { return /coastal flood/i.test(n.event); }).forEach(function (n) { for (var d = pd(n.onset.slice(0, 10)); d <= pd(n.ends.slice(0, 10)); d.setDate(d.getDate() + 1)) if (d.getMonth() + 1 === +M.month.slice(5)) nd[d.getDate()] = 1; });
   var nc = (M.roads || []).reduce(function (a, r) { return a + (r.closures || 1); }, 0);
   function tt(x) { return x ? ft(x.above_mhhw).replace("ft", "ft") : "–"; }
   function ts(x) { if (!x) return ""; var a = x.all_time; return "above average high tide at " + x.name + ", " + day(x.max_at) + (a && a.rank === 1 ? " · highest since " + a.since : a && a.rank <= 10 ? " · " + ord(a.rank) + " highest since " + a.since : ""); }
@@ -232,7 +233,8 @@ function tiles(M) {
     tileHtml("Storms", String(big.length), big.length ? "with flooding signs or 1 inch or more" + ((M.storms || []).length > big.length ? " · " + ((M.storms || []).length - big.length) + " smaller" : "") : "") +
     tileHtml("Wettest rain gauge", g ? g.in.toFixed(2) + " in" : "–", g ? g.label + " (" + g.creeks.join(", ") + ")" + (M.rain.sfo ? " · SFO airport " + M.rain.sfo.in.toFixed(2) + " in" : "") : "") +
     tileHtml("Road flooding and closures", String(nc), "state highways and city posts" + ((M.roads || []).length && nc !== (M.roads || []).length ? " · " + M.roads.length + " places" : "")) +
-    tileHtml("Days with an NWS coastal flood product", String(Object.keys(nd).length), "Advisory or Warning");
+    tileHtml("Days with an NWS coastal flood product", String(Object.keys(nd).length), "Advisory or Warning") +
+    (M.waves ? tileHtml("Highest waves", M.waves.max_ft.toFixed(0) + " ft", "Half Moon Bay buoy, " + day(M.waves.max_day) + (M.waves.period_s ? " · " + M.waves.period_s + " s" : "")) : "");
 }
 function roadLine(r) {
   if (r.notice) {   // a city's own post (its title names the streets)
@@ -246,6 +248,16 @@ function roadLine(r) {
   return "<b>" + esc(r.route) + "</b> in " + esc(pl) + ": " + esc(wh) + dirs + ". " + (r.closures > 1 ? r.closures + " closures from " : "From ") + when(r.started) +
     (r.active ? ", still closed" : r.ended ? " to " + (r.ended.slice(0, 10) === r.started.slice(0, 10) ? hm(r.ended) : when(r.ended)) : "") +
     (r.cause ? ' <span class="chip ' + (r.cause === "both" ? "both" : r.cause) + '">' + CAUSE[r.cause] + "</span>" : r.kind === "storm" ? ' <span class="chip side">' + esc(r.what || "storm") + "</span>" : "");
+}
+// what staff logged on the ground (lookups/impacts.csv): one line each, with its source
+function impactLine(x) {
+  var src = x.source ? (x.link ? '<a href="' + esc(x.link) + '" target="_blank" rel="noopener">' + esc(x.source) + "</a>" : esc(x.source)) : "";
+  return '<span class="chip ' + (x.kind === "damage" || x.kind === "evacuation" ? "warn" : "amber") + '">' + esc(x.label) + "</span>" +
+    (x.place ? "<b>" + esc(x.place) + "</b>, " : "") + day(x.date) + (x.time ? " " + hm(x.date + " " + x.time) : "") + ": " + esc(x.what) + (src ? ' <span class="sm">(' + src + ")</span>" : "");
+}
+function impactsFor(M, key, i) {
+  var h = (M.impacts || []).filter(function (x) { return (x[key] || []).indexOf(i) >= 0; }).map(function (x) { return "<li>" + impactLine(x) + "</li>"; }).join("");
+  return h ? "<li>Reported:<ul>" + h + "</ul></li>" : "";
 }
 function tideCard(p, M) {
   var gs = p.gauges.slice().sort(function (a, b) { return (b.max - b.level_ft) - (a.max - a.level_ft); });
@@ -264,6 +276,7 @@ function tideCard(p, M) {
   return '<div class="card ev tide"><h3><span class="chip tide">High tides</span>' + span(p.first, p.last) + "</h3>" +
     '<div class="when">' + p.sides.map(function (s) { return '<span class="chip side">' + SIDE[s] + "</span>"; }).join("") + "</div><ul>" + li +
     (nws.length ? "<li>NWS: " + esc(nws.join("; ")) + ".</li>" : "") + (rd ? "<li>Road closures:<ul>" + rd + "</ul></li>" : "") +
+    impactsFor(M, "tide_periods", (M.tide_periods || []).indexOf(p)) +
     (storms.length ? "<li>Rain during these days: see the storm" + (storms.length > 1 ? "s" : "") + " of " + storms.map(function (s) { return span(s.start, s.end); }).join(" and ") + ".</li>" : "") + "</ul></div>";
 }
 function stormCard(s, M) {
@@ -288,6 +301,7 @@ function stormCard(s, M) {
   if (st.length) li.push("<li>Creek status: " + st.map(function (c) { return esc(c.name) + " <b>" + esc(c.status.label) + "</b> for " + dur(c.status.minutes) + " (from " + when(c.status.first) + ")"; }).join("; ") + ".</li>");
   var rd = s.roads.map(function (i) { return "<li>" + roadLine(M.roads[i]) + "</li>"; }).join("");
   if (rd) li.push("<li>Road closures:<ul>" + rd + "</ul></li>");
+  var im = impactsFor(M, "storms", (M.storms || []).indexOf(s)); if (im) li.push(im);
   if (s.on_high_tide.length) li.push("<li>It fell during a run of high tides (" + s.on_high_tide.map(day).join(", ") + ").</li>");
   return '<div class="card ev ' + kind + '"><h3><span class="chip ' + kind + '">' + (kind === "both" ? "Storm on a high tide" : "Storm") + "</span>" + span(s.start, s.end) + (s.open ? ' <span class="chip amber">still going</span>' : "") + "</h3>" +
     '<div class="when">' + when(s.start) + " to " + when(s.end) + " " + s.sides.map(function (x) { return '<span class="chip side">' + SIDE[x] + "</span>"; }).join("") + "</div><ul>" + li.join("") + "</ul></div>";
@@ -297,6 +311,10 @@ function events(M) {
     .concat((M.storms || []).filter(function (s) { return s.notable; }).map(function (s) { return { t: s.start.slice(0, 10), h: stormCard(s, M) }; }));
   ev.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : 0; });
   var sm = (M.storms || []).filter(function (s) { return !s.notable; });
+  // impacts on days with no high-tide run or listed storm get their own card
+  var lone = (M.impacts || []).filter(function (x) { return !(x.tide_periods || []).length && !(x.storms || []).some(function (i) { return M.storms[i] && M.storms[i].notable; }); });
+  lone.forEach(function (x) { ev.push({ t: x.date, h: '<div class="card ev"><h3><span class="chip side">Reported</span>' + day(x.date) + "</h3><ul><li>" + impactLine(x) + "</li></ul></div>" }); });
+  ev.sort(function (a, b) { return a.t < b.t ? -1 : a.t > b.t ? 1 : 0; });
   var smh = sm.length ? '<p class="small">Smaller rain: ' + sm.map(function (s) { return span(s.start, s.end) + (s.wettest ? " (up to " + s.wettest.in.toFixed(2) + " in at " + esc(s.wettest.gauge) + ")" : ""); }).join("; ") + ".</p>" : "";
   $("events").innerHTML = (ev.length ? ev.map(function (e) { return e.h; }).join("") : '<p class="empty">Nothing yet this month: no high-tide runs and no storms.</p>') + smh +
     '<p class="note">High tides here: days when a gauge reached its tide level of concern (the 1-year tide at Redwood City and Monterey; NOAA’s minor flooding level at Alameda and San Francisco). Storms: rain at the creek gauges; listed in full when a creek reached a flood level, a creek’s status reached Be ready or Flooding likely, 1 inch or more fell, or a road closed. Flood levels and statuses are the public ones (Colma, San Bruno, Belmont, Atherton), the same the public pages showed; creeks still in staff preview show rain only.</p>';
@@ -308,6 +326,7 @@ function areaItems(items, M) {
   var cr = {}, order = [], rd = [];
   items.forEach(function (x) {
     if (x.type === "creek") { if (!cr[x.creek]) { cr[x.creek] = []; order.push(x.creek); } cr[x.creek].push(x); }
+    else if (x.type === "impact") rd.push(x);
     else rd.push(x);
   });
   return "<ul>" + order.map(function (c) {
@@ -315,7 +334,8 @@ function areaItems(items, M) {
       var s = M.storms.filter(function (s) { return s.start === x.start; })[0];
       return [x.reached, x.status].filter(Boolean).join(", ") + " (" + (s ? span(s.start, s.end) : day(x.start)) + ")";
     }).join("; ") + "</li>";
-  }).concat(rd.map(function (x) { var r = M.roads[x.road]; if (r.notice) return "<li>" + (r.source === "SMC Alert" ? "SMC Alert: " + esc(r.where.replace(/,\s*[^,]*$/, "")) + " closed " : "City reported flooding ") + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; return "<li>" + esc(r.route) + " closed " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; })).join("") + "</ul>";
+  }).concat(rd.map(function (x) { if (x.type === "impact") { var im = (M.impacts || [])[x.impact]; return im ? "<li>" + esc(im.label) + " " + day(im.date) + ": " + esc(im.what.length > 90 ? im.what.slice(0, 88).replace(/\s+\S*$/, "") + "…" : im.what) + "</li>" : ""; }
+    var r = M.roads[x.road]; if (r.notice) return "<li>" + (r.source === "SMC Alert" ? "SMC Alert: " + esc(r.where.replace(/,\s*[^,]*$/, "")) + " closed " : "City reported flooding ") + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; return "<li>" + esc(r.route) + " closed " + day(r.started) + (r.cause ? " (" + CAUSE[r.cause].toLowerCase() + ")" : "") + "</li>"; })).join("") + "</ul>";
 }
 function areas(M) {
   var A = Array.isArray(M.areas) ? M.areas : [];
@@ -344,6 +364,8 @@ function tables(M) {
   $("rainNote").textContent = "Each creek's own rain gauges (OneRain), added up by day. A gauge far below its neighbors may have missed rain; check it before quoting it.";
   var r = M.roads || [];
   $("roads").innerHTML = r.length ? "<ul style='margin:0;padding-left:18px'>" + r.map(function (x) { return "<li style='margin:4px 0'>" + roadLine(x) + "</li>"; }).join("") + "</ul>" : "<p class='empty'>None this month.</p>";
+  var im = M.impacts || [];
+  $("impacts").innerHTML = im.length ? "<ul style='margin:0;padding-left:18px'>" + im.map(function (x) { return "<li style='margin:4px 0'>" + impactLine(x) + "</li>"; }).join("") + "</ul>" : "<p class='empty'>None logged this month.</p>";
   var n = M.nws || [];
   $("nws").innerHTML = n.length ? "<table><thead><tr><th>Product</th><th>From</th><th>Until</th></tr></thead><tbody>" + n.map(function (x) { return "<tr><td>" + esc(x.event) + "</td><td>" + when(x.onset) + "</td><td>" + when(x.ends) + "</td></tr>"; }).join("") + "</tbody></table>" : "<p class='empty'>None this month.</p>";
 }

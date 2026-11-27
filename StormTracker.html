@@ -151,6 +151,12 @@
     <div id="roads"></div>
   </div>
 
+  <div class="card" id="impactCard" hidden>
+    <h2>Reported on the ground <span class="sm" style="display:inline;font-weight:400">logged by staff · this season</span></h2>
+    <div id="impacts"></div>
+    <p class="note" style="margin:6px 0 0">Damage, flooding and closures that no feed reports (staff, 2026-11-26: the Pacifica Pier). Add a row to <code>lookups/impacts.csv</code>: date, place, what happened, the source and its link.</p>
+  </div>
+
   <div class="card" id="seasonCard">
     <h2>Season totals by creek <span class="sm" style="display:inline;font-weight:400" id="seasonSince">since Oct 1</span></h2>
     <p class="note" style="margin-top:0">All storms this water year added up for each creek: total rain, the biggest storm, the highest creek level and the hours spent at each flood level, the highest tide during storms, and the days each status was reached.</p>
@@ -413,6 +419,36 @@ function renderRoads() {
     "<p class='note'>Checked " + esc(when(RC.generated)) + ". Caltrans covers state highways only; city streets come only from city posts (San Bruno and South San Francisco so far) and SMC Alert, once its mailbox is set up. " +
       (past.some(function (c) { return c.gone; }) ? "* reopened when it left Caltrans' feed (within 10 minutes). " : "") + "</p>" +
     (bad.length ? "<div class='warn'>Couldn't read " + esc(bad.join(" or ")) + " on the last try; the list may be missing closures since then.</div>" : "");
+}
+// what staff logged on the ground (lookups/impacts.csv), newest first, from the start of the water year
+var IMPACT_LABEL = { flooding: "Flooding", damage: "Damage", road: "Road closed", evacuation: "Evacuation" };
+function csvRows(t) {   // a small CSV reader (quoted fields, "" inside quotes); the header row gives the names
+  var rows = [], row = [], f = "", q = false;
+  t = String(t).replace(/^\ufeff/, "");
+  for (var i = 0; i < t.length; i++) {
+    var ch = t[i];
+    if (q) { if (ch === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(f); f = ""; }
+    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && t[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += ch;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  var head = (rows.shift() || []).map(function (h) { return h.trim().toLowerCase(); });
+  return rows.filter(function (r) { return r.some(function (x) { return x.trim(); }); })
+    .map(function (r) { var o = {}; head.forEach(function (h, j) { o[h] = (r[j] || "").trim(); }); return o; });
+}
+function loadImpacts() {
+  fetch("lookups/impacts.csv?v=" + Math.floor(Date.now() / 600000), { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(csvRows).then(function (rows) {
+    var wy = J && J.wy_start ? J.wy_start.slice(0, 10) : "0000";
+    var r = rows.filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x.date) && x.what && x.date >= wy; }).sort(function (a, b) { return (b.date + b.time) < (a.date + a.time) ? -1 : 1; });
+    $("impactCard").hidden = !r.length;
+    $("impacts").innerHTML = "<ul style='margin:0;padding-left:18px'>" + r.map(function (x) {
+      var lk = /^https:\/\/[^\s"'<>]+$/.test(x.link || "") ? x.link : "", k = (x.kind || "").toLowerCase();
+      return "<li style='margin:4px 0'><b>" + esc(IMPACT_LABEL[k] || "Reported") + "</b> · " + esc(day(x.date)) + (x.place ? ", " + esc(x.place) : "") + ": " + esc(x.what) +
+        (x.source ? ' <span class="sm" style="display:inline">(' + (lk ? '<a href="' + esc(lk) + '" target="_blank" rel="noopener">' + esc(x.source) + "</a>" : esc(x.source)) + ")</span>" : "") + "</li>";
+    }).join("") + "</ul>";
+  }).catch(function () {});
 }
 function loadRoads() {
   fetch(ROADS_URL + "?t=" + Math.floor(Date.now() / 6e4), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -1035,10 +1071,11 @@ function load() {
 }
 load();
 loadRoads();
+setTimeout(loadImpacts, 1500);
 loadAlerts();
 loadFc();
 loadBay();
-setInterval(function () { load(); loadRoads(); loadAlerts(); loadFc(); loadBay(); }, 5 * 60000);
+setInterval(function () { load(); loadRoads(); loadAlerts(); loadFc(); loadBay(); loadImpacts(); }, 5 * 60000);
 </script>
 </body>
 </html>
