@@ -1,0 +1,85 @@
+creek,start,end,minutes,staff_status,public_at_start,why,rain_level,outcome,lead_min,approximate
+colma,2026-11-13 02:40,2026-11-13 02:50,10,alert,none,rising fast,0,not followed,,yes
+colma,2026-11-13 08:40,2026-11-13 09:00,20,alert,none,rising fast,0,not followed,,yes
+colma,2026-11-13 09:20,2026-11-13 09:25,5,alert,none,rising fast,0,followed,145,yes
+colma,2026-11-13 10:30,2026-11-13 10:55,25,alert,none,rising fast,0,followed,75,yes
+colma,2026-11-15 16:40,2026-11-15 17:25,45,alert,none,rising fast,0,not followed,,yes
+colma,2026-11-18 08:55,2026-11-18 10:00,65,alert,none,rising fast,0,followed,80,yes
+sanbruno,2026-11-13 09:10,2026-11-13 11:30,140,alert,none,rising fast,0,followed,155,yes
+sanbruno,2026-11-13 19:30,2026-11-13 20:15,45,alert,none,rain + rising fast,1,not followed,,yes
+sanbruno,2026-11-14 01:10,2026-11-14 02:35,85,alert,none,rain,1,not followed,,yes
+sanbruno,2026-11-15 16:05,2026-11-15 16:50,45,alert,none,rising fast,0,not followed,,yes
+sanbruno,2026-11-15 16:55,2026-11-15 17:25,30,alert,none,rising fast,0,not followed,,yes
+sanbruno,2026-11-16 00:25,2026-11-16 01:05,40,alert,none,rising fast,0,not followed,,yes
+sanbruno,2026-11-18 03:45,2026-11-18 04:50,65,alert,none,rising fast,0,not followed,,yes
+sanbruno,2026-11-18 08:30,2026-11-18 09:35,65,alert,none,rising fast,0,followed,65,yes
+sanbruno,2026-11-19 02:20,2026-11-19 04:57,157,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-19 06:15,2026-11-19 08:45,150,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-19 10:30,2026-11-19 11:30,60,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-19 12:45,2026-11-19 13:40,55,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-19 14:10,2026-11-19 14:39,29,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-19 19:25,2026-11-19 20:24,59,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-20 01:50,2026-11-20 02:50,60,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-20 03:30,2026-11-20 04:25,55,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-20 05:20,2026-11-20 07:40,140,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-20 08:00,2026-11-20 08:58,58,alert,none,rain,3,not followed,,yes
+sanbruno,2026-11-21 20:15,2026-11-21 20:25,10,alert,none,rising fast,0,not followed,,
+sanbruno,2026-11-24 23:47,2026-11-25 00:16,29,alert,none,rising fast,0,not followed,,
+belmont,2026-11-18 11:30,2026-11-18 16:25,295,alert,none,rain,2,not followed,,yes
+belmont,2026-11-18 22:35,2026-11-18 23:31,56,alert,none,rain + rising fast,1,not followed,,yes
+belmont,2026-11-19 03:17,2026-11-19 03:32,15,alert,none,rain + rising fast,1,followed,15,yes
+belmont,2026-11-19 03:37,2026-11-19 03:40,3,alert,none,rain,2,followed,3,yes
+belmont,2026-11-19 07:20,2026-11-19 08:35,75,alert,none,rain,2,not followed,,yes
+belmont,2026-11-20 01:54,2026-11-20 02:55,61,alert,none,rain,2,not followed,,yes
+belmont,2026-11-20 03:56,2026-11-20 04:45,49,alert,none,rain,2,not followed,,yes
+atherton,2026-11-01 02:05,2026-11-01 02:40,35,alert,none,rising fast,0,not followed,,yes
+atherton,2026-11-13 11:30,2026-11-13 12:25,55,alert,none,rising fast,0,not followed,,yes
+atherton,2026-11-15 19:55,2026-11-15 21:05,70,alert,none,rising fast,0,not followed,,yes
+atherton,2026-11-16 02:45,2026-11-16 03:20,35,alert,none,rising fast,0,not followed,,yes
+atherton,2026-11-16 12:45,2026-11-16 13:45,60,alert,none,rising fast,0,not followed,,yes
+atherton,2026-11-18 05:50,2026-11-18 06:25,35,alert,none,rising fast,0,not followed,,yes
+atherton,2026-11-18 06:30,2026-11-18 07:00,30,alert,none,rising fast,0,not followed,,yes
+atherton,2026-11-18 09:40,2026-11-18 10:50,70,alert,none,rising fast,0,followed,95,yes
+atherton,2026-11-19 04:10,2026-11-19 05:15,65,alert,none,rain + rising fast,1,not followed,,yes
+atherton,2026-11-19 13:00,2026-11-19 13:30,30,alert,none,rain + rising fast,1,not followed,,yes
+sanfrancisquito,2026-11-15 22:40,2026-11-15 23:30,50,alert,none,rising fast,0,not followed,,yes
+sanfrancisquito,2026-11-18 08:40,2026-11-18 09:15,35,alert,none,rising fast,0,not followed,,yes
+sanfrancisquito,2026-11-18 11:30,2026-11-18 11:50,20,alert,none,rain,2,not followed,,yes
+sanfrancisquito,2026-11-18 12:30,2026-11-18 18:10,340,alert,none,rain,2,not followed,,yes
+sanfrancisquito,2026-11-19 05:25,2026-11-19 06:15,50,alert,none,rising fast,0,not followed,,yes
+sanfrancisquito,2026-11-19 07:50,2026-11-19 08:30,40,alert,none,rising fast,0,not followed,,yes
+sanmateo,2026-11-18 11:05,2026-11-18 11:25,20,alert,none,rising fast,0,not followed,,yes
+greenhills,2026-11-01 01:00,2026-11-01 01:15,15,ready,none,rising fast,0,no flood levels,,yes
+greenhills,2026-11-13 02:40,2026-11-13 03:15,35,ready,none,rising fast,0,no flood levels,,yes
+greenhills,2026-11-13 09:05,2026-11-13 09:39,34,ready,none,rising fast,0,no flood levels,,yes
+greenhills,2026-11-13 09:45,2026-11-13 10:10,25,ready,none,rising fast,0,no flood levels,,yes
+greenhills,2026-11-15 16:50,2026-11-15 17:45,55,ready,none,rising fast,0,no flood levels,,yes
+greenhills,2026-11-18 10:45,2026-11-18 11:15,30,ready,none,rising fast,0,no flood levels,,yes
+greenhills,2026-11-18 11:20,2026-11-18 11:45,25,ready,none,rising fast,0,no flood levels,,yes
+greenhills,2026-11-18 21:50,2026-11-18 22:35,45,ready,none,rain + rising fast,1,no flood levels,,yes
+greenhills,2026-11-18 23:55,2026-11-19 00:15,20,ready,none,rain + rising fast,1,no flood levels,,yes
+greenhills,2026-11-19 03:00,2026-11-19 03:38,38,ready,none,rain + rising fast,1,no flood levels,,yes
+greenhills,2026-11-19 06:30,2026-11-19 07:00,30,alert,none,rain,2,no flood levels,,yes
+greenhills,2026-11-19 07:30,2026-11-19 08:00,30,alert,none,rain,2,no flood levels,,yes
+greenhills,2026-11-19 09:30,2026-11-19 10:00,30,alert,none,rain,2,no flood levels,,yes
+greenhills,2026-11-20 06:20,2026-11-20 06:47,27,ready,none,rain + rising fast,1,no flood levels,,yes
+greenhills,2026-11-24 23:50,2026-11-25 00:05,15,ready,none,rising fast,0,no flood levels,,
+pilarcitos,2026-11-01 01:25,2026-11-01 02:15,50,alert,none,rising fast,0,not followed,,yes
+pilarcitos,2026-11-13 03:15,2026-11-13 04:15,60,alert,none,rising fast,0,not followed,,yes
+pilarcitos,2026-11-13 13:15,2026-11-13 14:15,60,alert,none,rising fast,0,not followed,,yes
+pilarcitos,2026-11-17 13:15,2026-11-17 14:00,45,alert,none,rising fast,0,not followed,,yes
+pilarcitos,2026-11-18 11:15,2026-11-18 14:15,180,alert,none,rising fast,0,not followed,,yes
+pilarcitos,2026-11-19 06:15,2026-11-19 07:15,60,alert,none,rain + rising fast,1,not followed,,yes
+pilarcitos,2026-11-19 07:30,2026-11-19 08:00,30,alert,none,rain,2,not followed,,yes
+pilarcitos,2026-11-19 09:30,2026-11-19 10:00,30,alert,none,rain,2,not followed,,yes
+sangregorio,2026-11-18 12:30,2026-11-18 13:00,30,alert,none,rain,2,not followed,,yes
+sangregorio,2026-11-18 13:30,2026-11-18 18:00,270,alert,none,rain,2,not followed,,yes
+sangregorio,2026-11-19 04:30,2026-11-19 05:00,30,alert,none,rain,2,not followed,,yes
+sangregorio,2026-11-19 05:30,2026-11-19 06:00,30,alert,none,rain,2,not followed,,yes
+pescadero,2026-11-18 12:30,2026-11-18 13:00,30,alert,none,rain,2,not followed,,yes
+pescadero,2026-11-18 13:30,2026-11-18 18:00,270,alert,none,rain,2,not followed,,yes
+pescadero,2026-11-18 22:35,2026-11-18 23:05,30,alert,none,rain + rising fast,1,not followed,,yes
+pescadero,2026-11-19 04:30,2026-11-19 05:00,30,alert,none,rain,2,not followed,,yes
+pescadero,2026-11-19 05:30,2026-11-19 06:00,30,alert,none,rain,2,not followed,,yes
+butano,2026-11-18 14:40,2026-11-18 15:00,20,alert,none,rising fast,0,not followed,,yes
+butano,2026-11-18 15:15,2026-11-18 16:15,60,alert,none,rising fast,0,not followed,,yes

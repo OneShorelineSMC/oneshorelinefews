@@ -1,0 +1,29 @@
+creek,storm_start,storm_end,gauge,measured_in,measured_rating,lead_h,run,forecast_in,forecast_wettest_point_in,forecast_rating,timing_h,verdict
+butano,2026-11-27 23:00,2026-11-27 23:00,Cloverdale Road,0.1,0,6,2026-11-27 16:00,0,0,0,,no Heavy
+butano,2026-11-27 23:00,2026-11-27 23:00,Cloverdale Road,0.1,0,24,2026-11-26 22:00,0,0,0,,no Heavy
+butano,2026-11-26 16:00,2026-11-26 16:00,Cloverdale Road,0.1,0,6,2026-11-26 10:00,0,0,0,,no Heavy
+butano,2026-11-26 16:00,2026-11-26 16:00,Cloverdale Road,0.1,0,24,2026-11-25 16:00,0,0,0,,no Heavy
+butano,2026-11-25 19:00,2026-11-25 19:00,Cloverdale Road,0.1,0,6,2026-11-25 10:00,0,0,0,,no Heavy
+butano,2026-11-25 19:00,2026-11-25 19:00,Cloverdale Road,0.1,0,24,2026-11-24 16:00,0,0,0,,no Heavy
+butano,2026-11-25 02:00,2026-11-25 02:00,Cloverdale Road,0.1,0,6,2026-11-24 16:00,0.23,0.23,0,1,no Heavy
+butano,2026-11-25 02:00,2026-11-25 02:00,Cloverdale Road,0.1,0,24,2026-11-23 22:00,0.1,0.1,0,-1,no Heavy
+ws:CORDILLERAS CREEK,2026-11-24 23:00,2026-11-25 01:00,Belmont + Pulgas,0.1,0,6,2026-11-24 16:00,0.11,0.11,0,4,no Heavy
+ws:CORDILLERAS CREEK,2026-11-24 23:00,2026-11-25 01:00,Belmont + Pulgas,0.1,0,24,2026-11-23 22:00,0.05,0.05,0,2,no Heavy
+sanbruno,2026-11-24 23:00,2026-11-25 01:00,First Avenue,0.4,0,6,2026-11-24 16:00,0.29,0.29,0,3,no Heavy
+sanbruno,2026-11-24 23:00,2026-11-25 01:00,First Avenue,0.4,0,24,2026-11-23 22:00,0.21,0.21,0,1,no Heavy
+pilarcitos,2026-11-24 23:00,2026-11-25 02:00,Pilarcitos Dam,0.26,0,6,2026-11-24 16:00,0.37,0.6,0,2,no Heavy
+pilarcitos,2026-11-24 23:00,2026-11-25 02:00,Pilarcitos Dam,0.26,0,24,2026-11-23 22:00,0.25,0.4,0,0,no Heavy
+greenhills,2026-11-24 23:00,2026-11-25 02:00,Pilarcitos Dam,0.26,0,6,2026-11-24 16:00,0.23,0.23,0,2,no Heavy
+greenhills,2026-11-24 23:00,2026-11-25 02:00,Pilarcitos Dam,0.26,0,24,2026-11-23 22:00,0.23,0.23,0,0,no Heavy
+colma,2026-11-24 23:00,2026-11-25 02:00,Orange Memorial Park,0,0,6,2026-11-24 16:00,0.51,0.78,0,,no Heavy
+colma,2026-11-24 23:00,2026-11-25 02:00,Orange Memorial Park,0,0,24,2026-11-23 22:00,0.29,0.33,0,,no Heavy
+sangregorio,2026-11-24 21:00,2026-11-25 06:00,La Honda,0.24,0,6,2026-11-24 10:00,0.07,0.18,0,9,no Heavy
+sangregorio,2026-11-24 21:00,2026-11-25 06:00,La Honda,0.24,0,24,2026-11-23 16:00,0.47,1.05,0,3,no Heavy
+sanfrancisquito,2026-11-24 21:00,2026-11-25 00:00,Wunderlich County Park,0.16,0,6,2026-11-24 10:00,0.02,0.05,0,3,no Heavy
+sanfrancisquito,2026-11-24 21:00,2026-11-25 00:00,Wunderlich County Park,0.16,0,24,2026-11-23 16:00,0.28,0.7,0,2,no Heavy
+pescadero,2026-11-24 21:00,2026-11-25 06:00,La Honda,0.24,0,6,2026-11-24 10:00,0.17,0.47,0,1,no Heavy
+pescadero,2026-11-24 21:00,2026-11-25 06:00,La Honda,0.24,0,24,2026-11-23 16:00,0.33,0.93,0,-1,no Heavy
+butano,2026-11-23 21:00,2026-11-23 21:00,Cloverdale Road,0.1,0,6,2026-11-23 10:00,0,0,0,,no Heavy
+butano,2026-11-23 21:00,2026-11-23 21:00,Cloverdale Road,0.1,0,24,2026-11-22 16:00,0,0,0,,no Heavy
+butano,2026-11-22 22:00,2026-11-22 22:00,Cloverdale Road,0.1,0,6,2026-11-22 16:00,0,0,0,,no Heavy
+butano,2026-11-22 22:00,2026-11-22 22:00,Cloverdale Road,0.1,0,24,,,,,,no forecast
